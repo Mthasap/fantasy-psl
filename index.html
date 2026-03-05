@@ -183,6 +183,9 @@
     </div>
   </section>
 
+  <!-- Live scores banner — hidden until matches go live -->
+  <div id="live-banner" style="display:none;background:#D4274F;color:#fff;text-align:center;padding:8px 12px;font-size:13px;font-weight:600;letter-spacing:.5px;position:sticky;top:0;z-index:999;"></div>
+
   <div class="ticker">
     <div class="ticker-track" id="ticker-track">
       <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading PSL scores…</span></div>
@@ -1144,7 +1147,7 @@ function setTableTab(tab, el) {
   loadTable();
 }
 
-function renderFixtureRow(home, away, hg, ag, dateStr, isLive) {
+function renderFixtureRow(home, away, hg, ag, dateStr, isLive, elapsed) {
   var score, scoreClass;
   if (isLive) {
     score = (hg !== null ? hg : 0) + '-' + (ag !== null ? ag : 0);
@@ -1159,7 +1162,7 @@ function renderFixtureRow(home, away, hg, ag, dateStr, isLive) {
   var hLogo = getTeamLogo(home);
   var aLogo = getTeamLogo(away);
   var d = new Date(dateStr);
-  var dateLabel = isLive ? 'LIVE' :
+  var dateLabel = isLive ? ('LIVE' + (elapsed ? ' ' + elapsed + '\'' : '')) :
     d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short' })
      .replace(',','').toUpperCase();
 
@@ -1181,52 +1184,128 @@ function renderFixtureRow(home, away, hg, ag, dateStr, isLive) {
 //  OWN API — fetch from our Netlify serverless function
 //  Falls back to hardcoded REAL_* data if it fails
 // ════════════════════════════════════════════════════
-var PSL_CACHE = null; // cache response for this session
+var PSL_CACHE      = null;    // last successful API response
+var PSL_POLL_TIMER = null;    // live polling interval
+var PSL_LAST_FETCH = 0;       // timestamp of last fetch
 
-function fetchPSLData(cb) {
-  if (PSL_CACHE) { cb(PSL_CACHE); return; }
-  fetch('/api/psl-data')
+// ── Fetch fresh data from our serverless function ────────────
+function fetchPSLData(cb, forceFresh) {
+  var now = Date.now();
+  var age = now - PSL_LAST_FETCH;
+  var minAge = PSL_CACHE && PSL_CACHE.isLive ? 60000 : 300000; // 1min live, 5min normal
+
+  if (!forceFresh && PSL_CACHE && age < minAge) {
+    cb(PSL_CACHE);
+    return;
+  }
+
+  fetch('/api/psl-data?t=' + now)   // bust CDN cache during live
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      PSL_CACHE = data;
+      PSL_CACHE      = data;
+      PSL_LAST_FETCH = Date.now();
       cb(data);
+      scheduleLivePoll(data.isLive);
     })
-    .catch(function() {
-      // API unavailable — use hardcoded fallback
-      cb(null);
-    });
+    .catch(function() { cb(PSL_CACHE); }); // use stale cache on error
+}
+
+// ── Start / stop live polling ────────────────────────────────
+function scheduleLivePoll(isLive) {
+  if (PSL_POLL_TIMER) clearInterval(PSL_POLL_TIMER);
+
+  if (isLive) {
+    // Poll every 60 seconds while matches are live
+    PSL_POLL_TIMER = setInterval(function() {
+      fetchPSLData(function(data) {
+        if (data) {
+          loadFixturesFromData(data);
+          loadTableFromData(data);
+          updateTickerFromData(data);
+          showLiveBanner(data.live);
+        }
+        if (!data || !data.isLive) {
+          clearInterval(PSL_POLL_TIMER);
+          PSL_POLL_TIMER = null;
+          hideLiveBanner();
+        }
+      }, true);
+    }, 60000);
+  }
+}
+
+// ── Live banner indicator ─────────────────────────────────────
+function showLiveBanner(liveMatches) {
+  var el = document.getElementById('live-banner');
+  if (!el || !liveMatches || !liveMatches.length) return;
+  var html = liveMatches.map(function(m) {
+    return '<span class="live-match">' +
+      m.homeAbbr + ' <strong>' + (m.hg !== null ? m.hg : '-') +
+      '</strong> – <strong>' + (m.ag !== null ? m.ag : '-') +
+      '</strong> ' + m.awayAbbr +
+      (m.elapsed ? ' <em>' + m.elapsed + '\'</em>' : '') +
+    '</span>';
+  }).join('  •  ');
+  el.innerHTML = '🔴 LIVE:  ' + html;
+  el.style.display = 'block';
+}
+
+function hideLiveBanner() {
+  var el = document.getElementById('live-banner');
+  if (el) el.style.display = 'none';
+}
+
+function loadFixturesFromData(data) {
+  var c = document.getElementById('fix-list'); if (!c || !data) return;
+  var tab     = ST.fixTab;
+  var matches = tab === 'NS'   ? data.fixtures :
+                tab === 'FT'   ? data.results  :
+                tab === 'LIVE' ? (data.live || []) : [];
+  if (tab === 'NS' && data.live && data.live.length) {
+    matches = data.live.concat(matches);
+  }
+  if (!matches || !matches.length) return;
+  c.innerHTML = matches.map(function(f) {
+    return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, f.isLive, f.elapsed);
+  }).join('');
+  var liveTab = document.getElementById('ftab-live');
+  if (liveTab) {
+    if (data.live && data.live.length) {
+      liveTab.innerHTML = '\ud83d\udd34 LIVE (' + data.live.length + ')';
+      liveTab.style.display = 'inline-block';
+    } else {
+      liveTab.style.display = 'none';
+    }
+  }
+}
+
+function loadTableFromData(data) {
+  var c = document.getElementById('table-body'); if (!c || !data || !data.table) return;
+  if (data.table.length >= 8) renderTableFromData(c, data.table);
 }
 
 function loadFixtures() {
   var c = document.getElementById('fix-list'); if (!c) return;
-  // Show hardcoded data immediately while API loads
   var list = ST.fixTab === 'NS' ? REAL_FIXTURES.NS :
              ST.fixTab === 'FT' ? REAL_FIXTURES.FT : [];
   c.innerHTML = list.length
-    ? list.map(function(f) { return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false); }).join('')
+    ? list.map(function(f) { return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false, null); }).join('')
     : '<div class="loading-players">Loading…</div>';
   updateTickerFromReal();
-
-  // Upgrade with live API data
   fetchPSLData(function(data) {
     if (!data) return;
-    var matches = ST.fixTab === 'NS' ? data.fixtures :
-                  ST.fixTab === 'FT' ? data.results  : data.live || [];
-    if (!matches || !matches.length) return;
-    c.innerHTML = matches.map(function(f) {
-      var live = f.live || false;
-      return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, live);
-    }).join('');
+    loadFixturesFromData(data);
     updateTickerFromData(data);
+    if (data.isLive) showLiveBanner(data.live);
   });
 }
-
 function loadTable() {
   var c = document.getElementById('table-body'); if (!c) return;
   renderRealTable(c); // show immediately
   fetchPSLData(function(data) {
-    if (!data || !data.table || data.table.length < 8) return;
-    renderTableFromData(c, data.table);
+    if (!data) return;
+    loadTableFromData(data);
+    if (data.isLive) showLiveBanner(data.live);
   });
 }
 
