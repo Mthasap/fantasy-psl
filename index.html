@@ -1053,37 +1053,37 @@ function sn(name) { return SHORT_NAMES[name] || name; }
 
 // Real standings as of 1 March 2026 (after GW19, Soweto Derby)
 var REAL_TABLE = [
-  { team:'Orlando Pirates',   abbr:'Pirates',    p:18, w:13, d:2,  l:3,  pts:41 },
-  { team:'Mamelodi Sundowns', abbr:'Sundowns',   p:18, w:12, d:5,  l:1,  pts:41 },
-  { team:'Sekhukhune United', abbr:'Sekhukhune', p:19, w:9,  d:5,  l:5,  pts:32 },
-  { team:'Durban City',       abbr:'Durban City',p:19, w:9,  d:4,  l:6,  pts:31 },
-  { team:'Kaizer Chiefs',     abbr:'Chiefs',     p:17, w:8,  d:6,  l:3,  pts:30 },
-  { team:'AmaZulu FC',        abbr:'AmaZulu',    p:19, w:9,  d:3,  l:7,  pts:30 },
-  { team:'Polokwane City',    abbr:'Polokwane',  p:18, w:7,  d:7,  l:4,  pts:28 },
-  { team:'TS Galaxy',         abbr:'TS Galaxy',  p:19, w:7,  d:3,  l:9,  pts:24 },
-  { team:'Stellenbosch FC',   abbr:'Stellen.',   p:18, w:6,  d:4,  l:8,  pts:22 },
-  { team:'Golden Arrows',     abbr:'Arrows',     p:18, w:6,  d:3,  l:9,  pts:21 },
-  { team:'Siwelele FC',       abbr:'Siwelele',   p:18, w:5,  d:6,  l:7,  pts:21 },
-  { team:'Richards Bay',      abbr:'R. Bay',     p:18, w:4,  d:8,  l:6,  pts:20 },
-  { team:'Chippa United',     abbr:'Chippa',     p:19, w:4,  d:7,  l:8,  pts:19 },
-  { team:'Marumo Gallants',   abbr:'Gallants',   p:19, w:3,  d:6,  l:10, pts:15 },
-  { team:'Orbit College FC',  abbr:'Orbit Col.', p:19, w:4,  d:3,  l:12, pts:15 },
-  { team:'Magesi FC',         abbr:'Magesi',     p:18, w:2,  d:6,  l:10, pts:12 }
+  { team:'Orlando Pirates',   abbr:'Pirates',     p:20, w:14, d:2,  l:4,  pts:44 },
+  { team:'Mamelodi Sundowns', abbr:'Sundowns',    p:20, w:13, d:5,  l:2,  pts:44 },
+  { team:'Sekhukhune United', abbr:'Sekhukhune',  p:19, w:9,  d:5,  l:5,  pts:32 },
+  { team:'Durban City',       abbr:'Durban City', p:20, w:10, d:4,  l:6,  pts:34 },
+  { team:'AmaZulu FC',        abbr:'AmaZulu',     p:19, w:9,  d:3,  l:7,  pts:30 },
+  { team:'Kaizer Chiefs',     abbr:'Chiefs',      p:19, w:8,  d:6,  l:5,  pts:30 },
+  { team:'Polokwane City',    abbr:'Polokwane',   p:20, w:7,  d:7,  l:6,  pts:28 },
+  { team:'Richards Bay',      abbr:'R. Bay',      p:20, w:5,  d:8,  l:7,  pts:23 },
+  { team:'TS Galaxy',         abbr:'TS Galaxy',   p:21, w:7,  d:3,  l:11, pts:24 },
+  { team:'Stellenbosch FC',   abbr:'Stellenbosch',p:20, w:6,  d:5,  l:9,  pts:23 },
+  { team:'Siwelele FC',       abbr:'Siwelele',    p:20, w:5,  d:7,  l:8,  pts:22 },
+  { team:'Golden Arrows',     abbr:'Arrows',      p:20, w:6,  d:3,  l:11, pts:21 },
+  { team:'Chippa United',     abbr:'Chippa',      p:19, w:4,  d:7,  l:8,  pts:19 },
+  { team:'Orbit College FC',  abbr:'Orbit Col.',  p:21, w:5,  d:3,  l:13, pts:18 },
+  { team:'Marumo Gallants',   abbr:'Gallants',    p:21, w:3,  d:6,  l:12, pts:15 },
+  { team:'Magesi FC',         abbr:'Magesi',      p:18, w:2,  d:6,  l:10, pts:12 }
 ];
 
 // Real recent results + upcoming fixtures
 var REAL_FIXTURES = {
   FT: [
+    { date:'2026-03-04', home:'Polokwane City',    away:'Orlando Pirates',   hg:1, ag:2 },
+    { date:'2026-03-04', home:'Mamelodi Sundowns', away:'Golden Arrows',     hg:2, ag:1 },
+    { date:'2026-03-04', home:'Orbit College FC',  away:'TS Galaxy',         hg:2, ag:1 },
+    { date:'2026-03-04', home:'Durban City',       away:'Marumo Gallants',   hg:1, ag:0 },
+    { date:'2026-03-03', home:'Richards Bay',      away:'Kaizer Chiefs',     hg:1, ag:0 },
+    { date:'2026-03-03', home:'Siwelele FC',       away:'Stellenbosch FC',   hg:0, ag:0 },
     { date:'2026-03-01', home:'Mamelodi Sundowns', away:'Sekhukhune United', hg:3, ag:1 },
     { date:'2026-02-28', home:'Kaizer Chiefs',     away:'Orlando Pirates',   hg:0, ag:3 },
-    { date:'2026-02-28', home:'Siwelele FC',       away:'TS Galaxy',         hg:1, ag:0 },
     { date:'2026-02-28', home:'Golden Arrows',     away:'Chippa United',     hg:0, ag:0 },
-    { date:'2026-02-28', home:'Orbit College FC',  away:'Richards Bay',      hg:0, ag:0 },
-    { date:'2026-02-22', home:'AmaZulu FC',        away:'Durban City',       hg:2, ag:1 },
-    { date:'2026-02-22', home:'Polokwane City',    away:'Marumo Gallants',   hg:2, ag:0 },
-    { date:'2026-02-15', home:'Mamelodi Sundowns', away:'Kaizer Chiefs',     hg:2, ag:0 },
-    { date:'2026-02-15', home:'Orlando Pirates',   away:'Stellenbosch FC',   hg:3, ag:1 },
-    { date:'2026-02-08', home:'Sekhukhune United', away:'Golden Arrows',     hg:2, ag:1 }
+    { date:'2026-02-28', home:'Orbit College FC',  away:'Richards Bay',      hg:0, ag:0 }
   ],
   NS: [
     { date:'2026-03-07', home:'Kaizer Chiefs',     away:'Mamelodi Sundowns', hg:null, ag:null },
