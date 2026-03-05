@@ -66,18 +66,6 @@
     /* ── Tab buttons — SVG + label alignment ── */
     .ftab { display:inline-flex; align-items:center; gap:0; }
     .ftab svg { flex-shrink:0; }
-
-    /* ── Club profile modal ── */
-    #club-modal { -webkit-overflow-scrolling:touch; }
-    .cp-tile { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.9rem .8rem;text-align:center; }
-    .cp-tile-val { font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#DBA94A;line-height:1; }
-    .cp-tile-lbl { font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px; }
-    .cp-stat-card { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center; }
-    .cp-stat-card-lbl { font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6); }
-    .cp-stat-card-val { font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff; }
-
-    /* ── Club profile tabs ── */
-    .club-tab:hover { color: rgba(255,255,255,.8) !important; }
   </style>
 </head>
 <body>
@@ -164,62 +152,6 @@
   </div>
 </div>
 
-
-<!-- CLUB PROFILE MODAL -->
-<div id="club-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);overflow-y:auto" onclick="if(event.target===this)closeClubProfile()">
-  <div id="club-modal-box" style="margin:0 auto;max-width:640px;min-height:100vh;background:var(--bg-surface);position:relative;padding-bottom:4rem">
-
-    <!-- Hero header -->
-    <div id="club-modal-hero" style="padding:3rem 1.5rem 1.5rem;position:relative;background:linear-gradient(135deg,#111,#1a1a1a)">
-      <button onclick="closeClubProfile()" style="position:absolute;top:1rem;left:1rem;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.7)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-      </button>
-      <div style="display:flex;align-items:center;gap:1.2rem;margin-top:.5rem">
-        <img id="cp-logo" src="" style="width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))" onerror="this.hidden=true">
-        <div>
-          <div id="cp-name" style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:#fff;line-height:1"></div>
-          <div id="cp-nick" style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:.3rem"></div>
-          <div id="cp-meta" style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:.2rem;display:flex;align-items:center;gap:.6rem"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Season at a glance -->
-    <div style="padding:1.2rem 1.2rem .4rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">2025/26 Season</div>
-      <div id="cp-glance" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem"></div>
-    </div>
-
-    <!-- Form -->
-    <div style="padding:.8rem 1.2rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Last 5 Results</div>
-      <div id="cp-form" style="display:flex;gap:.4rem"></div>
-    </div>
-
-    <!-- Attack / Defence / Discipline stats grid -->
-    <div style="padding:.8rem 1.2rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Attack</div>
-      <div id="cp-attack" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem"></div>
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Defence</div>
-      <div id="cp-defence" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem"></div>
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Discipline</div>
-      <div id="cp-discipline" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem"></div>
-    </div>
-
-    <!-- Top performers -->
-    <div style="padding:.8rem 1.2rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Top Performers</div>
-      <div id="cp-performers" style="display:flex;flex-direction:column;gap:.4rem"></div>
-    </div>
-
-    <!-- Full squad list -->
-    <div style="padding:.8rem 1.2rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Squad</div>
-      <div id="cp-squad" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden"></div>
-    </div>
-
-  </div>
-</div>
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="bnav-btn active" id="bn-home" onclick="goPage('home')">
@@ -621,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTickerData();
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeAuth(); closePmodal(); closeClubProfile(); }
+    if (e.key === 'Escape') { closeAuth(); closePmodal(); }
   });
 });
 
@@ -1166,46 +1098,25 @@ var SHORT_NAMES = {
 };
 function sn(name) { return SHORT_NAMES[name] || name; }
 
-// Betway Premiership 2025/26 standings — GW22 (5 Mar 2026)
-// W D L GF GA GD Pts  Form (newest last)
+// Real standings as of 1 March 2026 (after GW19, Soweto Derby)
 var REAL_TABLE = [
-  { team:'Orlando Pirates',   abbr:'Pirates',      p:22, w:15, d:2,  l:5,  gf:38, ga:18, gd:20, pts:47, form:'WLWWW', colors:['#000000','#FFFFFF'] },
-  { team:'Mamelodi Sundowns', abbr:'Sundowns',     p:22, w:14, d:5,  l:3,  gf:42, ga:17, gd:25, pts:47, form:'WWDWW', colors:['#FFCD00','#0033A0'] },
-  { team:'Durban City',       abbr:'Durban City',  p:22, w:11, d:4,  l:7,  gf:29, ga:22, gd:7,  pts:37, form:'WDWLW', colors:['#002B5C','#FFFFFF'] },
-  { team:'Sekhukhune United', abbr:'Sekhukhune',   p:21, w:9,  d:5,  l:7,  gf:25, ga:24, gd:1,  pts:32, form:'LWDWL', colors:['#8B0000','#FFD700'] },
-  { team:'Kaizer Chiefs',     abbr:'Chiefs',       p:21, w:9,  d:6,  l:6,  gf:27, ga:23, gd:4,  pts:33, form:'DLWDW', colors:['#FFD700','#000000'] },
-  { team:'AmaZulu FC',        abbr:'AmaZulu',      p:21, w:9,  d:3,  l:9,  gf:24, ga:26, gd:-2, pts:30, form:'WLLWW', colors:['#000080','#FFFFFF'] },
-  { team:'Polokwane City',    abbr:'Polokwane',    p:22, w:7,  d:7,  l:8,  gf:23, ga:27, gd:-4, pts:28, form:'DWLDD', colors:['#006400','#FFD700'] },
-  { team:'TS Galaxy',         abbr:'TS Galaxy',    p:23, w:8,  d:3,  l:12, gf:22, ga:34, gd:-12,pts:27, form:'LWWLL', colors:['#800080','#FFFFFF'] },
-  { team:'Stellenbosch FC',   abbr:'Stellenbosch', p:22, w:7,  d:5,  l:10, gf:24, ga:30, gd:-6, pts:26, form:'WLDLD', colors:['#003399','#FFFFFF'] },
-  { team:'Richards Bay',      abbr:'R. Bay',       p:22, w:5,  d:8,  l:9,  gf:20, ga:28, gd:-8, pts:23, form:'DLDWL', colors:['#FF6600','#000000'] },
-  { team:'Golden Arrows',     abbr:'Arrows',       p:22, w:6,  d:3,  l:13, gf:19, ga:33, gd:-14,pts:21, form:'LLWLL', colors:['#FFD700','#000080'] },
-  { team:'Siwelele FC',       abbr:'Siwelele',     p:22, w:5,  d:7,  l:10, gf:18, ga:29, gd:-11,pts:22, form:'DLDWL', colors:['#008000','#FFFFFF'] },
-  { team:'Chippa United',     abbr:'Chippa',       p:21, w:4,  d:7,  l:10, gf:16, ga:28, gd:-12,pts:19, form:'DLLDD', colors:['#FF0000','#FFFFFF'] },
-  { team:'Orbit College FC',  abbr:'Orbit Col.',   p:23, w:5,  d:3,  l:15, gf:18, ga:38, gd:-20,pts:18, form:'LWLLW', colors:['#0000FF','#FFFFFF'] },
-  { team:'Marumo Gallants',   abbr:'Gallants',     p:23, w:3,  d:6,  l:14, gf:15, ga:37, gd:-22,pts:15, form:'LLDLL', colors:['#008B8B','#FFD700'] },
-  { team:'Magesi FC',         abbr:'Magesi',       p:20, w:2,  d:6,  l:12, gf:14, ga:35, gd:-21,pts:12, form:'DLLLD', colors:['#4B0082','#FFFFFF'] }
+  { team:'Orlando Pirates',   abbr:'Pirates',     p:20, w:14, d:2,  l:4,  pts:44 },
+  { team:'Mamelodi Sundowns', abbr:'Sundowns',    p:20, w:13, d:5,  l:2,  pts:44 },
+  { team:'Sekhukhune United', abbr:'Sekhukhune',  p:19, w:9,  d:5,  l:5,  pts:32 },
+  { team:'Durban City',       abbr:'Durban City', p:20, w:10, d:4,  l:6,  pts:34 },
+  { team:'AmaZulu FC',        abbr:'AmaZulu',     p:19, w:9,  d:3,  l:7,  pts:30 },
+  { team:'Kaizer Chiefs',     abbr:'Chiefs',      p:19, w:8,  d:6,  l:5,  pts:30 },
+  { team:'Polokwane City',    abbr:'Polokwane',   p:20, w:7,  d:7,  l:6,  pts:28 },
+  { team:'Richards Bay',      abbr:'R. Bay',      p:20, w:5,  d:8,  l:7,  pts:23 },
+  { team:'TS Galaxy',         abbr:'TS Galaxy',   p:21, w:7,  d:3,  l:11, pts:24 },
+  { team:'Stellenbosch FC',   abbr:'Stellenbosch',p:20, w:6,  d:5,  l:9,  pts:23 },
+  { team:'Siwelele FC',       abbr:'Siwelele',    p:20, w:5,  d:7,  l:8,  pts:22 },
+  { team:'Golden Arrows',     abbr:'Arrows',      p:20, w:6,  d:3,  l:11, pts:21 },
+  { team:'Chippa United',     abbr:'Chippa',      p:19, w:4,  d:7,  l:8,  pts:19 },
+  { team:'Orbit College FC',  abbr:'Orbit Col.',  p:21, w:5,  d:3,  l:13, pts:18 },
+  { team:'Marumo Gallants',   abbr:'Gallants',    p:21, w:3,  d:6,  l:12, pts:15 },
+  { team:'Magesi FC',         abbr:'Magesi',      p:18, w:2,  d:6,  l:10, pts:12 }
 ];
-
-// Club metadata — est. year, stadium, city
-var CLUB_INFO = {
-  'Orlando Pirates':   { est:1937, stadium:'Orlando Stadium', city:'Soweto, Johannesburg', nickname:'The Buccaneers' },
-  'Mamelodi Sundowns': { est:1970, stadium:'Loftus Versfeld',  city:'Pretoria',             nickname:'Brazilians / Masandawana' },
-  'Kaizer Chiefs':     { est:1970, stadium:'FNB Stadium',      city:'Naturena, Johannesburg',nickname:'Amakhosi' },
-  'Sekhukhune United': { est:2017, stadium:'Peter Mokaba Stadium',city:'Polokwane',          nickname:'Babina Noko' },
-  'Durban City':       { est:1959, stadium:'Moses Mabhida Stadium',city:'Durban',            nickname:'The Wild Coast Sun Warriors' },
-  'AmaZulu FC':        { est:1932, stadium:'Moses Mabhida Stadium',city:'Durban',            nickname:'Usuthu' },
-  'Polokwane City':    { est:1978, stadium:'Peter Mokaba Stadium',city:'Polokwane',           nickname:'Rise and Shine' },
-  'TS Galaxy':         { est:2016, stadium:'Mbombela Stadium',  city:'Nelspruit',            nickname:'Rockets' },
-  'Stellenbosch FC':   { est:1994, stadium:'Danie Craven Stadium',city:'Stellenbosch',       nickname:'Stellies' },
-  'Golden Arrows':     { est:1943, stadium:'Princess Magogo Stadium',city:'KwaMashu, Durban', nickname:'Abafana Bes'thende' },
-  'Siwelele FC':       { est:2013, stadium:'Danie Craven Stadium',city:'Cape Town',           nickname:'We Are Ready' },
-  'Richards Bay':      { est:1999, stadium:'Richards Bay Stadium',city:'Richards Bay',        nickname:'Umhlobo' },
-  'Chippa United':     { est:2010, stadium:'Nelson Mandela Bay Stadium',city:'Port Elizabeth', nickname:'The Chilli Boys' },
-  'Marumo Gallants':   { est:1931, stadium:'Peter Mokaba Stadium',city:'Polokwane',           nickname:'Dikwena' },
-  'Orbit College FC':  { est:2007, stadium:'Tlokwe Stadium',    city:'Potchefstroom',         nickname:'The Students' },
-  'Magesi FC':         { est:2011, stadium:'Peter Mokaba Stadium',city:'Polokwane',           nickname:'Matsena' }
-};
 
 // Real recent results + upcoming fixtures
 var REAL_FIXTURES = {
@@ -1853,153 +1764,152 @@ function showToast(msg, type) {
 }
 
 // ════════════════════════════════════════════════════
-//  FULL PSL PLAYER ROSTER — verified 2025/26 squads
-//  Stats reflect Betway Premiership GW22 (Mar 2026)
+//  FULL PSL PLAYER ROSTER — all 16 clubs
 // ════════════════════════════════════════════════════
 var PSL_ROSTER = [
-  // ORLANDO PIRATES (P22 W15 D2 L5 GF38 GA18)
-  { id:1001, club:'Orlando Pirates',   position:'GK',  display_name:'Sipho Chaine',          price:7.5,  goals:0,  assists:0, clean_sheets:11, yellow_cards:1, red_cards:0, apps:22, xg:0.0,  xa:0.0, total_points:98  },
-  { id:1002, club:'Orlando Pirates',   position:'DEF', display_name:'Thabiso Monyane',        price:5.5,  goals:0,  assists:3, clean_sheets:10, yellow_cards:3, red_cards:0, apps:21, xg:0.3,  xa:2.1, total_points:72  },
-  { id:1003, club:'Orlando Pirates',   position:'DEF', display_name:'Nkosinathi Sibisi',      price:5.5,  goals:3,  assists:1, clean_sheets:9,  yellow_cards:2, red_cards:0, apps:19, xg:1.8,  xa:0.5, total_points:80  },
-  { id:1004, club:'Orlando Pirates',   position:'DEF', display_name:'Olisa Ndah',             price:5.0,  goals:2,  assists:0, clean_sheets:9,  yellow_cards:5, red_cards:1, apps:18, xg:1.2,  xa:0.1, total_points:66  },
-  { id:1005, club:'Orlando Pirates',   position:'DEF', display_name:'Deano van Rooyen',       price:5.0,  goals:0,  assists:2, clean_sheets:8,  yellow_cards:2, red_cards:0, apps:17, xg:0.1,  xa:1.4, total_points:60  },
-  { id:1006, club:'Orlando Pirates',   position:'MID', display_name:'Innocent Maela',         price:6.0,  goals:2,  assists:5, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:22, xg:1.2,  xa:3.5, total_points:88  },
-  { id:1007, club:'Orlando Pirates',   position:'MID', display_name:'Thabang Monare',         price:5.5,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, apps:19, xg:1.3,  xa:2.1, total_points:60  },
-  { id:1008, club:'Orlando Pirates',   position:'MID', display_name:'Relebohile Mofokeng',    price:9.0,  goals:9,  assists:7, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:21, xg:7.2,  xa:5.4, total_points:132 },
-  { id:1009, club:'Orlando Pirates',   position:'MID', display_name:'Tshegofatso Mabasa',     price:7.5,  goals:4,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:3.5,  xa:1.6, total_points:68  },
-  { id:1010, club:'Orlando Pirates',   position:'FWD', display_name:'Zakhele Lepasa',         price:8.5,  goals:11, assists:4, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:9.4,  xa:2.8, total_points:128 },
-  { id:1011, club:'Orlando Pirates',   position:'FWD', display_name:'Monnapule Saleng',       price:7.5,  goals:7,  assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:5.8,  xa:3.7, total_points:104 },
-  // MAMELODI SUNDOWNS (P22 W14 D5 L3 GF42 GA17)
-  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Denis Onyango',          price:7.5,  goals:0,  assists:0, clean_sheets:12, yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:102 },
-  { id:2002, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ricardo Goss',           price:4.0,  goals:0,  assists:0, clean_sheets:2,  yellow_cards:0, red_cards:0, apps:2,  xg:0.0,  xa:0.0, total_points:18  },
-  { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Grant Kekana',           price:5.5,  goals:1,  assists:1, clean_sheets:10, yellow_cards:6, red_cards:0, apps:20, xg:0.5,  xa:0.6, total_points:72  },
-  { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Mothobi Mvala',          price:5.5,  goals:0,  assists:2, clean_sheets:11, yellow_cards:2, red_cards:0, apps:21, xg:0.2,  xa:1.3, total_points:76  },
-  { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Sifiso Hlanti',          price:5.0,  goals:0,  assists:4, clean_sheets:10, yellow_cards:3, red_cards:0, apps:18, xg:0.1,  xa:2.8, total_points:70  },
-  { id:2006, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',       price:5.0,  goals:2,  assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, apps:17, xg:1.3,  xa:0.2, total_points:66  },
-  { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Themba Zwane',           price:9.5,  goals:8,  assists:10,clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:6.1,  xa:7.8, total_points:146 },
-  { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Sphelele Mkhulise',      price:7.0,  goals:5,  assists:6, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:21, xg:3.8,  xa:4.9, total_points:104 },
-  { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',         price:8.5,  goals:6,  assists:8, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:4.8,  xa:6.2, total_points:124 },
-  { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Neo Maema',              price:6.5,  goals:4,  assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:19, xg:3.2,  xa:4.1, total_points:92  },
-  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',        price:11.5, goals:16, assists:6, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:22, xg:14.2, xa:4.8, total_points:174 },
-  { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Gaston Sirino',          price:7.5,  goals:5,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:4.1,  xa:3.0, total_points:80  },
-  // DURBAN CITY (P22 W11 D4 L7 GF29 GA22)
-  { id:5001, club:'Durban City',       position:'GK',  display_name:'Veli Mothwa',            price:6.5,  goals:0,  assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, apps:22, xg:0.0,  xa:0.0, total_points:82  },
-  { id:5002, club:'Durban City',       position:'DEF', display_name:'Sibonelo Mhlongo',       price:5.0,  goals:1,  assists:3, clean_sheets:8,  yellow_cards:2, red_cards:0, apps:21, xg:0.6,  xa:2.2, total_points:72  },
-  { id:5003, club:'Durban City',       position:'DEF', display_name:'Siyanda Xulu',           price:5.0,  goals:0,  assists:1, clean_sheets:7,  yellow_cards:4, red_cards:0, apps:20, xg:0.1,  xa:0.7, total_points:60  },
-  { id:5004, club:'Durban City',       position:'DEF', display_name:'Nduduzo Mabena',         price:4.5,  goals:0,  assists:2, clean_sheets:6,  yellow_cards:2, red_cards:0, apps:17, xg:0.2,  xa:1.3, total_points:52  },
-  { id:5005, club:'Durban City',       position:'MID', display_name:'Siyethemba Mnguni',      price:6.5,  goals:5,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:22, xg:4.0,  xa:3.2, total_points:90  },
-  { id:5006, club:'Durban City',       position:'MID', display_name:'Pule Mmodi',             price:6.0,  goals:3,  assists:5, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:2.5,  xa:3.8, total_points:78  },
-  { id:5007, club:'Durban City',       position:'FWD', display_name:'Bonginkosi Ntuli',       price:8.0,  goals:10, assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:22, xg:8.7,  xa:2.9, total_points:122 },
-  { id:5008, club:'Durban City',       position:'FWD', display_name:'Mxolisi Kunene',         price:6.0,  goals:5,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:4.2,  xa:1.5, total_points:72  },
-  // SEKHUKHUNE UNITED (P21 W9 D5 L7 GF25 GA24)
-  { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',        price:5.5,  goals:0,  assists:0, clean_sheets:7,  yellow_cards:1, red_cards:0, apps:21, xg:0.0,  xa:0.0, total_points:68  },
-  { id:4002, club:'Sekhukhune United', position:'DEF', display_name:'Given Msomi',            price:5.0,  goals:1,  assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:20, xg:0.5,  xa:0.6, total_points:60  },
-  { id:4003, club:'Sekhukhune United', position:'DEF', display_name:'Sibusiso Khumalo',       price:4.5,  goals:0,  assists:0, clean_sheets:5,  yellow_cards:5, red_cards:1, apps:18, xg:0.1,  xa:0.2, total_points:44  },
-  { id:4004, club:'Sekhukhune United', position:'DEF', display_name:'Nhlanhla Vilakazi',      price:4.5,  goals:0,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:17, xg:0.1,  xa:0.4, total_points:46  },
-  { id:4005, club:'Sekhukhune United', position:'MID', display_name:'Mxolisi Macuphu',        price:5.5,  goals:4,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:3.1,  xa:3.2, total_points:76  },
-  { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Phathutshedzo Nange',    price:5.5,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.7,  xa:2.3, total_points:60  },
-  { id:4007, club:'Sekhukhune United', position:'FWD', display_name:'Chibuike Ohizu',         price:7.5,  goals:9,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:7.8,  xa:1.5, total_points:108 },
-  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Elias Mokwana',          price:7.0,  goals:6,  assists:5, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:5.2,  xa:3.8, total_points:94  },
-  // KAIZER CHIEFS (P21 W9 D6 L6 GF27 GA23)
-  { id:3001, club:'Kaizer Chiefs',     position:'GK',  display_name:'Brandon Petersen',       price:6.5,  goals:0,  assists:0, clean_sheets:7,  yellow_cards:1, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:66  },
-  { id:3002, club:'Kaizer Chiefs',     position:'GK',  display_name:'Itumeleng Khune',        price:4.0,  goals:0,  assists:0, clean_sheets:1,  yellow_cards:0, red_cards:0, apps:2,  xg:0.0,  xa:0.0, total_points:12  },
-  { id:3003, club:'Kaizer Chiefs',     position:'DEF', display_name:'Edmilson Dove',          price:5.5,  goals:1,  assists:2, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:20, xg:0.4,  xa:1.5, total_points:64  },
-  { id:3004, club:'Kaizer Chiefs',     position:'DEF', display_name:'Dillan Solomons',        price:5.0,  goals:0,  assists:2, clean_sheets:5,  yellow_cards:5, red_cards:1, apps:19, xg:0.1,  xa:1.4, total_points:50  },
-  { id:3005, club:'Kaizer Chiefs',     position:'DEF', display_name:'Njabulo Blom',           price:5.0,  goals:0,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:18, xg:0.1,  xa:0.8, total_points:50  },
-  { id:3006, club:'Kaizer Chiefs',     position:'MID', display_name:'Yusuf Maart',            price:7.0,  goals:4,  assists:4, clean_sheets:0,  yellow_cards:4, red_cards:0, apps:20, xg:3.2,  xa:3.5, total_points:86  },
-  { id:3007, club:'Kaizer Chiefs',     position:'MID', display_name:'Samkelo Zwane',          price:5.5,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:1.7,  xa:1.8, total_points:56  },
-  { id:3008, club:'Kaizer Chiefs',     position:'MID', display_name:'Siyethemba Sithebe',     price:5.5,  goals:2,  assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:19, xg:1.5,  xa:3.1, total_points:66  },
-  { id:3009, club:'Kaizer Chiefs',     position:'FWD', display_name:'Ranga Chivaviro',        price:7.5,  goals:8,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:7.1,  xa:2.0, total_points:100 },
-  { id:3010, club:'Kaizer Chiefs',     position:'FWD', display_name:'Ashley du Preez',        price:7.0,  goals:6,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:5.3,  xa:2.4, total_points:86  },
-  { id:3011, club:'Kaizer Chiefs',     position:'FWD', display_name:'Christian Saile',        price:6.0,  goals:4,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:3.4,  xa:1.4, total_points:62  },
-  // AMAZULU (P21 W9 D3 L9 GF24 GA26)
-  { id:6001, club:'AmaZulu FC',        position:'GK',  display_name:'Siyabonga Mbatha',       price:5.5,  goals:0,  assists:0, clean_sheets:6,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:60  },
-  { id:6002, club:'AmaZulu FC',        position:'DEF', display_name:'Luvuyo Memela',          price:5.0,  goals:1,  assists:2, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:19, xg:0.7,  xa:1.5, total_points:58  },
-  { id:6003, club:'AmaZulu FC',        position:'DEF', display_name:'Buyani Sali',            price:4.5,  goals:0,  assists:1, clean_sheets:4,  yellow_cards:4, red_cards:0, apps:17, xg:0.1,  xa:0.6, total_points:44  },
-  { id:6004, club:'AmaZulu FC',        position:'MID', display_name:'Luvuyo Phewa',           price:6.0,  goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:3.1,  xa:2.3, total_points:74  },
-  { id:6005, club:'AmaZulu FC',        position:'MID', display_name:'Augustine Kwem',         price:5.5,  goals:3,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:2.3,  xa:2.4, total_points:64  },
-  { id:6006, club:'AmaZulu FC',        position:'FWD', display_name:'Tapelo Xoki',            price:7.5,  goals:8,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:7.0,  xa:2.1, total_points:100 },
-  { id:6007, club:'AmaZulu FC',        position:'FWD', display_name:'Sphesihle Maduna',       price:6.0,  goals:5,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:4.1,  xa:2.2, total_points:74  },
-  // POLOKWANE CITY (P22 W7 D7 L8 GF23 GA27)
-  { id:7001, club:'Polokwane City',    position:'GK',  display_name:'George Chukwu',          price:5.0,  goals:0,  assists:0, clean_sheets:6,  yellow_cards:0, red_cards:0, apps:22, xg:0.0,  xa:0.0, total_points:58  },
-  { id:7002, club:'Polokwane City',    position:'DEF', display_name:'Siyanda Zwane',          price:5.0,  goals:1,  assists:1, clean_sheets:5,  yellow_cards:3, red_cards:0, apps:20, xg:0.4,  xa:0.7, total_points:54  },
-  { id:7003, club:'Polokwane City',    position:'DEF', display_name:'Puleng Tlolane',         price:4.5,  goals:0,  assists:1, clean_sheets:4,  yellow_cards:4, red_cards:0, apps:18, xg:0.1,  xa:0.5, total_points:44  },
-  { id:7004, club:'Polokwane City',    position:'MID', display_name:'Happy Motlhafsi',        price:5.5,  goals:3,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:19, xg:2.4,  xa:2.6, total_points:66  },
-  { id:7005, club:'Polokwane City',    position:'MID', display_name:'Steven Pienaar Jr',      price:5.0,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:1.6,  xa:2.3, total_points:58  },
-  { id:7006, club:'Polokwane City',    position:'FWD', display_name:'Charlton Mashumba',      price:7.0,  goals:8,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:21, xg:7.0,  xa:2.0, total_points:96  },
-  { id:7007, club:'Polokwane City',    position:'FWD', display_name:'Rodrick Kabwe',          price:6.0,  goals:4,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:17, xg:3.5,  xa:2.1, total_points:66  },
-  // TS GALAXY (P23 W8 D3 L12 GF22 GA34)
-  { id:8001, club:'TS Galaxy',         position:'GK',  display_name:'Ethan Langenhoven',      price:4.5,  goals:0,  assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, apps:21, xg:0.0,  xa:0.0, total_points:40  },
-  { id:8002, club:'TS Galaxy',         position:'DEF', display_name:'Sibonelo Cele',          price:4.5,  goals:0,  assists:1, clean_sheets:3,  yellow_cards:4, red_cards:1, apps:19, xg:0.1,  xa:0.6, total_points:34  },
-  { id:8003, club:'TS Galaxy',         position:'DEF', display_name:'Sifiso Myeni',           price:4.5,  goals:0,  assists:0, clean_sheets:3,  yellow_cards:3, red_cards:0, apps:16, xg:0.1,  xa:0.2, total_points:30  },
-  { id:8004, club:'TS Galaxy',         position:'MID', display_name:'Wayde Lekay',            price:5.0,  goals:3,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:2.2,  xa:2.5, total_points:60  },
-  { id:8005, club:'TS Galaxy',         position:'MID', display_name:'Siyanda Msani',          price:5.0,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:1.6,  xa:1.8, total_points:50  },
-  { id:8006, club:'TS Galaxy',         position:'FWD', display_name:'Lindokuhle Mbatha',      price:6.0,  goals:6,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:5.3,  xa:2.0, total_points:78  },
-  { id:8007, club:'TS Galaxy',         position:'FWD', display_name:'Sifiso Mbatha',          price:5.5,  goals:4,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:16, xg:3.4,  xa:1.4, total_points:60  },
-  // STELLENBOSCH FC (P22 W7 D5 L10 GF24 GA30)
-  { id:9001, club:'Stellenbosch FC',   position:'GK',  display_name:'Lee Langeveldt',         price:5.0,  goals:0,  assists:0, clean_sheets:6,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:56  },
-  { id:9002, club:'Stellenbosch FC',   position:'DEF', display_name:'Fawaaz Basadien',        price:5.5,  goals:1,  assists:4, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:20, xg:0.6,  xa:2.9, total_points:70  },
-  { id:9003, club:'Stellenbosch FC',   position:'DEF', display_name:'Logan Langeveldt',       price:4.5,  goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:17, xg:0.1,  xa:0.7, total_points:44  },
-  { id:9004, club:'Stellenbosch FC',   position:'MID', display_name:'Iqraam Rayners',         price:8.0,  goals:8,  assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:6.8,  xa:3.9, total_points:108 },
-  { id:9005, club:'Stellenbosch FC',   position:'MID', display_name:'Junior Mendieta',        price:6.0,  goals:3,  assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.6,  xa:3.8, total_points:76  },
-  { id:9006, club:'Stellenbosch FC',   position:'FWD', display_name:'Evans Rusike',           price:6.5,  goals:6,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:18, xg:5.1,  xa:2.0, total_points:80  },
-  { id:9007, club:'Stellenbosch FC',   position:'FWD', display_name:'Robyn Johannes',         price:5.5,  goals:4,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:16, xg:3.3,  xa:2.2, total_points:64  },
-  // RICHARDS BAY (P22 W5 D8 L9 GF20 GA28)
-  { id:12001, club:'Richards Bay',     position:'GK',  display_name:'Ayanda Mtshali',         price:5.0,  goals:0,  assists:0, clean_sheets:5,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:50  },
-  { id:12002, club:'Richards Bay',     position:'DEF', display_name:'Lungelo Ngcongca',       price:4.5,  goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:19, xg:0.1,  xa:0.6, total_points:42  },
-  { id:12003, club:'Richards Bay',     position:'DEF', display_name:'Thamsanqa Mkhize',       price:4.5,  goals:0,  assists:0, clean_sheets:4,  yellow_cards:2, red_cards:0, apps:17, xg:0.1,  xa:0.2, total_points:38  },
-  { id:12004, club:'Richards Bay',     position:'MID', display_name:'Khethukuthula Ndlovu',   price:5.0,  goals:3,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.3,  xa:2.5, total_points:62  },
-  { id:12005, club:'Richards Bay',     position:'MID', display_name:'Sibonelo Mhlongo',       price:5.5,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:2.4,  xa:1.7, total_points:60  },
-  { id:12006, club:'Richards Bay',     position:'FWD', display_name:'Knox Mutizwa',           price:7.0,  goals:7,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:6.1,  xa:2.3, total_points:90  },
-  { id:12007, club:'Richards Bay',     position:'FWD', display_name:'Lunathi Mthethwa',       price:5.5,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:16, xg:2.6,  xa:1.4, total_points:52  },
-  // GOLDEN ARROWS (P22 W6 D3 L13 GF19 GA33)
-  { id:10001, club:'Golden Arrows',    position:'GK',  display_name:'Maximilian Mbaeva',      price:4.5,  goals:0,  assists:0, clean_sheets:4,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:40  },
-  { id:10002, club:'Golden Arrows',    position:'DEF', display_name:'Michael Gumede',         price:4.5,  goals:0,  assists:1, clean_sheets:3,  yellow_cards:3, red_cards:0, apps:19, xg:0.1,  xa:0.6, total_points:36  },
-  { id:10003, club:'Golden Arrows',    position:'DEF', display_name:'Pule Ekstein',           price:4.5,  goals:0,  assists:1, clean_sheets:3,  yellow_cards:2, red_cards:0, apps:17, xg:0.1,  xa:0.5, total_points:34  },
-  { id:10004, club:'Golden Arrows',    position:'MID', display_name:'Nduduzo Sibiya',         price:5.5,  goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:3.0,  xa:2.5, total_points:70  },
-  { id:10005, club:'Golden Arrows',    position:'MID', display_name:'Siyanda Mthethwa',       price:5.0,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.5,  xa:1.7, total_points:50  },
-  { id:10006, club:'Golden Arrows',    position:'FWD', display_name:'Nhlanhla Mgaga',         price:6.5,  goals:7,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:6.0,  xa:1.6, total_points:88  },
-  { id:10007, club:'Golden Arrows',    position:'FWD', display_name:'Thokozani Sekotlong',    price:5.5,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:2.6,  xa:1.5, total_points:54  },
-  // SIWELELE FC (P22 W5 D7 L10 GF18 GA29)
-  { id:11001, club:'Siwelele FC',      position:'GK',  display_name:'Moeneeb Josephs',        price:5.0,  goals:0,  assists:0, clean_sheets:5,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:48  },
-  { id:11002, club:'Siwelele FC',      position:'DEF', display_name:'Bongani Khumalo',        price:4.5,  goals:1,  assists:1, clean_sheets:4,  yellow_cards:2, red_cards:0, apps:19, xg:0.5,  xa:0.7, total_points:48  },
-  { id:11003, club:'Siwelele FC',      position:'DEF', display_name:'Sibusiso Vilakazi',      price:4.5,  goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:17, xg:0.1,  xa:0.5, total_points:42  },
-  { id:11004, club:'Siwelele FC',      position:'MID', display_name:'Thabiso Kutumela',       price:5.5,  goals:3,  assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:2.5,  xa:3.2, total_points:68  },
-  { id:11005, club:'Siwelele FC',      position:'MID', display_name:'Thabo Nodada',           price:5.0,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:1.6,  xa:2.4, total_points:56  },
-  { id:11006, club:'Siwelele FC',      position:'FWD', display_name:'Mwape Musonda',          price:6.5,  goals:6,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:5.2,  xa:1.5, total_points:78  },
-  { id:11007, club:'Siwelele FC',      position:'FWD', display_name:'Bongi Ntuli',            price:6.0,  goals:4,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:17, xg:3.4,  xa:1.4, total_points:60  },
-  // CHIPPA UNITED (P21 W4 D7 L10 GF16 GA28)
-  { id:13001, club:'Chippa United',    position:'GK',  display_name:'Sage Stephens',          price:4.5,  goals:0,  assists:0, clean_sheets:4,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:40  },
-  { id:13002, club:'Chippa United',    position:'DEF', display_name:'Bongani Zungu',          price:4.5,  goals:0,  assists:1, clean_sheets:3,  yellow_cards:5, red_cards:0, apps:18, xg:0.1,  xa:0.6, total_points:34  },
-  { id:13003, club:'Chippa United',    position:'DEF', display_name:'Ayanda Nkosi',           price:4.5,  goals:0,  assists:0, clean_sheets:3,  yellow_cards:3, red_cards:1, apps:16, xg:0.1,  xa:0.1, total_points:26  },
-  { id:13004, club:'Chippa United',    position:'MID', display_name:'Keenan Phillips',        price:5.5,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:2.3,  xa:1.7, total_points:58  },
-  { id:13005, club:'Chippa United',    position:'MID', display_name:'Isaac Dhako',            price:5.0,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.6,  xa:2.2, total_points:54  },
-  { id:13006, club:'Chippa United',    position:'FWD', display_name:'Andile Mbenyane',        price:6.0,  goals:5,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:4.3,  xa:1.5, total_points:68  },
-  { id:13007, club:'Chippa United',    position:'FWD', display_name:'Marcus Wareham',         price:5.5,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:15, xg:2.6,  xa:1.3, total_points:50  },
-  // ORBIT COLLEGE FC (P23 W5 D3 L15 GF18 GA38)
-  { id:15001, club:'Orbit College FC', position:'GK',  display_name:'Nkosi Mdlalose',         price:4.5,  goals:0,  assists:0, clean_sheets:3,  yellow_cards:1, red_cards:0, apps:21, xg:0.0,  xa:0.0, total_points:32  },
-  { id:15002, club:'Orbit College FC', position:'DEF', display_name:'Bhekie Cele',            price:4.0,  goals:0,  assists:1, clean_sheets:2,  yellow_cards:3, red_cards:0, apps:19, xg:0.1,  xa:0.5, total_points:28  },
-  { id:15003, club:'Orbit College FC', position:'DEF', display_name:'Siyabonga Nomvethe',     price:4.0,  goals:0,  assists:0, clean_sheets:2,  yellow_cards:2, red_cards:0, apps:17, xg:0.1,  xa:0.1, total_points:24  },
-  { id:15004, club:'Orbit College FC', position:'MID', display_name:'Mpho Kgaswane',          price:5.0,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:19, xg:1.5,  xa:1.6, total_points:48  },
-  { id:15005, club:'Orbit College FC', position:'MID', display_name:'Aubrey Modiba',          price:5.0,  goals:2,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:1.4,  xa:2.2, total_points:52  },
-  { id:15006, club:'Orbit College FC', position:'FWD', display_name:'Sipho Moeti',            price:5.5,  goals:5,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:4.2,  xa:1.4, total_points:64  },
-  { id:15007, club:'Orbit College FC', position:'FWD', display_name:'Lethiwe Mthembu',        price:5.0,  goals:4,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:16, xg:3.3,  xa:1.3, total_points:58  },
-  // MARUMO GALLANTS (P23 W3 D6 L14 GF15 GA37)
-  { id:14001, club:'Marumo Gallants',  position:'GK',  display_name:'Washington Arubi',       price:4.5,  goals:0,  assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, apps:21, xg:0.0,  xa:0.0, total_points:30  },
-  { id:14002, club:'Marumo Gallants',  position:'DEF', display_name:'Katlego Mashele',        price:4.0,  goals:0,  assists:0, clean_sheets:2,  yellow_cards:5, red_cards:1, apps:19, xg:0.1,  xa:0.1, total_points:20  },
-  { id:14003, club:'Marumo Gallants',  position:'DEF', display_name:'Tshepiso Mako',          price:4.0,  goals:0,  assists:0, clean_sheets:2,  yellow_cards:3, red_cards:0, apps:17, xg:0.0,  xa:0.1, total_points:22  },
-  { id:14004, club:'Marumo Gallants',  position:'MID', display_name:'Goodman Mosele',         price:5.0,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.6,  xa:1.7, total_points:46  },
-  { id:14005, club:'Marumo Gallants',  position:'MID', display_name:'Lehlohonolo Majoro',     price:4.5,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:1.4,  xa:1.5, total_points:42  },
-  { id:14006, club:'Marumo Gallants',  position:'FWD', display_name:'Motebang Sera',          price:5.5,  goals:5,  assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:20, xg:4.2,  xa:0.8, total_points:62  },
-  { id:14007, club:'Marumo Gallants',  position:'FWD', display_name:'Tshwarelo Bereng',       price:5.0,  goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:2.5,  xa:1.4, total_points:48  },
-  // MAGESI FC (P20 W2 D6 L12 GF14 GA35)
-  { id:16001, club:'Magesi FC',        position:'GK',  display_name:'Clinton Larsen',         price:4.0,  goals:0,  assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, apps:18, xg:0.0,  xa:0.0, total_points:28  },
-  { id:16002, club:'Magesi FC',        position:'DEF', display_name:'Dillon Solomons',        price:4.0,  goals:0,  assists:0, clean_sheets:2,  yellow_cards:3, red_cards:0, apps:17, xg:0.0,  xa:0.1, total_points:20  },
-  { id:16003, club:'Magesi FC',        position:'DEF', display_name:'Sibusiso Hadebe',        price:4.0,  goals:0,  assists:1, clean_sheets:2,  yellow_cards:2, red_cards:0, apps:16, xg:0.1,  xa:0.4, total_points:24  },
-  { id:16004, club:'Magesi FC',        position:'MID', display_name:'Elmo Kambindu',          price:5.0,  goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.4,  xa:1.5, total_points:46  },
-  { id:16005, club:'Magesi FC',        position:'MID', display_name:'Rowan Human',            price:4.5,  goals:1,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:0.8,  xa:1.4, total_points:36  },
-  { id:16006, club:'Magesi FC',        position:'FWD', display_name:'Victor Letsoalo',        price:6.0,  goals:5,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:18, xg:4.3,  xa:1.5, total_points:66  },
-  { id:16007, club:'Magesi FC',        position:'FWD', display_name:'Thabo Rakhale',          price:5.5,  goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:3.2,  xa:2.1, total_points:58  }
+  // ORLANDO PIRATES
+  { id:1001, club:'Orlando Pirates',   position:'GK',  display_name:'Sipho Chaine',           price:7.5, goals:0,  assists:0, clean_sheets:8,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:82 },
+  { id:1002, club:'Orlando Pirates',   position:'DEF', display_name:'Thabiso Monyane',         price:5.5, goals:1,  assists:2, clean_sheets:8,  yellow_cards:3, red_cards:0, apps:20, xg:0.5,  xa:1.2, total_points:74 },
+  { id:1003, club:'Orlando Pirates',   position:'DEF', display_name:'Nkosinathi Sibisi',       price:5.0, goals:2,  assists:1, clean_sheets:7,  yellow_cards:2, red_cards:0, apps:18, xg:1.1,  xa:0.6, total_points:68 },
+  { id:1004, club:'Orlando Pirates',   position:'DEF', display_name:'Olisa Ndah',              price:5.0, goals:1,  assists:0, clean_sheets:7,  yellow_cards:4, red_cards:1, apps:17, xg:0.7,  xa:0.2, total_points:58 },
+  { id:1005, club:'Orlando Pirates',   position:'DEF', display_name:'Deano van Rooyen',        price:5.0, goals:0,  assists:1, clean_sheets:6,  yellow_cards:2, red_cards:0, apps:16, xg:0.2,  xa:0.8, total_points:55 },
+  { id:1006, club:'Orlando Pirates',   position:'MID', display_name:'Innocent Maela',          price:6.0, goals:1,  assists:4, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:20, xg:0.8,  xa:2.5, total_points:78 },
+  { id:1007, club:'Orlando Pirates',   position:'MID', display_name:'Thabang Monare',          price:5.5, goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.3,  xa:1.8, total_points:62 },
+  { id:1008, club:'Orlando Pirates',   position:'MID', display_name:'Relebohile Mofokeng',     price:8.5, goals:8,  assists:5, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:6.2,  xa:4.1, total_points:118 },
+  { id:1009, club:'Orlando Pirates',   position:'MID', display_name:'Tshegofatso Mabasa',      price:7.5, goals:5,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:4.5,  xa:2.2, total_points:82 },
+  { id:1010, club:'Orlando Pirates',   position:'FWD', display_name:'Zakhele Lepasa',          price:8.0, goals:9,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:7.8,  xa:2.1, total_points:109 },
+  { id:1011, club:'Orlando Pirates',   position:'FWD', display_name:'Monnapule Saleng',        price:7.0, goals:6,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:5.2,  xa:3.0, total_points:92 },
+  // MAMELODI SUNDOWNS
+  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Denis Onyango',           price:7.0, goals:0,  assists:0, clean_sheets:9,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:88 },
+  { id:2002, club:'Mamelodi Sundowns', position:'GK',  display_name:'Kennedy Mweene',          price:4.0, goals:0,  assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, apps:5,  xg:0.0,  xa:0.0, total_points:30 },
+  { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Grant Kekana',            price:5.5, goals:1,  assists:1, clean_sheets:8,  yellow_cards:5, red_cards:0, apps:18, xg:0.6,  xa:0.7, total_points:68 },
+  { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Mothobi Mvala',           price:5.5, goals:0,  assists:2, clean_sheets:9,  yellow_cards:2, red_cards:0, apps:19, xg:0.3,  xa:1.4, total_points:72 },
+  { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Sifiso Hlanti',           price:5.0, goals:0,  assists:3, clean_sheets:8,  yellow_cards:3, red_cards:0, apps:17, xg:0.2,  xa:2.0, total_points:65 },
+  { id:2006, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',        price:5.0, goals:2,  assists:0, clean_sheets:7,  yellow_cards:1, red_cards:0, apps:16, xg:1.4,  xa:0.3, total_points:62 },
+  { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Themba Zwane',            price:9.0, goals:7,  assists:8, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:5.5,  xa:6.2, total_points:128 },
+  { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Sphelele Mkhulise',       price:6.5, goals:4,  assists:5, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:3.2,  xa:4.0, total_points:95 },
+  { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',          price:8.0, goals:5,  assists:6, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:4.1,  xa:5.0, total_points:106 },
+  { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Neo Maema',               price:6.0, goals:3,  assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:2.8,  xa:3.5, total_points:82 },
+  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',         price:11.5,goals:14, assists:5, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:20, xg:12.5, xa:4.2, total_points:158 },
+  { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Gaston Sirino',           price:7.5, goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:3.8,  xa:2.5, total_points:72 },
+  // KAIZER CHIEFS
+  { id:3001, club:'Kaizer Chiefs',     position:'GK',  display_name:'Brandon Petersen',        price:6.5, goals:0,  assists:0, clean_sheets:6,  yellow_cards:1, red_cards:0, apps:17, xg:0.0,  xa:0.0, total_points:64 },
+  { id:3002, club:'Kaizer Chiefs',     position:'GK',  display_name:'Itumeleng Khune',         price:4.5, goals:0,  assists:0, clean_sheets:2,  yellow_cards:0, red_cards:0, apps:3,  xg:0.0,  xa:0.0, total_points:20 },
+  { id:3003, club:'Kaizer Chiefs',     position:'DEF', display_name:'Edmilson Dove',           price:5.5, goals:1,  assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:19, xg:0.5,  xa:0.8, total_points:62 },
+  { id:3004, club:'Kaizer Chiefs',     position:'DEF', display_name:'Dillan Solomons',         price:5.0, goals:0,  assists:2, clean_sheets:5,  yellow_cards:4, red_cards:1, apps:18, xg:0.1,  xa:1.5, total_points:52 },
+  { id:3005, club:'Kaizer Chiefs',     position:'DEF', display_name:'Njabulo Blom',            price:5.0, goals:0,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:17, xg:0.2,  xa:0.9, total_points:50 },
+  { id:3006, club:'Kaizer Chiefs',     position:'MID', display_name:'Yusuf Maart',             price:6.5, goals:3,  assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, apps:19, xg:2.5,  xa:2.8, total_points:76 },
+  { id:3007, club:'Kaizer Chiefs',     position:'MID', display_name:'Samkelo Zwane',           price:5.5, goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:1.8,  xa:1.9, total_points:60 },
+  { id:3008, club:'Kaizer Chiefs',     position:'MID', display_name:'Siyethemba Sithebe',      price:5.5, goals:1,  assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:0.9,  xa:3.2, total_points:62 },
+  { id:3009, club:'Kaizer Chiefs',     position:'FWD', display_name:'Ranga Chivaviro',         price:7.5, goals:7,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:6.5,  xa:1.6, total_points:92 },
+  { id:3010, club:'Kaizer Chiefs',     position:'FWD', display_name:'Ashley du Preez',         price:7.0, goals:5,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:18, xg:4.8,  xa:2.5, total_points:82 },
+  { id:3011, club:'Kaizer Chiefs',     position:'FWD', display_name:'Christian Saile',         price:6.0, goals:3,  assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:2.9,  xa:0.8, total_points:52 },
+  // SEKHUKHUNE UNITED
+  { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',         price:5.5, goals:0,  assists:0, clean_sheets:7,  yellow_cards:1, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:70 },
+  { id:4002, club:'Sekhukhune United', position:'DEF', display_name:'Given Msomi',             price:5.0, goals:1,  assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:19, xg:0.6,  xa:0.7, total_points:62 },
+  { id:4003, club:'Sekhukhune United', position:'DEF', display_name:'Sibusiso Khumalo',        price:4.5, goals:0,  assists:0, clean_sheets:5,  yellow_cards:4, red_cards:1, apps:17, xg:0.1,  xa:0.3, total_points:44 },
+  { id:4004, club:'Sekhukhune United', position:'DEF', display_name:'Nhlanhla Vilakazi',       price:4.5, goals:0,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:16, xg:0.1,  xa:0.5, total_points:46 },
+  { id:4005, club:'Sekhukhune United', position:'MID', display_name:'Mxolisi Macuphu',         price:5.5, goals:3,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.5,  xa:3.1, total_points:72 },
+  { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Phathutshedzo Nange',     price:5.5, goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.8,  xa:2.4, total_points:62 },
+  { id:4007, club:'Sekhukhune United', position:'FWD', display_name:'Chibuike Ohizu',          price:7.0, goals:8,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:7.2,  xa:1.7, total_points:98 },
+  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Elias Mokwana',           price:6.5, goals:5,  assists:4, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:18, xg:4.5,  xa:3.2, total_points:85 },
+  // DURBAN CITY
+  { id:5001, club:'Durban City',       position:'GK',  display_name:'Veli Mothwa',             price:6.0, goals:0,  assists:0, clean_sheets:8,  yellow_cards:1, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:76 },
+  { id:5002, club:'Durban City',       position:'DEF', display_name:'Sibonelo Mhlongo',        price:5.0, goals:1,  assists:2, clean_sheets:7,  yellow_cards:2, red_cards:0, apps:19, xg:0.7,  xa:1.5, total_points:66 },
+  { id:5003, club:'Durban City',       position:'DEF', display_name:'Siyanda Xulu',            price:5.0, goals:0,  assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:18, xg:0.2,  xa:0.8, total_points:58 },
+  { id:5004, club:'Durban City',       position:'DEF', display_name:'Nduduzo Mabena',          price:4.5, goals:0,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:15, xg:0.1,  xa:0.7, total_points:46 },
+  { id:5005, club:'Durban City',       position:'MID', display_name:'Siyethemba Mnguni',       price:6.0, goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:3.2,  xa:2.5, total_points:78 },
+  { id:5006, club:'Durban City',       position:'MID', display_name:'Pule Mmodi',              price:5.5, goals:2,  assists:4, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:17, xg:1.9,  xa:3.0, total_points:68 },
+  { id:5007, club:'Durban City',       position:'FWD', display_name:'Bonginkosi Ntuli',        price:7.5, goals:9,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:8.1,  xa:2.2, total_points:108 },
+  { id:5008, club:'Durban City',       position:'FWD', display_name:'Mxolisi Kunene',          price:6.0, goals:4,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:16, xg:3.8,  xa:1.6, total_points:64 },
+  // AMAZULU
+  { id:6001, club:'AmaZulu FC',        position:'GK',  display_name:'Siyabonga Mbatha',        price:5.5, goals:0,  assists:0, clean_sheets:6,  yellow_cards:0, red_cards:0, apps:18, xg:0.0,  xa:0.0, total_points:62 },
+  { id:6002, club:'AmaZulu FC',        position:'DEF', display_name:'Luvuyo Memela',           price:5.0, goals:1,  assists:1, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:18, xg:0.8,  xa:0.9, total_points:58 },
+  { id:6003, club:'AmaZulu FC',        position:'DEF', display_name:'Buyani Sali',             price:4.5, goals:0,  assists:1, clean_sheets:5,  yellow_cards:3, red_cards:0, apps:17, xg:0.2,  xa:0.7, total_points:50 },
+  { id:6004, club:'AmaZulu FC',        position:'MID', display_name:'Luvuyo Phewa',            price:6.0, goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:3.2,  xa:2.4, total_points:74 },
+  { id:6005, club:'AmaZulu FC',        position:'MID', display_name:'Augustine Kwem',          price:5.5, goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:16, xg:1.8,  xa:2.3, total_points:60 },
+  { id:6006, club:'AmaZulu FC',        position:'FWD', display_name:'Tapelo Xoki',             price:7.0, goals:7,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:18, xg:6.3,  xa:1.8, total_points:90 },
+  { id:6007, club:'AmaZulu FC',        position:'FWD', display_name:'Sphesihle Maduna',        price:6.0, goals:4,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:3.5,  xa:2.4, total_points:70 },
+  // POLOKWANE CITY
+  { id:7001, club:'Polokwane City',    position:'GK',  display_name:'George Chukwu',           price:5.5, goals:0,  assists:0, clean_sheets:7,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:68 },
+  { id:7002, club:'Polokwane City',    position:'DEF', display_name:'Siyanda Zwane',           price:5.0, goals:1,  assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, apps:19, xg:0.5,  xa:0.8, total_points:60 },
+  { id:7003, club:'Polokwane City',    position:'DEF', display_name:'Puleng Tlolane',          price:4.5, goals:0,  assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, apps:17, xg:0.2,  xa:0.6, total_points:50 },
+  { id:7004, club:'Polokwane City',    position:'MID', display_name:'Steven Pienaar Jr',       price:5.5, goals:3,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.5,  xa:2.6, total_points:68 },
+  { id:7005, club:'Polokwane City',    position:'MID', display_name:'Happy Motlhafsi',         price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.7,  xa:1.8, total_points:56 },
+  { id:7006, club:'Polokwane City',    position:'FWD', display_name:'Charlton Mashumba',       price:7.0, goals:8,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:20, xg:7.2,  xa:1.6, total_points:96 },
+  { id:7007, club:'Polokwane City',    position:'FWD', display_name:'Rodrick Kabwe',           price:6.0, goals:4,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:16, xg:3.7,  xa:2.4, total_points:70 },
+  // TS GALAXY
+  { id:8001, club:'TS Galaxy',         position:'GK',  display_name:'Ethan Langenhoven',       price:5.0, goals:0,  assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:44 },
+  { id:8002, club:'TS Galaxy',         position:'DEF', display_name:'Sibonelo Cele',           price:4.5, goals:0,  assists:1, clean_sheets:3,  yellow_cards:3, red_cards:1, apps:18, xg:0.1,  xa:0.7, total_points:38 },
+  { id:8003, club:'TS Galaxy',         position:'DEF', display_name:'Sifiso Myeni',            price:4.5, goals:0,  assists:0, clean_sheets:3,  yellow_cards:2, red_cards:0, apps:15, xg:0.1,  xa:0.3, total_points:34 },
+  { id:8004, club:'TS Galaxy',         position:'MID', display_name:'Wayde Lekay',             price:5.0, goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.5,  xa:2.4, total_points:56 },
+  { id:8005, club:'TS Galaxy',         position:'MID', display_name:'Siyanda Msani',           price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:1.7,  xa:1.9, total_points:52 },
+  { id:8006, club:'TS Galaxy',         position:'FWD', display_name:'Lindokuhle Mbatha',       price:6.0, goals:5,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:4.8,  xa:1.7, total_points:72 },
+  { id:8007, club:'TS Galaxy',         position:'FWD', display_name:'Sifiso Mbatha',           price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:15, xg:2.9,  xa:1.5, total_points:58 },
+  // STELLENBOSCH FC
+  { id:9001, club:'Stellenbosch FC',   position:'GK',  display_name:'Lee Langeveldt',          price:5.5, goals:0,  assists:0, clean_sheets:6,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:62 },
+  { id:9002, club:'Stellenbosch FC',   position:'DEF', display_name:'Fawaaz Basadien',         price:5.5, goals:1,  assists:3, clean_sheets:5,  yellow_cards:2, red_cards:0, apps:19, xg:0.7,  xa:2.3, total_points:68 },
+  { id:9003, club:'Stellenbosch FC',   position:'DEF', display_name:'Logan Langeveldt',        price:4.5, goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:16, xg:0.2,  xa:0.8, total_points:46 },
+  { id:9004, club:'Stellenbosch FC',   position:'MID', display_name:'Iqraam Rayners',          price:7.5, goals:7,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:6.1,  xa:3.5, total_points:98 },
+  { id:9005, club:'Stellenbosch FC',   position:'MID', display_name:'Junior Mendieta',         price:6.0, goals:3,  assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:2.7,  xa:3.2, total_points:72 },
+  { id:9006, club:'Stellenbosch FC',   position:'FWD', display_name:'Evans Rusike',            price:6.5, goals:5,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:17, xg:4.6,  xa:1.8, total_points:74 },
+  { id:9007, club:'Stellenbosch FC',   position:'FWD', display_name:'Robyn Johannes',          price:5.5, goals:3,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:15, xg:2.8,  xa:2.4, total_points:62 },
+  // GOLDEN ARROWS
+  { id:10001, club:'Golden Arrows',    position:'GK',  display_name:'Maximilian Mbaeva',       price:5.0, goals:0,  assists:0, clean_sheets:5,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:52 },
+  { id:10002, club:'Golden Arrows',    position:'DEF', display_name:'Michael Gumede',          price:4.5, goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:18, xg:0.2,  xa:0.7, total_points:44 },
+  { id:10003, club:'Golden Arrows',    position:'DEF', display_name:'Pule Ekstein',            price:4.5, goals:0,  assists:1, clean_sheets:4,  yellow_cards:2, red_cards:0, apps:16, xg:0.1,  xa:0.6, total_points:42 },
+  { id:10004, club:'Golden Arrows',    position:'MID', display_name:'Nduduzo Sibiya',          price:5.5, goals:3,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:2.4,  xa:2.6, total_points:66 },
+  { id:10005, club:'Golden Arrows',    position:'MID', display_name:'Siyanda Mthethwa',        price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.6,  xa:1.8, total_points:54 },
+  { id:10006, club:'Golden Arrows',    position:'FWD', display_name:'Nhlanhla Mgaga',          price:6.5, goals:6,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:5.5,  xa:1.7, total_points:82 },
+  { id:10007, club:'Golden Arrows',    position:'FWD', display_name:'Thokozani Sekotlong',     price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:2.8,  xa:1.6, total_points:56 },
+  // SIWELELE FC
+  { id:11001, club:'Siwelele FC',      position:'GK',  display_name:'Moeneeb Josephs',         price:5.0, goals:0,  assists:0, clean_sheets:5,  yellow_cards:0, red_cards:0, apps:18, xg:0.0,  xa:0.0, total_points:52 },
+  { id:11002, club:'Siwelele FC',      position:'DEF', display_name:'Bongani Khumalo',         price:5.0, goals:1,  assists:1, clean_sheets:4,  yellow_cards:2, red_cards:0, apps:18, xg:0.6,  xa:0.8, total_points:52 },
+  { id:11003, club:'Siwelele FC',      position:'DEF', display_name:'Sibusiso Vilakazi',       price:4.5, goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:16, xg:0.2,  xa:0.6, total_points:44 },
+  { id:11004, club:'Siwelele FC',      position:'MID', display_name:'Thabiso Kutumela',        price:5.5, goals:2,  assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.8,  xa:3.0, total_points:64 },
+  { id:11005, club:'Siwelele FC',      position:'MID', display_name:'Sibusiso Khumalo',        price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:16, xg:1.5,  xa:1.8, total_points:54 },
+  { id:11006, club:'Siwelele FC',      position:'FWD', display_name:'Mwape Musonda',           price:6.5, goals:6,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:5.5,  xa:1.6, total_points:80 },
+  { id:11007, club:'Siwelele FC',      position:'FWD', display_name:'Bongi Ntuli',             price:6.0, goals:4,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:16, xg:3.8,  xa:1.6, total_points:64 },
+  // RICHARDS BAY
+  { id:12001, club:'Richards Bay',     position:'GK',  display_name:'Ayanda Mtshali',          price:5.0, goals:0,  assists:0, clean_sheets:5,  yellow_cards:0, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:52 },
+  { id:12002, club:'Richards Bay',     position:'DEF', display_name:'Lungelo Ngcongca',        price:4.5, goals:0,  assists:1, clean_sheets:4,  yellow_cards:3, red_cards:0, apps:18, xg:0.1,  xa:0.7, total_points:44 },
+  { id:12003, club:'Richards Bay',     position:'DEF', display_name:'Thamsanqa Mkhize',        price:4.5, goals:0,  assists:0, clean_sheets:4,  yellow_cards:2, red_cards:0, apps:16, xg:0.1,  xa:0.3, total_points:40 },
+  { id:12004, club:'Richards Bay',     position:'MID', display_name:'Khethukuthula Ndlovu',    price:5.0, goals:2,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:1.7,  xa:2.4, total_points:58 },
+  { id:12005, club:'Richards Bay',     position:'MID', display_name:'Sibonelo Mhlongo',        price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.5,  xa:1.8, total_points:62 },
+  { id:12006, club:'Richards Bay',     position:'FWD', display_name:'Knox Mutizwa',            price:6.5, goals:6,  assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:19, xg:5.6,  xa:2.4, total_points:82 },
+  { id:12007, club:'Richards Bay',     position:'FWD', display_name:'Lunathi Mthethwa',        price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:15, xg:2.8,  xa:1.5, total_points:54 },
+  // CHIPPA UNITED
+  { id:13001, club:'Chippa United',    position:'GK',  display_name:'Sage Stephens',           price:5.0, goals:0,  assists:0, clean_sheets:4,  yellow_cards:0, red_cards:0, apps:18, xg:0.0,  xa:0.0, total_points:44 },
+  { id:13002, club:'Chippa United',    position:'DEF', display_name:'Bongani Zungu',           price:5.0, goals:0,  assists:1, clean_sheets:3,  yellow_cards:4, red_cards:0, apps:17, xg:0.1,  xa:0.7, total_points:38 },
+  { id:13003, club:'Chippa United',    position:'DEF', display_name:'Ayanda Nkosi',            price:4.5, goals:0,  assists:0, clean_sheets:3,  yellow_cards:3, red_cards:1, apps:15, xg:0.1,  xa:0.2, total_points:30 },
+  { id:13004, club:'Chippa United',    position:'MID', display_name:'Keenan Phillips',         price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:2.4,  xa:1.8, total_points:60 },
+  { id:13005, club:'Chippa United',    position:'MID', display_name:'Isaac Dopposite',         price:5.0, goals:2,  assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:16, xg:1.7,  xa:2.3, total_points:56 },
+  { id:13006, club:'Chippa United',    position:'FWD', display_name:'Andile Mbenyane',         price:6.0, goals:5,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:18, xg:4.5,  xa:1.7, total_points:72 },
+  { id:13007, club:'Chippa United',    position:'FWD', display_name:'Marcus Wareham',          price:5.5, goals:3,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:14, xg:2.8,  xa:1.4, total_points:52 },
+  // MARUMO GALLANTS
+  { id:14001, club:'Marumo Gallants',  position:'GK',  display_name:'Washington Arubi',        price:5.0, goals:0,  assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, apps:20, xg:0.0,  xa:0.0, total_points:32 },
+  { id:14002, club:'Marumo Gallants',  position:'DEF', display_name:'Ndabayithethwa Ndlondlo', price:4.5, goals:0,  assists:1, clean_sheets:2,  yellow_cards:4, red_cards:1, apps:18, xg:0.1,  xa:0.7, total_points:26 },
+  { id:14003, club:'Marumo Gallants',  position:'DEF', display_name:'Tshepiso Mako',           price:4.5, goals:0,  assists:0, clean_sheets:2,  yellow_cards:3, red_cards:0, apps:16, xg:0.1,  xa:0.2, total_points:24 },
+  { id:14004, club:'Marumo Gallants',  position:'MID', display_name:'Goodman Mosele',          price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.7,  xa:1.8, total_points:48 },
+  { id:14005, club:'Marumo Gallants',  position:'MID', display_name:'Lehlohonolo Majoro',      price:4.5, goals:1,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:14, xg:1.0,  xa:1.6, total_points:38 },
+  { id:14006, club:'Marumo Gallants',  position:'FWD', display_name:'Motebang Sera',           price:5.5, goals:4,  assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:19, xg:3.6,  xa:0.9, total_points:56 },
+  { id:14007, club:'Marumo Gallants',  position:'FWD', display_name:'Tshwarelo Bereng',        price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:1.9,  xa:1.5, total_points:44 },
+  // ORBIT COLLEGE FC
+  { id:15001, club:'Orbit College FC', position:'GK',  display_name:'Nkosi Mdlalose',          price:5.0, goals:0,  assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, apps:19, xg:0.0,  xa:0.0, total_points:42 },
+  { id:15002, club:'Orbit College FC', position:'DEF', display_name:'Bhekie Cele',             price:4.5, goals:0,  assists:1, clean_sheets:3,  yellow_cards:3, red_cards:0, apps:18, xg:0.1,  xa:0.6, total_points:36 },
+  { id:15003, club:'Orbit College FC', position:'DEF', display_name:'Siyabonga Nomvethe',      price:4.5, goals:1,  assists:0, clean_sheets:3,  yellow_cards:2, red_cards:0, apps:16, xg:0.6,  xa:0.2, total_points:36 },
+  { id:15004, club:'Orbit College FC', position:'MID', display_name:'Mpho Kgaswane',           price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:18, xg:1.6,  xa:1.7, total_points:50 },
+  { id:15005, club:'Orbit College FC', position:'MID', display_name:'Aubrey Modiba',           price:5.0, goals:1,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:17, xg:0.9,  xa:2.3, total_points:50 },
+  { id:15006, club:'Orbit College FC', position:'FWD', display_name:'Sipho Moeti',             price:5.5, goals:5,  assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:19, xg:4.5,  xa:0.9, total_points:66 },
+  { id:15007, club:'Orbit College FC', position:'FWD', display_name:'Lethiwe Mthembu',         price:5.0, goals:3,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:15, xg:2.7,  xa:1.5, total_points:52 },
+  // MAGESI FC
+  { id:16001, club:'Magesi FC',        position:'GK',  display_name:'Clinton Larsen',          price:4.5, goals:0,  assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, apps:17, xg:0.0,  xa:0.0, total_points:32 },
+  { id:16002, club:'Magesi FC',        position:'DEF', display_name:'Dillon Solomons',         price:4.5, goals:0,  assists:0, clean_sheets:2,  yellow_cards:3, red_cards:0, apps:16, xg:0.1,  xa:0.2, total_points:24 },
+  { id:16003, club:'Magesi FC',        position:'DEF', display_name:'Sibusiso Hadebe',         price:4.5, goals:0,  assists:1, clean_sheets:2,  yellow_cards:2, red_cards:0, apps:15, xg:0.1,  xa:0.5, total_points:26 },
+  { id:16004, club:'Magesi FC',        position:'MID', display_name:'Elmo Kambindu',           price:5.0, goals:2,  assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, apps:17, xg:1.5,  xa:1.6, total_points:48 },
+  { id:16005, club:'Magesi FC',        position:'MID', display_name:'Rowan Human',             price:4.5, goals:1,  assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:15, xg:0.9,  xa:1.5, total_points:38 },
+  { id:16006, club:'Magesi FC',        position:'FWD', display_name:'Victor Letsoalo',         price:6.0, goals:5,  assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, apps:17, xg:4.6,  xa:1.7, total_points:70 },
+  { id:16007, club:'Magesi FC',        position:'FWD', display_name:'Thabo Rakhale',           price:5.5, goals:3,  assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, apps:14, xg:2.8,  xa:2.2, total_points:58 }
 ];
 
 // ── Override loadPlayers to use PSL_ROSTER instead of Supabase ─
@@ -2047,7 +1957,7 @@ function renderTableShort(c, table) {
     var pclr  = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
     var bg    = pos <= 2 ? 'background:rgba(34,137,90,.06);' : pos >= 15 ? 'background:rgba(212,39,79,.05);' : '';
     var logo  = t.logo || getTeamLogo(t.team);
-    return '<div class="lt-row" style="grid-template-columns:32px 1fr 36px 42px;' + bg + 'cursor:pointer" onclick="openClubProfile(\'' + t.team + '\')">' +
+    return '<div class="lt-row" style="grid-template-columns:32px 1fr 36px 42px;' + bg + '">' +
       '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
       '<div class="lt-club">' +
         (logo ? '<img src="' + logo + '" onerror="this.hidden=true">' : '') +
@@ -2062,37 +1972,34 @@ function renderTableShort(c, table) {
 
 // FULL: Pos | Club | P | W | D | L | GF | GA | GD | Pts
 function renderTableFull(c, table) {
-  // Use a scrollable wrapper; give club col a fixed min-width so name never disappears
-  var cols = '28px minmax(110px,1fr) repeat(8,28px)';
-  var header = '<div class="lt-header" style="grid-template-columns:' + cols + '">' +
-    '<div>#</div><div>Club</div><div style="text-align:center">P</div><div style="text-align:center">W</div><div style="text-align:center">D</div><div style="text-align:center">L</div>' +
-    '<div style="text-align:center">GF</div><div style="text-align:center">GA</div><div style="text-align:center">GD</div><div style="text-align:right">Pts</div>' +
+  var header = '<div class="lt-header" style="grid-template-columns:28px 1fr repeat(8,34px)">' +
+    '<div>#</div><div>Club</div><div>P</div><div>W</div><div>D</div><div>L</div>' +
+    '<div>GF</div><div>GA</div><div>GD</div><div>Pts</div>' +
   '</div>';
   var rows = table.map(function(t, i) {
-    var pos   = t.pos || (i + 1);
-    var pclr  = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
-    var bg    = pos <= 2 ? 'background:rgba(34,137,90,.06);' : pos >= 15 ? 'background:rgba(212,39,79,.05);' : '';
-    var logo  = t.logo || getTeamLogo(t.team);
-    var gd    = (t.gd !== undefined ? t.gd : (t.gf || 0) - (t.ga || 0));
+    var pos  = t.pos || (i + 1);
+    var pclr = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
+    var bg   = pos <= 2 ? 'background:rgba(34,137,90,.06);' : pos >= 15 ? 'background:rgba(212,39,79,.05);' : '';
+    var logo = t.logo || getTeamLogo(t.team);
+    var gd   = (t.gd !== undefined ? t.gd : (t.gf || 0) - (t.ga || 0));
     var gdStr = gd > 0 ? '+' + gd : '' + gd;
-    var gdClr = gd > 0 ? '#22895A' : gd < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-    return '<div class="lt-row" style="grid-template-columns:' + cols + ';' + bg + 'cursor:pointer" onclick="openClubProfile(\'' + t.team + '\')">' +
+    return '<div class="lt-row" style="grid-template-columns:28px 1fr repeat(8,34px);' + bg + '">' +
       '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
-      '<div class="lt-club" style="min-width:0">' +
-        (logo ? '<img src="' + logo + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">' : '') +
-        '<span class="lt-club-name" style="font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.abbr || t.team) + '</span>' +
+      '<div class="lt-club">' +
+        (logo ? '<img src="' + logo + '" onerror="this.hidden=true">' : '') +
+        '<span class="lt-club-name" style="font-size:.72rem">' + (t.abbr || t.team) + '</span>' +
       '</div>' +
       '<div class="lt-stat">' + t.p + '</div>' +
       '<div class="lt-stat">' + t.w + '</div>' +
       '<div class="lt-stat">' + t.d + '</div>' +
       '<div class="lt-stat">' + t.l + '</div>' +
-      '<div class="lt-stat">' + (t.gf !== undefined ? t.gf : '—') + '</div>' +
-      '<div class="lt-stat">' + (t.ga !== undefined ? t.ga : '—') + '</div>' +
-      '<div class="lt-stat" style="color:' + gdClr + '">' + (t.gf !== undefined ? gdStr : '—') + '</div>' +
+      '<div class="lt-stat">' + (t.gf || '—') + '</div>' +
+      '<div class="lt-stat">' + (t.ga || '—') + '</div>' +
+      '<div class="lt-stat" style="color:' + (gd >= 0 ? '#22895A' : '#D4274F') + '">' + (t.gf !== undefined ? gdStr : '—') + '</div>' +
       '<div class="lt-pts">' + t.pts + '</div>' +
     '</div>';
   }).join('');
-  c.innerHTML = '<div class="league-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">' + header + rows + '</div>';
+  c.innerHTML = '<div class="league-table-wrap" style="overflow-x:auto">' + header + rows + '</div>';
 }
 
 // FORM: Pos | Club | Last 5 results as dots
@@ -2110,7 +2017,7 @@ function renderTableForm(c, table) {
       var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#DBA94A' : 'rgba(255,255,255,.2)';
       return '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + col + ';font-family:var(--font-ui);font-size:.58rem;font-weight:800;color:#fff;margin-right:2px">' + (r === 'N' ? '?' : r) + '</span>';
     }).join('');
-    return '<div class="lt-row" style="grid-template-columns:32px 1fr auto 42px;' + bg + 'cursor:pointer" onclick="openClubProfile(\'' + t.team + '\')">' +
+    return '<div class="lt-row" style="grid-template-columns:32px 1fr auto 42px;' + bg + '">' +
       '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
       '<div class="lt-club">' +
         (logo ? '<img src="' + logo + '" onerror="this.hidden=true">' : '') +
@@ -2283,196 +2190,6 @@ function renderRealTable(c) {
   renderTableFromData(c, tableData);
 }
 
-// ════════════════════════════════════════════════════
-//  CLUB PROFILE MODAL
-// ════════════════════════════════════════════════════
-function openClubProfile(teamName) {
-  var modal = document.getElementById('club-modal');
-  var hero  = document.getElementById('club-modal-hero');
-  if (!modal) return;
-
-  // Find table entry
-  var tbl = REAL_TABLE.find(function(t){ return t.team === teamName; });
-  if (!tbl) return;
-
-  // Club metadata
-  var info   = (typeof CLUB_INFO !== 'undefined' && CLUB_INFO[teamName]) || {};
-  var logo   = getTeamLogo(teamName);
-  var colors = tbl.colors || ['#B91C3A','#fff'];
-  var c1     = colors[0], c2 = colors[1];
-
-  // Hero gradient from team colours
-  hero.style.background = 'linear-gradient(135deg,' + c1 + 'dd,' + c1 + '88)';
-
-  // Basic info
-  document.getElementById('cp-logo').src    = logo;
-  document.getElementById('cp-logo').style.display = '';
-  document.getElementById('cp-name').textContent   = teamName;
-  document.getElementById('cp-nick').textContent   = info.nickname || '';
-
-  var metaEl = document.getElementById('cp-meta');
-  var metaParts = [];
-  if (info.est)     metaParts.push('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px;vertical-align:middle;margin-right:2px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Est. ' + info.est);
-  if (info.stadium) metaParts.push('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px;vertical-align:middle;margin-right:2px"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> ' + info.stadium);
-  if (info.city)    metaParts.push(info.city);
-  metaEl.innerHTML = metaParts.join('<span style="opacity:.3;margin:0 .3rem">·</span>');
-
-  // Season at-a-glance tiles
-  var pos = REAL_TABLE.indexOf(tbl) + 1;
-  var gd  = tbl.gd !== undefined ? tbl.gd : (tbl.gf||0)-(tbl.ga||0);
-  var gdStr = gd > 0 ? '+'+gd : ''+gd;
-  var glanceTiles = [
-    { val: pos,        lbl: 'Position' },
-    { val: tbl.pts,    lbl: 'Points' },
-    { val: tbl.p,      lbl: 'Played' },
-    { val: tbl.w + '-' + tbl.d + '-' + tbl.l, lbl: 'W-D-L' },
-    { val: gdStr,      lbl: 'Goal Diff' }
-  ];
-  document.getElementById('cp-glance').innerHTML = glanceTiles.map(function(tile){
-    return '<div class="cp-tile"><div class="cp-tile-val" style="color:' + c1 + '">' + tile.val + '</div><div class="cp-tile-lbl">' + tile.lbl + '</div></div>';
-  }).join('');
-
-  // Form dots
-  var formStr = tbl.form || 'NNNNN';
-  var formDots = formStr.slice(-5).split('').map(function(r){
-    var bg  = r==='W'?'#22895A':r==='L'?'#D4274F':r==='D'?'#DBA94A':'rgba(255,255,255,.15)';
-    var lbl = r==='N'?'?':r;
-    return '<div style="display:flex;flex-direction:column;align-items:center;gap:.25rem">' +
-      '<div style="width:36px;height:36px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#fff">'+lbl+'</div>' +
-    '</div>';
-  }).join('');
-  document.getElementById('cp-form').innerHTML = formDots;
-
-  // Get squad from PSL_ROSTER
-  var squad = PSL_ROSTER.filter(function(p){ return p.club === teamName; });
-  var totalGoals   = squad.reduce(function(s,p){return s+(p.goals||0);},0);
-  var totalAssists = squad.reduce(function(s,p){return s+(p.assists||0);},0);
-  var totalXG      = squad.reduce(function(s,p){return s+(p.xg||0);},0);
-  var totalXA      = squad.reduce(function(s,p){return s+(p.xa||0);},0);
-  var totalYellow  = squad.reduce(function(s,p){return s+(p.yellow_cards||0);},0);
-  var totalRed     = squad.reduce(function(s,p){return s+(p.red_cards||0);},0);
-  var gkCS         = (squad.find(function(p){return p.position==='GK';}) || {}).clean_sheets || 0;
-
-  // Attack stats
-  document.getElementById('cp-attack').innerHTML = [
-    { lbl:'Goals Scored', val: tbl.gf !== undefined ? tbl.gf : totalGoals },
-    { lbl:'Goals Conceded', val: tbl.ga !== undefined ? tbl.ga : '—' },
-    { lbl:'xG (Total)', val: totalXG.toFixed(1) },
-    { lbl:'xA (Total)', val: totalXA.toFixed(1) }
-  ].map(function(s){
-    return '<div class="cp-stat-card"><div class="cp-stat-card-lbl">'+s.lbl+'</div><div class="cp-stat-card-val">'+s.val+'</div></div>';
-  }).join('');
-
-  // Defence stats
-  document.getElementById('cp-defence').innerHTML = [
-    { lbl:'Clean Sheets', val: gkCS },
-    { lbl:'Goal Difference', val: gdStr },
-    { lbl:'Assists (Team)', val: totalAssists },
-    { lbl:'Avg Goals Scored/Game', val: tbl.gf !== undefined ? (tbl.gf/tbl.p).toFixed(2) : '—' }
-  ].map(function(s){
-    return '<div class="cp-stat-card"><div class="cp-stat-card-lbl">'+s.lbl+'</div><div class="cp-stat-card-val">'+s.val+'</div></div>';
-  }).join('');
-
-  // Discipline
-  document.getElementById('cp-discipline').innerHTML = [
-    { lbl:'Yellow Cards', val: totalYellow },
-    { lbl:'Red Cards',    val: totalRed }
-  ].map(function(s){
-    return '<div class="cp-stat-card"><div class="cp-stat-card-lbl">'+s.lbl+'</div><div class="cp-stat-card-val">'+s.val+'</div></div>';
-  }).join('');
-
-  // Top 3 performers (by total_points)
-  var top3 = squad.slice().sort(function(a,b){return (b.total_points||0)-(a.total_points||0);}).slice(0,4);
-  var posColors = { GK:'#1A6B42', DEF:'#1a50aa', MID:'#8B4A00', FWD:'#8B0000' };
-  document.getElementById('cp-performers').innerHTML = top3.map(function(p,i){
-    var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-    var pcBg  = posColors[p.position] || '#333';
-    return '<div style="display:flex;align-items:center;gap:.8rem;padding:.7rem .9rem;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:8px">' +
-      '<div style="font-size:1rem;width:20px;text-align:center;flex-shrink:0">'+medal+'</div>' +
-      '<div style="flex:1">' +
-        '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">'+p.display_name+'</div>' +
-        '<div style="font-size:.7rem;color:rgba(255,255,255,.4);margin-top:1px">'+
-          p.goals+' goals · '+p.assists+' assists · '+p.apps+' apps' +
-        '</div>' +
-      '</div>' +
-      '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:'+pcBg+';color:#fff;letter-spacing:.5px">'+p.position+'</span>' +
-      '<div style="text-align:right;flex-shrink:0">' +
-        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div>' +
-        '<div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">pts</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-
-  // Full squad grouped by position
-  var posOrder = ['GK','DEF','MID','FWD'];
-  var posLabels = { GK:'Goalkeepers', DEF:'Defenders', MID:'Midfielders', FWD:'Forwards' };
-  var squadHtml = '';
-  posOrder.forEach(function(pos){
-    var grp = squad.filter(function(p){return p.position===pos;});
-    if (!grp.length) return;
-    squadHtml += '<div style="padding:.5rem 1rem;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.05)">' +
-      '<span style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3)">'+posLabels[pos]+'</span>' +
-    '</div>';
-    grp.forEach(function(p){
-      squadHtml += '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
-        '<div style="flex:1;font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+p.display_name+'</div>' +
-        '<div style="display:flex;gap:1rem">' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.goals+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">G</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.assists+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">A</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.apps+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Apps</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
-        '</div>' +
-      '</div>';
-    });
-  });
-  document.getElementById('cp-squad').innerHTML = squadHtml;
-
-  // Show modal
-  modal.style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  modal.scrollTop = 0;
-}
-
-function closeClubProfile() {
-  var modal = document.getElementById('club-modal');
-  if (modal) modal.style.display = 'none';
-  document.body.style.overflow = '';
-}
-
 </script>
-
-<!-- ═══════════════ CLUB PROFILE PAGE ═══════════════ -->
-<div id="page-club" class="page" style="display:none;padding:0">
-
-  <!-- Hero header -->
-  <div id="club-hero" style="position:relative;padding:1.4rem 1.1rem 1rem;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end">
-    <!-- Back button -->
-    <button onclick="goPage('fixtures')" style="position:absolute;top:1rem;left:1rem;background:rgba(0,0,0,.35);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <!-- Club logo + name -->
-    <div style="display:flex;align-items:center;gap:1rem;margin-top:2rem">
-      <div id="club-logo-wrap" style="width:64px;height:64px;background:rgba(255,255,255,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <img id="club-logo-img" src="" style="width:52px;height:52px;object-fit:contain" onerror="this.hidden=true">
-      </div>
-      <div>
-        <h1 id="club-name-title" style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:#fff;margin:0;line-height:1.1"></h1>
-        <div id="club-nickname" style="font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.6);margin-top:.2rem"></div>
-        <div id="club-meta" style="display:flex;align-items:center;gap:1rem;margin-top:.4rem"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tab nav: Overview · Squad · Stats -->
-  <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.08);background:var(--bg-base);position:sticky;top:0;z-index:10">
-    <button class="club-tab active" id="ctab-overview" onclick="setClubTab('overview',this)" style="flex:1;padding:.75rem;background:none;border:none;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;letter-spacing:.5px;border-bottom:2px solid transparent;cursor:pointer">Overview</button>
-    <button class="club-tab"        id="ctab-squad"    onclick="setClubTab('squad',this)"    style="flex:1;padding:.75rem;background:none;border:none;color:rgba(255,255,255,.45);font-family:var(--font-ui);font-size:.78rem;font-weight:700;letter-spacing:.5px;border-bottom:2px solid transparent;cursor:pointer">Squad</button>
-    <button class="club-tab"        id="ctab-stats"    onclick="setClubTab('stats',this)"    style="flex:1;padding:.75rem;background:none;border:none;color:rgba(255,255,255,.45);font-family:var(--font-ui);font-size:.78rem;font-weight:700;letter-spacing:.5px;border-bottom:2px solid transparent;cursor:pointer">Stats</button>
-  </div>
-
-  <!-- Tab bodies -->
-  <div id="club-body" style="padding:1rem 1rem 6rem"></div>
-
-</div>
 </body>
 </html>
