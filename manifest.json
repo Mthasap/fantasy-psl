@@ -1,0 +1,16 @@
+{
+  "name": "Fantasy Premier Soccer League",
+  "short_name": "Fantasy PSL",
+  "description": "South Africa's fantasy football game for the Betway Premiership",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C0F14",
+  "theme_color": "#0C0F14",
+  "icons": [
+    { "src": "/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

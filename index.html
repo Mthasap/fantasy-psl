@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0C0F14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fantasy PSL">
+  <meta name="description" content="South Africa's fantasy football game for the Betway Premiership">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <!-- Apple Touch Icons (iPhone & iPad home screen) -->
+  <link rel="apple-touch-icon" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png">
+
+  <!-- Windows / Android -->
+  <meta name="msapplication-TileImage" content="/icon-144.png">
+  <meta name="msapplication-TileColor" content="#0C0F14">
+  <title>Fantasy PSL — South Africa's No.1 Fantasy Football</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="fantasy-psl.css">
+  <style>
+    /* ── Auth modal ── */
+    .auth-modal { display:none!important; }
+    .auth-modal.open { display:flex!important; }
+    /* ── Player modal ── */
+    .player-modal { display:none!important; }
+    .player-modal.open { display:flex!important; }
+    /* ── User menu ── */
+    .user-menu { display:none; align-items:center; gap:.6rem; }
+    .user-menu.visible { display:flex!important; }
+    /* ── Transfer banner ── */
+    .xfer-banner { display:none; background:rgba(201,150,58,.08); border:1px solid rgba(201,150,58,.25); border-radius:6px; padding:.7rem 1rem; margin-bottom:1rem; align-items:center; gap:.8rem; flex-wrap:wrap; }
+    .xfer-banner.show { display:flex; }
+    /* ── Squad states ── */
+    .btn-saved { opacity:.5!important; cursor:default!important; }
+    .pli-picked { background:rgba(26,107,66,.08)!important; border-left:3px solid #22895A!important; }
+    /* ── Podium ── */
+    .podium-wrap { display:flex; justify-content:center; align-items:flex-end; gap:1.5rem; }
+    .podium-place { text-align:center; }
+  </style>
+</head>
+<body>
+
+<!-- SPONSOR RIBBON -->
+<div class="sponsor-ribbon">
+  <span class="sponsor-ribbon-text">Official Title Sponsor</span>
+  <a href="https://betway.co.za" target="_blank" class="betway-badge">
+    <div class="betway-badge-dot"></div>
+    <span class="betway-badge-label">Betway</span>
+    <span class="betway-badge-sub">&nbsp;· Premier Soccer League</span>
+  </a>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#" class="nav-logo" onclick="goPage('home');return false;">
+    <img id="nav-logo-img" alt="Fantasy PSL" style="height:38px;filter:drop-shadow(0 0 10px rgba(185,28,58,.35))">
+    <div class="nav-wordmark">
+      <span class="nav-word-top">Fantasy</span>
+      <span class="nav-word-mid">Premier Soccer</span>
+      <span class="nav-word-bot">League</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#" onclick="goPage('home');return false;">Home</a></li>
+    <li><a href="#" onclick="goPage('squad');return false;">My Squad</a></li>
+    <li><a href="#" onclick="goPage('fixtures');return false;">Fixtures</a></li>
+    <li><a href="#" onclick="goPage('news');return false;">News</a></li>
+    <li><a href="#" onclick="goPage('leagues');return false;">Leagues</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#" id="nav-login" class="btn-login" onclick="openAuth('login');return false;">Login</a>
+    <button id="nav-signup" class="btn-signup" onclick="openAuth('register')">Register</button>
+    <div id="nav-user" class="user-menu" style="display:none">
+      <span id="nav-uname" class="user-menu-label" onclick="goPage('profile')" style="cursor:pointer"></span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="auth-modal" onclick="if(event.target===this)closeAuth()">
+  <div class="auth-box" style="position:relative">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div id="auth-login-panel">
+      <div class="auth-box-title">Welcome Back</div>
+      <div class="auth-field"><label>Email</label><input id="l-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••"></div>
+      <div class="auth-error" id="l-err"></div>
+      <button class="auth-submit" id="l-btn" onclick="doLogin()">Login</button>
+      <div class="auth-switch">No account? <a onclick="openAuth('register')">Register free →</a></div>
+    </div>
+    <div id="auth-reg-panel" style="display:none">
+      <div class="auth-box-title">Create Account</div>
+      <div class="auth-field"><label>Email</label><input id="r-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="e.g. BafanaMgr"></div>
+      <div class="auth-field"><label>Team Name</label><input id="r-team" type="text" placeholder="e.g. Soweto Stars FC"></div>
+      <div class="auth-field"><label>Password</label><input id="r-pass" type="password" placeholder="Min 6 characters"></div>
+      <div class="auth-error" id="r-err"></div>
+      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account — Free</button>
+      <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login →</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER MODAL -->
+<div id="pmodal" class="player-modal" onclick="if(event.target===this)closePmodal()">
+  <div class="player-modal-box">
+    <div class="pm-header">
+      <button class="pm-close" onclick="closePmodal()">✕</button>
+      <div class="pm-shirt s1" id="pm-shirt">⚽</div>
+      <div>
+        <div class="pm-name" id="pm-name">—</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-top:.2rem" id="pm-meta">—</div>
+      </div>
+    </div>
+    <div style="padding:1.3rem">
+      <div id="pm-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+      <div id="pm-fitness" style="padding:.6rem 1rem;border-radius:6px;margin-bottom:.9rem;font-family:var(--font-ui);font-size:.82rem;font-weight:700"></div>
+      <button id="pm-addbtn" class="auth-submit" style="margin-top:0" onclick="addFromModal()">+ Add to Squad</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="bnav-btn active" id="bn-home" onclick="goPage('home')">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L12 3l9 7v10a1 1 0 01-1 1H5a1 1 0 01-1-1V10z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+    Home
+  </button>
+  <button class="bnav-btn" id="bn-squad" onclick="goPage('squad')">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0113 0"/></svg>
+    Squad
+  </button>
+  <button class="bnav-btn" id="bn-fixtures" onclick="goPage('fixtures')">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Fixtures
+  </button>
+  <button class="bnav-btn" id="bn-news" onclick="goPage('news')">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+    News
+  </button>
+  <button class="bnav-btn" id="bn-leagues" onclick="goPage('leagues')">
+    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
+    Leagues
+  </button>
+</div>
+
+<!-- TOAST -->
+<div id="fpsl-toast" class="toast"></div>
+
+<!-- ══ HOME ══ -->
+<div id="page-home" class="page active">
+  <section class="hero">
+    <div class="hero-bg"><div class="hero-glow"></div></div>
+    <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season · Gameweek <span id="gw-hero">—</span> Live Now</div>
+    <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
+      South Africa's Greatest<br>Fantasy Football Game<br>
+      <span style="color:#C9963A">Is Here</span>
+    </h1>
+    <p class="hero-sub">Pick 15 players from all 16 Betway Premiership clubs, earn points every matchday, and compete with football fans across South Africa.</p>
+    <div class="hero-cta-row">
+      <button class="btn-hero-primary" onclick="goPage('squad')">Build Your Squad — Free</button>
+      <button class="btn-hero-outline" onclick="goPage('fixtures')">View Fixtures</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-label">PSL Clubs</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">R100M</div><div class="hero-stat-label">Budget</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">30</div><div class="hero-stat-label">Gameweeks</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">15</div><div class="hero-stat-label">Players</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">4</div><div class="hero-stat-label">Chips</div></div>
+    </div>
+  </section>
+
+  <div class="ticker">
+    <div class="ticker-track" id="ticker-track">
+      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading PSL scores…</span></div>
+      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
+    </div>
+  </div>
+
+  <section class="section-wrap">
+    <span class="eyebrow">How It Works</span>
+    <h2 class="section-title">Four steps to football glory</h2>
+    <div class="how-grid">
+      <div class="how-card"><div class="how-num">01</div><div class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="16" y1="11" x2="22" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg></div><div class="how-title">Register Free</div><p class="how-desc">Create your account in under two minutes.</p></div>
+      <div class="how-card"><div class="how-num">02</div><div class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><div class="how-title">Pick 15 Players</div><p class="how-desc">Choose from all 16 Betway Premiership clubs within your R100M budget.</p></div>
+      <div class="how-card"><div class="how-num">03</div><div class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="how-title">Captain Pick</div><p class="how-desc">Your captain scores double points every gameweek. Choose wisely.</p></div>
+      <div class="how-card"><div class="how-num">04</div><div class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg></div><div class="how-title">Climb the Table</div><p class="how-desc">Score points every matchday and rise up the national leaderboard.</p></div>
+    </div>
+  </section>
+
+  <section class="scoring-wrap">
+    <div class="scoring-inner">
+      <div>
+        <span class="eyebrow">Points System</span>
+        <h2 class="section-title">How players earn points</h2>
+        <table class="pts-table">
+          <thead><tr><th>Action</th><th>Position</th><th style="text-align:right">Pts</th></tr></thead>
+          <tbody>
+            <tr><td>Playing 60+ minutes</td><td>All</td><td class="pv neu">+2</td></tr>
+            <tr><td>Goal scored</td><td>GK / DEF</td><td class="pv pos">+6</td></tr>
+            <tr><td>Goal scored</td><td>MID</td><td class="pv pos">+5</td></tr>
+            <tr><td>Goal scored</td><td>FWD</td><td class="pv pos">+4</td></tr>
+            <tr><td>Assist</td><td>All</td><td class="pv pos">+3</td></tr>
+            <tr><td>Clean sheet</td><td>GK / DEF</td><td class="pv pos">+4</td></tr>
+            <tr><td>Penalty saved</td><td>GK</td><td class="pv pos">+5</td></tr>
+            <tr><td>Yellow card</td><td>All</td><td class="pv neg">−1</td></tr>
+            <tr><td>Red card</td><td>All</td><td class="pv neg">−3</td></tr>
+            <tr><td>Own goal</td><td>All</td><td class="pv neg">−2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <span class="eyebrow">Power-Ups</span>
+        <h2 class="section-title">Your four chips</h2>
+        <div class="chips-grid">
+          <div class="chip"><div class="chip-name wc">Wildcard</div><p class="chip-desc">Unlimited transfers for one gameweek.</p></div>
+          <div class="chip"><div class="chip-name tc">Triple Captain</div><p class="chip-desc">Captain earns 3× points for one gameweek.</p></div>
+          <div class="chip"><div class="chip-name bb">Bench Boost</div><p class="chip-desc">All 15 players score — not just starting 11.</p></div>
+          <div class="chip"><div class="chip-name fh">Free Hit</div><p class="chip-desc">Unlimited transfers for one week, squad reverts after.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="legal-section">
+    <div class="legal-inner">
+      <div class="legal-disc"><strong>Disclaimer:</strong> Fan-made platform. Not affiliated with the PSL or Betway. "Betway Premiership" used descriptively only. <strong>Free-to-play. No gambling.</strong> © 2025 Fantasy Premier Soccer League.</div>
+    </div>
+  </section>
+</div>
+
+<!-- ══ SQUAD ══ -->
+<div id="page-squad" class="page">
+  <div class="page-section">
+    <div class="page-head">
+      <div>
+        <span class="eyebrow">Gameweek <span id="gw-squad">—</span> · Deadline <span id="gw-deadline">—</span></span>
+        <h1 class="section-title" style="margin-bottom:0">My Squad</h1>
+      </div>
+      <div class="meta-strip" style="flex-wrap:wrap;gap:.5rem">
+        <div class="meta-pill">
+          <div class="meta-pill-label">Budget Left</div>
+          <div class="meta-pill-val" id="budget-display" style="color:#22895A">R100.0M</div>
+        </div>
+        <div class="meta-pill">
+          <div class="meta-pill-label">Players</div>
+          <div class="meta-pill-val gold" id="count-display">0 / 15</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button id="save-btn" class="btn-hero-primary" style="font-size:.8rem;padding:.6rem 1.2rem" onclick="saveSquad()">Save Squad</button>
+          <button id="transfer-btn" class="btn-hero-outline" style="font-size:.8rem;padding:.6rem 1rem" onclick="toggleTransfer()">Transfer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="xfer-banner" class="xfer-banner">
+      <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#DBA94A;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
+      <button onclick="cancelTransfer()" style="background:none;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:rgba(255,255,255,.4);font-size:.75rem;padding:.3rem .8rem;cursor:pointer">Cancel</button>
+    </div>
+
+    <div class="squad-body-grid">
+      <div>
+        <div class="squad-pitch-wrap" style="min-height:460px">
+          <div class="squad-pitch-line"></div>
+          <div class="squad-pitch-circle"></div>
+          <div id="p-fwd" class="prow"></div>
+          <div id="p-mid" class="prow"></div>
+          <div id="p-def" class="prow"></div>
+          <div id="p-gk"  class="prow"></div>
+        </div>
+        <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:flex-start">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <span class="bench-tag">Bench (4 subs)</span>
+            <span id="squad-summary" style="font-size:.65rem;color:rgba(255,255,255,.3);font-family:var(--font-ui)">0/11 starters · 0/4 bench</span>
+          </div>
+          <div id="p-bench" style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center"></div>
+        </div>
+      </div>
+
+      <div class="player-panel">
+        <div class="panel-header">
+          <span class="panel-title">All Players</span>
+          <div class="filter-tabs">
+            <button class="ftab active" onclick="filterPos(this,'All')">All</button>
+            <button class="ftab" onclick="filterPos(this,'GK')">GK</button>
+            <button class="ftab" onclick="filterPos(this,'DEF')">DEF</button>
+            <button class="ftab" onclick="filterPos(this,'MID')">MID</button>
+            <button class="ftab" onclick="filterPos(this,'FWD')">FWD</button>
+          </div>
+        </div>
+        <div class="panel-search">
+          <input id="player-search" type="text" placeholder="Search player or club…" oninput="filterSearch(this.value)">
+        </div>
+        <div id="player-list" style="overflow-y:auto;max-height:500px">
+          <div class="loading-players">Loading players…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FIXTURES ══ -->
+<div id="page-fixtures" class="page">
+  <div class="page-section" style="max-width:900px">
+    <span class="eyebrow">Betway Premiership 2025/26</span>
+    <h1 class="section-title">Fixtures &amp; Results</h1>
+    <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;flex-wrap:wrap">
+      <button class="ftab active" id="ftab-upcoming" onclick="setFixTab('NS',this)">Upcoming</button>
+      <button class="ftab" id="ftab-results" onclick="setFixTab('FT',this)">Results</button>
+      <button class="ftab" id="ftab-live" onclick="setFixTab('LIVE',this)">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#D4274F;margin-right:4px;vertical-align:middle"></span>Live
+      </button>
+    </div>
+    <div id="fix-list"><div class="loading-players">Loading fixtures…</div></div>
+
+    <div style="margin-top:2.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem">
+        <span class="eyebrow" style="margin:0">League Table</span>
+        <div style="display:flex;gap:.4rem">
+          <button class="ftab active" id="ttab-live" onclick="setTableTab('live',this)">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#D4274F;margin-right:4px;vertical-align:middle"></span>Live
+          </button>
+          <button class="ftab" id="ttab-season" onclick="setTableTab('season',this)">Full Season</button>
+        </div>
+      </div>
+      <div id="table-body"><div class="loading-players">Loading table…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEWS ══ -->
+<div id="page-news" class="page">
+  <div class="page-section" style="max-width:1000px">
+    <span class="eyebrow">2025/26 Season</span>
+    <h1 class="section-title">PSL News &amp; Injuries</h1>
+    <div style="margin-bottom:2rem">
+      <span class="eyebrow">Injury Updates</span>
+      <div id="injury-list" style="margin-top:.8rem"><div class="loading-players">Loading injuries…</div></div>
+    </div>
+    <span class="eyebrow">Latest Headlines</span>
+    <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
+      <div class="loading-players" style="grid-column:1/-1">Loading news…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEAGUES ══ -->
+<div id="page-leagues" class="page">
+  <div class="page-section" style="max-width:860px">
+    <span class="eyebrow">Mini Leagues &amp; Rankings</span>
+    <h1 class="section-title">Compete with SA</h1>
+
+    <div style="background:linear-gradient(135deg,rgba(201,150,58,.08),rgba(185,28,58,.06));border:1px solid rgba(201,150,58,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;position:relative">
+      <div style="position:absolute;top:.8rem;right:1rem;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25)">[Sponsor]</div>
+      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A;text-align:center;margin-bottom:1.2rem">SA Overall — Season Prizes</div>
+      <div class="podium-wrap" id="podium-wrap"><div class="loading-players">Loading…</div></div>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:240px;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1.2rem">
+        <div style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Create a League</div>
+        <input id="new-league-name" type="text" placeholder="League name…" style="width:100%;background:var(--bg-surface);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:.55rem .9rem;color:#fff;font-family:var(--font-body);font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.7rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem">
+          <label style="display:inline-flex;align-items:center;gap:.4rem;background:var(--bg-surface);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:.45rem .8rem;font-family:var(--font-ui);font-size:.72rem;font-weight:700;color:rgba(255,255,255,.4);cursor:pointer">
+            Add Logo
+            <input type="file" id="league-logo-input" accept="image/*" style="display:none" onchange="previewLeagueLogo(event)">
+          </label>
+          <img id="league-logo-preview" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15);display:none">
+          <span id="league-logo-name" style="font-size:.7rem;color:rgba(255,255,255,.35)"></span>
+        </div>
+        <button class="btn-hero-primary" style="width:100%;font-size:.82rem;padding:.65rem" onclick="createLeague()">+ Create League</button>
+      </div>
+      <div style="flex:1;min-width:240px;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1.2rem">
+        <div style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">Join a League</div>
+        <input id="join-code-input" type="text" placeholder="Invite code e.g. ABC-1234" style="width:100%;background:var(--bg-surface);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:.55rem .9rem;color:#fff;font-family:var(--font-body);font-size:.88rem;outline:none;box-sizing:border-box;margin-bottom:.7rem;text-transform:uppercase">
+        <button class="btn-hero-outline" style="width:100%;font-size:.82rem;padding:.65rem" onclick="joinLeague()">Join with Code</button>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-bottom:1rem">
+      <div style="background:var(--bg-surface);padding:.85rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.7rem">
+        <div style="width:34px;height:34px;border-radius:6px;background:rgba(185,28,58,.15);display:flex;align-items:center;justify-content:center;font-size:1rem">🌍</div>
+        <div>
+          <div style="font-family:var(--font-ui);font-size:.92rem;font-weight:700;color:#fff">SA Overall Rankings</div>
+          <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Global Leaderboard</div>
+        </div>
+      </div>
+      <div id="global-lb"><div class="loading-players">Loading rankings…</div></div>
+    </div>
+
+    <div id="my-leagues-wrap"><div class="loading-players">Loading your leagues…</div></div>
+  </div>
+</div>
+
+<!-- ══ PROFILE ══ -->
+<div id="page-profile" class="page">
+  <div class="page-section" style="max-width:800px">
+    <span class="eyebrow">Manager Profile</span>
+    <div id="profile-wrap"><div class="loading-players">Loading profile…</div></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-logo"><img id="footer-logo" alt="Fantasy PSL" style="height:28px;opacity:.4;filter:grayscale(1)"></div>
+    <ul class="foot-links">
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <div class="foot-copy">© 2025 Fantasy Premier Soccer League · Fan-made · Not affiliated with PSL or Betway</div>
+  </div>
+</footer>
+
+<script>
+// ════════════════════════════════════════════════════
+//  FANTASY PSL — Complete Application JavaScript
+//  Plain <script> tag — NO type="module"
+//  All functions are global — onclick handlers work
+// ════════════════════════════════════════════════════
+
+// ── Config ──────────────────────────────────────────
+var SUPABASE_URL = 'https://osporthujccsdroqhchw.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zcG9ydGh1amNjc2Ryb3FoY2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzM2NDQsImV4cCI6MjA4NzcwOTY0NH0.a7JsVv9DMXCt2nPYTwi5qwFWmqKPug30OJlCApjSk1o';
+var FOOTBALL_KEY = 'efd40a28aa4d2ed1758174bd319553d1';
+var NEWS_KEY     = '64074f01d6b94feeb870866bdfbc28a3';
+var PSL_ID       = 288;
+var SEASON       = 2025;
+
+// ── Club logos ───────────────────────────────────────
+var LOGOS = {
+  'Mamelodi Sundowns':  'https://upload.wikimedia.org/wikipedia/en/8/8b/Mamelodi_Sundowns_FC_logo.svg',
+  'Orlando Pirates':    'https://upload.wikimedia.org/wikipedia/en/8/8c/Orlando_Pirates_Logo.svg',
+  'Kaizer Chiefs':      'https://upload.wikimedia.org/wikipedia/en/a/a1/Kaizer_Chiefs_logo.svg',
+  'Cape Town City':     'https://upload.wikimedia.org/wikipedia/en/6/6a/Cape_Town_City_FC.png',
+  'Stellenbosch FC':    'https://upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png',
+  'AmaZulu FC':         'https://upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png',
+  'Chippa United':      'https://upload.wikimedia.org/wikipedia/en/0/09/Chippa_United_logo.png',
+  'Golden Arrows':      'https://upload.wikimedia.org/wikipedia/en/5/5b/Golden_Arrows_FC_logo.png',
+  'Sekhukhune United':  'https://upload.wikimedia.org/wikipedia/en/d/d0/Sekhukhune_United_FC.png',
+  'TS Galaxy':          'https://upload.wikimedia.org/wikipedia/en/8/87/TS_Galaxy_FC_logo.png',
+  'Polokwane City':     'https://upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png',
+  'Moroka Swallows':    'https://upload.wikimedia.org/wikipedia/en/9/94/Moroka_Swallows_logo.png',
+  'Richards Bay':       'https://upload.wikimedia.org/wikipedia/en/f/f3/Richards_Bay_FC_logo.png'
+};
+
+// ── Logo path (served from same folder) ─────────────
+var LOGO_PATH = 'logo.png';
+
+// ── Supabase client ──────────────────────────────────
+var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── App state ────────────────────────────────────────
+var ST = {
+  user:          null,
+  gw:            null,
+  squad:         [],
+  allPlayers:    [],
+  filtered:      [],
+  posFilter:     'All',
+  budget:        100,
+  activeId:      null,
+  xferMode:      false,
+  xferOut:       null,
+  squadSaved:    false,
+  fixTab:        'NS',
+  tableTab:      'live',
+  leagueLogo:    null
+};
+
+// ════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════
+db.auth.onAuthStateChange(function(event, session) {
+  ST.user = session ? session.user : null;
+  syncNav();
+  if (ST.user) {
+    loadGW(function() { loadMySquad(); });
+  } else {
+    ST.squad = [];
+    renderPitch();
+    renderBudget();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Set logo src
+  var imgs = document.querySelectorAll('#nav-logo-img, #footer-logo');
+  imgs.forEach(function(img) { img.src = LOGO_PATH; });
+
+  loadGW(function() {});
+  loadPlayers();
+  loadTickerData();
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeAuth(); closePmodal(); }
+  });
+});
+
+// ════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════
+var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-news','bn-leagues'];
+var BN_MAP = { home:0, squad:1, fixtures:2, news:3, leagues:4 };
+
+function goPage(id) {
+  var guarded = ['squad','leagues','profile'];
+  if (guarded.indexOf(id) !== -1 && !ST.user) {
+    openAuth('login');
+    showToast('Please log in to continue', 'warning');
+    return;
+  }
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+
+  BN_IDS.forEach(function(bid, i) {
+    var el = document.getElementById(bid);
+    if (el) el.classList.toggle('active', i === BN_MAP[id]);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (id === 'fixtures') { loadFixtures(); loadTable(); }
+  if (id === 'news')     { loadNews(); loadInjuries(); }
+  if (id === 'leagues')  loadLeagues();
+  if (id === 'profile')  loadProfile();
+}
+
+function syncNav() {
+  var li = document.getElementById('nav-login');
+  var su = document.getElementById('nav-signup');
+  var um = document.getElementById('nav-user');
+  var ul = document.getElementById('nav-uname');
+  if (ST.user) {
+    if (li) li.style.display = 'none';
+    if (su) su.style.display = 'none';
+    if (um) { um.style.display = 'flex'; um.classList.add('visible'); }
+    if (ul) ul.textContent = ((ST.user.user_metadata && ST.user.user_metadata.username) || ST.user.email.split('@')[0]);
+  } else {
+    if (li) li.style.display = '';
+    if (su) su.style.display = '';
+    if (um) { um.style.display = 'none'; um.classList.remove('visible'); }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════
+function openAuth(mode) {
+  var modal = document.getElementById('auth-modal');
+  modal.classList.add('open');
+  document.getElementById('auth-login-panel').style.display = (mode === 'login')    ? '' : 'none';
+  document.getElementById('auth-reg-panel').style.display   = (mode === 'register') ? '' : 'none';
+  document.getElementById('l-err').textContent = '';
+  document.getElementById('r-err').textContent = '';
+}
+
+function closeAuth() {
+  document.getElementById('auth-modal').classList.remove('open');
+}
+
+function doLogin() {
+  var btn   = document.getElementById('l-btn');
+  var email = document.getElementById('l-email').value.trim();
+  var pass  = document.getElementById('l-pass').value;
+  if (!email || !pass) { document.getElementById('l-err').textContent = 'Fill in all fields'; return; }
+  btn.textContent = 'Logging in…'; btn.disabled = true;
+  db.auth.signInWithPassword({ email: email, password: pass }).then(function(res) {
+    btn.textContent = 'Login'; btn.disabled = false;
+    if (res.error) { document.getElementById('l-err').textContent = 'Incorrect email or password'; return; }
+    closeAuth();
+    showToast('Welcome back!', 'success');
+  });
+}
+
+function doRegister() {
+  var btn   = document.getElementById('r-btn');
+  var email = document.getElementById('r-email').value.trim();
+  var pass  = document.getElementById('r-pass').value;
+  var user  = document.getElementById('r-user').value.trim();
+  var team  = document.getElementById('r-team').value.trim();
+  if (!email || !pass || !user || !team) { document.getElementById('r-err').textContent = 'All fields required'; return; }
+  if (pass.length < 6) { document.getElementById('r-err').textContent = 'Password must be 6+ characters'; return; }
+  btn.textContent = 'Creating…'; btn.disabled = true;
+  db.auth.signUp({ email: email, password: pass, options: { data: { username: user, team_name: team } } }).then(function(res) {
+    btn.textContent = 'Create Account — Free'; btn.disabled = false;
+    if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
+    closeAuth();
+    showToast('Account created! Check your email to confirm.', 'success');
+  });
+}
+
+function doLogout() {
+  db.auth.signOut().then(function() {
+    ST.user = null; ST.squad = [];
+    syncNav(); renderPitch(); renderBudget();
+    goPage('home');
+    showToast('Logged out', 'info');
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  GAMEWEEK
+// ════════════════════════════════════════════════════
+function loadGW(cb) {
+  db.from('gameweeks').select('*').eq('is_current', true).single().then(function(res) {
+    if (res.data) {
+      ST.gw = res.data;
+      var n = ST.gw.number || '—';
+      ['gw-hero','gw-squad'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = n;
+      });
+      if (ST.gw.deadline_at) {
+        var d = new Date(ST.gw.deadline_at);
+        var fmt = d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        var dl = document.getElementById('gw-deadline');
+        if (dl) dl.textContent = fmt;
+      }
+    }
+    if (cb) cb();
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  PLAYERS — load all, render list
+// ════════════════════════════════════════════════════
+function loadPlayers() {
+  db.from('players').select('*, clubs(name, short_name)').order('total_points', { ascending: false }).then(function(res) {
+    ST.allPlayers = res.data || [];
+    ST.filtered   = ST.allPlayers.slice();
+    renderPlayerList();
+  });
+}
+
+function playerName(p) {
+  return p.display_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'Unknown';
+}
+
+function posIcon(pos) {
+  return pos === 'GK' ? '' : pos === 'DEF' ? '' : '⚽';
+}
+
+function renderPlayerList() {
+  var c = document.getElementById('player-list'); if (!c) return;
+  if (!ST.filtered.length) { c.innerHTML = '<div class="loading-players">No players found</div>'; return; }
+  var pickedIds = {};
+  ST.squad.forEach(function(p) { pickedIds[p.id] = true; });
+
+  c.innerHTML = ST.filtered.map(function(p) {
+    var inSquad  = !!pickedIds[p.id];
+    var name     = playerName(p);
+    var club     = p.clubs ? p.clubs.name : '—';
+    var icon     = posIcon(p.position);
+    var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
+    var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
+    var rowClass = inSquad ? ' pli-picked' : '';
+
+    return '<div class="pli' + rowClass + '" onclick="openPmodal(' + p.id + ')">' +
+      '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
+      '<div class="pli-info">' +
+        '<div class="pli-name">' + name + '</div>' +
+        '<div class="pli-club">' + club + '</div>' +
+      '</div>' +
+      '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
+      '<span class="pli-price">R' + (p.price || 0) + 'M</span>' +
+      '<button class="add-btn" style="' + addStyle + '" onclick="event.stopPropagation();' + (inSquad ? '' : 'addPlayer(' + p.id + ')') + '">' +
+        (inSquad ? '✓' : '+') +
+      '</button>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Filters ──────────────────────────────────────────
+function filterPos(el, pos) {
+  ST.posFilter = pos;
+  document.querySelectorAll('.ftab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  applyFilter();
+}
+
+function filterSearch(term) { applyFilter(term); }
+
+function applyFilter(term) {
+  var search = (term || (document.getElementById('player-search') || {}).value || '').toLowerCase();
+  ST.filtered = ST.allPlayers.filter(function(p) {
+    var name   = playerName(p).toLowerCase();
+    var club   = ((p.clubs && p.clubs.name) || '').toLowerCase();
+    var posOk  = ST.posFilter === 'All' || p.position === ST.posFilter;
+    var termOk = !search || name.includes(search) || club.includes(search);
+    return posOk && termOk;
+  });
+  renderPlayerList();
+}
+
+// ════════════════════════════════════════════════════
+//  PLAYER MODAL
+// ════════════════════════════════════════════════════
+function openPmodal(id) {
+  var p = ST.allPlayers.find(function(x) { return x.id === id; });
+  if (!p) return;
+  ST.activeId = id;
+
+  var name = playerName(p);
+  var club = p.clubs ? p.clubs.name : 'Unknown Club';
+  var icon = posIcon(p.position);
+
+  document.getElementById('pm-shirt').textContent  = icon;
+  document.getElementById('pm-shirt').className    = 'pm-shirt s' + ((id % 6) + 1);
+  document.getElementById('pm-name').textContent   = name;
+  document.getElementById('pm-meta').textContent   = club + ' · ' + p.position;
+
+  var stats = [
+    { val: p.total_points || 0,  lbl: 'Season Pts' },
+    { val: 'R' + (p.price||0) + 'M', lbl: 'Price' },
+    { val: p.form || '0',        lbl: 'Form' },
+    { val: p.goals || 0,         lbl: 'Goals' },
+    { val: p.assists || 0,       lbl: 'Assists' },
+    { val: p.yellow_cards || 0,  lbl: 'Yellows' }
+  ];
+  document.getElementById('pm-stats').innerHTML = stats.map(function(s) {
+    return '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.65rem;text-align:center">' +
+      '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#DBA94A;line-height:1">' + s.val + '</div>' +
+      '<div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px">' + s.lbl + '</div>' +
+    '</div>';
+  }).join('');
+
+  var fit    = document.getElementById('pm-fitness');
+  var avail  = p.is_available !== false;
+  fit.style.background = avail ? 'rgba(26,107,66,.15)' : 'rgba(185,28,58,.12)';
+  fit.style.border     = avail ? '1px solid rgba(26,107,66,.3)' : '1px solid rgba(185,28,58,.3)';
+  fit.style.color      = avail ? '#22895A' : '#D4274F';
+  fit.textContent      = avail ? '✅ Fit and Available' : ' Currently Unavailable';
+
+  var inSquad = ST.squad.some(function(x) { return x.id === id; });
+  var btn = document.getElementById('pm-addbtn');
+  btn.textContent       = inSquad ? '✓ Already in Your Squad' : '+ Add to Squad · R' + (p.price||0) + 'M';
+  btn.style.background  = inSquad ? '#1A6B42' : '';
+  btn.disabled          = inSquad;
+
+  document.getElementById('pmodal').classList.add('open');
+}
+
+function closePmodal() {
+  document.getElementById('pmodal').classList.remove('open');
+  ST.activeId = null;
+}
+
+function addFromModal() {
+  if (ST.activeId) addPlayer(ST.activeId);
+}
+
+// ════════════════════════════════════════════════════
+//  SQUAD MANAGEMENT
+// ════════════════════════════════════════════════════
+function loadMySquad() {
+  if (!ST.user || !ST.gw) return;
+  db.from('squads')
+    .select('*, players(*, clubs(name, short_name))')
+    .eq('user_id', ST.user.id)
+    .eq('gameweek_id', ST.gw.id)
+    .then(function(res) {
+      ST.squad = (res.data || []).map(function(r) {
+        var p = Object.assign({}, r.players);
+        p.rowId     = r.id;
+        p.onBench   = r.is_on_bench;
+        p.isCaptain = r.is_captain;
+        p.isVC      = r.is_vice_captain;
+        return p;
+      });
+      renderPitch(); renderBudget(); renderPlayerList();
+    });
+}
+
+function addPlayer(id) {
+  if (!ST.user)  { openAuth('login'); return; }
+  if (!ST.gw)    { showToast('No active gameweek found', 'error'); return; }
+
+  // TRANSFER MODE — out player already selected, pick replacement
+  if (ST.xferMode && ST.xferOut) {
+    var newP = ST.allPlayers.find(function(x) { return x.id === id; });
+    if (!newP) return;
+    if (newP.position !== ST.xferOut.position) {
+      showToast('Must swap for same position (' + ST.xferOut.position + ')', 'warning'); return;
+    }
+    if (ST.squad.some(function(x) { return x.id === id; })) {
+      showToast('Player already in your squad', 'warning'); return;
+    }
+    var usedWithout = ST.squad
+      .filter(function(x) { return x.id !== ST.xferOut.id; })
+      .reduce(function(s, x) { return s + (x.price || 0); }, 0);
+    if (usedWithout + (newP.price || 0) > ST.budget) {
+      showToast('Not enough budget for R' + newP.price + 'M', 'warning'); return;
+    }
+    var bench = ST.xferOut.onBench || false;
+    var oldName = playerName(ST.xferOut);
+    var newName = playerName(newP);
+    db.from('squads').delete()
+      .eq('user_id', ST.user.id)
+      .eq('player_id', ST.xferOut.id)
+      .eq('gameweek_id', ST.gw.id)
+      .then(function() {
+        db.from('squads').insert({
+          user_id: ST.user.id, player_id: id,
+          gameweek_id: ST.gw.id, is_on_bench: bench
+        }).select().single().then(function(ins) {
+          if (ins.error) { showToast('Transfer failed: ' + ins.error.message, 'error'); return; }
+          ST.squad = ST.squad.filter(function(x) { return x.id !== ST.xferOut.id; });
+          var np = Object.assign({}, newP, { rowId: ins.data.id, onBench: bench });
+          ST.squad.push(np);
+          cancelTransfer();
+          markUnsaved();
+          renderPitch(); renderBudget(); renderPlayerList();
+          showToast(oldName + ' → ' + newName + ' ✓', 'success');
+        });
+      });
+    return;
+  }
+
+  if (ST.xferMode) { showToast('Click a player on the PITCH first to select who goes OUT', 'warning'); return; }
+  if (ST.squad.length >= 15) { showToast('Squad full — use Transfer to swap players', 'warning'); return; }
+
+  var p = ST.allPlayers.find(function(x) { return x.id === id; });
+  if (!p) return;
+  if (ST.squad.some(function(x) { return x.id === id; })) { showToast('Already in squad', 'warning'); return; }
+
+  var usedBudget = ST.squad.reduce(function(s, x) { return s + (x.price || 0); }, 0);
+  if (usedBudget + (p.price || 0) > ST.budget) { showToast('Not enough budget for R' + p.price + 'M', 'warning'); return; }
+
+  var limits = { GK:2, DEF:5, MID:5, FWD:3 };
+  var posCount = ST.squad.filter(function(x) { return x.position === p.position; }).length;
+  if (posCount >= limits[p.position]) { showToast('Max ' + limits[p.position] + ' ' + p.position + 's allowed', 'warning'); return; }
+
+  var clubName = p.clubs ? p.clubs.name : null;
+  if (clubName) {
+    var clubCount = ST.squad.filter(function(x) { return x.clubs && x.clubs.name === clubName; }).length;
+    if (clubCount >= 3) { showToast('Max 3 players from ' + clubName, 'warning'); return; }
+  }
+
+  var starterCount = ST.squad.filter(function(x) { return !x.onBench; }).length;
+  var onBench      = starterCount >= 11;
+
+  db.from('squads').insert({
+    user_id: ST.user.id, player_id: id,
+    gameweek_id: ST.gw.id, is_on_bench: onBench
+  }).select().single().then(function(res) {
+    if (res.error) { showToast('Could not add: ' + res.error.message, 'error'); return; }
+    var np = Object.assign({}, p, { rowId: res.data.id, onBench: onBench });
+    ST.squad.push(np);
+    markUnsaved();
+    renderPitch(); renderBudget(); renderPlayerList();
+    showToast(playerName(p) + ' added to ' + (onBench ? 'bench' : 'starting 11') + ' ✓', 'success');
+    if (ST.activeId === id) openPmodal(id);
+  });
+}
+
+function removePlayer(id) {
+  if (!ST.user || !ST.gw) return;
+
+  // Transfer mode — select who goes OUT
+  if (ST.xferMode && !ST.xferOut) {
+    ST.xferOut = ST.squad.find(function(x) { return x.id === id; });
+    if (!ST.xferOut) return;
+    var n = playerName(ST.xferOut);
+    var xm = document.getElementById('xfer-msg');
+    if (xm) xm.textContent = n + ' going OUT — pick replacement from list (' + ST.xferOut.position + ' only)';
+    renderPitch();
+    showToast('Now pick replacement from the player list', 'info');
+    return;
+  }
+  if (ST.xferMode) return;
+
+  db.from('squads').delete()
+    .eq('user_id', ST.user.id)
+    .eq('player_id', id)
+    .eq('gameweek_id', ST.gw.id)
+    .then(function() {
+      ST.squad = ST.squad.filter(function(x) { return x.id !== id; });
+      markUnsaved();
+      renderPitch(); renderBudget(); renderPlayerList();
+      showToast('Player removed', 'info');
+    });
+}
+
+function saveSquad() {
+  if (!ST.user) { openAuth('login'); return; }
+  if (!ST.squad.length) { showToast('Add some players first', 'warning'); return; }
+  var promises = ST.squad.map(function(p) {
+    return db.from('squads').update({ is_on_bench: p.onBench || false })
+      .eq('user_id', ST.user.id)
+      .eq('player_id', p.id)
+      .eq('gameweek_id', ST.gw.id);
+  });
+  Promise.all(promises).then(function() {
+    ST.squadSaved = true;
+    var btn = document.getElementById('save-btn');
+    if (btn) { btn.textContent = '✓ Squad Saved'; btn.classList.add('btn-saved'); }
+    showToast('Squad saved — ' + ST.squad.length + '/15 players ✓', 'success');
+  });
+}
+
+function markUnsaved() {
+  ST.squadSaved = false;
+  var btn = document.getElementById('save-btn');
+  if (btn) { btn.textContent = 'Save Squad'; btn.classList.remove('btn-saved'); }
+}
+
+function renderBudget() {
+  var used = ST.squad.reduce(function(s, p) { return s + (p.price || 0); }, 0);
+  var rem  = (ST.budget - used).toFixed(1);
+  var bd = document.getElementById('budget-display');
+  if (bd) { bd.textContent = 'R' + rem + 'M'; bd.style.color = parseFloat(rem) < 0 ? '#D4274F' : '#22895A'; }
+  var cd = document.getElementById('count-display');
+  if (cd) cd.textContent = ST.squad.length + ' / 15';
+  var starters = ST.squad.filter(function(x) { return !x.onBench; }).length;
+  var bench    = ST.squad.filter(function(x) { return x.onBench; }).length;
+  var ss = document.getElementById('squad-summary');
+  if (ss) ss.textContent = starters + '/11 starters · ' + bench + '/4 bench';
+}
+
+function renderPitch() {
+  var rows  = { GK:'p-gk', DEF:'p-def', MID:'p-mid', FWD:'p-fwd' };
+  var slots = { GK:1, DEF:4, MID:4, FWD:2 };
+  var starters = ST.squad.filter(function(p) { return !p.onBench; });
+  var bench    = ST.squad.filter(function(p) { return p.onBench; });
+  var byPos    = { GK:[], DEF:[], MID:[], FWD:[] };
+  starters.forEach(function(p) { if (byPos[p.position]) byPos[p.position].push(p); });
+
+  Object.keys(rows).forEach(function(pos) {
+    var el = document.getElementById(rows[pos]); if (!el) return;
+    var filled = byPos[pos].map(function(p) {
+      var isOut    = ST.xferOut && ST.xferOut.id === p.id;
+      var outStyle = isOut ? 'box-shadow:0 0 0 3px #DBA94A;opacity:.6' : '';
+      var shortName = (playerName(p)).split(' ').pop();
+      return '<div class="pc" onclick="removePlayer(' + p.id + ')" title="' + (ST.xferMode ? 'Transfer OUT' : 'Remove') + '">' +
+        '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
+          posIcon(pos) +
+          (p.isCaptain ? '<div class="cap-badge">C</div>' : '') +
+          (p.isVC      ? '<div class="vc-badge">V</div>'  : '') +
+        '</div>' +
+        '<div class="pc-name">' + shortName + '</div>' +
+        '<div class="pc-pts">' + (p.price ? 'R' + p.price + 'M' : '') + '</div>' +
+      '</div>';
+    }).join('');
+    var emptyCount = Math.max(0, slots[pos] - byPos[pos].length);
+    var emptyHtml = '';
+    for (var i = 0; i < emptyCount; i++) {
+      emptyHtml += '<div class="pc" style="opacity:.2;cursor:default">' +
+        '<div class="pc-shirt" style="border:1.5px dashed rgba(255,255,255,.2);background:transparent">' + posIcon(pos) + '</div>' +
+        '<div class="pc-name" style="font-size:.5rem">Add ' + pos + '</div>' +
+      '</div>';
+    }
+    el.innerHTML = filled + emptyHtml;
+  });
+
+  // Bench row
+  var benchEl = document.getElementById('p-bench'); if (!benchEl) return;
+  var bFilled = bench.map(function(p) {
+    var shortName = (playerName(p)).split(' ').pop();
+    return '<div class="pc" onclick="removePlayer(' + p.id + ')" title="Remove" style="opacity:.65;cursor:pointer">' +
+      '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="width:36px;height:36px;font-size:.85rem">' + posIcon(p.position) + '</div>' +
+      '<div class="pc-name">' + shortName + '</div>' +
+    '</div>';
+  }).join('');
+  var bEmpty = '';
+  for (var j = 0; j < Math.max(0, 4 - bench.length); j++) {
+    bEmpty += '<div class="pc" style="opacity:.2;cursor:default">' +
+      '<div class="pc-shirt" style="width:36px;height:36px;font-size:.85rem;border:1.5px dashed rgba(255,255,255,.2);background:transparent">⚽</div>' +
+      '<div class="pc-name" style="font-size:.5rem">Bench</div>' +
+    '</div>';
+  }
+  benchEl.innerHTML = bFilled + bEmpty;
+}
+
+// ── Transfer mode ─────────────────────────────────────
+function toggleTransfer() {
+  ST.xferMode = !ST.xferMode;
+  ST.xferOut  = null;
+  var banner = document.getElementById('xfer-banner');
+  var btn    = document.getElementById('transfer-btn');
+  if (banner) banner.classList.toggle('show', ST.xferMode);
+  if (btn)    btn.textContent = ST.xferMode ? '✕ Cancel' : 'Transfer';
+  renderPitch();
+  if (ST.xferMode) showToast('Click a player on the pitch to transfer OUT', 'info');
+}
+
+function cancelTransfer() {
+  ST.xferMode = false; ST.xferOut = null;
+  var banner = document.getElementById('xfer-banner');
+  var btn    = document.getElementById('transfer-btn');
+  var msg    = document.getElementById('xfer-msg');
+  if (banner) banner.classList.remove('show');
+  if (btn)    btn.textContent = 'Transfer';
+  if (msg)    msg.textContent = 'Click a player on the pitch to transfer OUT';
+  renderPitch();
+}
+
+// ════════════════════════════════════════════════════
+//  REAL 2025/26 BETWAY PREMIERSHIP DATA
+//  Source: SuperSport / PSL official (updated 1 Mar 2026)
+// ════════════════════════════════════════════════════
+
+// Real team logos from SuperSport CDN
+var SS_LOGOS = {
+  'Orlando Pirates':    'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
+  'Mamelodi Sundowns': 'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png',
+  'Sekhukhune United': 'https://images.supersport.com/media/ysvjj3ep/sekhuk-united.png',
+  'Durban City':       'https://images.supersport.com/media/yi4mugcg/durban_city_logo_200x200.png',
+  'Kaizer Chiefs':     'https://images.supersport.com/media/snyn3ar5/kaizerchiefs_new-logo_200x200.png',
+  'AmaZulu FC':        'https://images.supersport.com/media/lkll0gep/amazulufc_-2025_logo_rgb_124.png',
+  'Polokwane City':    'https://images.supersport.com/media/sw2l3sct/polokwane_city_fc_logo_160x160.png',
+  'TS Galaxy':         'https://images.supersport.com/media/p4adysnj/tsgalaxy.png',
+  'Stellenbosch FC':   'https://images.supersport.com/media/qjfnk22o/stellenbosch-fc.png',
+  'Golden Arrows':     'https://images.supersport.com/media/ou1p0ums/lamontville-golden-arrows.png',
+  'Siwelele FC':       'https://images.supersport.com/media/fprdumlm/siwelele-fc.png',
+  'Richards Bay':      'https://images.supersport.com/media/o03dsxyb/richards-bay.png',
+  'Chippa United':     'https://images.supersport.com/media/n2jl52bj/chippa-united.png',
+  'Marumo Gallants':   'https://images.supersport.com/media/xdbdstfu/marumo-gallants-fc.png',
+  'Orbit College FC':  'https://images.supersport.com/media/dx3jsm15/orbit-college-fc.png',
+  'Magesi FC':         'https://images.supersport.com/media/yc3lut03/magesi-fc.png'
+};
+
+function getTeamLogo(name) {
+  return SS_LOGOS[name] || LOGOS[name] || '';
+}
+
+// Short name map — prevents wrapping in fixture rows
+var SHORT_NAMES = {
+  'Orlando Pirates':'Pirates',      'Mamelodi Sundowns':'Sundowns',
+  'Sekhukhune United':'Sekhukhune', 'Durban City':'Durban City',
+  'Kaizer Chiefs':'Chiefs',         'AmaZulu FC':'AmaZulu',
+  'Polokwane City':'Polokwane',     'TS Galaxy':'TS Galaxy',
+  'Stellenbosch FC':'Stellenbosch', 'Golden Arrows':'Arrows',
+  'Siwelele FC':'Siwelele',         'Richards Bay':'R. Bay',
+  'Chippa United':'Chippa',         'Marumo Gallants':'Gallants',
+  'Orbit College FC':'Orbit Col.',  'Magesi FC':'Magesi'
+};
+function sn(name) { return SHORT_NAMES[name] || name; }
+
+// Real standings as of 1 March 2026 (after GW19, Soweto Derby)
+var REAL_TABLE = [
+  { team:'Orlando Pirates',   abbr:'Pirates',    p:18, w:13, d:2,  l:3,  pts:41 },
+  { team:'Mamelodi Sundowns', abbr:'Sundowns',   p:18, w:12, d:5,  l:1,  pts:41 },
+  { team:'Sekhukhune United', abbr:'Sekhukhune', p:19, w:9,  d:5,  l:5,  pts:32 },
+  { team:'Durban City',       abbr:'Durban City',p:19, w:9,  d:4,  l:6,  pts:31 },
+  { team:'Kaizer Chiefs',     abbr:'Chiefs',     p:17, w:8,  d:6,  l:3,  pts:30 },
+  { team:'AmaZulu FC',        abbr:'AmaZulu',    p:19, w:9,  d:3,  l:7,  pts:30 },
+  { team:'Polokwane City',    abbr:'Polokwane',  p:18, w:7,  d:7,  l:4,  pts:28 },
+  { team:'TS Galaxy',         abbr:'TS Galaxy',  p:19, w:7,  d:3,  l:9,  pts:24 },
+  { team:'Stellenbosch FC',   abbr:'Stellen.',   p:18, w:6,  d:4,  l:8,  pts:22 },
+  { team:'Golden Arrows',     abbr:'Arrows',     p:18, w:6,  d:3,  l:9,  pts:21 },
+  { team:'Siwelele FC',       abbr:'Siwelele',   p:18, w:5,  d:6,  l:7,  pts:21 },
+  { team:'Richards Bay',      abbr:'R. Bay',     p:18, w:4,  d:8,  l:6,  pts:20 },
+  { team:'Chippa United',     abbr:'Chippa',     p:19, w:4,  d:7,  l:8,  pts:19 },
+  { team:'Marumo Gallants',   abbr:'Gallants',   p:19, w:3,  d:6,  l:10, pts:15 },
+  { team:'Orbit College FC',  abbr:'Orbit Col.', p:19, w:4,  d:3,  l:12, pts:15 },
+  { team:'Magesi FC',         abbr:'Magesi',     p:18, w:2,  d:6,  l:10, pts:12 }
+];
+
+// Real recent results + upcoming fixtures
+var REAL_FIXTURES = {
+  FT: [
+    { date:'2026-03-01', home:'Mamelodi Sundowns', away:'Sekhukhune United', hg:3, ag:1 },
+    { date:'2026-02-28', home:'Kaizer Chiefs',     away:'Orlando Pirates',   hg:0, ag:3 },
+    { date:'2026-02-28', home:'Siwelele FC',       away:'TS Galaxy',         hg:1, ag:0 },
+    { date:'2026-02-28', home:'Golden Arrows',     away:'Chippa United',     hg:0, ag:0 },
+    { date:'2026-02-28', home:'Orbit College FC',  away:'Richards Bay',      hg:0, ag:0 },
+    { date:'2026-02-22', home:'AmaZulu FC',        away:'Durban City',       hg:2, ag:1 },
+    { date:'2026-02-22', home:'Polokwane City',    away:'Marumo Gallants',   hg:2, ag:0 },
+    { date:'2026-02-15', home:'Mamelodi Sundowns', away:'Kaizer Chiefs',     hg:2, ag:0 },
+    { date:'2026-02-15', home:'Orlando Pirates',   away:'Stellenbosch FC',   hg:3, ag:1 },
+    { date:'2026-02-08', home:'Sekhukhune United', away:'Golden Arrows',     hg:2, ag:1 }
+  ],
+  NS: [
+    { date:'2026-03-07', home:'Kaizer Chiefs',     away:'Mamelodi Sundowns', hg:null, ag:null },
+    { date:'2026-03-07', home:'Richards Bay',      away:'AmaZulu FC',        hg:null, ag:null },
+    { date:'2026-03-08', home:'Durban City',       away:'Orlando Pirates',   hg:null, ag:null },
+    { date:'2026-03-08', home:'TS Galaxy',         away:'Polokwane City',    hg:null, ag:null },
+    { date:'2026-03-08', home:'Chippa United',     away:'Sekhukhune United', hg:null, ag:null },
+    { date:'2026-03-15', home:'Mamelodi Sundowns', away:'Siwelele FC',       hg:null, ag:null },
+    { date:'2026-03-15', home:'Orlando Pirates',   away:'Magesi FC',         hg:null, ag:null },
+    { date:'2026-03-15', home:'Stellenbosch FC',   away:'Durban City',       hg:null, ag:null }
+  ]
+};
+
+// Real news headlines
+var REAL_NEWS = [
+  { source:'PSL Official', title:'Pirates thrash Chiefs 3-0 in pulsating Soweto Derby to go top', url:'https://www.psl.co.za', date:'2026-03-01', img:'https://images.supersport.com/media/wkfgti45/orlando-pirates.png' },
+  { source:'SuperSport', title:'Sundowns bounce back with 3-1 win over Sekhukhune to keep title race alive', url:'https://supersport.com/football/betway-premiership', date:'2026-03-01', img:'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png' },
+  { source:'Kick Off', title:'Moremi, Appollis & Makgopa on target as Pirates deliver dominant derby display', url:'https://www.kickoff.com', date:'2026-02-28', img:'' },
+  { source:'News24 Sport', title:'Pirates vs Sundowns: Two giants locked on 41 points in tightest title race in years', url:'https://www.news24.com/sport/soccer/psl', date:'2026-02-28', img:'' },
+  { source:'PSL Official', title:'Siwelele edge TS Galaxy 1-0 to climb away from relegation zone', url:'https://www.psl.co.za', date:'2026-02-28', img:'' },
+  { source:'IOL Sport', title:"Chiefs' title hopes dealt major blow — 11 points off pace with game in hand", url:'https://iol.co.za/sport/soccer', date:'2026-02-28', img:'' },
+  { source:'Kick Off', title:'Sekhukhune remain third after Sundowns defeat — five points off the top two', url:'https://www.kickoff.com', date:'2026-03-01', img:'' },
+  { source:'FARPost', title:'Polokwane City in strong form — Gallants hammered to keep them in top half', url:'https://farpost.co.za', date:'2026-02-22', img:'' },
+  { source:'TimesLive', title:'Betway Premiership GW22 preview: All eyes on Chiefs vs Sundowns mega clash', url:'https://www.timeslive.co.za', date:'2026-03-02', img:'' },
+  { source:'SuperSport', title:'AmaZulu move level on points with Chiefs after derby win over Durban City', url:'https://supersport.com/football/betway-premiership', date:'2026-02-22', img:'' },
+  { source:'Kick Off', title:'Orbit College and Richards Bay share spoils in 0-0 stalemate', url:'https://www.kickoff.com', date:'2026-02-28', img:'' },
+  { source:'News24 Sport', title:'Bafana coach Broos watches Soweto Derby — Mofokeng and Appollis impress', url:'https://www.news24.com/sport/soccer/psl', date:'2026-02-28', img:'' }
+];
+
+// Real injury/availability updates
+var REAL_INJURIES = [
+  { name:'Brandon Petersen', team:'Kaizer Chiefs', type:'Injury', reason:'Knee — missed Soweto Derby', severe:true },
+  { name:'Deon Hotto', team:'Orlando Pirates', type:'Knock', reason:'Minor knock — monitored', severe:false },
+  { name:'Grant Kekana', team:'Mamelodi Sundowns', type:'Suspension', reason:'Accumulated yellow cards', severe:false },
+  { name:'Tshegofatso Ndlondlo', team:'Orlando Pirates', type:'Injury', reason:'Muscle strain', severe:true },
+  { name:'Lehlohonolo Majoro', team:'Marumo Gallants', type:'Injury', reason:'Hamstring — 4 weeks', severe:true },
+  { name:'Iqraam Rayners', team:'Stellenbosch FC', type:'Knock', reason:'Day-to-day assessment', severe:false }
+];
+
+// ════════════════════════════════════════════════════
+//  FIXTURES & TABLE
+// ════════════════════════════════════════════════════
+function setFixTab(status, el) {
+  ST.fixTab = status;
+  ['ftab-upcoming','ftab-results','ftab-live'].forEach(function(id) {
+    var b = document.getElementById(id); if (b) b.classList.remove('active');
+  });
+  el.classList.add('active');
+  loadFixtures();
+}
+
+function setTableTab(tab, el) {
+  ST.tableTab = tab;
+  ['ttab-live','ttab-season'].forEach(function(id) {
+    var b = document.getElementById(id); if (b) b.classList.remove('active');
+  });
+  el.classList.add('active');
+  loadTable();
+}
+
+function renderFixtureRow(home, away, hg, ag, dateStr, isLive) {
+  var score, scoreClass;
+  if (isLive) {
+    score = (hg !== null ? hg : 0) + '-' + (ag !== null ? ag : 0);
+    scoreClass = 'fix-score live';
+  } else if (hg !== null && hg !== undefined) {
+    score = hg + '-' + ag;
+    scoreClass = 'fix-score result';
+  } else {
+    score = 'vs';
+    scoreClass = 'fix-score';
+  }
+  var hLogo = getTeamLogo(home);
+  var aLogo = getTeamLogo(away);
+  var d = new Date(dateStr);
+  var dateLabel = isLive ? 'LIVE' :
+    d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short' })
+     .replace(',','').toUpperCase();
+
+  return '<div class="fix-row">' +
+    '<div class="fix-team">' +
+      (hLogo ? '<img src="' + hLogo + '" onerror="this.hidden=true">' : '') +
+      '<span class="fix-team-name">' + sn(home) + '</span>' +
+    '</div>' +
+    '<div class="' + scoreClass + '">' + score + '</div>' +
+    '<div class="fix-team away">' +
+      (aLogo ? '<img src="' + aLogo + '" onerror="this.hidden=true">' : '') +
+      '<span class="fix-team-name">' + sn(away) + '</span>' +
+    '</div>' +
+    '<div class="fix-date">' + dateLabel + '</div>' +
+  '</div>';
+}
+
+// ════════════════════════════════════════════════════
+//  OWN API — fetch from our Netlify serverless function
+//  Falls back to hardcoded REAL_* data if it fails
+// ════════════════════════════════════════════════════
+var PSL_CACHE = null; // cache response for this session
+
+function fetchPSLData(cb) {
+  if (PSL_CACHE) { cb(PSL_CACHE); return; }
+  fetch('/api/psl-data')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      PSL_CACHE = data;
+      cb(data);
+    })
+    .catch(function() {
+      // API unavailable — use hardcoded fallback
+      cb(null);
+    });
+}
+
+function loadFixtures() {
+  var c = document.getElementById('fix-list'); if (!c) return;
+  // Show hardcoded data immediately while API loads
+  var list = ST.fixTab === 'NS' ? REAL_FIXTURES.NS :
+             ST.fixTab === 'FT' ? REAL_FIXTURES.FT : [];
+  c.innerHTML = list.length
+    ? list.map(function(f) { return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false); }).join('')
+    : '<div class="loading-players">Loading…</div>';
+  updateTickerFromReal();
+
+  // Upgrade with live API data
+  fetchPSLData(function(data) {
+    if (!data) return;
+    var matches = ST.fixTab === 'NS' ? data.fixtures :
+                  ST.fixTab === 'FT' ? data.results  : data.live || [];
+    if (!matches || !matches.length) return;
+    c.innerHTML = matches.map(function(f) {
+      var live = f.live || false;
+      return renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, live);
+    }).join('');
+    updateTickerFromData(data);
+  });
+}
+
+function loadTable() {
+  var c = document.getElementById('table-body'); if (!c) return;
+  renderRealTable(c); // show immediately
+  fetchPSLData(function(data) {
+    if (!data || !data.table || data.table.length < 8) return;
+    renderTableFromData(c, data.table);
+  });
+}
+
+function renderTableFromData(c, table) {
+  var header = '<div class="lt-header">' +
+    '<div>#</div><div>Club</div>' +
+    '<div>P</div><div>W</div><div>D</div><div>L</div><div>Pts</div>' +
+  '</div>';
+  var rows = table.map(function(t, i) {
+    var pos  = t.pos || (i + 1);
+    var pclr = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
+    var bg   = pos <= 2 ? 'background:rgba(34,137,90,.05);' : pos >= 15 ? 'background:rgba(212,39,79,.04);' : '';
+    var logo = t.logo || getTeamLogo(t.team);
+    return '<div class="lt-row" style="' + bg + '">' +
+      '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
+      '<div class="lt-club">' +
+        (logo ? '<img src="' + logo + '" onerror="this.hidden=true">' : '') +
+        '<span class="lt-club-name">' + (t.abbr || t.team) + '</span>' +
+      '</div>' +
+      '<div class="lt-stat">' + t.p + '</div>' +
+      '<div class="lt-stat">' + t.w + '</div>' +
+      '<div class="lt-stat">' + t.d + '</div>' +
+      '<div class="lt-stat">' + t.l + '</div>' +
+      '<div class="lt-pts">' + t.pts + '</div>' +
+    '</div>';
+  }).join('');
+  c.innerHTML = '<div class="league-table-wrap">' + header + rows + '</div>';
+}
+
+function renderRealTable(c) {
+  renderTableFromData(c, REAL_TABLE.map(function(t, i) {
+    return Object.assign({}, t, { pos: i + 1, logo: getTeamLogo(t.team) });
+  }));
+}
+
+// ════════════════════════════════════════════════════
+//  TICKER — live first, then results, then upcoming
+// ════════════════════════════════════════════════════
+function loadTickerData() {
+  updateTickerFromReal(); // instant
+  fetchPSLData(function(data) {
+    if (data) updateTickerFromData(data);
+  });
+}
+
+function updateTickerFromData(data) {
+  var track = document.getElementById('ticker-track'); if (!track) return;
+  // Priority: live > results > upcoming
+  var items = [];
+  if (data.live && data.live.length) {
+    items = data.live.map(function(f) {
+      return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'r' };
+    });
+  } else if (data.results && data.results.length) {
+    items = data.results.slice(0, 8).map(function(f) {
+      return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
+    });
+    // Also append next 3 upcoming
+    if (data.fixtures) {
+      data.fixtures.slice(0, 3).forEach(function(f) {
+        var d = new Date(f.date);
+        var ds = d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}).toUpperCase();
+        items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
+      });
+    }
+  }
+  if (!items.length) { updateTickerFromReal(); return; }
+  var doubled = items.concat(items);
+  track.innerHTML = doubled.map(function(f) {
+    return '<div class="ti">' +
+      '<div class="ti-dot ' + f.dot + '"></div>' +
+      '<span class="ti-label">' + f.label + '</span>' +
+      '<span class="ti-score">' + f.score + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function updateTickerFromReal() {
+  var track = document.getElementById('ticker-track'); if (!track) return;
+  var items = REAL_FIXTURES.FT.slice(0, 8).map(function(f) {
+    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
+  });
+  REAL_FIXTURES.NS.slice(0, 3).forEach(function(f) {
+    var d = new Date(f.date);
+    var ds = d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}).toUpperCase();
+    items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
+  });
+  var doubled = items.concat(items);
+  track.innerHTML = doubled.map(function(f) {
+    return '<div class="ti">' +
+      '<div class="ti-dot ' + f.dot + '"></div>' +
+      '<span class="ti-label">' + f.label + '</span>' +
+      '<span class="ti-score">' + f.score + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function updateTicker(fixtures) { updateTickerFromReal(); } // legacy shim
+
+// ════════════════════════════════════════════════════
+//  NEWS & INJURIES
+// ════════════════════════════════════════════════════
+function renderNewsCard(source, title, url, date, img) {
+  var d = new Date(date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
+  return '<a href="' + url + '" target="_blank" rel="noopener" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;text-decoration:none;display:block">' +
+    (img ? '<img src="' + img + '" style="width:100%;height:110px;object-fit:contain;display:block;background:rgba(255,255,255,.04);padding:.5rem;box-sizing:border-box" loading="lazy" onerror="this.hidden=true">' : '<div style="height:6px;background:linear-gradient(90deg,#B91C3A,#DBA94A)"></div>') +
+    '<div style="padding:.85rem">' +
+      '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#D4274F;margin-bottom:.3rem">' + source + '</div>' +
+      '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff;line-height:1.4;margin-bottom:.3rem">' + title + '</div>' +
+      '<div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + d + '</div>' +
+    '</div>' +
+  '</a>';
+}
+
+function loadNews() {
+  var c = document.getElementById('news-grid'); if (!c) return;
+  // Render real news immediately
+  c.innerHTML = REAL_NEWS.map(function(n) {
+    return renderNewsCard(n.source, n.title, n.url, n.date, n.img);
+  }).join('');
+  // Try live news from API in background with multiple proxy fallbacks
+  tryLiveNews(c);
+}
+
+function tryLiveNews(c) {
+  var url = 'https://newsapi.org/v2/everything?q=Betway+Premiership+PSL+South+Africa&language=en&sortBy=publishedAt&pageSize=12&apiKey=' + NEWS_KEY;
+  var proxies = [
+    'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+    'https://corsproxy.io/?' + encodeURIComponent(url),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+  ];
+  var tried = 0;
+  function tryNext() {
+    if (tried >= proxies.length) return;
+    fetch(proxies[tried++])
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      var raw = j.contents || j;
+      var data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      var articles = data.articles || [];
+      if (!articles.length) { tryNext(); return; }
+      c.innerHTML = articles.slice(0,12).map(function(a) {
+        return renderNewsCard(a.source.name, a.title, a.url, a.publishedAt, a.urlToImage);
+      }).join('');
+    })
+    .catch(tryNext);
+  }
+  tryNext();
+}
+
+function loadInjuries() {
+  var c = document.getElementById('injury-list'); if (!c) return;
+  // Show real injuries immediately
+  c.innerHTML = REAL_INJURIES.map(function(inj) {
+    return '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-left:3px solid ' + (inj.severe ? '#D4274F' : '#DBA94A') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
+      '<div style="font-size:1.2rem;flex-shrink:0">' + (inj.severe ? '!' : '-') + '</div>' +
+      '<div>' +
+        '<div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff">' + inj.name + '</div>' +
+        '<div style="font-size:.78rem;color:rgba(255,255,255,.45);margin:.2rem 0">' + inj.type + ' — ' + inj.reason + '</div>' +
+        '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' +
+          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)">' + inj.team + '</span>' +
+          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;background:' + (inj.severe ? 'rgba(185,28,58,.12)' : 'rgba(201,150,58,.12)') + ';color:' + (inj.severe ? '#D4274F' : '#DBA94A') + '">' + (inj.severe ? '4–6 weeks' : 'Day to Day') + '</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // try API in background for more
+  fetch('https://v3.football.api-sports.io/injuries?league=' + PSL_ID + '&season=' + SEASON, {
+    headers: { 'x-apisports-key': FOOTBALL_KEY }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(j) {
+    var injuries = j.response || [];
+    if (!injuries.length || j.errors) return;
+    c.innerHTML = injuries.slice(0, 8).map(function(inj) {
+      var p = inj.player;
+      var reason = p.reason || 'Unknown';
+      var severe = /(muscle|knee|acl|ligament)/i.test(reason);
+      return '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-left:3px solid ' + (severe ? '#D4274F' : '#DBA94A') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
+        '<div style="font-size:1.2rem;flex-shrink:0">' + (severe ? '!' : '-') + '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff">' + p.name + '</div>' +
+          '<div style="font-size:.78rem;color:rgba(255,255,255,.45);margin:.2rem 0">' + (p.type || 'Injury') + ' — ' + reason + '</div>' +
+          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)">' + inj.team.name + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  })
+  .catch(function() {});
+}
+
+// ════════════════════════════════════════════════════
+//  LEAGUES
+// ════════════════════════════════════════════════════
+function previewLeagueLogo(e) {
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    ST.leagueLogo = ev.target.result;
+    var img  = document.getElementById('league-logo-preview');
+    var name = document.getElementById('league-logo-name');
+    if (img)  { img.src = ev.target.result; img.style.display = 'inline-block'; }
+    if (name) name.textContent = file.name.length > 20 ? file.name.substring(0, 18) + '…' : file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function createLeague() {
+  if (!ST.user) { openAuth('login'); return; }
+  var nameEl = document.getElementById('new-league-name');
+  var name   = (nameEl ? nameEl.value : '').trim();
+  if (!name) { showToast('Enter a league name', 'warning'); return; }
+
+  var letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+  var digits  = Math.floor(1000 + Math.random() * 9000);
+  var code    = letters + '-' + digits;
+
+  var row = { name: name, code: code, created_by: ST.user.id, is_public: false };
+  if (ST.leagueLogo) row.logo_url = ST.leagueLogo;
+
+  db.from('leagues').insert(row).select().single().then(function(res) {
+    if (res.error) { showToast('Error: ' + res.error.message, 'error'); return; }
+    db.from('league_members').insert({ league_id: res.data.id, user_id: ST.user.id }).then(function() {
+      if (nameEl) nameEl.value = '';
+      var lp = document.getElementById('league-logo-preview');
+      var ln = document.getElementById('league-logo-name');
+      var li = document.getElementById('league-logo-input');
+      if (lp) { lp.style.display = 'none'; lp.src = ''; }
+      if (ln) ln.textContent = '';
+      if (li) li.value = '';
+      ST.leagueLogo = null;
+      showToast('"' + name + '" created! Code: ' + code, 'success');
+      loadLeagues();
+    });
+  });
+}
+
+function joinLeague() {
+  if (!ST.user) { openAuth('login'); return; }
+  var codeEl = document.getElementById('join-code-input');
+  var code   = (codeEl ? codeEl.value : '').trim().toUpperCase();
+  if (!code) { showToast('Enter an invite code', 'warning'); return; }
+
+  db.from('leagues').select('id, name').eq('code', code).single().then(function(res) {
+    if (res.error || !res.data) { showToast('League not found — check the code', 'error'); return; }
+    db.from('league_members').insert({ league_id: res.data.id, user_id: ST.user.id }).then(function(join) {
+      if (join.error) {
+        showToast(join.error.code === '23505' ? 'Already in this league' : 'Could not join', 'error'); return;
+      }
+      if (codeEl) codeEl.value = '';
+      showToast('Joined "' + res.data.name + '" ', 'success');
+      loadLeagues();
+    });
+  });
+}
+
+function loadLeagues() {
+  loadGlobalLB();
+  if (!ST.user) {
+    var mw = document.getElementById('my-leagues-wrap');
+    if (mw) mw.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 0">Log in to see your leagues</div>';
+    return;
+  }
+  db.from('league_members').select('leagues(*)').eq('user_id', ST.user.id).then(function(res) {
+    var leagues = (res.data || []).map(function(r) { return r.leagues; }).filter(Boolean);
+    var mw = document.getElementById('my-leagues-wrap');
+    if (!mw) return;
+    if (!leagues.length) { mw.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 0">No leagues yet — create or join one above</div>'; return; }
+    mw.innerHTML = leagues.map(function(l) {
+      var logoHtml = l.logo_url
+        ? '<img src="' + l.logo_url + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15);flex-shrink:0">'
+        : '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,150,58,.15);border:1px solid rgba(201,150,58,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0"></div>';
+      return '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-bottom:.8rem">' +
+        '<div style="background:var(--bg-surface);padding:.85rem 1.2rem;display:flex;align-items:center;gap:.7rem;border-bottom:1px solid rgba(255,255,255,.06)">' +
+          logoHtml +
+          '<div>' +
+            '<div style="font-family:var(--font-ui);font-size:.95rem;font-weight:700;color:#fff">' + l.name + '</div>' +
+            '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private · Code: <span style="color:#DBA94A;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="ls-' + l.id + '"><div class="loading-players">Loading…</div></div>' +
+      '</div>';
+    }).join('');
+    leagues.forEach(function(l) { loadLeagueStandings(l.id); });
+  });
+}
+
+function loadLeagueStandings(lid) {
+  var c = document.getElementById('ls-' + lid); if (!c) return;
+  db.from('league_members').select('profiles(team_name, username, total_points)').eq('league_id', lid).then(function(res) {
+    var members = (res.data || []).map(function(r) { return r.profiles; }).filter(Boolean)
+      .sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
+    if (!members.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.82rem;padding:1rem 1.2rem">No members yet — share your code!</div>'; return; }
+    c.innerHTML = members.map(function(p, i) {
+      var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
+      var medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : (i + 1);
+      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
+        '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';width:22px;text-align:center;flex-shrink:0">' + medal + '</div>' +
+        '<div style="flex:1;font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' +
+          p.team_name + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:2px;margin-left:.3rem">YOU</span>' : '') +
+        '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + ' pts</div>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function loadGlobalLB() {
+  var c = document.getElementById('global-lb'); if (!c) return;
+  db.from('profiles').select('team_name, username, total_points').order('total_points', { ascending: false }).limit(10).then(function(res) {
+    var rows = res.data || [];
+    if (!rows.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 1.2rem">Be the first manager!</div>'; return; }
+    c.innerHTML = rows.map(function(p, i) {
+      var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
+      var medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : (i + 1);
+      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
+        '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';width:22px;text-align:center;flex-shrink:0">' + medal + '</div>' +
+        '<div style="flex:1;font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' +
+          p.team_name + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:2px;margin-left:.3rem">YOU</span>' : '') +
+        '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + ' pts</div>' +
+      '</div>';
+    }).join('');
+
+    // Podium — top 3
+    var pw = document.getElementById('podium-wrap'); if (!pw) return;
+    var prizes = ['R5,000','R2,500','R1,000'];
+    var emojis = ['','',''];
+    var order  = [1, 0, 2]; // silver, gold, bronze for visual height effect
+    pw.innerHTML = order.map(function(idx) {
+      var p2 = rows[idx] || { team_name: '—', total_points: 0 };
+      var sz = idx === 0 ? '2.2rem' : '1.6rem';
+      return '<div class="podium-place">' +
+        '<div style="font-size:' + sz + '">' + emojis[idx] + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:.2rem 0">' + prizes[idx] + '</div>' +
+        '<div style="font-size:.72rem;color:rgba(255,255,255,.45)">' + p2.team_name + '</div>' +
+        '<div style="font-size:.7rem;color:#DBA94A;font-weight:700">' + (p2.total_points || 0) + ' pts</div>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  PROFILE
+// ════════════════════════════════════════════════════
+function loadProfile() {
+  var c = document.getElementById('profile-wrap'); if (!c) return;
+  if (!ST.user) { c.innerHTML = '<div class="loading-players">Please log in to view your profile</div>'; return; }
+  c.innerHTML = '<div class="loading-players">Loading…</div>';
+  db.from('profiles').select('*').eq('id', ST.user.id).single().then(function(res) {
+    var p = res.data;
+    if (!p) { c.innerHTML = '<div class="loading-players">Profile not found</div>'; return; }
+    var initials = (p.team_name || '?').substring(0, 2).toUpperCase();
+    c.innerHTML =
+      '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;flex-shrink:0;border:2px solid rgba(185,28,58,.5)">' + initials + '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">' + p.team_name + '</div>' +
+          '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + p.username + '</div>' +
+          '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank || '—') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + ST.squad.length + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">My Squad</div>' +
+      '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;margin-bottom:1.5rem">' +
+        (ST.squad.length ? ST.squad.map(function(pl) {
+          var icon = posIcon(pl.position);
+          var name = playerName(pl);
+          var club = pl.clubs ? pl.clubs.name : '—';
+          return '<div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
+            '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">' + icon + '</div>' +
+            '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' + name + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + club + '</div></div>' +
+            '<span class="pli-pos pos-' + (pl.position || 'mid').toLowerCase() + '">' + pl.position + '</span>' +
+            '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points || 0) + ' pts</span>' +
+          '</div>';
+        }).join('') : '<div class="loading-players">No squad yet — go build yours!</div>') +
+      '</div>' +
+      '<div style="padding:1.2rem;background:rgba(185,28,58,.05);border:1px solid rgba(185,28,58,.2);border-radius:10px">' +
+        '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D4274F;margin-bottom:.4rem">Danger Zone</div>' +
+        '<p style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.9rem">Deleting your account gives you 30 days to reactivate and recover all data.</p>' +
+        '<button onclick="deleteAccount()" style="background:transparent;border:1px solid rgba(185,28,58,.4);border-radius:6px;color:#D4274F;font-family:var(--font-ui);font-size:.78rem;font-weight:700;letter-spacing:1.5px;padding:.5rem 1.2rem;cursor:pointer">Delete My Account</button>' +
+      '</div>';
+  });
+}
+
+function deleteAccount() {
+  if (!ST.user) return;
+  if (!confirm('Delete your account?\n\nYou have 30 days to reactivate before all data is permanently removed.')) return;
+  db.from('profiles').update({ deleted_at: new Date().toISOString() }).eq('id', ST.user.id).then(function() {
+    db.auth.signOut().then(function() {
+      ST.user = null;
+      goPage('home');
+      showToast('Account scheduled for deletion. 30 days to reactivate.', 'info');
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════
+function showToast(msg, type) {
+  var t = document.getElementById('fpsl-toast');
+  if (!t) return;
+  t.className = 'toast toast-' + (type || 'info');
+  t.textContent = msg;
+  t.classList.add('toast-visible');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function() { t.classList.remove('toast-visible'); }, 3500);
+}
+
+</script>
+</body>
+</html>
