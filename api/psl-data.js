@@ -1,224 +1,237 @@
 // ============================================================
-//  Fantasy PSL — Serverless Data API
-//  Netlify Function: /api/psl-data
+//  Fantasy PSL — Netlify Serverless Data Function
+//  File: api/psl-data.js  (copy to your /api/ folder)
 //
-//  Powered by API-Football (api-football-v1.p.rapidapi.com)
-//  PSL League ID: 288 | Season: 2024
+//  Powered by API-Football (RapidAPI) — League 288, Season 2024
+//  Returns: standings, fixtures, live scores, top scorers,
+//           assists, yellow/red cards, player details
 //
-//  Endpoints:
-//    - /standings        → Live league table
-//    - /fixtures?live=all → Live scores (during matches)
-//    - /fixtures?last=10  → Recent results
-//    - /fixtures?next=10  → Upcoming fixtures
-//
-//  Cache: 60s during live matches, 5min otherwise
+//  Cache: 60s live | 5min normal | 1h player stats
 // ============================================================
 
 const API_KEY  = 'efd40a28aa4d2ed1758174bd319553d1';
 const API_HOST = 'api-football-v1.p.rapidapi.com';
+const BASE_URL = `https://${API_HOST}/v3`;
 const LEAGUE   = 288;
 const SEASON   = 2024;
 
-const API_HEADERS = {
+const HEADERS = {
   'x-rapidapi-key':  API_KEY,
-  'x-rapidapi-host': API_HOST
+  'x-rapidapi-host': API_HOST,
 };
 
+// ── Club name normalisation (API → our names) ─────────────────
+const TEAM_MAP = {
+  'AmaZulu':'AmaZulu FC','Stellenbosch':'Stellenbosch FC',
+  'Magesi':'Magesi FC','Orbit College':'Orbit College FC',
+  'Cape Town City':'Siwelele FC','Siwelele':'Siwelele FC',
+};
+function norm(n) { return TEAM_MAP[n] || n; }
+
 const SHORT = {
-  'Orlando Pirates':   'Pirates',
-  'Mamelodi Sundowns': 'Sundowns',
-  'Sekhukhune United': 'Sekhukhune',
-  'Durban City':       'Durban City',
-  'Kaizer Chiefs':     'Chiefs',
-  'AmaZulu FC':        'AmaZulu',
-  'Polokwane City':    'Polokwane',
-  'TS Galaxy':         'TS Galaxy',
-  'Stellenbosch FC':   'Stellenbosch',
-  'Golden Arrows':     'Arrows',
-  'Siwelele':          'Siwelele',
-  'Richards Bay':      'R. Bay',
-  'Chippa United':     'Chippa',
-  'Marumo Gallants':   'Gallants',
-  'Orbit College':     'Orbit Col.',
-  'Magesi':            'Magesi'
+  'Orlando Pirates':'Pirates','Mamelodi Sundowns':'Sundowns',
+  'Kaizer Chiefs':'Chiefs','AmaZulu FC':'AmaZulu',
+  'Sekhukhune United':'Sekhukhune','Polokwane City':'Polokwane',
+  'TS Galaxy':'TS Galaxy','Stellenbosch FC':'Stellenbosch',
+  'Golden Arrows':'Arrows','Siwelele FC':'Siwelele',
+  'Richards Bay':'R. Bay','Chippa United':'Chippa',
+  'Marumo Gallants':'Gallants','Magesi FC':'Magesi',
+  'Orbit College FC':'Orbit','Durban City':'Durban City',
 };
 
 const LOGOS = {
-  'Orlando Pirates':   'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
-  'Mamelodi Sundowns': 'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png',
-  'Sekhukhune United': 'https://images.supersport.com/media/ysvjj3ep/sekhuk-united.png',
-  'Durban City':       'https://images.supersport.com/media/yi4mugcg/durban_city_logo_200x200.png',
-  'Kaizer Chiefs':     'https://images.supersport.com/media/snyn3ar5/kaizerchiefs_new-logo_200x200.png',
-  'AmaZulu FC':        'https://images.supersport.com/media/lkll0gep/amazulufc_-2025_logo_rgb_124.png',
-  'Polokwane City':    'https://images.supersport.com/media/sw2l3sct/polokwane_city_fc_logo_160x160.png',
-  'TS Galaxy':         'https://images.supersport.com/media/p4adysnj/tsgalaxy.png',
-  'Stellenbosch FC':   'https://images.supersport.com/media/qjfnk22o/stellenbosch-fc.png',
-  'Golden Arrows':     'https://images.supersport.com/media/ou1p0ums/lamontville-golden-arrows.png',
-  'Siwelele':          'https://images.supersport.com/media/fprdumlm/siwelele-fc.png',
-  'Richards Bay':      'https://images.supersport.com/media/o03dsxyb/richards-bay.png',
-  'Chippa United':     'https://images.supersport.com/media/n2jl52bj/chippa-united.png',
-  'Marumo Gallants':   'https://images.supersport.com/media/xdbdstfu/marumo-gallants-fc.png',
-  'Orbit College':     'https://images.supersport.com/media/dx3jsm15/orbit-college-fc.png',
-  'Magesi':            'https://images.supersport.com/media/yc3lut03/magesi-fc.png'
+  'Orlando Pirates':'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
+  'Mamelodi Sundowns':'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png',
+  'Sekhukhune United':'https://images.supersport.com/media/ysvjj3ep/sekhuk-united.png',
+  'Durban City':'https://images.supersport.com/media/yi4mugcg/durban_city_logo_200x200.png',
+  'Kaizer Chiefs':'https://images.supersport.com/media/0cjpgz45/kaizer-chiefs-200x200.png',
+  'AmaZulu FC':'https://images.supersport.com/media/nxwh0ird/amazulu-200x200.png',
+  'Polokwane City':'https://images.supersport.com/media/pxwprbde/polokwane-city-200x200.png',
+  'TS Galaxy':'https://images.supersport.com/media/2ywrqgn5/ts-galaxy-200x200.png',
+  'Stellenbosch FC':'https://images.supersport.com/media/ekujfp53/stellenbosch-200x200.png',
+  'Golden Arrows':'https://images.supersport.com/media/e3bpewop/golden-arrows-200x200.png',
+  'Siwelele FC':'https://images.supersport.com/media/x5r1hxf0/siwelele-200x200.png',
+  'Richards Bay':'https://images.supersport.com/media/o4cgxmhn/richards-bay-200x200.png',
+  'Chippa United':'https://images.supersport.com/media/2qgjw143/chippa-united-200x200.png',
+  'Marumo Gallants':'https://images.supersport.com/media/bqoh2uda/marumo-gallants-200x200.png',
+  'Orbit College FC':'https://images.supersport.com/media/lvwavkax/orbit-college-200x200.png',
+  'Magesi FC':'https://images.supersport.com/media/fgiqx3ai/magesi-200x200.png',
 };
 
+// ── Memory cache ──────────────────────────────────────────────
+const CACHE = {};
+function getCache(k) { const c=CACHE[k]; return c&&Date.now()<c.exp?c.data:null; }
+function setCache(k,d,ms) { CACHE[k]={data:d,exp:Date.now()+ms}; }
+
+// ── Fetch helper ──────────────────────────────────────────────
 async function apiFetch(path) {
-  const url = `https://${API_HOST}/v3${path}`;
-  const res = await fetch(url, { headers: API_HEADERS });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
+  const res = await fetch(`${BASE_URL}${path}`, { headers: HEADERS });
+  if (!res.ok) throw new Error(`HTTP ${res.status} — ${path}`);
   return res.json();
 }
 
-function getShort(name) {
-  if (SHORT[name]) return SHORT[name];
-  for (const key of Object.keys(SHORT)) {
-    if (name.includes(key) || key.includes(name)) return SHORT[key];
-  }
-  return name.length > 12 ? name.slice(0, 11) + '.' : name;
-}
-
-function getLogo(name, apiLogo) {
-  if (LOGOS[name]) return LOGOS[name];
-  for (const key of Object.keys(LOGOS)) {
-    if (name.includes(key) || key.includes(name)) return LOGOS[key];
-  }
-  return apiLogo || '';
-}
-
-function parseStandings(data) {
-  try {
-    const rows = data.response[0][0].league.standings[0];
-    return rows.map(s => ({
-      pos:  s.rank,
-      team: s.team.name,
-      abbr: getShort(s.team.name),
-      logo: getLogo(s.team.name, s.team.logo),
-      p:    s.all.played,
-      w:    s.all.win,
-      d:    s.all.draw,
-      l:    s.all.lose,
-      gf:   s.all.goals.for,
-      ga:   s.all.goals.against,
-      gd:   s.goalsDiff,
-      pts:  s.points,
-      form: s.form || ''
-    }));
-  } catch (e) { return []; }
+// ── Parsers ───────────────────────────────────────────────────
+function parseStanding(e) {
+  const tn = norm(e.team.name);
+  const s  = e.all;
+  return {
+    team:tn, abbr:SHORT[tn]||tn, logo:LOGOS[tn]||e.team.logo||'',
+    p:s.played, w:s.win, d:s.draw, l:s.lose,
+    gf:s.goals.for, ga:s.goals.against, gd:e.goalsDiff,
+    pts:e.points, pos:e.rank,
+    form:(e.form||'').replace(/[^WDL]/g,'').slice(-5),
+  };
 }
 
 function parseFixture(f) {
-  const status  = f.fixture.status.short;
-  const isLive  = ['1H','HT','2H','ET','BT','PEN','LIVE'].includes(status);
-  const isDone  = ['FT','AET','PEN'].includes(status);
-  const elapsed = f.fixture.status.elapsed;
+  const h=norm(f.teams.home.name), a=norm(f.teams.away.name);
   return {
-    id:       f.fixture.id,
-    date:     f.fixture.date,
-    home:     f.teams.home.name,
-    homeAbbr: getShort(f.teams.home.name),
-    homeLogo: getLogo(f.teams.home.name, f.teams.home.logo),
-    away:     f.teams.away.name,
-    awayAbbr: getShort(f.teams.away.name),
-    awayLogo: getLogo(f.teams.away.name, f.teams.away.logo),
-    hg:       (isDone || isLive) ? f.goals.home : null,
-    ag:       (isDone || isLive) ? f.goals.away : null,
-    status,
-    isLive,
-    isDone,
-    elapsed:  isLive ? elapsed : null,
-    venue:    f.fixture.venue?.name || ''
+    id:f.fixture.id,
+    date:f.fixture.date?f.fixture.date.slice(0,10):null,
+    time:f.fixture.date?f.fixture.date.slice(11,16):null,
+    status:f.fixture.status.short,
+    elapsed:f.fixture.status.elapsed,
+    home:h, away:a,
+    hLogo:LOGOS[h]||f.teams.home.logo,
+    aLogo:LOGOS[a]||f.teams.away.logo,
+    hg:f.goals.home, ag:f.goals.away,
+    venue:f.fixture.venue?f.fixture.venue.name:null,
   };
 }
 
-function getFallbackData() {
+function parsePlayer(r) {
+  const pl=r.player, st=r.statistics?.[0]||{};
+  const club=norm(st.team?.name||'');
+  const g=st.goals||{}, c=st.cards||{}, gm=st.games||{},
+        sh=st.shots||{}, ps=st.passes||{}, tk=st.tackles||{},
+        dr=st.dribbles||{}, fo=st.fouls||{}, pe=st.penalty||{};
   return {
-    source: 'fallback', updated: new Date().toISOString(), isLive: false,
-    table: [
-      { pos:1,  team:'Orlando Pirates',   abbr:'Pirates',      logo:LOGOS['Orlando Pirates'],   p:20, w:14, d:2, l:4,  gf:38, ga:18, gd:20,  pts:44, form:'WWWDW' },
-      { pos:2,  team:'Mamelodi Sundowns', abbr:'Sundowns',     logo:LOGOS['Mamelodi Sundowns'], p:20, w:13, d:5, l:2,  gf:35, ga:15, gd:20,  pts:44, form:'WWWWW' },
-      { pos:3,  team:'Sekhukhune United', abbr:'Sekhukhune',   logo:LOGOS['Sekhukhune United'], p:20, w:9,  d:5, l:6,  gf:28, ga:22, gd:6,   pts:32, form:'DWWLD' },
-      { pos:4,  team:'Durban City',       abbr:'Durban City',  logo:LOGOS['Durban City'],       p:20, w:10, d:4, l:6,  gf:30, ga:23, gd:7,   pts:34, form:'WWDLW' },
-      { pos:5,  team:'AmaZulu FC',        abbr:'AmaZulu',      logo:LOGOS['AmaZulu FC'],        p:19, w:9,  d:3, l:7,  gf:27, ga:24, gd:3,   pts:30, form:'LWWWL' },
-      { pos:6,  team:'Kaizer Chiefs',     abbr:'Chiefs',       logo:LOGOS['Kaizer Chiefs'],     p:19, w:8,  d:6, l:5,  gf:26, ga:22, gd:4,   pts:30, form:'DLWDW' },
-      { pos:7,  team:'Polokwane City',    abbr:'Polokwane',    logo:LOGOS['Polokwane City'],    p:20, w:7,  d:7, l:6,  gf:24, ga:23, gd:1,   pts:28, form:'DDLLD' },
-      { pos:8,  team:'TS Galaxy',         abbr:'TS Galaxy',    logo:LOGOS['TS Galaxy'],         p:21, w:7,  d:3, l:11, gf:22, ga:30, gd:-8,  pts:24, form:'LWLWL' },
-      { pos:9,  team:'Richards Bay',      abbr:'R. Bay',       logo:LOGOS['Richards Bay'],      p:20, w:5,  d:8, l:7,  gf:20, ga:25, gd:-5,  pts:23, form:'DWDWD' },
-      { pos:10, team:'Stellenbosch FC',   abbr:'Stellenbosch', logo:LOGOS['Stellenbosch FC'],   p:20, w:6,  d:5, l:9,  gf:21, ga:27, gd:-6,  pts:23, form:'LLDWL' },
-      { pos:11, team:'Siwelele',          abbr:'Siwelele',     logo:LOGOS['Siwelele'],          p:20, w:5,  d:7, l:8,  gf:18, ga:24, gd:-6,  pts:22, form:'DLDWD' },
-      { pos:12, team:'Golden Arrows',     abbr:'Arrows',       logo:LOGOS['Golden Arrows'],     p:20, w:6,  d:3, l:11, gf:19, ga:29, gd:-10, pts:21, form:'LWLLL' },
-      { pos:13, team:'Chippa United',     abbr:'Chippa',       logo:LOGOS['Chippa United'],     p:19, w:4,  d:7, l:8,  gf:17, ga:25, gd:-8,  pts:19, form:'DLDLD' },
-      { pos:14, team:'Orbit College',     abbr:'Orbit Col.',   logo:LOGOS['Orbit College'],     p:21, w:5,  d:3, l:13, gf:18, ga:35, gd:-17, pts:18, form:'LWLLL' },
-      { pos:15, team:'Marumo Gallants',   abbr:'Gallants',     logo:LOGOS['Marumo Gallants'],   p:21, w:3,  d:6, l:12, gf:15, ga:32, gd:-17, pts:15, form:'LLDLL' },
-      { pos:16, team:'Magesi',            abbr:'Magesi',       logo:LOGOS['Magesi'],            p:18, w:2,  d:6, l:10, gf:14, ga:28, gd:-14, pts:12, form:'DLLLD' }
-    ],
-    results: [
-      { id:1, date:'2026-03-04T15:00:00+02:00', home:'Polokwane City',    homeAbbr:'Polokwane',  homeLogo:LOGOS['Polokwane City'],    away:'Orlando Pirates',   awayAbbr:'Pirates',     awayLogo:LOGOS['Orlando Pirates'],   hg:1, ag:2, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'Peter Mokaba Stadium' },
-      { id:2, date:'2026-03-04T17:30:00+02:00', home:'Mamelodi Sundowns', homeAbbr:'Sundowns',   homeLogo:LOGOS['Mamelodi Sundowns'], away:'Golden Arrows',     awayAbbr:'Arrows',      awayLogo:LOGOS['Golden Arrows'],     hg:2, ag:1, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'Loftus Versfeld' },
-      { id:3, date:'2026-03-04T15:00:00+02:00', home:'Orbit College',     homeAbbr:'Orbit Col.', homeLogo:LOGOS['Orbit College'],     away:'TS Galaxy',         awayAbbr:'TS Galaxy',   awayLogo:LOGOS['TS Galaxy'],         hg:2, ag:1, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'' },
-      { id:4, date:'2026-03-04T17:30:00+02:00', home:'Durban City',       homeAbbr:'Durban City',homeLogo:LOGOS['Durban City'],       away:'Marumo Gallants',   awayAbbr:'Gallants',    awayLogo:LOGOS['Marumo Gallants'],   hg:1, ag:0, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'' },
-      { id:5, date:'2026-03-03T15:00:00+02:00', home:'Richards Bay',      homeAbbr:'R. Bay',     homeLogo:LOGOS['Richards Bay'],      away:'Kaizer Chiefs',     awayAbbr:'Chiefs',      awayLogo:LOGOS['Kaizer Chiefs'],     hg:1, ag:0, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'' },
-      { id:6, date:'2026-03-03T17:30:00+02:00', home:'Siwelele',          homeAbbr:'Siwelele',   homeLogo:LOGOS['Siwelele'],          away:'Stellenbosch FC',   awayAbbr:'Stellenbosch',awayLogo:LOGOS['Stellenbosch FC'],   hg:0, ag:0, status:'FT', isLive:false, isDone:true,  elapsed:null, venue:'' }
-    ],
-    fixtures: [
-      { id:10, date:'2026-03-07T19:30:00+02:00', home:'Kaizer Chiefs',     homeAbbr:'Chiefs',       homeLogo:LOGOS['Kaizer Chiefs'],     away:'Mamelodi Sundowns', awayAbbr:'Sundowns',    awayLogo:LOGOS['Mamelodi Sundowns'], hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'FNB Stadium' },
-      { id:11, date:'2026-03-07T19:30:00+02:00', home:'Richards Bay',      homeAbbr:'R. Bay',       homeLogo:LOGOS['Richards Bay'],      away:'AmaZulu FC',        awayAbbr:'AmaZulu',     awayLogo:LOGOS['AmaZulu FC'],        hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' },
-      { id:12, date:'2026-03-08T15:00:00+02:00', home:'Durban City',       homeAbbr:'Durban City',  homeLogo:LOGOS['Durban City'],       away:'Orlando Pirates',   awayAbbr:'Pirates',     awayLogo:LOGOS['Orlando Pirates'],   hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' },
-      { id:13, date:'2026-03-08T17:30:00+02:00', home:'TS Galaxy',         homeAbbr:'TS Galaxy',    homeLogo:LOGOS['TS Galaxy'],         away:'Polokwane City',    awayAbbr:'Polokwane',   awayLogo:LOGOS['Polokwane City'],    hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' },
-      { id:14, date:'2026-03-08T17:30:00+02:00', home:'Chippa United',     homeAbbr:'Chippa',       homeLogo:LOGOS['Chippa United'],     away:'Sekhukhune United', awayAbbr:'Sekhukhune',  awayLogo:LOGOS['Sekhukhune United'], hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' },
-      { id:15, date:'2026-03-15T15:00:00+02:00', home:'Mamelodi Sundowns', homeAbbr:'Sundowns',     homeLogo:LOGOS['Mamelodi Sundowns'], away:'Siwelele',          awayAbbr:'Siwelele',    awayLogo:LOGOS['Siwelele'],          hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' },
-      { id:16, date:'2026-03-15T17:30:00+02:00', home:'Orlando Pirates',   homeAbbr:'Pirates',      homeLogo:LOGOS['Orlando Pirates'],   away:'Magesi',            awayAbbr:'Magesi',      awayLogo:LOGOS['Magesi'],            hg:null, ag:null, status:'NS', isLive:false, isDone:false, elapsed:null, venue:'' }
-    ],
-    live: []
+    id:pl.id, name:pl.name, photo:pl.photo,
+    nationality:pl.nationality, age:pl.age,
+    club, clubLogo:LOGOS[club]||st.team?.logo||'',
+    position:gm.position||null,
+    apps:gm.appearences||0, starts:gm.lineups||0, minutes:gm.minutes||0,
+    rating:parseFloat(gm.rating||0),
+    goals:g.total||0, assists:g.assists||0,
+    xg:parseFloat(g.expected||0),
+    shots:sh.total||0, shotsOn:sh.on||0,
+    passes:ps.total||0, keyPasses:ps.key||0, passAcc:ps.accuracy||0,
+    dribbles:dr.success||0, tackles:tk.total||0,
+    interceptions:tk.interceptions||0, blocks:tk.blocks||0,
+    yellowCards:c.yellow||0, redCards:c.red||0, yellowRed:c.yellowred||0,
+    fouls:fo.committed||0, foulsDrawn:fo.drawn||0,
+    saves:g.saves||0, penScored:pe.scored||0, penMissed:pe.missed||0,
   };
 }
 
-exports.handler = async function(event, context) {
+// ── Response builder ──────────────────────────────────────────
+function ok(data, isLive=false) {
+  const ttl = isLive ? 60 : 300;
+  return {
+    statusCode:200,
+    headers:{
+      'Content-Type':'application/json',
+      'Cache-Control':`public,max-age=${ttl},s-maxage=${ttl}`,
+      'Access-Control-Allow-Origin':'*',
+    },
+    body: JSON.stringify(data),
+  };
+}
+function fail(msg,status=500) {
+  return {
+    statusCode:status,
+    headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'},
+    body:JSON.stringify({error:msg}),
+  };
+}
+
+// ════════════════════════════════════════════════════════════
+//  HANDLER
+// ════════════════════════════════════════════════════════════
+exports.handler = async function(event) {
+  if (event.httpMethod==='OPTIONS')
+    return {statusCode:200,headers:{'Access-Control-Allow-Origin':'*'},body:''};
+
+  const qs    = event.queryStringParameters||{};
+  const type  = qs.type||'full';
+
+  // ── LIVE only ────────────────────────────────────────────────
+  if (type==='live') {
+    const c=getCache('live'); if(c) return ok(c,true);
+    try {
+      const d=await apiFetch(`/fixtures?league=${LEAGUE}&live=all`);
+      const live=(d.response||[]).map(parseFixture);
+      const out={source:'api',updated:new Date().toISOString(),live};
+      setCache('live',out,60_000);
+      return ok(out,live.length>0);
+    } catch(e){ return fail(e.message); }
+  }
+
+  // ── PLAYER STATS ─────────────────────────────────────────────
+  if (type==='players') {
+    const c=getCache('players'); if(c) return ok(c,false);
+    try {
+      const [sc,as,yw,rd]=await Promise.all([
+        apiFetch(`/players/topscorers?league=${LEAGUE}&season=${SEASON}`),
+        apiFetch(`/players/topassists?league=${LEAGUE}&season=${SEASON}`),
+        apiFetch(`/players/topyellowcards?league=${LEAGUE}&season=${SEASON}`),
+        apiFetch(`/players/topredcards?league=${LEAGUE}&season=${SEASON}`),
+      ]);
+      const out={
+        source:'api', updated:new Date().toISOString(),
+        topScorers:(sc.response||[]).slice(0,20).map(parsePlayer),
+        topAssists:(as.response||[]).slice(0,20).map(parsePlayer),
+        topYellow:(yw.response||[]).slice(0,20).map(parsePlayer),
+        topRed:(rd.response||[]).filter(r=>r.statistics?.[0]?.cards?.red>0).slice(0,20).map(parsePlayer),
+      };
+      setCache('players',out,3_600_000);
+      return ok(out,false);
+    } catch(e){ return fail(e.message); }
+  }
+
+  // ── FULL BUNDLE (default) ─────────────────────────────────────
+  const c=getCache('full');
+  if(c) return ok(c,c.isLive);
+
   try {
-    const [standingsData, resultsData, fixturesData, liveData] = await Promise.all([
+    const [st,rs,fx,lv,sc,as,yw,rd]=await Promise.all([
       apiFetch(`/standings?league=${LEAGUE}&season=${SEASON}`),
       apiFetch(`/fixtures?league=${LEAGUE}&season=${SEASON}&last=10`),
       apiFetch(`/fixtures?league=${LEAGUE}&season=${SEASON}&next=10`),
-      apiFetch(`/fixtures?league=${LEAGUE}&live=all`)
+      apiFetch(`/fixtures?league=${LEAGUE}&live=all`),
+      apiFetch(`/players/topscorers?league=${LEAGUE}&season=${SEASON}`),
+      apiFetch(`/players/topassists?league=${LEAGUE}&season=${SEASON}`),
+      apiFetch(`/players/topyellowcards?league=${LEAGUE}&season=${SEASON}`),
+      apiFetch(`/players/topredcards?league=${LEAGUE}&season=${SEASON}`),
     ]);
 
-    const table    = parseStandings(standingsData);
-    const results  = (resultsData.response  || []).map(parseFixture).filter(f => f.isDone);
-    const fixtures = (fixturesData.response || []).map(parseFixture).filter(f => !f.isDone && !f.isLive);
-    const live     = (liveData.response     || []).map(parseFixture);
+    const table   = (st.response?.[0]?.league?.standings?.[0]||[]).map(parseStanding);
+    const results = (rs.response||[]).map(parseFixture);
+    const fixtures= (fx.response||[]).map(parseFixture);
+    const live    = (lv.response||[]).map(parseFixture);
 
-    if (table.length < 8) {
-      console.log('API returned insufficient data — using fallback');
-      return respond(getFallbackData(), false);
-    }
+    const topScorers=(sc.response||[]).slice(0,20).map(parsePlayer);
+    const topAssists=(as.response||[]).slice(0,20).map(parsePlayer);
+    const topYellow =(yw.response||[]).slice(0,20).map(parsePlayer);
+    const topRed    =(rd.response||[]).filter(r=>r.statistics?.[0]?.cards?.red>0).slice(0,20).map(parsePlayer);
 
-    const isLiveNow = live.length > 0;
-    return respond({
-      source:  'api-football',
-      updated: new Date().toISOString(),
-      isLive:  isLiveNow,
-      table:   table.length   ? table    : getFallbackData().table,
-      results: results.length ? results  : getFallbackData().results,
-      fixtures:fixtures.length? fixtures : getFallbackData().fixtures,
-      live
-    }, isLiveNow);
+    const isLive=live.length>0;
+    const out={
+      source:'api-football', updated:new Date().toISOString(),
+      isLive, table, results, fixtures, live,
+      topScorers, topAssists, topYellow, topRed,
+    };
+    setCache('full',out,isLive?60_000:300_000);
+    return ok(out,isLive);
 
-  } catch (err) {
-    console.error('API-Football error:', err.message);
-    return respond(getFallbackData(), false);
+  } catch(e) {
+    console.error('PSL fetch error:',e.message);
+    // Return fallback empty shell — frontend uses hardcoded REAL_TABLE
+    return ok({
+      source:'error', updated:new Date().toISOString(),
+      error:e.message, isLive:false,
+      table:[], results:[], fixtures:[], live:[],
+      topScorers:[], topAssists:[], topYellow:[], topRed:[],
+    }, false);
   }
 };
-
-function respond(body, isLiveNow) {
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json',
-      // 60s cache during live games, 5min otherwise (CDN 1hr when idle)
-      'Cache-Control': isLiveNow
-        ? 'public, s-maxage=60, max-age=60'
-        : 'public, s-maxage=3600, max-age=300'
-    },
-    body: JSON.stringify(body)
-  };
-}
