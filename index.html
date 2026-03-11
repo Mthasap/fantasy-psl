@@ -2935,37 +2935,84 @@ function loadTable() {
 
 
 // ════════════════════════════════════════════════════
-//  TICKER — live first, then results, then upcoming
+//  TICKER — current GW only: live > results > upcoming
 // ════════════════════════════════════════════════════
 function loadTickerData() {
-  updateTickerFromReal(); // instant
-  fetchPSLData(function(data) {
-    if (data) updateTickerFromData(data);
+  // Show hardcoded GW data instantly while DB loads
+  updateTickerFromReal();
+
+  // Then load live DB data for the current gameweek only
+  db.from('gameweeks')
+    .select('number')
+    .eq('is_current', true)
+    .limit(1)
+    .then(function(gwRes) {
+      var gw = (gwRes.data && gwRes.data[0]) ? gwRes.data[0].number : null;
+      if (!gw) return;
+
+      db.from('fixtures')
+        .select('*')
+        .eq('gameweek', gw)
+        .order('kickoff_at', { ascending: true })
+        .then(function(fixRes) {
+          if (fixRes.error || !fixRes.data || !fixRes.data.length) return;
+          renderTickerFromRows(fixRes.data);
+        });
+    });
+}
+
+function renderTickerFromRows(rows) {
+  var track = document.getElementById('ticker-track'); if (!track) return;
+  var items = [];
+
+  // Separate into live, finished, and upcoming
+  var live     = rows.filter(function(f) { return f.status === '1H' || f.status === 'HT' || f.status === '2H'; });
+  var finished = rows.filter(function(f) { return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN'; });
+  var upcoming = rows.filter(function(f) { return f.status === 'NS'; });
+
+  if (live.length) {
+    // If any game is live, show those first (red dot)
+    live.forEach(function(f) {
+      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'r' });
+    });
+    // Then append any already-finished games from this GW
+    finished.forEach(function(f) {
+      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'g' });
+    });
+  } else if (finished.length) {
+    // No live games — show all results from this GW (green dot)
+    finished.forEach(function(f) {
+      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'g' });
+    });
+  }
+
+  // Always append remaining upcoming fixtures from this GW (orange dot)
+  upcoming.forEach(function(f) {
+    var d  = new Date(f.kickoff_at);
+    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
+    items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: ds, dot: 'o' });
   });
+
+  if (!items.length) { updateTickerFromReal(); return; }
+
+  // Double items so the scroll looks seamless
+  var doubled = items.concat(items);
+  track.innerHTML = doubled.map(function(f) {
+    return '<div class="ti">' +
+      '<div class="ti-dot ' + f.dot + '"></div>' +
+      '<span class="ti-label">' + f.label + '</span>' +
+      '<span class="ti-score">' + f.score + '</span>' +
+    '</div>';
+  }).join('');
 }
 
 function updateTickerFromData(data) {
+  // Called by live API feed — only update if there are live games
+  if (!data || !data.live || !data.live.length) return;
   var track = document.getElementById('ticker-track'); if (!track) return;
-  // Priority: live > results > upcoming
-  var items = [];
-  if (data.live && data.live.length) {
-    items = data.live.map(function(f) {
-      return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'r' };
-    });
-  } else if (data.results && data.results.length) {
-    items = data.results.slice(0, 8).map(function(f) {
-      return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
-    });
-    // Also append next 3 upcoming
-    if (data.fixtures) {
-      data.fixtures.slice(0, 3).forEach(function(f) {
-        var d = new Date(f.date);
-        var ds = d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}).toUpperCase();
-        items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
-      });
-    }
-  }
-  if (!items.length) { updateTickerFromReal(); return; }
+  var items = data.live.map(function(f) {
+    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'r' };
+  });
   var doubled = items.concat(items);
   track.innerHTML = doubled.map(function(f) {
     return '<div class="ti">' +
@@ -2977,15 +3024,17 @@ function updateTickerFromData(data) {
 }
 
 function updateTickerFromReal() {
+  // Instant fallback using hardcoded REAL_FIXTURES — filters to current GW content
   var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = REAL_FIXTURES.FT.slice(0, 8).map(function(f) {
+  var items = REAL_FIXTURES.FT.map(function(f) {
     return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
   });
-  REAL_FIXTURES.NS.slice(0, 3).forEach(function(f) {
-    var d = new Date(f.date);
-    var ds = d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}).toUpperCase();
+  REAL_FIXTURES.NS.forEach(function(f) {
+    var d  = new Date(f.date);
+    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
     items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
   });
+  if (!items.length) return;
   var doubled = items.concat(items);
   track.innerHTML = doubled.map(function(f) {
     return '<div class="ti">' +
