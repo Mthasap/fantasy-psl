@@ -2825,11 +2825,21 @@ function renderFixtureRow(home, away, hg, ag, date, isLive, elapsed, kickoffTime
 function loadFixtures() {
   var c = document.getElementById('fix-list'); if (!c) return;
 
-  // Always show hardcoded data immediately
+  // Show hardcoded data instantly while DB loads
   renderFixturesFromLocal();
-
   updateTickerFromReal();
-  // API only used for LIVE matches — upcoming & results use REAL_FIXTURES (correct SAST times)
+
+  // Load from Supabase — this is the live source of truth
+  db.from('fixtures')
+    .select('*')
+    .order('kickoff_at', { ascending: true })
+    .limit(100)
+    .then(function(res) {
+      if (res.error || !res.data || !res.data.length) return;
+      renderFixturesFromDB(res.data);
+    });
+
+  // Also check for live data from API
   fetchPSLData(function(data) {
     if (!data) return;
     if (data.live && data.live.length) {
@@ -2838,6 +2848,48 @@ function loadFixtures() {
       if (ST.fixTab === 'LIVE') loadFixturesFromData(data);
     }
   });
+}
+
+function renderFixturesFromDB(rows) {
+  var c = document.getElementById('fix-list'); if (!c) return;
+  var tab = ST.fixTab;
+
+  // Filter by tab
+  var list = rows.filter(function(f) {
+    if (tab === 'NS')   return f.status === 'NS' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
+    if (tab === 'FT')   return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN';
+    if (tab === 'LIVE') return f.status === '1H' || f.status === 'HT' || f.status === '2H';
+    return true;
+  });
+
+  if (!list.length) {
+    c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' +
+      (tab === 'LIVE' ? 'No live matches right now' : 'No fixtures to display') + '</div>';
+    return;
+  }
+
+  // Sort results newest first, upcoming oldest first
+  if (tab === 'FT') list = list.reverse();
+
+  // Group by date
+  var grouped = {};
+  list.forEach(function(f) {
+    var d = new Date(f.kickoff_at);
+    var label = formatMatchDate(d.toISOString().slice(0,10));
+    if (!grouped[label]) grouped[label] = [];
+    grouped[label].push(f);
+  });
+
+  var html = '';
+  Object.keys(grouped).forEach(function(label) {
+    html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
+    grouped[label].forEach(function(f) {
+      var d = new Date(f.kickoff_at);
+      var timeStr = d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', timeZone:'Africa/Johannesburg' });
+      html += renderFixtureRow(f.home_team, f.away_team, f.home_score, f.away_score, d.toISOString().slice(0,10), false, null, timeStr);
+    });
+  });
+  c.innerHTML = html;
 }
 
 // Render fixtures purely from REAL_FIXTURES hardcoded data
