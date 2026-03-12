@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
   try {
 
-    // Step 1 — get PSL teams
+    // Get PSL teams
     const teamsRes = await fetch(
       "https://v3.football.api-sports.io/teams?league=288&season=2025",
       { headers }
@@ -21,29 +21,28 @@ export default async function handler(req, res) {
 
     let allPlayers = [];
 
-    // Step 2 — get players for each team
     for (const t of teams) {
 
       const teamId = t.team.id;
       const teamName = t.team.name;
 
-      const playersRes = await fetch(
-        `https://v3.football.api-sports.io/players?team=${teamId}&season=2025`,
+      // Fetch squad
+      const squadRes = await fetch(
+        `https://v3.football.api-sports.io/players/squads?team=${teamId}`,
         { headers }
       );
 
-      const playersData = await playersRes.json();
-      const players = playersData.response || [];
+      const squadData = await squadRes.json();
 
-      players.forEach(p => {
+      const squad = squadData.response?.[0]?.players || [];
 
-        const player = p.player;
+      squad.forEach(player => {
 
         allPlayers.push({
           api_player_id: player.id,
           display_name: player.name,
           team: teamName,
-          position: p.statistics?.[0]?.games?.position || "MID",
+          position: player.position || "MID",
           photo: player.photo,
           price: 6.0,
           is_available: true
@@ -60,7 +59,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Step 3 — insert into Supabase
+    // Insert players into Supabase
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/players`, {
       method: "POST",
       headers: {
