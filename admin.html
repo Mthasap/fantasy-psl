@@ -1,1079 +1,288 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fantasy PSL — Admin Panel</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy PSL — Admin Panel</title>
 
-    :root {
-      --green:   #00e676;
-      --red:     #ff1744;
-      --amber:   #ffc107;
-      --blue:    #2979ff;
-      --bg:      #0a0c0f;
-      --surface: #111418;
-      --card:    #181c22;
-      --border:  #252b34;
-      --text:    #e8eaf0;
-      --muted:   #6b7280;
-      --font:    'Inter', sans-serif;
-      --mono:    'JetBrains Mono', monospace;
-    }
+<style>
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+body{
+font-family:Arial;
+background:#0a0c0f;
+color:white;
+margin:0;
+}
 
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+header{
+background:#111418;
+padding:15px 30px;
+display:flex;
+justify-content:space-between;
+border-bottom:1px solid #252b34;
+}
 
-    /* ── LOGIN SCREEN ──────────────────────────────────────────── */
-    #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: radial-gradient(ellipse at 50% 0%, #0d2b1a 0%, var(--bg) 60%);
-    }
+main{
+max-width:1100px;
+margin:auto;
+padding:30px;
+}
 
-    .login-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
+button{
+padding:8px 14px;
+border-radius:6px;
+border:none;
+cursor:pointer;
+font-weight:bold;
+}
 
-    .login-logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      letter-spacing: 3px;
-      color: var(--green);
-      margin-bottom: 4px;
-    }
+.btn-green{background:#00e676;color:black}
+.btn-blue{background:#2979ff;color:white}
 
-    .login-sub {
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 36px;
-    }
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
 
-    .login-box input {
-      width: 100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 16px;
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 15px;
-      letter-spacing: 3px;
-      text-align: center;
-      outline: none;
-      margin-bottom: 16px;
-      transition: border-color 0.2s;
-    }
+td,th{
+padding:10px;
+border-bottom:1px solid #252b34;
+}
 
-    .login-box input:focus { border-color: var(--green); }
+.score-input{
+width:45px;
+text-align:center;
+}
 
-    .login-btn {
-      width: 100%;
-      background: var(--green);
-      color: #000;
-      font-family: var(--font);
-      font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 1px;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
+</style>
 
-    .login-btn:hover { opacity: 0.85; }
-
-    .login-error {
-      color: var(--red);
-      font-size: 13px;
-      margin-top: 12px;
-      display: none;
-    }
-
-    /* ── MAIN PANEL ────────────────────────────────────────────── */
-    #admin-panel { display: none; }
-
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .header-logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: 2px;
-      color: var(--green);
-    }
-
-    .header-badge {
-      background: rgba(255,23,68,0.15);
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(255,23,68,0.3);
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    #current-gw-badge {
-      background: rgba(0,230,118,0.1);
-      color: var(--green);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(0,230,118,0.25);
-    }
-
-    .logout-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .logout-btn:hover { border-color: var(--red); color: var(--red); }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 24px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    .full-width { grid-column: 1 / -1; }
-
-    /* ── CARDS ─────────────────────────────────────────────────── */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    .card-header {
-      padding: 18px 20px 14px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-title .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-    }
-
-    .dot-green  { background: var(--green); }
-    .dot-amber  { background: var(--amber); }
-    .dot-blue   { background: var(--blue); }
-    .dot-red    { background: var(--red); }
-
-    .card-body { padding: 20px; }
-
-    /* ── FORM ELEMENTS ─────────────────────────────────────────── */
-    label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="datetime-local"],
-    select {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 14px;
-      outline: none;
-      margin-bottom: 14px;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, select:focus { border-color: var(--green); }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-    }
-
-    /* ── BUTTONS ───────────────────────────────────────────────── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-family: var(--font);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .btn-green  { background: var(--green); color: #000; }
-    .btn-green:hover:not(:disabled)  { opacity: 0.85; }
-
-    .btn-red    { background: rgba(255,23,68,0.15); color: var(--red); border: 1px solid rgba(255,23,68,0.3); }
-    .btn-red:hover:not(:disabled)    { background: rgba(255,23,68,0.25); }
-
-    .btn-amber  { background: rgba(255,193,7,0.15); color: var(--amber); border: 1px solid rgba(255,193,7,0.3); }
-    .btn-amber:hover:not(:disabled)  { background: rgba(255,193,7,0.25); }
-
-    .btn-blue   { background: rgba(41,121,255,0.15); color: var(--blue); border: 1px solid rgba(41,121,255,0.3); }
-    .btn-blue:hover:not(:disabled)   { background: rgba(41,121,255,0.25); }
-
-    .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled)  { border-color: var(--text); color: var(--text); }
-
-    .btn-full { width: 100%; }
-
-    /* ── STATUS MESSAGES ───────────────────────────────────────── */
-    .status-msg {
-      font-size: 13px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-top: 12px;
-      display: none;
-    }
-
-    .status-ok    { background: rgba(0,230,118,0.1);  color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
-    .status-error { background: rgba(255,23,68,0.1);  color: var(--red);   border: 1px solid rgba(255,23,68,0.2); }
-    .status-info  { background: rgba(41,121,255,0.1); color: var(--blue);  border: 1px solid rgba(41,121,255,0.2); }
-
-    /* ── CRON LOG ──────────────────────────────────────────────── */
-    .cron-log {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.7;
-      max-height: 320px;
-      overflow-y: auto;
-      color: #8fa3c0;
-      white-space: pre-wrap;
-      display: none;
-      margin-top: 14px;
-    }
-
-    .cron-log .log-ok    { color: var(--green); }
-    .cron-log .log-warn  { color: var(--amber); }
-    .cron-log .log-error { color: var(--red); }
-    .cron-log .log-head  { color: #c0d4f0; font-weight: 600; }
-
-    /* ── RESULTS TABLE ─────────────────────────────────────────── */
-    .results-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .results-table th {
-      text-align: left;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .results-table td {
-      padding: 10px 12px;
-      font-size: 13px;
-      border-bottom: 1px solid rgba(37,43,52,0.5);
-    }
-
-    .results-table tr:last-child td { border-bottom: none; }
-
-    .score-badge {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 600;
-      background: rgba(0,230,118,0.1);
-      color: var(--green);
-      padding: 2px 10px;
-      border-radius: 4px;
-    }
-
-    .status-ns  { color: var(--muted); font-size: 11px; }
-    .status-ft  { color: var(--green); font-size: 11px; font-weight: 600; }
-    .status-live { color: var(--amber); font-size: 11px; font-weight: 600; }
-
-    /* ── GAMEWEEK CONTROL ──────────────────────────────────────── */
-    .gw-display {
-      text-align: center;
-      padding: 20px 0;
-    }
-
-    .gw-number {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 72px;
-      line-height: 1;
-      color: var(--green);
-    }
-
-    .gw-label {
-      font-size: 11px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 4px;
-      margin-bottom: 20px;
-    }
-
-    .gw-stats {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      margin-bottom: 20px;
-    }
-
-    .gw-stat {
-      text-align: center;
-    }
-
-    .gw-stat-val {
-      font-family: var(--mono);
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .gw-stat-lbl {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    /* ── SPINNER ───────────────────────────────────────────────── */
-    .spinner {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(0,0,0,0.3);
-      border-top-color: #000;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    .spinner-light {
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top-color: var(--green);
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── SCROLLBAR ─────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  </style>
 </head>
+
 <body>
 
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!-- LOGIN SCREEN                                                    -->
-<!-- ══════════════════════════════════════════════════════════════ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">FANTASY PSL</div>
-    <div class="login-sub">Admin Panel</div>
-    <input type="password" id="admin-pw" placeholder="Enter admin password" autocomplete="current-password" />
-    <button class="login-btn" onclick="doLogin()">ENTER</button>
-    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
-  </div>
-</div>
+<header>
+<div><b>Fantasy PSL Admin</b></div>
+<div id="gw-label">Loading GW...</div>
+</header>
 
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!-- ADMIN PANEL                                                     -->
-<!-- ══════════════════════════════════════════════════════════════ -->
-<div id="admin-panel">
+<main>
 
-  <header>
-    <div class="header-left">
-      <div class="header-logo">FANTASY PSL</div>
-      <div class="header-badge">ADMIN</div>
-    </div>
-    <div class="header-right">
-      <div id="current-gw-badge">Loading...</div>
-      <button class="logout-btn" onclick="doLogout()">Log Out</button>
-    </div>
-  </header>
+<h3>Add Fixture</h3>
 
-  <main>
+<select id="home"></select> <select id="away"></select>
 
-    <!-- ── AUTOMATION CONTROL (full width) ──────────────────────── -->
-    <div class="card full-width">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-green"></span>
-          Automation Control
-        </div>
-        <div style="font-size:12px; color:var(--muted)">Runs automatically at 01:00 SAST daily</div>
-      </div>
-      <div class="card-body">
-        <div class="row" style="margin-bottom:0">
-          <button class="btn btn-green" id="run-all-btn" onclick="runCron('all')">
-            ▶ Run Full Automation Now
-          </button>
-          <div style="display:flex; gap:10px;">
-            <button class="btn btn-blue btn-full" onclick="runCron('fixtures')">Sync Fixtures</button>
-            <button class="btn btn-amber btn-full" onclick="runCron('results')">Sync Results</button>
-            <button class="btn btn-ghost btn-full" onclick="runCron('points')">Calc Points</button>
-          </div>
-        </div>
-        <div class="status-msg" id="cron-status"></div>
-        <div class="cron-log" id="cron-log"></div>
-      </div>
-    </div>
+<input id="gw" type="number" placeholder="Gameweek">
+<input id="kickoff" type="datetime-local">
 
-    <!-- ── QUICK RESULT ENTRY ────────────────────────────────────── -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-amber"></span>
-          Enter Match Result
-        </div>
-        <div style="font-size:12px; color:var(--muted)">Manual override</div>
-      </div>
-      <div class="card-body">
-        <label>Home Team</label>
-        <select id="res-home"></select>
-        <div class="row">
-          <div>
-            <label>Home Goals</label>
-            <input type="number" id="res-hg" min="0" max="20" value="0">
-          </div>
-          <div>
-            <label>Away Goals</label>
-            <input type="number" id="res-ag" min="0" max="20" value="0">
-          </div>
-        </div>
-        <label>Away Team</label>
-        <select id="res-away"></select>
-        <button class="btn btn-amber btn-full" onclick="saveResult()">Save Result</button>
-        <div class="status-msg" id="result-status"></div>
-      </div>
-    </div>
+<button class="btn-green" onclick="addFixture()">Add Fixture</button>
 
-    <!-- ── GAMEWEEK CONTROL ──────────────────────────────────────── -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-blue"></span>
-          Gameweek Control
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="gw-display">
-          <div class="gw-number" id="gw-num">—</div>
-          <div class="gw-label">Current Gameweek</div>
-          <div class="gw-stats">
-            <div class="gw-stat">
-              <div class="gw-stat-val" id="gw-total">—</div>
-              <div class="gw-stat-lbl">Fixtures</div>
-            </div>
-            <div class="gw-stat">
-              <div class="gw-stat-val" id="gw-done">—</div>
-              <div class="gw-stat-lbl">Finished</div>
-            </div>
-            <div class="gw-stat">
-              <div class="gw-stat-val" id="gw-remaining">—</div>
-              <div class="gw-stat-lbl">Remaining</div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-red btn-full" onclick="forceCloseGW()">Force Close GW</button>
-          <button class="btn btn-green btn-full" onclick="forceOpenNextGW()">Open Next GW</button>
-        </div>
-        <div class="row" style="margin-top:12px">
-          <div>
-            <label>Jump to GW</label>
-            <input type="number" id="jump-gw" min="1" max="34" placeholder="e.g. 25">
-          </div>
-          <div style="display:flex; align-items:flex-end;">
-            <button class="btn btn-blue btn-full" onclick="jumpToGW()">Set Active</button>
-          </div>
-        </div>
-        <div class="status-msg" id="gw-status"></div>
-      </div>
-    </div>
+<hr style="margin:30px 0">
 
-    <!-- ── ADD FIXTURE ───────────────────────────────────────────── -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-green"></span>
-          Add Fixture
-        </div>
-        <div style="font-size:12px; color:var(--muted)">Manual entry fallback</div>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div>
-            <label>Gameweek</label>
-            <input type="number" id="fix-gw" min="1" max="34" placeholder="e.g. 24">
-          </div>
-          <div>
-            <label>Kickoff (SAST)</label>
-            <input type="datetime-local" id="fix-kickoff">
-          </div>
-        </div>
-        <label>Home Team</label>
-        <select id="fix-home"></select>
-        <label>Away Team</label>
-        <select id="fix-away"></select>
-        <button class="btn btn-green btn-full" onclick="addFixture()">Add Fixture</button>
-        <div class="status-msg" id="fixture-status"></div>
-      </div>
-    </div>
+<h3>Current Gameweek Fixtures</h3>
 
-    <!-- ── PLAYER MANAGEMENT ─────────────────────────────────────── -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-red"></span>
-          Player Management
-        </div>
-      </div>
-      <div class="card-body">
-        <label>Search Player</label>
-        <input type="text" id="player-search" placeholder="e.g. Makgopa" oninput="searchPlayers()">
-        <div id="player-results" style="max-height:200px; overflow-y:auto; margin-bottom:14px;"></div>
+<table>
 
-        <div id="player-edit-form" style="display:none; border-top:1px solid var(--border); padding-top:14px;">
-          <div style="font-size:13px; font-weight:600; margin-bottom:14px;" id="editing-player-name"></div>
-          <div class="row">
-            <div>
-              <label>Price (M)</label>
-              <input type="number" id="edit-price" step="0.1" min="4" max="15">
-            </div>
-            <div>
-              <label>Availability</label>
-              <select id="edit-available">
-                <option value="true">Available</option>
-                <option value="false">Injured/Suspended</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button class="btn btn-green btn-full" onclick="savePlayerEdit()">Save</button>
-            <button class="btn btn-ghost" onclick="cancelPlayerEdit()">Cancel</button>
-          </div>
-          <div class="status-msg" id="player-status"></div>
-        </div>
-      </div>
-    </div>
+<thead>
+<tr>
+<th>Home</th>
+<th>Score</th>
+<th>Away</th>
+<th>Kickoff</th>
+<th>Status</th>
+<th>Save</th>
+</tr>
+</thead>
 
-    <!-- ── CURRENT FIXTURES TABLE (full width) ──────────────────── -->
-    <div class="card full-width">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="dot dot-amber"></span>
-          Current Gameweek Fixtures
-        </div>
-        <button class="btn btn-ghost" style="font-size:12px; padding:6px 14px;" onclick="loadCurrentFixtures()">Refresh</button>
-      </div>
-      <div class="card-body" style="padding:0; overflow-x:auto;">
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Home</th>
-              <th>Score</th>
-              <th>Away</th>
-              <th>Kickoff (SAST)</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="fixtures-tbody">
-            <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:24px;">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+<tbody id="fixtures"></tbody>
 
-  </main>
-</div>
+</table>
+
+</main>
 
 <script>
-  // ══════════════════════════════════════════════════════════════════
-  // CONFIG — update these if your Supabase project changes
-  // ══════════════════════════════════════════════════════════════════
-  const SUPABASE_URL     = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
-  const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-  const ADMIN_PASSWORD   = 'fpsl-admin-2026';   // ⚠️ Change this to your own secret password!
 
-  const TEAMS = [
-    'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
-    'AmaZulu FC','Chippa United','Golden Arrows','Sekhukhune United',
-    'TS Galaxy','Polokwane City','Marumo Gallants','Richards Bay',
-    'Magesi FC','Durban City','Orbit College FC','Siwelele'
-  ].sort();
+const SUPABASE_URL="https://vkjzwpbkqcckrjwsqxgk.supabase.co"
 
-  let STATE = { gw: null, fixtures: [] };
+const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU"
 
-  // ── Supabase REST helper ──────────────────────────────────────────
-  async function sb(method, table, body, query) {
-    const url = SUPABASE_URL + '/rest/v1/' + table + (query ? '?' + query : '');
-    const headers = {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON,
-      'Authorization': 'Bearer ' + SUPABASE_ANON,
-      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
-    };
-    const opts = { method, headers };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    const text = await res.text();
-    if (!res.ok) throw new Error(text || res.status);
-    return text ? JSON.parse(text) : null;
-  }
+const TEAMS=[
+"Mamelodi Sundowns",
+"Orlando Pirates",
+"Kaizer Chiefs",
+"Stellenbosch FC",
+"AmaZulu FC",
+"Chippa United",
+"Golden Arrows",
+"Sekhukhune United",
+"TS Galaxy",
+"Polokwane City",
+"Marumo Gallants",
+"Richards Bay",
+"Magesi FC",
+"Durban City",
+"Orbit College FC",
+"Siwelele"
+]
 
-  // ══════════════════════════════════════════════════════════════════
-  // LOGIN
-  // ══════════════════════════════════════════════════════════════════
-  document.getElementById('admin-pw').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
+let CURRENT_GW=null
+let FIXTURES=[]
 
-  function doLogin() {
-    const pw = document.getElementById('admin-pw').value.trim();
-    if (pw === ADMIN_PASSWORD) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('admin-panel').style.display  = 'block';
-      initPanel();
-    } else {
-      document.getElementById('login-error').style.display = 'block';
-      document.getElementById('admin-pw').value = '';
-    }
-  }
+function populateTeams(){
 
-  function doLogout() {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('admin-panel').style.display  = 'none';
-    document.getElementById('admin-pw').value             = '';
-  }
+const home=document.getElementById("home")
+const away=document.getElementById("away")
 
-  // ══════════════════════════════════════════════════════════════════
-  // INIT
-  // ══════════════════════════════════════════════════════════════════
-  async function initPanel() {
-    populateTeamDropdowns();
-    await loadCurrentGW();
-    await loadCurrentFixtures();
-  }
+home.innerHTML=TEAMS.map(t=>`<option>${t}</option>`).join("")
+away.innerHTML=TEAMS.map(t=>`<option>${t}</option>`).join("")
 
-  function populateTeamDropdowns() {
-    const selects = ['res-home','res-away','fix-home','fix-away'];
-    selects.forEach(id => {
-      const el = document.getElementById(id);
-      el.innerHTML = TEAMS.map(t => '<option value="' + t + '">' + t + '</option>').join('');
-    });
-    document.getElementById('res-away').value = TEAMS[1];
-    document.getElementById('fix-away').value  = TEAMS[1];
-  }
+}
 
-  async function loadCurrentGW() {
-    try {
-      const data = await sb('GET', 'gameweeks', null, 'is_current=eq.true&select=number&limit=1');
-      if (data && data[0]) {
-        STATE.gw = data[0].number;
-        document.getElementById('gw-num').textContent          = STATE.gw;
-        document.getElementById('current-gw-badge').textContent = 'GW ' + STATE.gw;
-        document.getElementById('jump-gw').value               = STATE.gw;
-      }
-    } catch(e) {
-      console.error('loadCurrentGW error:', e);
-    }
-  }
+async function sb(method,table,body,query){
 
-  async function loadCurrentFixtures() {
-    if (!STATE.gw) await loadCurrentGW();
-    const gw = STATE.gw || 23;
-    try {
-      const data = await sb('GET', 'fixtures', null, 'gameweek=eq.' + gw + '&select=*&order=kickoff_at.asc');
-      STATE.fixtures = data || [];
+const url=SUPABASE_URL+"/rest/v1/"+table+(query?"?"+query:"")
 
-      const total     = STATE.fixtures.length;
-      const finished  = STATE.fixtures.filter(f => f.status === 'FT').length;
-      const remaining = total - finished;
+const res=await fetch(url,{
+method,
+headers:{
+apikey:SUPABASE_ANON,
+Authorization:"Bearer "+SUPABASE_ANON,
+"Content-Type":"application/json"
+},
+body:body?JSON.stringify(body):null
+})
 
-      document.getElementById('gw-total').textContent     = total;
-      document.getElementById('gw-done').textContent      = finished;
-      document.getElementById('gw-remaining').textContent = remaining;
+const text=await res.text()
 
-      renderFixturesTable(STATE.fixtures);
-    } catch(e) {
-      console.error('loadCurrentFixtures error:', e);
-    }
-  }
+return text?JSON.parse(text):null
 
-  function renderFixturesTable(fixtures) {
-    const tbody = document.getElementById('fixtures-tbody');
-    if (!fixtures.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No fixtures for this gameweek</td></tr>';
-      return;
-    }
+}
 
-    tbody.innerHTML = fixtures.map(f => {
-      const kickoff = f.kickoff_at ? new Date(f.kickoff_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'short', timeStyle: 'short' }) : '—';
-      const score   = f.status === 'FT' || f.status === 'AET'
-        ? '<span class="score-badge">' + f.home_score + ' – ' + f.away_score + '</span>'
-        : '<span style="color:var(--muted)">vs</span>';
-      const statusEl = f.status === 'FT'
-        ? '<span class="status-ft">FT</span>'
-        : f.status === 'NS'
-          ? '<span class="status-ns">Upcoming</span>'
-          : '<span class="status-live">● LIVE</span>';
+async function loadGW(){
 
-      return '<tr>' +
-        '<td>' + f.home_team + '</td>' +
-        '<td style="text-align:center">' + score + '</td>' +
-        '<td>' + f.away_team + '</td>' +
-        '<td style="color:var(--muted)">' + kickoff + '</td>' +
-        '<td>' + statusEl + '</td>' +
-        '<td><button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="quickEditResult(' + "'" + f.home_team + "','" + f.away_team + "'" + ')">Edit</button></td>' +
-      '</tr>';
-    }).join('');
-  }
+const data=await sb(
+"GET",
+"gameweeks",
+null,
+"is_current=eq.true&select=number"
+)
 
-  // ══════════════════════════════════════════════════════════════════
-  // AUTOMATION — trigger cron
-  // ══════════════════════════════════════════════════════════════════
-  async function runCron(mode) {
-    const btn    = document.getElementById('run-all-btn');
-    const status = document.getElementById('cron-status');
-    const logEl  = document.getElementById('cron-log');
+CURRENT_GW=data[0].number
 
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Running...';
-    showStatus('cron-status', 'info', '⚙ Automation running — this takes 10–30 seconds...');
-    logEl.style.display = 'none';
+document.getElementById("gw-label").innerText="Gameweek "+CURRENT_GW
 
-    try {
-      const res  = await fetch('/api/points-cron?mode=' + mode + '&admin_key=' + ADMIN_PASSWORD, { method: 'POST' });
-      const data = await res.json();
+}
 
-      if (data.fatal_error) {
-        showStatus('cron-status', 'error', '✗ Fatal error: ' + data.fatal_error);
-      } else {
-        const errs = data.errors && data.errors.length ? ' (' + data.errors.length + ' warnings)' : '';
-        showStatus('cron-status', 'ok',
-          '✓ Complete in ' + data.duration_ms + 'ms' + errs + ' | ' +
-          'Fixtures: ' + data.fixtures_synced + ' | ' +
-          'Results: '  + data.results_updated + ' | ' +
-          'Users: '    + data.users_updated
-        );
-      }
+async function loadFixtures(){
 
-      // Render log
-      if (data.log && data.log.length) {
-        logEl.style.display = 'block';
-        logEl.innerHTML = data.log.map(line => {
-          if (line.includes('━━'))      return '<span class="log-head">' + escHtml(line) + '</span>';
-          if (line.includes('ERROR'))   return '<span class="log-error">' + escHtml(line) + '</span>';
-          if (line.includes('WARN'))    return '<span class="log-warn">'  + escHtml(line) + '</span>';
-          if (line.includes('✓'))       return '<span class="log-ok">'    + escHtml(line) + '</span>';
-          return escHtml(line);
-        }).join('\n');
-        logEl.scrollTop = logEl.scrollHeight;
-      }
+const data=await sb(
+"GET",
+"fixtures",
+null,
+"gameweek=eq."+CURRENT_GW+"&order=kickoff_at.asc"
+)
 
-      await loadCurrentGW();
-      await loadCurrentFixtures();
+FIXTURES=data||[]
 
-    } catch(e) {
-      showStatus('cron-status', 'error', '✗ Request failed: ' + e.message);
-    }
+renderFixtures()
 
-    btn.disabled = false;
-    btn.innerHTML = '▶ Run Full Automation Now';
-  }
+}
 
-  // ══════════════════════════════════════════════════════════════════
-  // MATCH RESULTS
-  // ══════════════════════════════════════════════════════════════════
-  async function saveResult() {
-    const home = document.getElementById('res-home').value;
-    const away = document.getElementById('res-away').value;
-    const hg   = parseInt(document.getElementById('res-hg').value) || 0;
-    const ag   = parseInt(document.getElementById('res-ag').value) || 0;
+function renderFixtures(){
 
-    if (home === away) {
-      showStatus('result-status', 'error', 'Home and away team cannot be the same'); return;
-    }
+const tbody=document.getElementById("fixtures")
 
-    try {
-      await sb('PATCH', 'fixtures', { home_score: hg, away_score: ag, status: 'FT' },
-        'home_team=eq.' + encodeURIComponent(home) + '&away_team=eq.' + encodeURIComponent(away));
+tbody.innerHTML=""
 
-      showStatus('result-status', 'ok', '✓ Result saved: ' + home + ' ' + hg + '–' + ag + ' ' + away);
-      await loadCurrentFixtures();
-    } catch(e) {
-      showStatus('result-status', 'error', '✗ Error: ' + e.message);
-    }
-  }
+FIXTURES.forEach(f=>{
 
-  function quickEditResult(home, away) {
-    document.getElementById('res-home').value = home;
-    document.getElementById('res-away').value = away;
-    document.querySelector('.card-body').scrollIntoView({ behavior: 'smooth' });
-  }
+const tr=document.createElement("tr")
 
-  // ══════════════════════════════════════════════════════════════════
-  // GAMEWEEK MANAGEMENT
-  // ══════════════════════════════════════════════════════════════════
-  async function forceCloseGW() {
-    if (!confirm('Close GW' + STATE.gw + '? This cannot be undone easily.')) return;
-    try {
-      await sb('PATCH', 'gameweeks', { is_current: false, is_finished: true }, 'number=eq.' + STATE.gw);
-      showStatus('gw-status', 'ok', '✓ GW' + STATE.gw + ' closed');
-      await loadCurrentGW();
-    } catch(e) {
-      showStatus('gw-status', 'error', '✗ ' + e.message);
-    }
-  }
+tr.innerHTML=`
+<td>${f.home_team}</td>
 
-  async function forceOpenNextGW() {
-    const next = (STATE.gw || 23) + 1;
-    if (!confirm('Open GW' + next + '? Make sure GW' + STATE.gw + ' is closed first.')) return;
-    try {
-      // Check if next GW exists
-      const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + next + '&select=number&limit=1');
-      if (existing && existing.length) {
-        await sb('PATCH', 'gameweeks', { is_current: true }, 'number=eq.' + next);
-      } else {
-        await sb('POST', 'gameweeks', { number: next, name: 'Gameweek ' + next, is_current: true, is_finished: false });
-      }
-      showStatus('gw-status', 'ok', '✓ GW' + next + ' is now active');
-      await loadCurrentGW();
-      await loadCurrentFixtures();
-    } catch(e) {
-      showStatus('gw-status', 'error', '✗ ' + e.message);
-    }
-  }
+<td>
+<input class="score-input" id="hg_${f.id}" value="${f.home_score||0}">
+-
+<input class="score-input" id="ag_${f.id}" value="${f.away_score||0}">
+</td>
 
-  async function jumpToGW() {
-    const gw = parseInt(document.getElementById('jump-gw').value);
-    if (!gw || gw < 1 || gw > 34) {
-      showStatus('gw-status', 'error', 'Enter a valid GW number (1–34)'); return;
-    }
-    if (!confirm('Set GW' + gw + ' as current? All other GWs will be set to not current.')) return;
-    try {
-      await sb('PATCH', 'gameweeks', { is_current: false }, 'number=neq.' + gw);
-      // Check if GW exists
-      const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + gw + '&select=number&limit=1');
-      if (existing && existing.length) {
-        await sb('PATCH', 'gameweeks', { is_current: true }, 'number=eq.' + gw);
-      } else {
-        await sb('POST', 'gameweeks', { number: gw, name: 'Gameweek ' + gw, is_current: true, is_finished: false });
-      }
-      showStatus('gw-status', 'ok', '✓ GW' + gw + ' is now active');
-      STATE.gw = gw;
-      await loadCurrentGW();
-      await loadCurrentFixtures();
-    } catch(e) {
-      showStatus('gw-status', 'error', '✗ ' + e.message);
-    }
-  }
+<td>${f.away_team}</td>
 
-  // ══════════════════════════════════════════════════════════════════
-  // ADD FIXTURE
-  // ══════════════════════════════════════════════════════════════════
-  async function addFixture() {
-    const gw      = parseInt(document.getElementById('fix-gw').value);
-    const home    = document.getElementById('fix-home').value;
-    const away    = document.getElementById('fix-away').value;
-    const kickoff = document.getElementById('fix-kickoff').value;
+<td>${f.kickoff_at||"-"}</td>
 
-    if (!gw)          { showStatus('fixture-status', 'error', 'Enter a GW number'); return; }
-    if (home === away) { showStatus('fixture-status', 'error', 'Teams cannot be the same'); return; }
-    if (!kickoff)     { showStatus('fixture-status', 'error', 'Enter a kickoff time'); return; }
+<td>${f.status}</td>
 
-    // Convert SAST (UTC+2) to UTC for storage
-    const localDate  = new Date(kickoff);
-    const utcDate    = new Date(localDate.getTime() - 2 * 60 * 60 * 1000);
-    const kickoffUTC = utcDate.toISOString();
+<td>
+<button class="btn-blue" onclick="saveScore(${f.id})">
+Save
+</button>
+</td>
+`
 
-    try {
-      await sb('POST', 'fixtures', { gameweek: gw, home_team: home, away_team: away, kickoff_at: kickoffUTC, status: 'NS' });
-      showStatus('fixture-status', 'ok', '✓ Fixture added: ' + home + ' vs ' + away + ' (GW' + gw + ')');
-      document.getElementById('fix-gw').value = '';
-      document.getElementById('fix-kickoff').value = '';
-      if (gw === STATE.gw) await loadCurrentFixtures();
-    } catch(e) {
-      showStatus('fixture-status', 'error', '✗ Error (fixture may already exist): ' + e.message);
-    }
-  }
+tbody.appendChild(tr)
 
-  // ══════════════════════════════════════════════════════════════════
-  // PLAYER MANAGEMENT
-  // ══════════════════════════════════════════════════════════════════
-  let editingPlayerId = null;
-  let searchTimeout   = null;
+})
 
-  function searchPlayers() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(async () => {
-      const q = document.getElementById('player-search').value.trim();
-      if (q.length < 2) { document.getElementById('player-results').innerHTML = ''; return; }
+}
 
-      try {
-        const data = await sb('GET', 'players', null, 'display_name=ilike.*' + encodeURIComponent(q) + '*&select=id,display_name,position,team,price,is_available&limit=8');
-        renderPlayerResults(data || []);
-      } catch(e) {
-        console.error('searchPlayers:', e);
-      }
-    }, 300);
-  }
+async function saveScore(id){
 
-  function renderPlayerResults(players) {
-    const el = document.getElementById('player-results');
-    if (!players.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">No players found</div>'; return; }
+const hg=document.getElementById("hg_"+id).value
+const ag=document.getElementById("ag_"+id).value
 
-    el.innerHTML = players.map(p => {
-      const avail = p.is_available !== false;
-      return '<div onclick="selectPlayer(' + JSON.stringify(JSON.stringify(p)) + ')" style="' +
-        'display:flex;align-items:center;justify-content:space-between;' +
-        'padding:8px 10px;border-radius:6px;cursor:pointer;' +
-        'border:1px solid var(--border);margin-bottom:6px;' +
-        'background:var(--surface);">' +
-        '<div>' +
-          '<span style="font-size:13px;font-weight:500">' + p.display_name + '</span>' +
-          '<span style="font-size:11px;color:var(--muted);margin-left:8px">' + p.position + ' · ' + p.team + '</span>' +
-        '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          '<span style="font-family:var(--mono);font-size:12px;color:var(--green)">R' + p.price + 'M</span>' +
-          '<span style="font-size:10px;' + (avail ? 'color:var(--green)' : 'color:var(--red)') + '">' + (avail ? '✓' : '✗') + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
+await sb(
+"PATCH",
+"fixtures",
+{
+home_score:hg,
+away_score:ag,
+status:"FT"
+},
+"id=eq."+id
+)
 
-  function selectPlayer(jsonStr) {
-    const p = JSON.parse(jsonStr);
-    editingPlayerId = p.id;
-    document.getElementById('editing-player-name').textContent = p.display_name + ' — ' + p.position + ' · ' + p.team;
-    document.getElementById('edit-price').value     = p.price;
-    document.getElementById('edit-available').value = p.is_available !== false ? 'true' : 'false';
-    document.getElementById('player-edit-form').style.display = 'block';
-    document.getElementById('player-status').style.display    = 'none';
-  }
+loadFixtures()
 
-  async function savePlayerEdit() {
-    if (!editingPlayerId) return;
-    const price   = parseFloat(document.getElementById('edit-price').value);
-    const avail   = document.getElementById('edit-available').value === 'true';
-    try {
-      await sb('PATCH', 'players', { price, is_available: avail }, 'id=eq.' + editingPlayerId);
-      showStatus('player-status', 'ok', '✓ Player updated successfully');
-    } catch(e) {
-      showStatus('player-status', 'error', '✗ ' + e.message);
-    }
-  }
+}
 
-  function cancelPlayerEdit() {
-    document.getElementById('player-edit-form').style.display = 'none';
-    editingPlayerId = null;
-  }
+async function addFixture(){
 
-  // ══════════════════════════════════════════════════════════════════
-  // UTILS
-  // ══════════════════════════════════════════════════════════════════
-  function showStatus(id, type, msg) {
-    const el = document.getElementById(id);
-    el.className  = 'status-msg status-' + (type === 'ok' ? 'ok' : type === 'error' ? 'error' : 'info');
-    el.textContent = msg;
-    el.style.display = 'block';
-  }
+const home=document.getElementById("home").value
+const away=document.getElementById("away").value
+const gw=document.getElementById("gw").value
+const kickoff=document.getElementById("kickoff").value
 
-  function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+await sb(
+"POST",
+"fixtures",
+{
+home_team:home,
+away_team:away,
+gameweek:gw,
+kickoff_at:kickoff,
+status:"NS"
+}
+)
+
+loadFixtures()
+
+}
+
+async function init(){
+
+populateTeams()
+
+await loadGW()
+
+await loadFixtures()
+
+}
+
+init()
+
 </script>
+
 </body>
 </html>
