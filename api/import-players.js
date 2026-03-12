@@ -10,32 +10,41 @@ export default async function handler(req, res) {
 
   try {
 
+    // Step 1 — get PSL teams
     const teamsRes = await fetch(
       "https://v3.football.api-sports.io/teams?league=288&season=2024",
       { headers }
     );
 
     const teamsData = await teamsRes.json();
+    const teams = teamsData.response || [];
 
-    let players = [];
+    let allPlayers = [];
 
-    for (const team of teamsData.response) {
+    // Step 2 — get players for each team
+    for (const t of teams) {
 
-      const squadRes = await fetch(
-        `https://v3.football.api-sports.io/players/squads?team=${team.team.id}`,
+      const teamId = t.team.id;
+      const teamName = t.team.name;
+
+      const playersRes = await fetch(
+        `https://v3.football.api-sports.io/players?team=${teamId}&season=2025`,
         { headers }
       );
 
-      const squad = await squadRes.json();
+      const playersData = await playersRes.json();
+      const players = playersData.response || [];
 
-      squad.response[0].players.forEach(p => {
+      players.forEach(p => {
 
-        players.push({
-          api_player_id: p.id,
-          display_name: p.name,
-          team: team.team.name,
-          position: p.position,
-          photo: p.photo,
+        const player = p.player;
+
+        allPlayers.push({
+          api_player_id: player.id,
+          display_name: player.name,
+          team: teamName,
+          position: p.statistics?.[0]?.games?.position || "MID",
+          photo: player.photo,
           price: 6.0,
           is_available: true
         });
@@ -44,22 +53,33 @@ export default async function handler(req, res) {
 
     }
 
-    await fetch(`${SUPABASE_URL}/rest/v1/players`,{
-      method:"POST",
-      headers:{
+    if (allPlayers.length === 0) {
+      return res.json({
+        imported: 0,
+        message: "No players returned from API"
+      });
+    }
+
+    // Step 3 — insert into Supabase
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/players`, {
+      method: "POST",
+      headers: {
         "apikey": SUPABASE_KEY,
-        "Authorization":`Bearer ${SUPABASE_KEY}`,
-        "Content-Type":"application/json",
-        "Prefer":"resolution=merge-duplicates"
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
       },
-      body: JSON.stringify(players)
+      body: JSON.stringify(allPlayers)
     });
+
+    const result = await insertRes.text();
 
     res.json({
-      imported: players.length
+      imported: allPlayers.length,
+      supabase_response: result
     });
 
-  } catch(err){
+  } catch(err) {
 
     res.status(500).json({
       error: err.message
