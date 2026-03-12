@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     // Step 1 — get PSL teams
     const teamsRes = await fetch(
-      "https://v3.football.api-sports.io/teams?league=288&season=2024",
+      "https://v3.football.api-sports.io/teams?league=288&season=2025",
       { headers }
     );
 
