@@ -1,25 +1,279 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Confirming account...</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0C0F14">
+  <title>Confirming your account — Fantasy PSL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;800;900&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red:    #B91C3A;
+      --gold:   #DBA94A;
+      --green:  #22895A;
+      --bg:     #0C0F14;
+      --card:   #191C25;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(185,28,58,.18) 0%, transparent 60%),
+        #0C0F14;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      animation: fadeUp .4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Logo / Wordmark ── */
+    .logo-area {
+      margin-bottom: 2.5rem;
+    }
+    .logo-img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 18px rgba(185,28,58,.5));
+      margin-bottom: .8rem;
+    }
+    .logo-wordmark {
+      font-family: 'Montserrat Alternates', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+    .logo-wordmark span { color: var(--red); }
+    .logo-sub {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+      margin-top: .25rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 20px;
+      padding: 2.2rem 1.8rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Icon states ── */
+    .icon-ring {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.2rem;
+      font-size: 2rem;
+    }
+    .icon-ring.loading { background: rgba(219,169,74,.12); border: 2px solid rgba(219,169,74,.3); }
+    .icon-ring.success { background: rgba(34,137,90,.12);  border: 2px solid rgba(34,137,90,.3); }
+    .icon-ring.error   { background: rgba(185,28,58,.12);  border: 2px solid rgba(185,28,58,.3); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(219,169,74,.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .state-title {
+      font-family: 'Montserrat Alternates', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: .5rem;
+      line-height: 1.2;
+    }
+    .state-sub {
+      font-size: .88rem;
+      color: rgba(255,255,255,.45);
+      line-height: 1.6;
+    }
+    .state-sub strong { color: rgba(255,255,255,.7); }
+
+    /* ── CTA button ── */
+    .cta-btn {
+      display: inline-block;
+      margin-top: 1.4rem;
+      background: var(--red);
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: .85rem 2.2rem;
+      border-radius: 10px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      box-shadow: 0 4px 20px rgba(185,28,58,.35);
+    }
+    .cta-btn:hover { opacity:.88; transform:translateY(-1px); }
+
+    /* ── Features strip ── */
+    .features {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .feat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .3rem;
+    }
+    .feat-val {
+      font-family: 'Montserrat Alternates', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .feat-lbl {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+    }
+
+    .divider {
+      width: 1px; height: 28px;
+      background: rgba(255,255,255,.08);
+      align-self: center;
+    }
+
+    .foot-note {
+      font-size: .72rem;
+      color: rgba(255,255,255,.2);
+      margin-top: 1.2rem;
+    }
+  </style>
 </head>
 <body>
+<div class="wrap">
 
-<h2>Confirming your account...</h2>
+  <!-- Logo -->
+  <div class="logo-area">
+    <img src="/logo.png" alt="Fantasy PSL" class="logo-img"
+         onerror="this.style.display='none'">
+    <div class="logo-wordmark">Fantasy <span>PSL</span></div>
+    <div class="logo-sub">South Africa's No.1 Fantasy Football</div>
+  </div>
+
+  <!-- State card — swapped by JS -->
+  <div class="card" id="state-card">
+    <div class="icon-ring loading" id="icon-ring">
+      <div class="spinner"></div>
+    </div>
+    <div class="state-title" id="state-title">Confirming your account…</div>
+    <div class="state-sub" id="state-sub">
+      Just a moment while we verify your email address.
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="features">
+    <div class="feat"><div class="feat-val">16</div><div class="feat-lbl">PSL Clubs</div></div>
+    <div class="divider"></div>
+    <div class="feat"><div class="feat-val">R100M</div><div class="feat-lbl">Budget</div></div>
+    <div class="divider"></div>
+    <div class="feat"><div class="feat-val">30</div><div class="feat-lbl">Gameweeks</div></div>
+    <div class="divider"></div>
+    <div class="feat"><div class="feat-val">Free</div><div class="feat-lbl">To Play</div></div>
+  </div>
+
+  <div class="foot-note">Fantasy PSL · fan-made · not affiliated with the PSL or Betway</div>
+</div>
 
 <script>
+  var card      = document.getElementById('state-card');
+  var iconRing  = document.getElementById('icon-ring');
+  var titleEl   = document.getElementById('state-title');
+  var subEl     = document.getElementById('state-sub');
 
-const hash = window.location.hash;
+  function setState(type, title, sub, showBtn) {
+    iconRing.className = 'icon-ring ' + type;
+    iconRing.innerHTML = type === 'loading'
+      ? '<div class="spinner"></div>'
+      : type === 'success' ? '✅' : '❌';
+    titleEl.textContent = title;
+    subEl.innerHTML = sub;
+    if (showBtn) {
+      var btn = document.createElement('a');
+      btn.href      = '/';
+      btn.className = 'cta-btn';
+      btn.textContent = type === 'success' ? 'Build My Squad →' : 'Go to Homepage';
+      card.appendChild(btn);
+    }
+  }
 
-if(hash){
+  // Check for Supabase confirmation hash in URL
+  var hash   = window.location.hash;
+  var params = new URLSearchParams(window.location.search);
+  var hasToken = hash && (hash.includes('access_token') || hash.includes('type=signup') || hash.includes('type=recovery'));
+  var hasError = params.get('error') || (hash && hash.includes('error'));
 
-  setTimeout(()=>{
-    window.location.href = "/index.html";
-  },1000);
-
-}
-
+  if (hasError) {
+    var errDesc = params.get('error_description') || 'The confirmation link may have expired.';
+    setTimeout(function() {
+      setState('error', 'Confirmation failed', errDesc + '<br><br>Please register again or contact support.', true);
+    }, 600);
+  } else if (hasToken || hash) {
+    // Valid token — redirect to app after short delay
+    setTimeout(function() {
+      setState('success',
+        'Email confirmed! 🎉',
+        'Welcome to <strong>Fantasy PSL</strong>.<br>You\'re ready to pick your squad.',
+        true
+      );
+      // Auto-redirect after 2.5s
+      setTimeout(function() { window.location.href = '/'; }, 2500);
+    }, 800);
+  } else {
+    // No hash at all — probably navigated directly
+    setTimeout(function() {
+      setState('success',
+        'Check your email',
+        'We sent a confirmation link to your inbox.<br>Click it to activate your <strong>Fantasy PSL</strong> account.',
+        true
+      );
+    }, 600);
+  }
 </script>
-
 </body>
 </html>
