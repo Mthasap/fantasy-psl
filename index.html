@@ -1406,7 +1406,14 @@ function doLogin() {
   });
 }
 
-function doRegister() {
+function generateReferralCode() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var code = 'FPSL-';
+  for (var i = 0; i < 6; i++) { code += chars[Math.floor(Math.random() * chars.length)]; }
+  return code;
+}
+
+async function doRegister() {
   var btn   = document.getElementById('r-btn');
   var email = document.getElementById('r-email').value.trim();
   var pass  = document.getElementById('r-pass').value;
@@ -1415,12 +1422,41 @@ function doRegister() {
   if (!email || !pass || !user || !team) { document.getElementById('r-err').textContent = 'All fields required'; return; }
   if (pass.length < 6) { document.getElementById('r-err').textContent = 'Password must be 6+ characters'; return; }
   btn.textContent = 'Creating…'; btn.disabled = true;
-  db.auth.signUp({ email: email, password: pass, options: { data: { username: user, team_name: team } } }).then(function(res) {
-    btn.textContent = 'Create Account — Free'; btn.disabled = false;
-    if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
-    closeAuth();
-    showToast('Account created! Check your email to confirm.', 'success');
+
+  var firstName     = (document.getElementById('signup-firstname')?.value || '').trim() || null;
+  var lastName      = (document.getElementById('signup-lastname')?.value  || '').trim() || null;
+  var age           = document.getElementById('signup-age')?.value        || null;
+  var city          = (document.getElementById('signup-city')?.value      || '').trim() || null;
+  var country       = document.getElementById('signup-country')?.value    || 'South Africa';
+  var supportedTeam = document.getElementById('signup-team')?.value       || null;
+  var discovery     = document.getElementById('signup-discovery')?.value  || null;
+  var referralUsed  = (document.getElementById('signup-referral')?.value  || '').trim().toUpperCase() || null;
+  var referralCode  = generateReferralCode();
+
+  var res = await db.auth.signUp({ email: email, password: pass, options: { data: { username: user, team_name: team } } });
+  btn.textContent = 'Create Account — Free'; btn.disabled = false;
+  if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
+
+  var userId = res.data.user.id;
+  await db.from('profiles').insert({
+    id: userId, username: user, team_name: team,
+    first_name: firstName, last_name: lastName,
+    age: age ? parseInt(age) : null,
+    city: city, country: country,
+    supported_team: supportedTeam, discovery_source: discovery,
+    referral_code: referralCode, referred_by: referralUsed, referral_count: 0
   });
+
+  // Increment referrer's count if a code was used
+  if (referralUsed) {
+    var refRes = await db.from('profiles').select('id, referral_count').eq('referral_code', referralUsed).single();
+    if (refRes.data) {
+      await db.from('profiles').update({ referral_count: (refRes.data.referral_count || 0) + 1 }).eq('id', refRes.data.id);
+    }
+  }
+
+  closeAuth();
+  showToast('Account created! Check your email to confirm. 🎉', 'success');
 }
 
 function doLogout() {
@@ -2775,25 +2811,21 @@ function loadFixturesFromData(data) {
   if (!c || !data) return;
   var tab = ST.fixTab;
 
-  // ── Build the list of matches to display ────────────────────────
   var matches;
   if (tab === 'LIVE') {
     matches = data.live || [];
   } else if (tab === 'NS') {
-    // Upcoming from Supabase/Sportmonks — remove any that are now live
     matches = (data.NS || []).slice();
     if (data.live && data.live.length) {
       var liveNames = data.live.map(function(m) { return m.home + '_' + m.away; });
       matches = matches.filter(function(m) {
-        return liveNames.indexOf(m.home + '_' + m.away) === -1;
+        return liveNames.indexOf((m.home_team||m.home) + '_' + (m.away_team||m.away)) === -1;
       });
     }
-    // Sort by kickoff
     matches.sort(function(a,b) {
       return new Date(a.kickoff_at||a.date||0) - new Date(b.kickoff_at||b.date||0);
     });
   } else if (tab === 'FT') {
-    // Results from Supabase — sorted newest first
     matches = (data.FT || []).slice().sort(function(a,b) {
       return new Date(b.kickoff_at||b.date||0) - new Date(a.kickoff_at||a.date||0);
     });
@@ -2801,19 +2833,12 @@ function loadFixturesFromData(data) {
     matches = [];
   }
 
-  // ── Update live tab badge ────────────────────────────────────────
   var liveTab = document.getElementById('ftab-live');
   if (liveTab) {
     if (data.live && data.live.length) {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
-        'background:#D4274F;margin-right:5px;vertical-align:middle;' +
-        'animation:livePulse 1.2s ease-in-out infinite"></span>' +
-        'LIVE (' + data.live.length + ')';
+      liveTab.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#D4274F;margin-right:5px;vertical-align:middle;animation:livePulse 1.2s ease-in-out infinite"></span>LIVE (' + data.live.length + ')';
     } else {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
-        'background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live';
+      liveTab.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live';
     }
   }
 
@@ -2821,26 +2846,18 @@ function loadFixturesFromData(data) {
 
   if (!matches || !matches.length) {
     if (tab === 'LIVE') {
-      c.innerHTML =
-        '<div style="text-align:center;padding:3rem 1rem">' +
-          '<div style="margin-bottom:.6rem;opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div>' +
-          '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:rgba(255,255,255,.4)">No live matches right now</div>' +
-          '<div style="font-size:.75rem;color:rgba(255,255,255,.2);margin-top:.4rem">This tab updates automatically when matches kick off</div>' +
-        '</div>';
-    } else if (tab === 'NS') {
-      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">Upcoming fixtures loading...</div>';
+      c.innerHTML = '<div style="text-align:center;padding:3rem 1rem"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:rgba(255,255,255,.4)">No live matches right now</div><div style="font-size:.75rem;color:rgba(255,255,255,.2);margin-top:.4rem">This tab updates automatically when matches kick off</div></div>';
     } else {
-      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">No results yet</div>';
+      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' + (tab === 'NS' ? 'Upcoming fixtures loading...' : 'No results yet') + '</div>';
     }
     return;
   }
 
-  // ── Group by date ────────────────────────────────────────────────
   var grouped = {};
   var groupOrder = [];
   matches.forEach(function(f) {
-    var label;
     var dateStr = f.kickoff_at || f.date;
+    var label;
     if (f.is_live || f.isLive || f.status === 'LIVE') {
       label = '🔴 LIVE NOW';
     } else if (dateStr) {
@@ -2854,100 +2871,23 @@ function loadFixturesFromData(data) {
 
   var html_out = '';
   groupOrder.forEach(function(dateLabel) {
-    html_out +=
-      '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;' +
-      'font-weight:700;letter-spacing:1.5px;text-transform:uppercase;' +
-      'padding:.5rem .8rem .2rem">' + dateLabel + '</div>';
+    html_out += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + dateLabel + '</div>';
     grouped[dateLabel].forEach(function(f) {
-      var isLiveMatch = f.is_live || f.isLive || f.status === 'LIVE' ||
-        ['1H','HT','2H','ET','P','BT'].indexOf(f.status) !== -1;
-      // Use kickoff_at for time display if available
+      var isLiveMatch = f.is_live || f.isLive || f.status === 'LIVE' || ['1H','HT','2H','ET','P','BT'].indexOf(f.status) !== -1;
+      var home = f.home_team || f.home;
+      var away = f.away_team || f.away;
+      var hg   = f.home_score !== undefined ? f.home_score : f.hg;
+      var ag   = f.away_score !== undefined ? f.away_score : f.ag;
+      var dateStr = (f.kickoff_at||f.date||'').substring(0,10);
       var timeStr = f.time || null;
       if (!timeStr && f.kickoff_at) {
-        var d = new Date(f.kickoff_at);
-        // Convert to SAST (UTC+2)
-        d.setMinutes(d.getMinutes());
-        timeStr = d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', timeZone:'Africa/Johannesburg' });
+        timeStr = new Date(f.kickoff_at).toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', timeZone:'Africa/Johannesburg' });
       }
-      html_out += renderFixtureRow(f.home, f.away, f.hg, f.ag,
-        (f.kickoff_at||f.date||'').substring(0,10), isLiveMatch, f.elapsed||f.minute, timeStr);
+      html_out += renderFixtureRow(home, away, hg, ag, dateStr, isLiveMatch, f.elapsed||f.minute, timeStr);
     });
   });
   c.innerHTML = html_out;
 }
-
-
-  }
-
-  // ── Update live tab badge ────────────────────────────────────────
-  var liveTab = document.getElementById('ftab-live');
-  if (liveTab) {
-    if (data.live && data.live.length) {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
-        'background:#D4274F;margin-right:5px;vertical-align:middle;' +
-        'animation:livePulse 1.2s ease-in-out infinite"></span>' +
-        'LIVE (' + data.live.length + ')';
-    } else {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
-        'background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live';
-    }
-  }
-
-  // ── Update GW display ────────────────────────────────────────────
-  if (data.currentGW) updateGWDisplay(data.currentGW);
-
-  // ── Empty state ──────────────────────────────────────────────────
-  if (!matches || !matches.length) {
-    if (tab === 'LIVE') {
-      c.innerHTML =
-        '<div style="text-align:center;padding:3rem 1rem">' +
-          '<div style="margin-bottom:.6rem;opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div>' +
-          '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;' +
-          'color:rgba(255,255,255,.4)">No live matches right now</div>' +
-          '<div style="font-size:.75rem;color:rgba(255,255,255,.2);margin-top:.4rem">' +
-          'This tab updates automatically when matches kick off</div>' +
-        '</div>';
-    } else {
-      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);' +
-        'padding:2rem">No fixtures to display</div>';
-    }
-    return;
-  }
-
-  // ── Group by date ────────────────────────────────────────────────
-  var grouped = {};
-  var groupOrder = [];
-  matches.forEach(function(f) {
-    var label;
-    if (f.is_live || f.isLive) {
-      label = '🔴 LIVE NOW';
-    } else if (f.date) {
-      label = formatMatchDate(f.date);
-    } else {
-      label = 'Upcoming';
-    }
-    if (!grouped[label]) { grouped[label] = []; groupOrder.push(label); }
-    grouped[label].push(f);
-  });
-
-  var html_out = '';
-  groupOrder.forEach(function(dateLabel) {
-    html_out +=
-      '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;' +
-      'font-weight:700;letter-spacing:1.5px;text-transform:uppercase;' +
-      'padding:.5rem .8rem .2rem">' + dateLabel + '</div>';
-    grouped[dateLabel].forEach(function(f) {
-      var isLive = f.is_live || f.isLive ||
-        ['1H','HT','2H','ET','P','BT'].indexOf(f.status) !== -1;
-      html_out += renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date,
-        isLive, f.elapsed, f.time);
-    });
-  });
-  c.innerHTML = html_out;
-}
-
 
 function loadTableFromData(data) {
   var c = document.getElementById('table-body'); if (!c || !data) return;
@@ -3028,15 +2968,15 @@ function loadFixtures() {
   });
 }
 
-// Render fixtures from Supabase DB rows (primary source)
 function renderFixturesFromDB(rows) {
   var c = document.getElementById('fix-list'); if (!c) return;
   var tab = ST.fixTab;
 
+  // Filter by tab
   var list = rows.filter(function(f) {
-    if (tab === 'NS')   return f.status === 'NS';
+    if (tab === 'NS')   return f.status === 'NS' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
     if (tab === 'FT')   return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN';
-    if (tab === 'LIVE') return f.status === 'LIVE' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
+    if (tab === 'LIVE') return f.status === '1H' || f.status === 'HT' || f.status === '2H';
     return true;
   });
 
@@ -3046,19 +2986,20 @@ function renderFixturesFromDB(rows) {
     return;
   }
 
-  if (tab === 'FT') list = list.slice().reverse();
+  // Sort results newest first, upcoming oldest first
+  if (tab === 'FT') list = list.reverse();
 
+  // Group by date
   var grouped = {};
-  var groupOrder = [];
   list.forEach(function(f) {
     var d = new Date(f.kickoff_at);
     var label = formatMatchDate(d.toISOString().slice(0,10));
-    if (!grouped[label]) { grouped[label] = []; groupOrder.push(label); }
+    if (!grouped[label]) grouped[label] = [];
     grouped[label].push(f);
   });
 
   var html = '';
-  groupOrder.forEach(function(label) {
+  Object.keys(grouped).forEach(function(label) {
     html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
     grouped[label].forEach(function(f) {
       var d = new Date(f.kickoff_at);
@@ -3069,26 +3010,50 @@ function renderFixturesFromDB(rows) {
   c.innerHTML = html;
 }
 
-// Show loading state while DB fetches — no hardcoded fallback
+// Render fixtures purely from REAL_FIXTURES hardcoded data
 function renderFixturesFromLocal() {
   var c = document.getElementById('fix-list'); if (!c) return;
-  c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.3);padding:2rem;font-family:var(--font-ui);font-size:.82rem">Loading fixtures...</div>';
-}
+  var tab = ST.fixTab;
+  var list = tab === 'NS'   ? REAL_FIXTURES.NS :
+             tab === 'FT'   ? REAL_FIXTURES.FT :
+             tab === 'LIVE' ? REAL_FIXTURES.live || [] : [];
 
+  if (!list.length) {
+    c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' +
+      (tab === 'LIVE' ? 'No live matches right now' : 'No fixtures to display') + '</div>';
+    return;
+  }
+
+  // Group by date
+  var grouped = {};
+  list.forEach(function(f) {
+    var label = f.date ? formatMatchDate(f.date) : 'Upcoming';
+    if (!grouped[label]) grouped[label] = [];
+    grouped[label].push(f);
+  });
+
+  var html = '';
+  Object.keys(grouped).forEach(function(label) {
+    html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
+    grouped[label].forEach(function(f) {
+      html += renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false, null, f.time);
+    });
+  });
+  c.innerHTML = html;
+}
 function loadTable() {
   var c = document.getElementById('table-body'); if (!c) return;
-
-  // Load directly from Supabase standings view
+  renderRealTable(c); // show REAL_TABLE immediately while DB loads
+  // Build live table from Supabase FT results
   db.from('fixtures')
-    .select('gameweek, home_team, away_team, home_score, away_score, status')
+    .select('home_team, away_team, home_score, away_score, status')
     .eq('status', 'FT')
     .then(function(res) {
-      if (res.error || !res.data || !res.data.length) {
-        // fallback to psl-data API
+      if (res.error || !res.data || res.data.length < 8) {
+        // Not enough data yet — fall back to psl-data API
         fetchPSLData(function(data) { if (data) loadTableFromData(data); });
         return;
       }
-      // Build standings from results
       var table = buildStandingsFromResults(res.data);
       renderTableFromData(c, table);
       if (!window.LIVE_STATS) window.LIVE_STATS = {};
@@ -3096,7 +3061,7 @@ function loadTable() {
     });
 }
 
-// Build league table from raw results in Supabase
+// Build league table dynamically from all FT results in Supabase
 function buildStandingsFromResults(rows) {
   var teams = {};
   rows.forEach(function(f) {
@@ -3117,8 +3082,6 @@ function buildStandingsFromResults(rows) {
     .map(function(t, i) { t.pos = i + 1; return t; });
 }
 
-  });
-}
 
 
 // ════════════════════════════════════════════════════
@@ -3180,12 +3143,7 @@ function renderTickerFromRows(rows) {
     items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: ds, dot: 'o' });
   });
 
-  if (!items.length) {
-    // No items yet — show a placeholder
-    var track2 = document.getElementById('ticker-track');
-    if (track2) track2.innerHTML = '<div class="ti"><div class="ti-dot o"></div><span class="ti-label">GW fixtures loading...</span></div>';
-    return;
-  }
+  if (!items.length) { updateTickerFromReal(); return; }
 
   // Double items so the scroll looks seamless
   var doubled = items.concat(items);
@@ -3216,24 +3174,25 @@ function updateTickerFromData(data) {
 }
 
 function updateTickerFromReal() {
-  // Pull current GW fixtures from Supabase — no hardcoded data
-  if (!db) return;
-  db.from('gameweeks')
-    .select('number')
-    .eq('is_current', true)
-    .limit(1)
-    .then(function(gwRes) {
-      var gw = gwRes.data && gwRes.data[0] ? gwRes.data[0].number : null;
-      if (!gw) return;
-      db.from('fixtures')
-        .select('home_team, away_team, home_score, away_score, status, kickoff_at')
-        .eq('gameweek', gw)
-        .order('kickoff_at', { ascending: true })
-        .then(function(fixRes) {
-          if (fixRes.error || !fixRes.data || !fixRes.data.length) return;
-          renderTickerFromRows(fixRes.data);
-        });
-    });
+  // Instant fallback using hardcoded REAL_FIXTURES — filters to current GW content
+  var track = document.getElementById('ticker-track'); if (!track) return;
+  var items = REAL_FIXTURES.FT.map(function(f) {
+    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
+  });
+  REAL_FIXTURES.NS.forEach(function(f) {
+    var d  = new Date(f.date);
+    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
+    items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
+  });
+  if (!items.length) return;
+  var doubled = items.concat(items);
+  track.innerHTML = doubled.map(function(f) {
+    return '<div class="ti">' +
+      '<div class="ti-dot ' + f.dot + '"></div>' +
+      '<span class="ti-label">' + f.label + '</span>' +
+      '<span class="ti-score">' + f.score + '</span>' +
+    '</div>';
+  }).join('');
 }
 
 function updateTicker(fixtures) { updateTickerFromReal(); } // legacy shim
@@ -5086,20 +5045,6 @@ function castPOTMVote(matchKey, playerId) {
       s.async = true;
       document.getElementById('ad-slot-container').appendChild(s);
     })();
-
-    function generateReferralCode(){
-
- const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code = "FPSL-";
-
- for(let i=0;i<6;i++){
-   code += chars[Math.floor(Math.random()*chars.length)];
- }
-
- return code;
-
-}
-
   </script>
 </div>
 
@@ -5158,72 +5103,6 @@ function castPOTMVote(matchKey, playerId) {
       <button onclick="closeDeadlineInfo()" style="width:100%;margin-top:1.2rem;background:var(--brand);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.7rem;cursor:pointer;letter-spacing:.5px">Got it</button>
     </div>
   </div>
-
-
-<script>
-function generateReferralCode(){
- const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code="FPSL-";
- for(let i=0;i<6;i++){
-   code+=chars[Math.floor(Math.random()*chars.length)];
- }
- return code;
-}
-
-async function doRegister(){
-
- const email=document.getElementById("r-email").value;
- const password=document.getElementById("r-pass").value;
- const username=document.getElementById("r-user").value;
- const teamName=document.getElementById("r-team").value;
-
- const firstName=document.getElementById("signup-firstname")?.value||null;
- const lastName=document.getElementById("signup-lastname")?.value||null;
- const age=document.getElementById("signup-age")?.value||null;
- const city=document.getElementById("signup-city")?.value||null;
- const country=document.getElementById("signup-country")?.value||"South Africa";
- const supportedTeam=document.getElementById("signup-team")?.value||null;
- const discovery=document.getElementById("signup-discovery")?.value||null;
- const referralUsed=document.getElementById("signup-referral")?.value||null;
-
- const referralCode=generateReferralCode();
-
- const supabaseUrl = window.SUPABASE_URL || "";
- const supabaseKey = window.SUPABASE_ANON_KEY || "";
-
- const sb = supabase.createClient(supabaseUrl, supabaseKey);
-
- const { data, error } = await sb.auth.signUp({
-  email: email,
-  password: password
- });
-
- if(error){
-   document.getElementById("r-err").innerText=error.message;
-   return;
- }
-
- const userId=data.user.id;
-
- await sb.from("profiles").insert({
-   id:userId,
-   username:username,
-   team_name:teamName,
-   first_name:firstName,
-   last_name:lastName,
-   age:age,
-   city:city,
-   country:country,
-   supported_team:supportedTeam,
-   discovery_source:discovery,
-   referral_code:referralCode,
-   referred_by:referralUsed
- });
-
- alert("Account created successfully!");
- location.reload();
-}
-</script>
 
 </body>
 </html>
