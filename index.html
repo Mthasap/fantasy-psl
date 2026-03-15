@@ -549,10 +549,106 @@
       <div class="auth-field"><label>Email</label><input id="r-email" type="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="e.g. BafanaMgr"></div>
       <div class="auth-field"><label>Team Name</label><input id="r-team" type="text" placeholder="e.g. Soweto Stars FC"></div>
-      <div class="auth-field"><label>Password</label><input id="r-pass" type="password" placeholder="Min 6 characters"></div>
-      <div class="auth-error" id="r-err"></div>
-      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account — Free</button>
-      <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login →</a></div>
+        <!-- removed duplicate panel -->
+
+  <div class="auth-field">
+    <label>Email</label>
+    <input id="r-email" type="email">
+  </div>
+
+  <div class="auth-field">
+    <label>Username</label>
+    <input id="r-user" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Team Name</label>
+    <input id="r-team" type="text">
+  </div>
+
+
+  <!-- ADD NEW FIELDS HERE -->
+
+
+  <div class="auth-field">
+    <label>First Name</label>
+    <input id="signup-firstname" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Last Name</label>
+    <input id="signup-lastname" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Age</label>
+    <input id="signup-age" type="number">
+  </div>
+
+  <div class="auth-field">
+    <label>City</label>
+    <input id="signup-city" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Country</label>
+    <input id="signup-country" type="text" value="South Africa">
+  </div>
+
+  <div class="auth-field">
+    <label>PSL Team You Support</label>
+    <select id="signup-team">
+      <option value="">Select Team</option>
+      <option>Kaizer Chiefs</option>
+      <option>Orlando Pirates</option>
+      <option>Mamelodi Sundowns</option>
+      <option>SuperSport United</option>
+      <option>Stellenbosch FC</option>
+      <option>AmaZulu FC</option>
+      <option>Golden Arrows</option>
+      <option>Chippa United</option>
+      <option>Sekhukhune United</option>
+      <option>Polokwane City</option>
+      <option>TS Galaxy</option>
+      <option>Richards Bay</option>
+      <option>Magesi FC</option>
+    </select>
+  </div>
+
+  <div class="auth-field">
+    <label>How did you hear about FantasyPSL?</label>
+    <select id="signup-discovery">
+      <option>Instagram</option>
+      <option>Twitter/X</option>
+      <option>TikTok</option>
+      <option>YouTube</option>
+      <option>Friend</option>
+      <option>Football Website</option>
+      <option>Other</option>
+    </select>
+  </div>
+
+  <div class="auth-field">
+    <label>Referral Code (optional)</label>
+    <input id="signup-referral" type="text">
+  </div>
+
+
+  <!-- EXISTING PASSWORD FIELD -->
+
+
+  <div class="auth-field">
+    <label>Password</label>
+    <input id="r-pass" type="password">
+  </div>
+
+  <div class="auth-error" id="r-err"></div>
+
+  <button class="auth-submit" id="r-btn" onclick="doRegister()">
+    Create Account — Free
+  </button>
+
+</div>
     </div>
   </div>
 </div>
