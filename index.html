@@ -511,10 +511,6 @@
     <li><a href="#" onclick="goPage('leagues');return false;">Leagues</a></li>
   </ul>
   <div class="nav-right">
-    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle day/night mode" aria-label="Toggle theme">
-      <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg id="theme-icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
     <a href="#" id="nav-login" class="btn-login" onclick="openAuth('login');return false;">Login</a>
     <button id="nav-signup" class="btn-signup" onclick="openAuth('register')">Register</button>
     <div id="nav-user" class="user-menu" style="display:none">
@@ -917,7 +913,7 @@
       <div class="meta-strip" style="flex-wrap:wrap;gap:.5rem">
         <div class="meta-pill">
           <div class="meta-pill-label">Budget Left</div>
-          <div class="meta-pill-val" id="budget-display" style="color:#22895A">R100.0M</div>
+          <div class="meta-pill-val" id="budget-display" style="color:#22895A;font-size:.85rem;white-space:nowrap">R100.0M</div>
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Players</div>
@@ -3043,21 +3039,36 @@ function renderFixturesFromLocal() {
 }
 function loadTable() {
   var c = document.getElementById('table-body'); if (!c) return;
-  renderRealTable(c); // show REAL_TABLE immediately while DB loads
-  // Build live table from Supabase FT results
-  db.from('fixtures')
-    .select('home_team, away_team, home_score, away_score, status')
-    .eq('status', 'FT')
-    .then(function(res) {
-      if (res.error || !res.data || res.data.length < 8) {
-        // Not enough data yet — fall back to psl-data API
-        fetchPSLData(function(data) { if (data) loadTableFromData(data); });
+  renderRealTable(c); // show REAL_TABLE immediately while API loads
+
+  // PRIMARY: fetch live standings from Sportmonks via our /api/football proxy
+  fetch('/api/football?type=standings')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (data && data.standings && data.standings.length >= 8) {
+        var table = data.standings;
+        renderTableFromData(c, table);
+        if (!window.LIVE_STATS) window.LIVE_STATS = {};
+        LIVE_STATS.table = table;
         return;
       }
-      var table = buildStandingsFromResults(res.data);
-      renderTableFromData(c, table);
-      if (!window.LIVE_STATS) window.LIVE_STATS = {};
-      LIVE_STATS.table = table;
+      // FALLBACK: build from Supabase FT results
+      db.from('fixtures')
+        .select('home_team, away_team, home_score, away_score, status')
+        .eq('status', 'FT')
+        .then(function(res) {
+          if (res.error || !res.data || res.data.length < 8) {
+            // Last resort: use hardcoded REAL_TABLE
+            return;
+          }
+          var table = buildStandingsFromResults(res.data);
+          renderTableFromData(c, table);
+          if (!window.LIVE_STATS) window.LIVE_STATS = {};
+          LIVE_STATS.table = table;
+        });
+    })
+    .catch(function() {
+      // Silently fall back to REAL_TABLE already rendered
     });
 }
 
@@ -3143,7 +3154,11 @@ function renderTickerFromRows(rows) {
     items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: ds, dot: 'o' });
   });
 
-  if (!items.length) { updateTickerFromReal(); return; }
+  if (!items.length) {
+    var track2 = document.getElementById('ticker-track');
+    if (track2) track2.innerHTML = '<div class="ti"><div class="ti-dot o"></div><span class="ti-label">Betway Premiership 2025/26</span></div>';
+    return;
+  }
 
   // Double items so the scroll looks seamless
   var doubled = items.concat(items);
@@ -3174,25 +3189,24 @@ function updateTickerFromData(data) {
 }
 
 function updateTickerFromReal() {
-  // Instant fallback using hardcoded REAL_FIXTURES — filters to current GW content
-  var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = REAL_FIXTURES.FT.map(function(f) {
-    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
-  });
-  REAL_FIXTURES.NS.forEach(function(f) {
-    var d  = new Date(f.date);
-    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
-    items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
-  });
-  if (!items.length) return;
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(f) {
-    return '<div class="ti">' +
-      '<div class="ti-dot ' + f.dot + '"></div>' +
-      '<span class="ti-label">' + f.label + '</span>' +
-      '<span class="ti-score">' + f.score + '</span>' +
-    '</div>';
-  }).join('');
+  // Pull current GW fixtures from Supabase — NO hardcoded fallback
+  if (!db) return;
+  db.from('gameweeks')
+    .select('number')
+    .eq('is_current', true)
+    .limit(1)
+    .then(function(gwRes) {
+      var gw = gwRes.data && gwRes.data[0] ? gwRes.data[0].number : null;
+      if (!gw) return;
+      db.from('fixtures')
+        .select('home_team, away_team, home_score, away_score, status, kickoff_at')
+        .eq('gameweek', gw)
+        .order('kickoff_at', { ascending: true })
+        .then(function(fixRes) {
+          if (fixRes.error || !fixRes.data || !fixRes.data.length) return;
+          renderTickerFromRows(fixRes.data);
+        });
+    });
 }
 
 function updateTicker(fixtures) { updateTickerFromReal(); } // legacy shim
