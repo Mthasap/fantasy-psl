@@ -24,3 +24,11 @@
     { "path": "/api/points-cron", "schedule": "0 21 * * *" }
   ]
 }
+{
+ "crons":[
+  { "path":"/api/sync-fixtures","schedule":"0 4 * * *"},
+  { "path":"/api/sync-player-stats","schedule":"0 5 * * *"},
+  { "path":"/api/live-matches","schedule":"*/10 * * * *"}
+ ]
+}
+
