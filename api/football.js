@@ -45,7 +45,8 @@ module.exports = async (req, res) => {
       case 'live':      return res.json(await getLive());
       case 'fixtures':  return res.json(await getFixtures());
       case 'results':   return res.json(await getResults());
-      case 'standings': return res.json(await getStandings());
+      case 'standings':   return res.json(await getStandings());
+      case 'topscorers':  return res.json(await getTopScorers());
       case 'status':   return res.json({ ok: true, token_set: !!TOKEN });
       default:         return res.status(400).json({ error: 'Unknown type: ' + type });
     }
@@ -256,4 +257,49 @@ async function getStandings() {
   const result = { standings: standings, ts: Date.now() };
   CACHE.standings = { data: result, ts: Date.now(), ttl: 15 * 60 * 1000 };
   return result;
+}
+
+// ── TOP SCORERS / PLAYER STATS ────────────────────────────────────────────
+async function getTopScorers() {
+  const cached = fromCache('topscorers');
+  if (cached) return cached;
+
+  // Discover season if needed
+  if (!PSL_SEASON) {
+    try {
+      const lgJson = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
+      const cs = lgJson.data && lgJson.data.current_season;
+      if (cs && cs.id) PSL_SEASON = cs.id;
+    } catch(e) { console.warn('[football.js] season discovery failed:', e.message); }
+  }
+  if (!PSL_SEASON) throw new Error('PSL season ID unknown');
+
+  // Fetch topscorers for season
+  const json = await smGet('/topscorers/seasons/' + PSL_SEASON + '?include=player;participant&limit=20');
+  const data = json.data || [];
+
+  const topScorers = data
+    .filter(function(s) { return s.participant && s.player; })
+    .map(function(s) {
+      return {
+        id:       s.player_id,
+        name:     s.player.common_name || s.player.display_name || s.player.name || '',
+        club:     s.participant.name || '',
+        goals:    s.total || s.goals || 0,
+        position: s.player.position_id ? posName(s.player.position_id) : 'FWD'
+      };
+    });
+
+  const result = { topScorers: topScorers, ts: Date.now() };
+  CACHE.topscorers = { data: result, ts: Date.now(), ttl: 30 * 60 * 1000 };
+  return result;
+}
+
+function posName(posId) {
+  // Sportmonks position IDs: 24=GK 25=DEF 26=MID 27=ATT
+  if (posId === 24) return 'GK';
+  if (posId === 25) return 'DEF';
+  if (posId === 26) return 'MID';
+  if (posId === 27) return 'FWD';
+  return 'MID';
 }
