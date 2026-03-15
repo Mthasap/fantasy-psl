@@ -346,6 +346,18 @@
       border-collapse: collapse;
     }
 
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:24px; }
+    .kpi-card { background:#0a0c0f; border:1px solid var(--border); border-radius:10px; padding:16px 12px; text-align:center; }
+    .kpi-val  { font-size:1.9rem; font-weight:700; color:var(--amber); line-height:1; margin-bottom:4px; font-family:var(--mono); }
+    .kpi-lbl  { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+    .bar-row  { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+    .bar-name { min-width:130px; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .bar-track { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .bar-fill  { height:100%; border-radius:3px; }
+    .bar-count { font-size:11px; font-weight:700; color:var(--amber); min-width:24px; text-align:right; font-family:var(--mono); }
+    .an-2col { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+    @media(max-width:700px){ .an-2col { grid-template-columns:1fr; } }
+    .an-title { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
     .results-table th {
       text-align: left;
       font-size: 10px;
@@ -449,19 +461,6 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    /* ── ANALYTICS ─────────────────────────────────────────────── */
-    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:24px; }
-    .kpi-card { background:#0a0c0f; border:1px solid var(--border); border-radius:10px; padding:16px 12px; text-align:center; }
-    .kpi-val  { font-size:1.9rem; font-weight:700; color:#ffc107; line-height:1; margin-bottom:4px; font-family:var(--mono); }
-    .kpi-lbl  { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
-    .bar-row  { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
-    .bar-name { min-width:130px; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .bar-track { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
-    .bar-fill  { height:100%; border-radius:3px; }
-    .bar-count { font-size:11px; font-weight:700; color:var(--amber); min-width:24px; text-align:right; font-family:var(--mono); }
-    .analytics-2col { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
-    @media(max-width:700px){ .analytics-2col { grid-template-columns:1fr; } }
-    .analytics-section-title { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
   </style>
 </head>
 <body>
@@ -690,7 +689,7 @@
     </div>
 
     <!-- ── ANALYTICS DASHBOARD ──────────────────────────────────── -->
-    <div class="card full-width" style="margin-top:8px">
+    <div class="card full-width" style="margin-top:4px">
       <div class="card-header">
         <div class="card-title"><span class="dot dot-green"></span> Platform Analytics</div>
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadAnalytics()">↻ Refresh</button>
@@ -701,40 +700,29 @@
           <div class="kpi-card"><div class="kpi-val" id="kpi-squads">—</div><div class="kpi-lbl">Full Squads</div></div>
           <div class="kpi-card"><div class="kpi-val" id="kpi-refs">—</div><div class="kpi-lbl">Referrals</div></div>
           <div class="kpi-card"><div class="kpi-val" id="kpi-countries">—</div><div class="kpi-lbl">Countries</div></div>
-          <div class="kpi-card"><div class="kpi-val" id="kpi-new7">—</div><div class="kpi-lbl">New (7d)</div></div>
-          <div class="kpi-card"><div class="kpi-val" id="kpi-new30">—</div><div class="kpi-lbl">New (30d)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="kpi-new7">—</div><div class="kpi-lbl">New 7d</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="kpi-new30">—</div><div class="kpi-lbl">New 30d</div></div>
         </div>
-        <div class="analytics-2col">
-          <div>
-            <div class="analytics-section-title">PSL Team Support</div>
-            <div id="an-teams"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
-          </div>
-          <div>
-            <div class="analytics-section-title">How Users Found Us</div>
-            <div id="an-discovery"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
-          </div>
+        <div class="an-2col">
+          <div><div class="an-title">PSL Team Support</div><div id="an-teams"><span style="color:var(--muted);font-size:13px">Loading…</span></div></div>
+          <div><div class="an-title">How Users Found Us</div><div id="an-discovery"><span style="color:var(--muted);font-size:13px">Loading…</span></div></div>
         </div>
-        <div class="analytics-2col">
+        <div class="an-2col">
           <div>
-            <div class="analytics-section-title">🎟️ Top Referrers — VIP Ticket Candidates</div>
+            <div class="an-title">🎟️ Top Referrers — VIP Ticket Candidates</div>
             <table class="results-table">
               <thead><tr><th>#</th><th>Manager</th><th>Code</th><th>Refs</th></tr></thead>
-              <tbody id="an-referrers"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">Loading...</td></tr></tbody>
+              <tbody id="an-referrers"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">Loading…</td></tr></tbody>
             </table>
           </div>
-          <div>
-            <div class="analytics-section-title">Top Cities</div>
-            <div id="an-cities"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
-          </div>
+          <div><div class="an-title">Top Cities</div><div id="an-cities"><span style="color:var(--muted);font-size:13px">Loading…</span></div></div>
         </div>
-        <div style="margin-top:8px">
-          <div class="analytics-section-title">Recent Registrations (Last 20)</div>
+        <div>
+          <div class="an-title">Recent Registrations (Last 20)</div>
           <div style="overflow-x:auto">
             <table class="results-table">
-              <thead>
-                <tr><th>Username</th><th>Team Name</th><th>Supports</th><th>City</th><th>Found Via</th><th>Refs</th><th>Squad</th></tr>
-              </thead>
-              <tbody id="an-recent"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:12px">Loading...</td></tr></tbody>
+              <thead><tr><th>Username</th><th>Team Name</th><th>Supports</th><th>City</th><th>Found Via</th><th>Refs</th><th>Squad</th></tr></thead>
+              <tbody id="an-recent"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:12px">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -750,7 +738,7 @@
   // ══════════════════════════════════════════════════════════════════
   const SUPABASE_URL     = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
   const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-  const ADMIN_PASSWORD   = 'fpsl-admin-2026';   // ⚠️ Change this to your own secret password!
+  const ADMIN_PASSWORD   = 'mzansi4sho';   // ⚠️ Change this to your own secret password!
 
   const TEAMS = [
     'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
@@ -810,7 +798,7 @@
     populateTeamDropdowns();
     await loadCurrentGW();
     await loadCurrentFixtures();
-    setTimeout(loadAnalytics, 600);
+    setTimeout(loadAnalytics, 700);
   }
 
   function populateTeamDropdowns() {
@@ -1137,11 +1125,7 @@
     el.style.display = 'block';
   }
 
-  function escHtml(str) {
-    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  // ── ANALYTICS ────────────────────────────────────────────────────
+  // ── ANALYTICS ────────────────────────────────────────────────────────
   async function loadAnalytics() {
     try {
       const data = await sb('GET', 'profiles', null,
@@ -1150,30 +1134,28 @@
         '&order=created_at.desc&limit=1000'
       );
       if (!data || !Array.isArray(data)) {
-        console.warn('[Analytics] Unexpected response:', data);
-        return;
+        console.warn('[Analytics] No data:', data); return;
       }
+      const now   = new Date();
+      const d7    = new Date(now - 7  * 86400000);
+      const d30   = new Date(now - 30 * 86400000);
+      const total = data.length;
+      const squads   = data.filter(p => (p.squad_count||0) >= 15).length;
+      const refs     = data.reduce((s,p) => s + (p.referral_count||0), 0);
+      const new7     = data.filter(p => p.created_at && new Date(p.created_at) >= d7).length;
+      const new30    = data.filter(p => p.created_at && new Date(p.created_at) >= d30).length;
+      const countries = new Set(data.map(p => p.country).filter(Boolean)).size;
 
-      const now    = new Date();
-      const d7     = new Date(now - 7  * 86400000);
-      const d30    = new Date(now - 30 * 86400000);
-      const total  = data.length;
-      const squads = data.filter(p => (p.squad_count || 0) >= 15).length;
-      const refs   = data.reduce((s, p) => s + (p.referral_count || 0), 0);
-      const new7   = data.filter(p => p.created_at && new Date(p.created_at) >= d7).length;
-      const new30  = data.filter(p => p.created_at && new Date(p.created_at) >= d30).length;
-      const ctries = new Set(data.map(p => p.country).filter(Boolean)).size;
-
-      document.getElementById('kpi-total').textContent    = total;
-      document.getElementById('kpi-squads').textContent   = squads;
-      document.getElementById('kpi-refs').textContent     = refs;
-      document.getElementById('kpi-countries').textContent = ctries;
-      document.getElementById('kpi-new7').textContent     = new7;
-      document.getElementById('kpi-new30').textContent    = new30;
+      document.getElementById('kpi-total').textContent     = total;
+      document.getElementById('kpi-squads').textContent    = squads;
+      document.getElementById('kpi-refs').textContent      = refs;
+      document.getElementById('kpi-countries').textContent = countries;
+      document.getElementById('kpi-new7').textContent      = new7;
+      document.getElementById('kpi-new30').textContent     = new30;
 
       function bars(id, entries, color) {
         const el = document.getElementById(id); if (!el) return;
-        if (!entries.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No data yet</div>'; return; }
+        if (!entries.length) { el.innerHTML = '<span style="color:var(--muted);font-size:13px">No data yet</span>'; return; }
         const mx = entries[0][1];
         el.innerHTML = entries.map(([name, n]) =>
           `<div class="bar-row">
@@ -1193,7 +1175,7 @@
       const cityC = {}; data.forEach(p => { if (p.city) cityC[p.city] = (cityC[p.city]||0)+1; });
       bars('an-cities', Object.entries(cityC).sort((a,b)=>b[1]-a[1]).slice(0,10), 'var(--blue)');
 
-      const topRefs = data.filter(p => (p.referral_count||0) > 0).sort((a,b)=>(b.referral_count||0)-(a.referral_count||0)).slice(0,10);
+      const topRefs = data.filter(p=>(p.referral_count||0)>0).sort((a,b)=>(b.referral_count||0)-(a.referral_count||0)).slice(0,10);
       document.getElementById('an-referrers').innerHTML = topRefs.length
         ? topRefs.map((p,i) => `<tr>
             <td>${i+1}</td>
@@ -1217,12 +1199,15 @@
           <td>${sq}</td>
         </tr>`;
       }).join('');
-
     } catch(err) {
-      console.error('[Analytics]', err.message || err);
+      console.error('[Analytics]', err.message||err);
       const el = document.getElementById('kpi-total');
       if (el) el.textContent = 'ERR';
     }
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
 </body>
