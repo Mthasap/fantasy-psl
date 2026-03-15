@@ -1622,7 +1622,7 @@ function openPmodal(id) {
   var club = p.clubs ? p.clubs.name : 'Unknown Club';
   var icon = posIcon(p.position);
 
-  document.getElementById('pm-shirt').innerHTML  = icon;
+  document.getElementById('pm-shirt').innerHTML   = icon;
   document.getElementById('pm-shirt').className    = 'pm-shirt s' + ((id % 6) + 1);
   document.getElementById('pm-name').textContent   = name;
   document.getElementById('pm-meta').textContent   = club + ' · ' + p.position;
@@ -1898,12 +1898,20 @@ function addPlayer(id) {
     if (clubCount >= 3) { showToast('Max 3 players from ' + clubName, 'warning'); return; }
   }
 
-  var starterSlots  = { GK:1, DEF:4, MID:4, FWD:2 };
-  var maxByPos     = { GK:1, DEF:5, MID:5, FWD:3 };
+  // FPL-style formation rules:
+  // Squad limits:    GK:2  DEF:5  MID:5  FWD:3
+  // Max starters:    GK:1  DEF:5  MID:5  FWD:3  (total 11)
+  // Min starters:    GK:1  DEF:3  MID:2  FWD:1
+  // A player goes to bench ONLY if:
+  //   (a) 11 starters already filled, OR
+  //   (b) their position has hit its starter maximum
+  var squadLimits  = { GK:2, DEF:5, MID:5, FWD:3 };
+  var maxStarters  = { GK:1, DEF:5, MID:5, FWD:3 };
+
   var starterCount = ST.squad.filter(function(x) { return !x.onBench; }).length;
   var posStarters  = ST.squad.filter(function(x) { return !x.onBench && x.position === p.position; }).length;
-  var onBench      = (starterCount >= 11) || (posStarters >= maxByPos[p.position]);
-  var benchOrd = onBench ? ST.squad.filter(function(x) { return x.onBench; }).length : -1;
+  var onBench      = (starterCount >= 11) || (posStarters >= maxStarters[p.position]);
+  var benchOrd     = onBench ? ST.squad.filter(function(x) { return x.onBench; }).length : -1;
 
   var np = Object.assign({}, p, { onBench: onBench, benchOrder: benchOrd, isCaptain: false, isVC: false });
   ST.squad.push(np);
@@ -2550,24 +2558,23 @@ function sn(name) { return SHORT_NAMES[name] || name; }
 // Betway Premiership 2025/26 standings — GW22 (5 Mar 2026)
 // W D L GF GA GD Pts  Form (newest last)
 var REAL_TABLE = [
-  // Source: SuperSport — GW23 complete standings — 15 March 2026
-  // All 9 GW23 matches played including Kaizer Chiefs 1-0 Durban City
-  { pos:1,  team:'Mamelodi Sundowns',  p:21, w:15, d:5, l:1,  gf:36, ga:10, gd:26,  pts:50, form:['W','W','W','W','W'] },
-  { pos:2,  team:'Orlando Pirates',    p:21, w:14, d:4, l:3,  gf:34, ga:9,  gd:25,  pts:46, form:['W','W','D','D','D'] },
-  { pos:3,  team:'Kaizer Chiefs',      p:19, w:9,  d:6, l:4,  gf:17, ga:12, gd:5,   pts:33, form:['L','L','W','L','W'] },
-  { pos:4,  team:'Sekhukhune United',  p:21, w:9,  d:7, l:5,  gf:21, ga:14, gd:7,   pts:34, form:['L','W','W','D','D'] },
-  { pos:5,  team:'AmaZulu FC',         p:21, w:10, d:4, l:7,  gf:21, ga:19, gd:2,   pts:34, form:['L','L','W','W','W'] },
-  { pos:6,  team:'Durban City',        p:21, w:9,  d:5, l:7,  gf:19, ga:15, gd:4,   pts:32, form:['W','W','L','W','L'] },
-  { pos:7,  team:'Polokwane City',     p:20, w:7,  d:8, l:5,  gf:16, ga:13, gd:3,   pts:29, form:['W','D','D','D','D'] },
-  { pos:8,  team:'Golden Arrows',      p:20, w:7,  d:3, l:10, gf:26, ga:25, gd:1,   pts:24, form:['D','W','D','L','W'] },
-  { pos:9,  team:'Richards Bay',       p:21, w:5,  d:9, l:7,  gf:16, ga:22, gd:-6,  pts:24, form:['L','D','D','L','D'] },
-  { pos:10, team:'TS Galaxy',          p:21, w:7,  d:4, l:10, gf:24, ga:23, gd:1,   pts:25, form:['L','L','L','D','D'] },
-  { pos:11, team:'Stellenbosch FC',    p:20, w:6,  d:6, l:8,  gf:16, ga:21, gd:-5,  pts:24, form:['W','W','D','D','D'] },
-  { pos:12, team:'Siwelele FC',        p:20, w:5,  d:8, l:7,  gf:11, ga:15, gd:-4,  pts:23, form:['D','W','D','D','D'] },
-  { pos:13, team:'Chippa United',      p:21, w:4,  d:8, l:9,  gf:16, ga:26, gd:-10, pts:20, form:['D','W','W','W','D'] },
-  { pos:14, team:'Marumo Gallants',    p:21, w:4,  d:6, l:11, gf:16, ga:28, gd:-12, pts:18, form:['L','D','L','L','L'] },
-  { pos:15, team:'Orbit College FC',   p:22, w:5,  d:3, l:14, gf:13, ga:34, gd:-21, pts:18, form:['L','L','L','L','L'] },
-  { pos:16, team:'Magesi FC',          p:20, w:2,  d:8, l:10, gf:12, ga:26, gd:-14, pts:14, form:['D','L','D','L','D'] }
+  // Source: SuperSport — GW20/21 standings — 11 March 2026
+  { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
+  { pos:2,  team:'Orlando Pirates',    p:20, w:14, d:3, l:3,  gf:31, ga:8,  gd:23,  pts:45, form:['W','L','W','W','D'] },
+  { pos:3,  team:'Sekhukhune United',  p:20, w:9,  d:6, l:5,  gf:21, ga:14, gd:7,   pts:33, form:['D','L','W','W','L'] },
+  { pos:4,  team:'Durban City',        p:20, w:9,  d:5, l:6,  gf:19, ga:14, gd:5,   pts:32, form:['D','W','W','L','W'] },
+  { pos:5,  team:'AmaZulu FC',         p:20, w:9,  d:4, l:7,  gf:19, ga:18, gd:1,   pts:31, form:['D','L','L','L','W'] },
+  { pos:6,  team:'Kaizer Chiefs',      p:18, w:8,  d:6, l:4,  gf:16, ga:12, gd:4,   pts:30, form:['L','L','L','W','L'] },
+  { pos:7,  team:'Polokwane City',     p:19, w:7,  d:7, l:5,  gf:16, ga:13, gd:3,   pts:28, form:['L','W','D','D','D'] },
+  { pos:8,  team:'TS Galaxy',          p:20, w:7,  d:3, l:10, gf:23, ga:22, gd:1,   pts:24, form:['L','L','L','L','L'] },
+  { pos:9,  team:'Richards Bay',       p:20, w:5,  d:9, l:6,  gf:15, ga:19, gd:-4,  pts:24, form:['W','D','L','D','D'] },
+  { pos:10, team:'Stellenbosch FC',    p:19, w:6,  d:5, l:8,  gf:15, ga:20, gd:-5,  pts:23, form:['D','W','W','D','D'] },
+  { pos:11, team:'Siwelele FC',        p:19, w:5,  d:7, l:7,  gf:10, ga:14, gd:-4,  pts:22, form:['D','W','D','D','D'] },
+  { pos:12, team:'Golden Arrows',      p:19, w:6,  d:3, l:10, gf:24, ga:24, gd:0,   pts:21, form:['L','D','W','D','L'] },
+  { pos:13, team:'Chippa United',      p:20, w:4,  d:7, l:9,  gf:14, ga:24, gd:-10, pts:19, form:['L','D','W','W','W'] },
+  { pos:14, team:'Marumo Gallants',    p:20, w:4,  d:6, l:10, gf:15, ga:26, gd:-11, pts:18, form:['W','L','D','L','L'] },
+  { pos:15, team:'Orbit College FC',   p:21, w:5,  d:3, l:13, gf:13, ga:32, gd:-19, pts:18, form:['W','L','L','L','L'] },
+  { pos:16, team:'Magesi FC',          p:19, w:2,  d:7, l:10, gf:10, ga:25, gd:-15, pts:13, form:['D','D','L','L','L'] }
 ]
 var REAL_FIXTURES = {
   // GW22 results — verified SuperSport
@@ -3163,14 +3170,14 @@ function renderNewsCard(source, title, url, date, img) {
 function loadNews() {
   var c = document.getElementById('news-grid'); if (!c) return;
 
-  // Show hardcoded news immediately while API loads
+  // Show fallback news immediately
   c.innerHTML = REAL_NEWS.map(function(n) {
     return renderNewsCard(n.source, n.title, n.url, n.date, n.img);
   }).join('');
 
-  // Try Goal.com news from our API endpoint
+  // Primary: try our psl-data API
   fetch('/api/psl-data?t=' + Date.now())
-    .then(function(r) { return r.json(); })
+    .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (data && data.news && data.news.length >= 3) {
         c.innerHTML = data.news.map(function(n) {
@@ -3178,35 +3185,76 @@ function loadNews() {
         }).join('');
         return;
       }
-      // Fallback: try NewsAPI via proxy
       tryLiveNews(c);
     })
     .catch(function() { tryLiveNews(c); });
 }
 
-
 function tryLiveNews(c) {
-  var url = 'https://newsapi.org/v2/everything?q=Betway+Premiership+PSL+South+Africa&language=en&sortBy=publishedAt&pageSize=12&apiKey=' + NEWS_KEY;
-  var proxies = [
-    'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
-    'https://corsproxy.io/?' + encodeURIComponent(url),
-    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+  // Best SA PSL news sources (in priority order):
+  // 1. Soccer Laduma — SA's #1 football publication
+  // 2. KickOff — dedicated PSL coverage
+  // 3. FARPost — quality PSL journalism
+  // 4. NewsAPI fallback
+  var NEWS_SOURCES = [
+    {
+      url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.soccerladuma.co.za/rss.xml'),
+      parse: 'rss', source: 'Soccer Laduma'
+    },
+    {
+      url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.kickoff.com/rss'),
+      parse: 'rss', source: 'Kick Off'
+    },
+    {
+      // NewsAPI as final fallback
+      url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(
+        'https://newsapi.org/v2/everything?q=PSL+Betway+Premiership&language=en&sortBy=publishedAt&pageSize=12&apiKey=' + NEWS_KEY
+      ),
+      parse: 'newsapi', source: 'NewsAPI'
+    }
   ];
+
   var tried = 0;
   function tryNext() {
-    if (tried >= proxies.length) return;
-    fetch(proxies[tried++])
-    .then(function(r) { return r.json(); })
-    .then(function(j) {
-      var raw = j.contents || j;
-      var data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      var articles = data.articles || [];
-      if (!articles.length) { tryNext(); return; }
-      c.innerHTML = articles.slice(0,12).map(function(a) {
-        return renderNewsCard(a.source.name, a.title, a.url, a.publishedAt, a.urlToImage);
-      }).join('');
-    })
-    .catch(tryNext);
+    if (tried >= NEWS_SOURCES.length) return;
+    var src = NEWS_SOURCES[tried++];
+    fetch(src.url)
+      .then(function(r) { return r.json(); })
+      .then(function(j) {
+        var raw = j.contents || '';
+        if (!raw) { tryNext(); return; }
+
+        var articles = [];
+        if (src.parse === 'rss') {
+          // Parse RSS XML
+          var parser = new DOMParser();
+          var xml = parser.parseFromString(raw, 'text/xml');
+          var items = xml.querySelectorAll('item');
+          items.forEach(function(item) {
+            var title = item.querySelector('title') ? item.querySelector('title').textContent : '';
+            var link  = item.querySelector('link')  ? item.querySelector('link').textContent : '';
+            var date  = item.querySelector('pubDate') ? item.querySelector('pubDate').textContent : new Date().toISOString();
+            var img   = null;
+            var enc   = item.querySelector('enclosure');
+            if (enc && enc.getAttribute('url')) img = enc.getAttribute('url');
+            var content = item.querySelector('description') ? item.querySelector('description').textContent : '';
+            var imgMatch = content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp))"/i);
+            if (!img && imgMatch) img = imgMatch[1];
+            if (title && link) articles.push({ source: src.source, title: title, url: link, date: date, img: img });
+          });
+        } else if (src.parse === 'newsapi') {
+          var data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          (data.articles || []).forEach(function(a) {
+            articles.push({ source: a.source && a.source.name || 'News', title: a.title, url: a.url, date: a.publishedAt, img: a.urlToImage });
+          });
+        }
+
+        if (!articles.length) { tryNext(); return; }
+        c.innerHTML = articles.slice(0, 12).map(function(a) {
+          return renderNewsCard(a.source, a.title, a.url, a.date, a.img);
+        }).join('');
+      })
+      .catch(tryNext);
   }
   tryNext();
 }
@@ -4242,20 +4290,39 @@ function loadStats() {
   // 1. Render immediately from PSL_ROSTER (instant fallback)
   renderStats();
 
-  // 2. Fetch full data bundle (standings + fixtures + top scorers/assists/cards)
+  // 2. Fetch live top scorers directly from Sportmonks via our API proxy
+  fetch('/api/football?type=topscorers')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      if (d && d.topScorers && d.topScorers.length) {
+        if (!LIVE_STATS) LIVE_STATS = {};
+        LIVE_STATS.topScorers = d.topScorers;
+        renderStats();
+      }
+    })
+    .catch(function() {});
+
+  // 3. Also fetch standings for table on stats page
+  fetch('/api/football?type=standings')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      if (d && d.standings && d.standings.length) {
+        if (!LIVE_STATS) LIVE_STATS = {};
+        LIVE_STATS.table = d.standings;
+        renderStats();
+      }
+    })
+    .catch(function() {});
+
+  // 4. Fetch full psl-data bundle as well for assists/cards
   fetchPSLData(function(fullData) {
     if (fullData) {
       if (!LIVE_STATS) LIVE_STATS = {};
-      if (fullData.table && fullData.table.length)         LIVE_STATS.table      = fullData.table;
-      if (fullData.topScorers && fullData.topScorers.length) LIVE_STATS.topScorers = fullData.topScorers;
       if (fullData.topAssists && fullData.topAssists.length) LIVE_STATS.topAssists = fullData.topAssists;
-      if (fullData.topYellow && fullData.topYellow.length)   LIVE_STATS.topYellow  = fullData.topYellow;
-      if (fullData.topRed && fullData.topRed.length)         LIVE_STATS.topRed     = fullData.topRed;
+      if (fullData.topYellow  && fullData.topYellow.length)  LIVE_STATS.topYellow  = fullData.topYellow;
+      if (fullData.topRed     && fullData.topRed.length)     LIVE_STATS.topRed     = fullData.topRed;
     }
-    // 3. Also fetch dedicated player stats endpoint (more complete player data)
-    fetchPlayerStats(function() {
-      renderStats(); // Re-render with best available data
-    });
+    renderStats();
   });
 }
 
@@ -5011,11 +5078,14 @@ function castPOTMVote(matchKey, playerId) {
 </div>
 
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
-  <div id="action-sheet" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.5rem 1.2rem 2rem;max-width:480px;margin:0 auto">
-      <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.08)"></div>
-      <div id="action-sheet-btns"></div>
-      <button onclick="closeActionSheet()" style="display:block;width:100%;padding:.75rem;margin-top:.5rem;background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.4);font-family:var(--font-ui);font-size:.85rem;cursor:pointer">Cancel</button>
+  <div id="action-sheet" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeActionSheet()">
+    <div style="position:relative;width:100%;max-width:480px;margin:0 auto;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.2rem 1.2rem 0;padding-bottom:calc(1rem + env(safe-area-inset-bottom, 0px))">
+      <!-- X close button top right -->
+      <button onclick="closeActionSheet()" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+      <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.9rem;padding-bottom:.7rem;padding-right:2rem;border-bottom:1px solid rgba(255,255,255,.08)"></div>
+      <div id="action-sheet-btns" style="padding-bottom:.5rem"></div>
+      <!-- Extra bottom padding so last button clears the mobile nav bar -->
+      <div style="height:calc(70px + env(safe-area-inset-bottom, 0px))"></div>
     </div>
   </div>
 
