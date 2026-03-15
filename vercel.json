@@ -1,20 +1,27 @@
 {
-  "crons": [
+  "routes": [
+    { "src": "/admin",   "dest": "/admin.html"   },
+    { "src": "/confirm", "dest": "/confirm.html" },
+    { "src": "/api/(.*)", "dest": "/api/$1"      },
+    { "src": "/(.*)",    "dest": "/$1"           }
+  ],
+  "headers": [
     {
-      "path": "/api/sync-psl-data",
-      "schedule": "0 3 * * *"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options",        "value": "DENY"    },
+        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" }
+      ]
     },
     {
-      "path": "/api/sync-fixtures",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/sync-player-stats",
-      "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/live-matches",
-      "schedule": "*/10 * * * *"
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=30" }
+      ]
     }
+  ],
+  "crons": [
+    { "path": "/api/points-cron", "schedule": "0 21 * * *" }
   ]
 }
