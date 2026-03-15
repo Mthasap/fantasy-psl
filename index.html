@@ -5065,5 +5065,71 @@ function castPOTMVote(matchKey, playerId) {
     </div>
   </div>
 
+
+<script>
+function generateReferralCode(){
+ const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+ let code="FPSL-";
+ for(let i=0;i<6;i++){
+   code+=chars[Math.floor(Math.random()*chars.length)];
+ }
+ return code;
+}
+
+async function doRegister(){
+
+ const email=document.getElementById("r-email").value;
+ const password=document.getElementById("r-pass").value;
+ const username=document.getElementById("r-user").value;
+ const teamName=document.getElementById("r-team").value;
+
+ const firstName=document.getElementById("signup-firstname")?.value||null;
+ const lastName=document.getElementById("signup-lastname")?.value||null;
+ const age=document.getElementById("signup-age")?.value||null;
+ const city=document.getElementById("signup-city")?.value||null;
+ const country=document.getElementById("signup-country")?.value||"South Africa";
+ const supportedTeam=document.getElementById("signup-team")?.value||null;
+ const discovery=document.getElementById("signup-discovery")?.value||null;
+ const referralUsed=document.getElementById("signup-referral")?.value||null;
+
+ const referralCode=generateReferralCode();
+
+ const supabaseUrl = window.SUPABASE_URL || "";
+ const supabaseKey = window.SUPABASE_ANON_KEY || "";
+
+ const sb = supabase.createClient(supabaseUrl, supabaseKey);
+
+ const { data, error } = await sb.auth.signUp({
+  email: email,
+  password: password
+ });
+
+ if(error){
+   document.getElementById("r-err").innerText=error.message;
+   return;
+ }
+
+ const userId=data.user.id;
+
+ await sb.from("profiles").insert({
+   id:userId,
+   username:username,
+   team_name:teamName,
+   first_name:firstName,
+   last_name:lastName,
+   age:age,
+   city:city,
+   country:country,
+   supported_team:supportedTeam,
+   discovery_source:discovery,
+   referral_code:referralCode,
+   referred_by:referralUsed
+ });
+
+ alert("Account created successfully!");
+ location.reload();
+}
+</script>
+
 </body>
 </html>
