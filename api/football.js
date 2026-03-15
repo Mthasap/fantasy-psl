@@ -23,7 +23,8 @@ const SM_BASE  = 'https://api.sportmonks.com/v3/football';
 const CACHE = {
   live:     { data: null, ts: 0, ttl: 60  * 1000 },        // 1 min
   fixtures: { data: null, ts: 0, ttl: 10  * 60 * 1000 },   // 10 min
-  results:  { data: null, ts: 0, ttl: 10  * 60 * 1000 },   // 10 min
+  results:   { data: null, ts: 0, ttl: 10  * 60 * 1000 },   // 10 min
+  standings: { data: null, ts: 0, ttl: 15  * 60 * 1000 },   // 15 min
 };
 
 module.exports = async (req, res) => {
@@ -38,9 +39,10 @@ module.exports = async (req, res) => {
 
   try {
     switch (type) {
-      case 'live':     return res.json(await getLive());
-      case 'fixtures': return res.json(await getFixtures());
-      case 'results':  return res.json(await getResults());
+      case 'live':      return res.json(await getLive());
+      case 'fixtures':  return res.json(await getFixtures());
+      case 'results':   return res.json(await getResults());
+      case 'standings': return res.json(await getStandings());
       case 'status':   return res.json({ ok: true, token_set: !!TOKEN });
       default:         return res.status(400).json({ error: 'Unknown type: ' + type });
     }
@@ -178,4 +180,59 @@ async function getResults() {
     });
 
   return toCache('results', { FT: results, ts: Date.now() });
+}
+
+// ── LEAGUE STANDINGS ─────────────────────────────────────────────────────
+async function getStandings() {
+  const cached = fromCache('standings');
+  if (cached) return cached;
+
+  // Sportmonks: standings for PSL current season
+  // include=participants gives team names + details
+  const json = await smGet('/standings/seasons/' + PSL_SEASON + '?include=participants&filters=standingTypes:191');
+
+  const raw = (json.data && json.data[0] && json.data[0].standings) ? json.data[0].standings : (json.data || []);
+
+  const standings = raw.map(function(s) {
+    const team = (s.participant && s.participant.name) || s.team_name || '';
+    const details = s.details || [];
+
+    // Sportmonks details array: each entry has type_id
+    // type_ids: 78=played, 79=won, 80=draw, 81=lost, 82=goals_for, 83=goals_against, 85=points
+    function det(typeId) {
+      const d = details.find(function(x) { return x.type_id === typeId; });
+      return d ? (d.value || 0) : 0;
+    }
+
+    const p   = det(78) || s.games || 0;
+    const w   = det(79) || s.won   || 0;
+    const d   = det(80) || s.draw  || 0;
+    const l   = det(81) || s.lost  || 0;
+    const gf  = det(82) || s.goals_for     || 0;
+    const ga  = det(83) || s.goals_against || 0;
+    const pts = det(85) || s.points || 0;
+    const gd  = gf - ga;
+
+    // Build form from recent results string if available
+    let form = [];
+    if (s.form) {
+      form = (s.form + '').toUpperCase().split('').slice(-5).filter(function(c) {
+        return c === 'W' || c === 'D' || c === 'L';
+      });
+    }
+
+    return {
+      pos:  s.position || s.rank || 0,
+      team: team,
+      p: p, w: w, d: d, l: l,
+      gf: gf, ga: ga, gd: gd, pts: pts,
+      form: form
+    };
+  }).filter(function(s) { return s.team && s.pts >= 0; })
+    .sort(function(a, b) { return a.pos - b.pos || b.pts - a.pts || b.gd - a.gd; });
+
+  if (!standings.length) throw new Error('No standings data returned');
+
+  CACHE.standings = { data: { standings: standings, ts: Date.now() }, ts: Date.now(), ttl: 15 * 60 * 1000 };
+  return { standings: standings, ts: Date.now() };
 }
