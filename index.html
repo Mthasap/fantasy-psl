@@ -2404,95 +2404,53 @@ function renderTransferBadge() {
   }
 }
 
-// ── Deadline lock — bulletproof version ────────────────────────────
-// Always re-fetches deadline from Supabase so it can't be bypassed
-// by manipulating browser time or cached state.
+// ── Deadline lock ──────────────────────────────────────────────────
 function checkDeadline() {
-  if (!db) { setTimeout(checkDeadline, 5000); return; }
+  // If no deadline stored in DB, squad is OPEN (never lock by default)
+  if (!ST.gw || !ST.gw.deadline_at) {
+    ST.deadlinePassed = false;
+    var lb = document.getElementById('deadline-lock-banner');
+    if (lb) lb.style.display = 'none';
+    return;
+  }
+  var deadline = new Date(ST.gw.deadline_at);
+  var now      = new Date();
+  var wasPassed = ST.deadlinePassed;
+  ST.deadlinePassed = now >= deadline;
 
-  // Always re-fetch current GW from DB on every check
-  db.from('gameweeks')
-    .select('number, deadline_at')
-    .eq('is_current', true)
-    .limit(1)
-    .then(function(res) {
-      var gw = res.data && res.data[0];
+  var lockBanner = document.getElementById('deadline-lock-banner');
+  if (lockBanner) lockBanner.style.display = ST.deadlinePassed ? 'flex' : 'none';
 
-      // If no deadline in DB → squad is open
-      if (!gw || !gw.deadline_at) {
-        ST.deadlinePassed = false;
-        var lb = document.getElementById('deadline-lock-banner');
-        if (lb) lb.style.display = 'none';
-        setTimeout(checkDeadline, 30000);
-        return;
-      }
+  var saveBtn = document.getElementById('save-btn');
+  if (saveBtn) {
+    saveBtn.disabled = ST.deadlinePassed;
+    if (ST.deadlinePassed) {
+      saveBtn.textContent = 'Deadline Passed';
+      saveBtn.style.opacity = '0.5';
+    }
+  }
 
-      // Update ST.gw with latest from DB
-      if (!ST.gw) ST.gw = {};
-      ST.gw.deadline_at = gw.deadline_at;
-      ST.gw.number      = gw.number;
+  // If deadline just passed during this session, notify the user
+  if (!wasPassed && ST.deadlinePassed) {
+    showToast('Gameweek ' + (ST.gw.number || '') + ' deadline has passed — your squad is now locked for scoring', 'warning');
+  }
 
-      var deadline  = new Date(gw.deadline_at);
-      var now       = new Date();
-      var wasPassed = ST.deadlinePassed;
-      ST.deadlinePassed = now >= deadline;
+  // Show countdown if deadline is upcoming (within 24 hours)
+  var msLeft = deadline - now;
+  var dlEl   = document.getElementById('gw-deadline');
+  if (dlEl && msLeft > 0 && msLeft < 86400000) {
+    var hLeft = Math.floor(msLeft / 3600000);
+    var mLeft = Math.floor((msLeft % 3600000) / 60000);
+    dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
+    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
+  }
 
-      // Lock banner
-      var lockBanner = document.getElementById('deadline-lock-banner');
-      if (lockBanner) lockBanner.style.display = ST.deadlinePassed ? 'flex' : 'none';
+  // Update banner GW number
+  var bannerGwNum = document.getElementById('banner-gw-num');
+  if (bannerGwNum && ST.gw && ST.gw.number) bannerGwNum.textContent = ST.gw.number;
 
-      // Save button
-      var saveBtn = document.getElementById('save-btn');
-      if (saveBtn) {
-        saveBtn.disabled = ST.deadlinePassed;
-        if (ST.deadlinePassed) {
-          saveBtn.textContent = '🔒 Deadline Passed';
-          saveBtn.style.opacity = '0.5';
-          saveBtn.style.cursor  = 'not-allowed';
-        } else {
-          if (saveBtn.textContent === '🔒 Deadline Passed') {
-            saveBtn.textContent = 'Save Squad';
-            saveBtn.style.opacity = '1';
-            saveBtn.style.cursor  = 'pointer';
-          }
-        }
-      }
-
-      // Notify user if deadline just passed in this session
-      if (!wasPassed && ST.deadlinePassed) {
-        showToast('🔒 GW' + (gw.number||'') + ' deadline passed — squad locked for scoring', 'warning');
-      }
-
-      // Deadline countdown display
-      var msLeft = deadline - now;
-      var dlEl   = document.getElementById('gw-deadline');
-      if (dlEl) {
-        if (ST.deadlinePassed) {
-          dlEl.textContent = 'Deadline passed';
-          dlEl.style.color = '#D4274F';
-        } else if (msLeft < 86400000) {
-          var hLeft = Math.floor(msLeft / 3600000);
-          var mLeft = Math.floor((msLeft % 3600000) / 60000);
-          dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
-          dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
-        } else {
-          var d = new Date(gw.deadline_at);
-          dlEl.textContent = 'Deadline: ' + d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-          dlEl.style.color = '';
-        }
-      }
-
-      // Update banner GW number
-      var bannerGwNum = document.getElementById('banner-gw-num');
-      if (bannerGwNum && gw.number) bannerGwNum.textContent = gw.number;
-
-      // Recheck every 30 seconds
-      setTimeout(checkDeadline, 30000);
-    })
-    .catch(function() {
-      // On error, keep current state and retry in 60s
-      setTimeout(checkDeadline, 60000);
-    });
+  // Recheck every 30 seconds
+  setTimeout(checkDeadline, 30000);
 }
 
 function showDeadlineInfo() {
@@ -2820,24 +2778,105 @@ function loadFixturesFromData(data) {
   // ── Build the list of matches to display ────────────────────────
   var matches;
   if (tab === 'LIVE') {
-    // Live tab: only show currently live matches
     matches = data.live || [];
   } else if (tab === 'NS') {
-    // Upcoming: use REAL_FIXTURES times (always correct SAST)
-    // If any matches are currently live, show them at top of upcoming
-    matches = (REAL_FIXTURES.NS || []).slice();
+    // Upcoming from Supabase/Sportmonks — remove any that are now live
+    matches = (data.NS || []).slice();
     if (data.live && data.live.length) {
-      // Remove from upcoming list if they are now live
       var liveNames = data.live.map(function(m) { return m.home + '_' + m.away; });
       matches = matches.filter(function(m) {
         return liveNames.indexOf(m.home + '_' + m.away) === -1;
       });
     }
+    // Sort by kickoff
+    matches.sort(function(a,b) {
+      return new Date(a.kickoff_at||a.date||0) - new Date(b.kickoff_at||b.date||0);
+    });
   } else if (tab === 'FT') {
-    // Results: prefer live-fetched results, fall back to hardcoded
-    matches = (data.FT && data.FT.length) ? data.FT : (REAL_FIXTURES.FT || []);
+    // Results from Supabase — sorted newest first
+    matches = (data.FT || []).slice().sort(function(a,b) {
+      return new Date(b.kickoff_at||b.date||0) - new Date(a.kickoff_at||a.date||0);
+    });
   } else {
     matches = [];
+  }
+
+  // ── Update live tab badge ────────────────────────────────────────
+  var liveTab = document.getElementById('ftab-live');
+  if (liveTab) {
+    if (data.live && data.live.length) {
+      liveTab.innerHTML =
+        '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
+        'background:#D4274F;margin-right:5px;vertical-align:middle;' +
+        'animation:livePulse 1.2s ease-in-out infinite"></span>' +
+        'LIVE (' + data.live.length + ')';
+    } else {
+      liveTab.innerHTML =
+        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
+        'background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live';
+    }
+  }
+
+  if (data.currentGW) updateGWDisplay(data.currentGW);
+
+  if (!matches || !matches.length) {
+    if (tab === 'LIVE') {
+      c.innerHTML =
+        '<div style="text-align:center;padding:3rem 1rem">' +
+          '<div style="margin-bottom:.6rem;opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div>' +
+          '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:rgba(255,255,255,.4)">No live matches right now</div>' +
+          '<div style="font-size:.75rem;color:rgba(255,255,255,.2);margin-top:.4rem">This tab updates automatically when matches kick off</div>' +
+        '</div>';
+    } else if (tab === 'NS') {
+      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">Upcoming fixtures loading...</div>';
+    } else {
+      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">No results yet</div>';
+    }
+    return;
+  }
+
+  // ── Group by date ────────────────────────────────────────────────
+  var grouped = {};
+  var groupOrder = [];
+  matches.forEach(function(f) {
+    var label;
+    var dateStr = f.kickoff_at || f.date;
+    if (f.is_live || f.isLive || f.status === 'LIVE') {
+      label = '🔴 LIVE NOW';
+    } else if (dateStr) {
+      label = formatMatchDate(dateStr.substring(0,10));
+    } else {
+      label = 'Upcoming';
+    }
+    if (!grouped[label]) { grouped[label] = []; groupOrder.push(label); }
+    grouped[label].push(f);
+  });
+
+  var html_out = '';
+  groupOrder.forEach(function(dateLabel) {
+    html_out +=
+      '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;' +
+      'font-weight:700;letter-spacing:1.5px;text-transform:uppercase;' +
+      'padding:.5rem .8rem .2rem">' + dateLabel + '</div>';
+    grouped[dateLabel].forEach(function(f) {
+      var isLiveMatch = f.is_live || f.isLive || f.status === 'LIVE' ||
+        ['1H','HT','2H','ET','P','BT'].indexOf(f.status) !== -1;
+      // Use kickoff_at for time display if available
+      var timeStr = f.time || null;
+      if (!timeStr && f.kickoff_at) {
+        var d = new Date(f.kickoff_at);
+        // Convert to SAST (UTC+2)
+        d.setMinutes(d.getMinutes());
+        timeStr = d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', timeZone:'Africa/Johannesburg' });
+      }
+      html_out += renderFixtureRow(f.home, f.away, f.hg, f.ag,
+        (f.kickoff_at||f.date||'').substring(0,10), isLiveMatch, f.elapsed||f.minute, timeStr);
+    });
+  });
+  c.innerHTML = html_out;
+}
+
+
   }
 
   // ── Update live tab badge ────────────────────────────────────────
@@ -2911,16 +2950,16 @@ function loadFixturesFromData(data) {
 
 
 function loadTableFromData(data) {
-  var c = document.getElementById('table-body'); if (!c || !data || !data.table) return;
-  if (data.table.length >= 8) {
-    // Store in LIVE_STATS for club profiles + stat pages
+  var c = document.getElementById('table-body'); if (!c || !data) return;
+  var tableData = data.table || data.standings || [];
+  if (tableData.length >= 8) {
     if (!window.LIVE_STATS) window.LIVE_STATS = {};
-    LIVE_STATS.table      = data.table;
+    LIVE_STATS.table      = tableData;
     LIVE_STATS.topScorers = data.topScorers || LIVE_STATS.topScorers || [];
     LIVE_STATS.topAssists = data.topAssists || LIVE_STATS.topAssists || [];
     LIVE_STATS.topYellow  = data.topYellow  || LIVE_STATS.topYellow  || [];
     LIVE_STATS.topRed     = data.topRed     || LIVE_STATS.topRed     || [];
-    renderTableFromData(c, data.table);
+    renderTableFromData(c, tableData);
   }
 }
 
@@ -2989,15 +3028,15 @@ function loadFixtures() {
   });
 }
 
+// Render fixtures from Supabase DB rows (primary source)
 function renderFixturesFromDB(rows) {
   var c = document.getElementById('fix-list'); if (!c) return;
   var tab = ST.fixTab;
 
-  // Filter by tab
   var list = rows.filter(function(f) {
-    if (tab === 'NS')   return f.status === 'NS' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
+    if (tab === 'NS')   return f.status === 'NS';
     if (tab === 'FT')   return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN';
-    if (tab === 'LIVE') return f.status === '1H' || f.status === 'HT' || f.status === '2H';
+    if (tab === 'LIVE') return f.status === 'LIVE' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
     return true;
   });
 
@@ -3007,20 +3046,19 @@ function renderFixturesFromDB(rows) {
     return;
   }
 
-  // Sort results newest first, upcoming oldest first
-  if (tab === 'FT') list = list.reverse();
+  if (tab === 'FT') list = list.slice().reverse();
 
-  // Group by date
   var grouped = {};
+  var groupOrder = [];
   list.forEach(function(f) {
     var d = new Date(f.kickoff_at);
     var label = formatMatchDate(d.toISOString().slice(0,10));
-    if (!grouped[label]) grouped[label] = [];
+    if (!grouped[label]) { grouped[label] = []; groupOrder.push(label); }
     grouped[label].push(f);
   });
 
   var html = '';
-  Object.keys(grouped).forEach(function(label) {
+  groupOrder.forEach(function(label) {
     html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
     grouped[label].forEach(function(f) {
       var d = new Date(f.kickoff_at);
@@ -3031,44 +3069,54 @@ function renderFixturesFromDB(rows) {
   c.innerHTML = html;
 }
 
-// Render fixtures purely from REAL_FIXTURES hardcoded data
+// Show loading state while DB fetches — no hardcoded fallback
 function renderFixturesFromLocal() {
   var c = document.getElementById('fix-list'); if (!c) return;
-  var tab = ST.fixTab;
-  var list = tab === 'NS'   ? REAL_FIXTURES.NS :
-             tab === 'FT'   ? REAL_FIXTURES.FT :
-             tab === 'LIVE' ? REAL_FIXTURES.live || [] : [];
-
-  if (!list.length) {
-    c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' +
-      (tab === 'LIVE' ? 'No live matches right now' : 'No fixtures to display') + '</div>';
-    return;
-  }
-
-  // Group by date
-  var grouped = {};
-  list.forEach(function(f) {
-    var label = f.date ? formatMatchDate(f.date) : 'Upcoming';
-    if (!grouped[label]) grouped[label] = [];
-    grouped[label].push(f);
-  });
-
-  var html = '';
-  Object.keys(grouped).forEach(function(label) {
-    html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
-    grouped[label].forEach(function(f) {
-      html += renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false, null, f.time);
-    });
-  });
-  c.innerHTML = html;
+  c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.3);padding:2rem;font-family:var(--font-ui);font-size:.82rem">Loading fixtures...</div>';
 }
+
 function loadTable() {
   var c = document.getElementById('table-body'); if (!c) return;
-  renderRealTable(c); // show immediately
-  fetchPSLData(function(data) {
-    if (!data) return;
-    loadTableFromData(data);
-    if (data.isLive) showLiveBanner(data.live);
+
+  // Load directly from Supabase standings view
+  db.from('fixtures')
+    .select('gameweek, home_team, away_team, home_score, away_score, status')
+    .eq('status', 'FT')
+    .then(function(res) {
+      if (res.error || !res.data || !res.data.length) {
+        // fallback to psl-data API
+        fetchPSLData(function(data) { if (data) loadTableFromData(data); });
+        return;
+      }
+      // Build standings from results
+      var table = buildStandingsFromResults(res.data);
+      renderTableFromData(c, table);
+      if (!window.LIVE_STATS) window.LIVE_STATS = {};
+      LIVE_STATS.table = table;
+    });
+}
+
+// Build league table from raw results in Supabase
+function buildStandingsFromResults(rows) {
+  var teams = {};
+  rows.forEach(function(f) {
+    if (!f.home_team || !f.away_team) return;
+    if (!teams[f.home_team]) teams[f.home_team] = { team:f.home_team, p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    if (!teams[f.away_team]) teams[f.away_team] = { team:f.away_team, p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    var h = teams[f.home_team], a = teams[f.away_team];
+    var hg = f.home_score || 0, ag = f.away_score || 0;
+    h.p++; h.gf += hg; h.ga += ag;
+    a.p++; a.gf += ag; a.ga += hg;
+    if (hg > ag)      { h.w++; h.pts += 3; a.l++; }
+    else if (hg < ag) { a.w++; a.pts += 3; h.l++; }
+    else              { h.d++; h.pts++; a.d++; a.pts++; }
+  });
+  return Object.values(teams)
+    .map(function(t) { t.gd = t.gf - t.ga; return t; })
+    .sort(function(a,b) { return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf; })
+    .map(function(t, i) { t.pos = i + 1; return t; });
+}
+
   });
 }
 
@@ -3132,7 +3180,12 @@ function renderTickerFromRows(rows) {
     items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: ds, dot: 'o' });
   });
 
-  if (!items.length) { updateTickerFromReal(); return; }
+  if (!items.length) {
+    // No items yet — show a placeholder
+    var track2 = document.getElementById('ticker-track');
+    if (track2) track2.innerHTML = '<div class="ti"><div class="ti-dot o"></div><span class="ti-label">GW fixtures loading...</span></div>';
+    return;
+  }
 
   // Double items so the scroll looks seamless
   var doubled = items.concat(items);
@@ -3163,25 +3216,24 @@ function updateTickerFromData(data) {
 }
 
 function updateTickerFromReal() {
-  // Instant fallback using hardcoded REAL_FIXTURES — filters to current GW content
-  var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = REAL_FIXTURES.FT.map(function(f) {
-    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
-  });
-  REAL_FIXTURES.NS.forEach(function(f) {
-    var d  = new Date(f.date);
-    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
-    items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
-  });
-  if (!items.length) return;
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(f) {
-    return '<div class="ti">' +
-      '<div class="ti-dot ' + f.dot + '"></div>' +
-      '<span class="ti-label">' + f.label + '</span>' +
-      '<span class="ti-score">' + f.score + '</span>' +
-    '</div>';
-  }).join('');
+  // Pull current GW fixtures from Supabase — no hardcoded data
+  if (!db) return;
+  db.from('gameweeks')
+    .select('number')
+    .eq('is_current', true)
+    .limit(1)
+    .then(function(gwRes) {
+      var gw = gwRes.data && gwRes.data[0] ? gwRes.data[0].number : null;
+      if (!gw) return;
+      db.from('fixtures')
+        .select('home_team, away_team, home_score, away_score, status, kickoff_at')
+        .eq('gameweek', gw)
+        .order('kickoff_at', { ascending: true })
+        .then(function(fixRes) {
+          if (fixRes.error || !fixRes.data || !fixRes.data.length) return;
+          renderTickerFromRows(fixRes.data);
+        });
+    });
 }
 
 function updateTicker(fixtures) { updateTickerFromReal(); } // legacy shim
