@@ -598,25 +598,20 @@
   <div class="auth-field">
     <label>PSL Team You Support</label>
     <select id="signup-team">
-      <option value="">Select your team</option>
+      <option value="">Select Team</option>
       <option>Kaizer Chiefs</option>
       <option>Orlando Pirates</option>
       <option>Mamelodi Sundowns</option>
-      <option>AmaZulu FC</option>
-      <option>Stellenbosch FC</option>
-      <option>Sekhukhune United</option>
-      <option>Durban City</option>
-      <option>Polokwane City</option>
-      <option>Richards Bay</option>
-      <option>TS Galaxy</option>
-      <option>Chippa United</option>
-      <option>Golden Arrows</option>
-      <option>Marumo Gallants</option>
-      <option>Magesi FC</option>
-      <option>Siwelele FC</option>
-      <option>Orbit College FC</option>
       <option>SuperSport United</option>
-      <option>Other / I support multiple teams</option>
+      <option>Stellenbosch FC</option>
+      <option>AmaZulu FC</option>
+      <option>Golden Arrows</option>
+      <option>Chippa United</option>
+      <option>Sekhukhune United</option>
+      <option>Polokwane City</option>
+      <option>TS Galaxy</option>
+      <option>Richards Bay</option>
+      <option>Magesi FC</option>
     </select>
   </div>
 
@@ -635,10 +630,7 @@
 
   <div class="auth-field">
     <label>Referral Code (optional)</label>
-    <input id="signup-referral" type="text" placeholder="e.g. FPSL-ABC123">
-    <div style="margin-top:.4rem;font-family:var(--font-ui);font-size:.7rem;color:#DBA94A;line-height:1.5">
-      🎟️ Have a referral code? Enter it here. Every referral gives the sender a chance to win <strong>2 VIP tickets</strong> to a PSL match of their choice!
-    </div>
+    <input id="signup-referral" type="text">
   </div>
 
 
@@ -2412,53 +2404,95 @@ function renderTransferBadge() {
   }
 }
 
-// ── Deadline lock ──────────────────────────────────────────────────
+// ── Deadline lock — bulletproof version ────────────────────────────
+// Always re-fetches deadline from Supabase so it can't be bypassed
+// by manipulating browser time or cached state.
 function checkDeadline() {
-  // If no deadline stored in DB, squad is OPEN (never lock by default)
-  if (!ST.gw || !ST.gw.deadline_at) {
-    ST.deadlinePassed = false;
-    var lb = document.getElementById('deadline-lock-banner');
-    if (lb) lb.style.display = 'none';
-    return;
-  }
-  var deadline = new Date(ST.gw.deadline_at);
-  var now      = new Date();
-  var wasPassed = ST.deadlinePassed;
-  ST.deadlinePassed = now >= deadline;
+  if (!db) { setTimeout(checkDeadline, 5000); return; }
 
-  var lockBanner = document.getElementById('deadline-lock-banner');
-  if (lockBanner) lockBanner.style.display = ST.deadlinePassed ? 'flex' : 'none';
+  // Always re-fetch current GW from DB on every check
+  db.from('gameweeks')
+    .select('number, deadline_at')
+    .eq('is_current', true)
+    .limit(1)
+    .then(function(res) {
+      var gw = res.data && res.data[0];
 
-  var saveBtn = document.getElementById('save-btn');
-  if (saveBtn) {
-    saveBtn.disabled = ST.deadlinePassed;
-    if (ST.deadlinePassed) {
-      saveBtn.textContent = 'Deadline Passed';
-      saveBtn.style.opacity = '0.5';
-    }
-  }
+      // If no deadline in DB → squad is open
+      if (!gw || !gw.deadline_at) {
+        ST.deadlinePassed = false;
+        var lb = document.getElementById('deadline-lock-banner');
+        if (lb) lb.style.display = 'none';
+        setTimeout(checkDeadline, 30000);
+        return;
+      }
 
-  // If deadline just passed during this session, notify the user
-  if (!wasPassed && ST.deadlinePassed) {
-    showToast('Gameweek ' + (ST.gw.number || '') + ' deadline has passed — your squad is now locked for scoring', 'warning');
-  }
+      // Update ST.gw with latest from DB
+      if (!ST.gw) ST.gw = {};
+      ST.gw.deadline_at = gw.deadline_at;
+      ST.gw.number      = gw.number;
 
-  // Show countdown if deadline is upcoming (within 24 hours)
-  var msLeft = deadline - now;
-  var dlEl   = document.getElementById('gw-deadline');
-  if (dlEl && msLeft > 0 && msLeft < 86400000) {
-    var hLeft = Math.floor(msLeft / 3600000);
-    var mLeft = Math.floor((msLeft % 3600000) / 60000);
-    dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
-    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
-  }
+      var deadline  = new Date(gw.deadline_at);
+      var now       = new Date();
+      var wasPassed = ST.deadlinePassed;
+      ST.deadlinePassed = now >= deadline;
 
-  // Update banner GW number
-  var bannerGwNum = document.getElementById('banner-gw-num');
-  if (bannerGwNum && ST.gw && ST.gw.number) bannerGwNum.textContent = ST.gw.number;
+      // Lock banner
+      var lockBanner = document.getElementById('deadline-lock-banner');
+      if (lockBanner) lockBanner.style.display = ST.deadlinePassed ? 'flex' : 'none';
 
-  // Recheck every 30 seconds
-  setTimeout(checkDeadline, 30000);
+      // Save button
+      var saveBtn = document.getElementById('save-btn');
+      if (saveBtn) {
+        saveBtn.disabled = ST.deadlinePassed;
+        if (ST.deadlinePassed) {
+          saveBtn.textContent = '🔒 Deadline Passed';
+          saveBtn.style.opacity = '0.5';
+          saveBtn.style.cursor  = 'not-allowed';
+        } else {
+          if (saveBtn.textContent === '🔒 Deadline Passed') {
+            saveBtn.textContent = 'Save Squad';
+            saveBtn.style.opacity = '1';
+            saveBtn.style.cursor  = 'pointer';
+          }
+        }
+      }
+
+      // Notify user if deadline just passed in this session
+      if (!wasPassed && ST.deadlinePassed) {
+        showToast('🔒 GW' + (gw.number||'') + ' deadline passed — squad locked for scoring', 'warning');
+      }
+
+      // Deadline countdown display
+      var msLeft = deadline - now;
+      var dlEl   = document.getElementById('gw-deadline');
+      if (dlEl) {
+        if (ST.deadlinePassed) {
+          dlEl.textContent = 'Deadline passed';
+          dlEl.style.color = '#D4274F';
+        } else if (msLeft < 86400000) {
+          var hLeft = Math.floor(msLeft / 3600000);
+          var mLeft = Math.floor((msLeft % 3600000) / 60000);
+          dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
+          dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
+        } else {
+          var d = new Date(gw.deadline_at);
+          dlEl.textContent = 'Deadline: ' + d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+          dlEl.style.color = '';
+        }
+      }
+
+      // Update banner GW number
+      var bannerGwNum = document.getElementById('banner-gw-num');
+      if (bannerGwNum && gw.number) bannerGwNum.textContent = gw.number;
+
+      // Recheck every 30 seconds
+      setTimeout(checkDeadline, 30000);
+    })
+    .catch(function() {
+      // On error, keep current state and retry in 60s
+      setTimeout(checkDeadline, 60000);
+    });
 }
 
 function showDeadlineInfo() {
@@ -3514,25 +3548,6 @@ function renderProfilePanel() {
   var c = document.getElementById('profile-wrap');
   if (!c || !CACHE._profile) return;
   renderProfileData(c, CACHE._profile);
-}
-
-function copyReferralCode(code) {
-  navigator.clipboard.writeText(code).then(function() {
-    showToast('Referral code copied! Share it to win VIP tickets 🎟️', 'success');
-  }).catch(function() {
-    showToast('Code: ' + code, 'info');
-  });
-}
-
-function shareReferralCode(code) {
-  var text = 'Join me on Fantasy PSL — South Africa\'s fantasy football game for the Betway Premiership! Use my referral code ' + code + ' when you sign up 🏆 → https://www.fantasypsl.co.za';
-  if (navigator.share) {
-    navigator.share({ title: 'Fantasy PSL', text: text, url: 'https://www.fantasypsl.co.za' });
-  } else {
-    navigator.clipboard.writeText(text).then(function() {
-      showToast('Share message copied to clipboard!', 'success');
-    });
-  }
 }
 
 function deleteAccount() {
@@ -4753,14 +4768,6 @@ function formatMatchDate(dateStr) {
 function renderProfileData(c, p) {
   if (!c || !p) return;
   var initials = (p.team_name || '?').substring(0,2).toUpperCase();
-  var referralCode = p.referral_code || '—';
-  var referralCount = p.referral_count || 0;
-  var referralMsg = referralCount === 0
-    ? 'Share your code and stand a chance to win 2 VIP tickets!'
-    : referralCount === 1
-      ? '1 person signed up with your code. Keep sharing! 🎟️'
-      : referralCount + ' people signed up with your code. You\'re in the draw for VIP tickets! 🎟️';
-
   c.innerHTML =
     '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
       '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;flex-shrink:0;border:2px solid rgba(185,28,58,.5)">' + initials + '</div>' +
@@ -4774,19 +4781,6 @@ function renderProfileData(c, p) {
         '</div>' +
       '</div>' +
     '</div>' +
-
-    // ── REFERRAL CARD ────────────────────────────────────────────
-    '<div style="background:linear-gradient(135deg,rgba(201,150,58,.12),rgba(185,28,58,.08));border:1px solid rgba(201,150,58,.25);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.5rem">' +
-      '<div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#DBA94A;letter-spacing:1px;text-transform:uppercase;margin-bottom:.6rem">🎟️ VIP Referral</div>' +
-      '<div style="font-size:.82rem;color:rgba(255,255,255,.7);margin-bottom:.9rem">' + referralMsg + '</div>' +
-      '<div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">' +
-        '<div style="background:var(--bg-surface);border:1px solid rgba(201,150,58,.3);border-radius:8px;padding:.5rem 1rem;font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A;letter-spacing:2px">' + referralCode + '</div>' +
-        '<button onclick="copyReferralCode(\'' + referralCode + '\')" style="background:rgba(201,150,58,.15);border:1px solid rgba(201,150,58,.3);border-radius:8px;padding:.5rem 1rem;color:#DBA94A;font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.5px">Copy Code</button>' +
-        '<button onclick="shareReferralCode(\'' + referralCode + '\')" style="background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.3);border-radius:8px;padding:.5rem 1rem;color:#E84060;font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.5px">Share 🔗</button>' +
-      '</div>' +
-      '<div style="margin-top:.8rem;font-size:.7rem;color:rgba(255,255,255,.35)">Referrals: <strong style="color:#DBA94A">' + referralCount + '</strong> · Each referral = 1 entry into the VIP ticket draw</div>' +
-    '</div>' +
-
     '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">My Squad</div>' +
     '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;margin-bottom:1.5rem">' +
       (ST.squad.length ? ST.squad.map(function(pl) {
@@ -5171,24 +5165,10 @@ async function doRegister(){
    supported_team:supportedTeam,
    discovery_source:discovery,
    referral_code:referralCode,
-   referred_by:referralUsed,
-   referral_count:0
+   referred_by:referralUsed
  });
 
- // If they used a referral code, increment the referrer's count
- if(referralUsed && referralUsed.trim()){
-   const { data: refData } = await sb.from("profiles")
-     .select("id, referral_count")
-     .eq("referral_code", referralUsed.trim().toUpperCase())
-     .single();
-   if(refData){
-     await sb.from("profiles")
-       .update({ referral_count: (refData.referral_count || 0) + 1 })
-       .eq("id", refData.id);
-   }
- }
-
- alert("Account created successfully! Check your email to confirm your account.");
+ alert("Account created successfully!");
  location.reload();
 }
 </script>
