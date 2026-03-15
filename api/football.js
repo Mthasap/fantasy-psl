@@ -19,6 +19,9 @@ const TOKEN    = process.env.SPORTMONKS_TOKEN || '';
 const PSL_ID   = 806;   // Sportmonks league ID for Betway Premiership
 const SM_BASE  = 'https://api.sportmonks.com/v3/football';
 
+// Current season ID — discovered dynamically on first standings request
+let PSL_SEASON = null;
+
 // In-memory cache shared across requests
 const CACHE = {
   live:     { data: null, ts: 0, ttl: 60  * 1000 },        // 1 min
@@ -187,52 +190,70 @@ async function getStandings() {
   const cached = fromCache('standings');
   if (cached) return cached;
 
-  // Sportmonks: standings for PSL current season
-  // include=participants gives team names + details
-  const json = await smGet('/standings/seasons/' + PSL_SEASON + '?include=participants&filters=standingTypes:191');
+  // Step 1: discover current season ID if not known
+  if (!PSL_SEASON) {
+    try {
+      const lgJson = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
+      const cs = lgJson.data && lgJson.data.current_season;
+      if (cs && cs.id) {
+        PSL_SEASON = cs.id;
+        console.log('[football.js] PSL season ID discovered:', PSL_SEASON);
+      }
+    } catch(e) {
+      console.warn('[football.js] Could not discover season ID:', e.message);
+    }
+  }
 
-  const raw = (json.data && json.data[0] && json.data[0].standings) ? json.data[0].standings : (json.data || []);
+  if (!PSL_SEASON) throw new Error('PSL season ID unknown — check Sportmonks subscription covers league 806');
+
+  // Step 2: fetch standings for discovered season
+  const json = await smGet('/standings/seasons/' + PSL_SEASON + '?include=participant;details');
+
+  // Sportmonks returns standings array directly in data
+  const raw = Array.isArray(json.data) ? json.data : [];
 
   const standings = raw.map(function(s) {
-    const team = (s.participant && s.participant.name) || s.team_name || '';
+    const team = (s.participant && s.participant.name) || '';
     const details = s.details || [];
 
-    // Sportmonks details array: each entry has type_id
-    // type_ids: 78=played, 79=won, 80=draw, 81=lost, 82=goals_for, 83=goals_against, 85=points
+    // Sportmonks standing detail type_ids (may vary by subscription):
+    // 78=played, 79=won, 80=draw, 81=lost, 82=goals_for, 83=goals_against, 85=points
     function det(typeId) {
       const d = details.find(function(x) { return x.type_id === typeId; });
-      return d ? (d.value || 0) : 0;
+      if (!d) return 0;
+      return typeof d.value === 'object' ? (d.value.all || d.value.total || 0) : (d.value || 0);
     }
 
-    const p   = det(78) || s.games || 0;
-    const w   = det(79) || s.won   || 0;
-    const d   = det(80) || s.draw  || 0;
-    const l   = det(81) || s.lost  || 0;
+    const p   = det(78) || s.games_played  || 0;
+    const w   = det(79) || s.won           || 0;
+    const d   = det(80) || s.draw          || 0;
+    const l   = det(81) || s.lost          || 0;
     const gf  = det(82) || s.goals_for     || 0;
     const ga  = det(83) || s.goals_against || 0;
-    const pts = det(85) || s.points || 0;
+    const pts = det(85) || s.points        || 0;
     const gd  = gf - ga;
 
-    // Build form from recent results string if available
     let form = [];
     if (s.form) {
-      form = (s.form + '').toUpperCase().split('').slice(-5).filter(function(c) {
+      form = (s.form + '').toUpperCase().split('').filter(function(c) {
         return c === 'W' || c === 'D' || c === 'L';
-      });
+      }).slice(-5);
     }
 
     return {
-      pos:  s.position || s.rank || 0,
+      pos:  s.position || 0,
       team: team,
       p: p, w: w, d: d, l: l,
       gf: gf, ga: ga, gd: gd, pts: pts,
       form: form
     };
-  }).filter(function(s) { return s.team && s.pts >= 0; })
-    .sort(function(a, b) { return a.pos - b.pos || b.pts - a.pts || b.gd - a.gd; });
+  })
+  .filter(function(s) { return s.team && s.pos > 0; })
+  .sort(function(a, b) { return a.pos - b.pos || b.pts - a.pts || b.gd - a.gd; });
 
-  if (!standings.length) throw new Error('No standings data returned');
+  if (!standings.length) throw new Error('Standings empty — check Sportmonks covers league 806 standings');
 
-  CACHE.standings = { data: { standings: standings, ts: Date.now() }, ts: Date.now(), ttl: 15 * 60 * 1000 };
-  return { standings: standings, ts: Date.now() };
+  const result = { standings: standings, ts: Date.now() };
+  CACHE.standings = { data: result, ts: Date.now(), ttl: 15 * 60 * 1000 };
+  return result;
 }
