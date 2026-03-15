@@ -4896,6 +4896,20 @@ function castPOTMVote(matchKey, playerId) {
       s.async = true;
       document.getElementById('ad-slot-container').appendChild(s);
     })();
+
+    function generateReferralCode(){
+
+ const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+ let code = "FPSL-";
+
+ for(let i=0;i<6;i++){
+   code += chars[Math.floor(Math.random()*chars.length)];
+ }
+
+ return code;
+
+}
+
   </script>
 </div>
 
