@@ -1220,7 +1220,98 @@ html, body {
    DESKTOP: hide bottom nav (top nav used instead)
    ===================================================== */
 @media(min-width:901px) {
-  .nav { display:none !important; }
+  /* Hide mobile nav, show desktop top nav */
+  .nav { display:flex !important; }
   body { padding-top:0 !important; }
-  .bottom-nav { display:flex !important; bottom:1.5rem; min-width:520px; width:auto; }
+  .bottom-nav { display:none !important; }
+
+  /* Desktop top nav */
+  .nav {
+    position:fixed;
+    top:0; left:0; right:0;
+    height:60px;
+    z-index:1000;
+    padding:0 2rem;
+    display:flex;
+    align-items:center;
+    gap:1.5rem;
+    background:var(--bg-nav);
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .nav-links {
+    display:flex !important;
+    list-style:none;
+    gap:.25rem;
+    margin:0;
+    padding:0;
+    flex:1;
+  }
+  .nav-links a {
+    font-family:var(--font-ui);
+    font-size:.78rem;
+    font-weight:700;
+    letter-spacing:.8px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.5);
+    text-decoration:none;
+    padding:.4rem .75rem;
+    border-radius:6px;
+    transition:color .2s, background .2s;
+  }
+  .nav-links a:hover {
+    color:#fff;
+    background:rgba(255,255,255,.06);
+  }
+  .nav-right { display:flex; align-items:center; gap:.6rem; }
+
+  /* Push content below fixed nav */
+  body { padding-top:60px !important; }
+
+  /* Desktop pages: centred with max-width */
+  .page { padding:2rem; }
+  .page-section {
+    max-width:1100px;
+    margin:0 auto;
+    padding:2rem 0;
+  }
+
+  /* Two-column layout for squad builder page */
+  #page-squad .squad-body-grid {
+    grid-template-columns:1fr 340px !important;
+  }
+
+  /* Player panel stays fixed on desktop */
+  #page-squad .player-panel {
+    position:sticky !important;
+    top:80px;
+    max-height:calc(100vh - 100px);
+    overflow-y:auto;
+  }
+
+  /* League table wider on desktop */
+  .lt-full-scroll { overflow-x:visible; }
+
+  /* Auth modal wider on desktop */
+  .auth-box { max-width:480px; }
+
+  /* Hero section desktop */
+  .hero-inner {
+    max-width:700px;
+  }
+
+  /* News grid 3 columns on desktop */
+  #news-grid { grid-template-columns:repeat(3,1fr) !important; }
+
+  /* Stats grid wider */
+  .sr-list { max-width:900px; margin:0 auto; }
+
+  /* Fixtures/table side by side on wide screens */
+  @media(min-width:1100px) {
+    #page-fixtures .page-section {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:2rem;
+      align-items:start;
+    }
+  }
 }
