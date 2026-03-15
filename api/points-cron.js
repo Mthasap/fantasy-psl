@@ -5,19 +5,18 @@
 // Runs once daily at 23:00 UTC (01:00 SAST). Handles EVERYTHING:
 //
 //  STEP 1 — SYNC FIXTURES    : Fetch upcoming PSL fixtures → Supabase
-//                              This is how new schedule releases appear automatically.
-//  STEP 2 — SYNC RESULTS     : Fetch completed match scores → update fixtures table
-//                              This is how scorelines appear after games finish.
+//  STEP 2 — SYNC RESULTS     : Fetch completed match scores → update fixtures
 //  STEP 3 — CALC POINTS      : Calculate fantasy points for every user
-//  STEP 4 — MANAGE GAMEWEEKS : Auto-close finished GW, auto-open next GW,
-//                              roll over free transfers
+//  STEP 4 — MANAGE GAMEWEEKS : Auto-close/open GW, set deadline, roll transfers
 //  STEP 5 — UPDATE PRICES    : Adjust player prices based on form (±0.1M)
+//
+// DATA SOURCE: Sportmonks API v3 (league ID 806 = Betway Premiership)
 //
 // Can also be triggered manually from the admin panel by sending:
 //   POST /api/points-cron  with header  x-admin-key: <ADMIN_SECRET>
 //
 // ENVIRONMENT VARIABLES (set in Vercel Dashboard → Settings → Env Vars):
-//   API_FOOTBALL_KEY      — your API-Football key
+//   SPORTMONKS_TOKEN      — your Sportmonks API token
 //   SUPABASE_URL          — your Supabase project URL
 //   SUPABASE_SERVICE_KEY  — your Supabase service role key
 //   ADMIN_SECRET          — secret key for admin panel to trigger manually
@@ -27,12 +26,12 @@
 const { createClient } = require('@supabase/supabase-js');
 const { calculateFantasyPoints, normalisePosition } = require('./football.js');
 
-const API_KEY          = process.env.API_FOOTBALL_KEY     || '';
-const SUPABASE_URL     = process.env.SUPABASE_URL         || '';
+const SPORTMONKS_TOKEN = process.env.SPORTMONKS_TOKEN  || '';
+const SUPABASE_URL     = process.env.SUPABASE_URL       || '';
 const SUPABASE_SVC_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const PSL_LEAGUE       = 288;
-const SEASON           = 2024;
-const BASE_URL         = 'https://v3.football.api-sports.io';
+const PSL_LEAGUE       = 806;       // Sportmonks league ID for Betway Premiership
+const PSL_SEASON       = 23723;     // Sportmonks 2025/26 season ID — update if needed
+const SM_BASE          = 'https://api.sportmonks.com/v3/football';
 
 // ── Team name mapping: API-Football names → our DB names ─────────────────
 // API-Football uses slightly different names for some clubs.
@@ -89,7 +88,7 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (!API_KEY)          return res.status(500).json({ error: 'API_FOOTBALL_KEY not set in Vercel env vars' });
+  if (!SPORTMONKS_TOKEN) return res.status(500).json({ error: 'SPORTMONKS_TOKEN not set in Vercel env vars' });
   if (!SUPABASE_URL)     return res.status(500).json({ error: 'SUPABASE_URL not set in Vercel env vars' });
   if (!SUPABASE_SVC_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY not set in Vercel env vars' });
 
@@ -126,56 +125,56 @@ module.exports = async (req, res) => {
     //
     // API cost: 1 call
     // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 1: Syncing upcoming fixtures from API-Football ━━');
+    log.push('━━ STEP 1: Syncing upcoming fixtures from Sportmonks ━━');
     try {
-      const upcomingRes = await apiGet('/fixtures?league=' + PSL_LEAGUE + '&season=' + SEASON + '&status=NS&next=40');
+      // Fetch upcoming fixtures for PSL from Sportmonks
+      // includes=participants gives us home/away team names
+      // includes=state gives us the match status
+      const upcomingRes = await smGet('/fixtures/upcoming/leagues/' + PSL_LEAGUE + '?include=participants;state;round');
       report.api_calls_used++;
 
-      const currentGW  = await getCurrentGameweek(db);
-      const toUpsert   = [];
+      const currentGW = await getCurrentGameweek(db);
+      const toUpsert  = [];
 
-      for (const f of (upcomingRes.response || [])) {
-        const fix   = f.fixture || {};
-        const teams = f.teams   || {};
-        const lg    = f.league  || {};
+      for (const f of (upcomingRes.data || [])) {
+        const participants = f.participants || [];
+        const home = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
+        const away = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
 
-        const home = mapTeamName((teams.home && teams.home.name) || '');
-        const away = mapTeamName((teams.away && teams.away.name) || '');
+        if (!home || !away || !f.starting_at) continue;
 
-        if (!home || !away || !fix.date) continue;
+        const homeName = mapTeamName(home.name || '');
+        const awayName = mapTeamName(away.name || '');
+        if (!homeName || !awayName) continue;
 
-        // API-Football returns round as "Regular Season - 23" etc.
-        // We extract the number from that string.
+        // Extract GW number from round name e.g. "23" or "Round 23"
         let gw = currentGW;
-        if (lg.round) {
-          const match = (lg.round + '').match(/(\d+)/);
+        if (f.round && f.round.name) {
+          const match = (f.round.name + '').match(/(\d+)/);
           if (match) gw = parseInt(match[1]);
         }
 
         toUpsert.push({
           gameweek:       gw,
-          home_team:      home,
-          away_team:      away,
+          home_team:      homeName,
+          away_team:      awayName,
           status:         'NS',
-          kickoff_at:     fix.date,
-          venue:          (fix.venue && fix.venue.name) || null,
-          api_fixture_id: fix.id || null
+          kickoff_at:     f.starting_at,
+          api_fixture_id: f.id || null
         });
       }
 
-      log.push('  Found ' + toUpsert.length + ' upcoming fixtures from API-Football');
+      log.push('  Found ' + toUpsert.length + ' upcoming fixtures from Sportmonks');
 
-      // Upsert each one — if it already exists (same GW + teams), skip it.
-      // ignoreDuplicates: true means existing fixtures are never overwritten here.
       for (const row of toUpsert) {
         const { error } = await db.from('fixtures').upsert(row, {
-          onConflict:      'gameweek,home_team,away_team',
+          onConflict:       'gameweek,home_team,away_team',
           ignoreDuplicates: true
         });
         if (!error) report.fixtures_synced++;
       }
 
-      log.push('  Upserted ' + report.fixtures_synced + ' fixtures (new ones added, existing ones untouched)');
+      log.push('  Upserted ' + report.fixtures_synced + ' fixtures');
       report.steps_completed.push('sync_fixtures ✓');
 
     } catch (e) {
@@ -200,47 +199,59 @@ module.exports = async (req, res) => {
     // ════════════════════════════════════════════════════════════════════
     log.push('━━ STEP 2: Syncing completed match results ━━');
     try {
-      const completedRes = await apiGet('/fixtures?league=' + PSL_LEAGUE + '&season=' + SEASON + '&status=FT-AET-PEN&last=15');
+      // Fetch recently finished PSL fixtures from Sportmonks
+      // includes=participants (team names) + scores (scorelines) + state (FT/NS etc.)
+      const completedRes = await smGet('/fixtures/last/20/leagues/' + PSL_LEAGUE + '?include=participants;scores;state');
       report.api_calls_used++;
 
-      const completed = completedRes.response || [];
+      const completed = completedRes.data || [];
       log.push('  Found ' + completed.length + ' recently completed matches');
 
       for (const f of completed) {
-        const fix   = f.fixture || {};
-        const teams = f.teams   || {};
-        const goals = f.goals   || {};
+        // Only process finished matches
+        const state = f.state && (f.state.developer_name || f.state.name || '');
+        const isFT  = state === 'FT' || state === 'FINISHED' || state === 'AET' || state === 'PEN';
+        if (!isFT) continue;
 
-        const home      = mapTeamName((teams.home && teams.home.name) || '');
-        const away      = mapTeamName((teams.away && teams.away.name) || '');
-        const homeScore = goals.home;
-        const awayScore = goals.away;
+        const participants = f.participants || [];
+        const homeP = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
+        const awayP = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
+        if (!homeP || !awayP) continue;
 
-        if (!home || !away || homeScore === null || homeScore === undefined) continue;
+        const homeName = mapTeamName(homeP.name || '');
+        const awayName = mapTeamName(awayP.name || '');
 
-        // Update the fixture row — only if it's not already marked FT
-        // (avoids unnecessary writes on matches processed days ago)
+        // Extract CURRENT score from scores array
+        const scores = f.scores || [];
+        const homeScore = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'home'; });
+        const awayScore = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'away'; });
+
+        const hg = homeScore ? homeScore.score.goals : null;
+        const ag = awayScore ? awayScore.score.goals : null;
+
+        if (hg === null || ag === null) continue;
+
+        // Update in our DB only if not already FT
         const { data: existing } = await db.from('fixtures')
           .select('id, status')
-          .eq('home_team', home)
-          .eq('away_team', away)
+          .eq('home_team', homeName)
+          .eq('away_team', awayName)
           .neq('status', 'FT')
           .limit(1);
 
         if (existing && existing.length > 0) {
           const { error } = await db.from('fixtures')
             .update({
-              home_score:     homeScore,
-              away_score:     awayScore,
+              home_score:     hg,
+              away_score:     ag,
               status:         'FT',
-              kickoff_at:     fix.date || null,
-              api_fixture_id: fix.id   || null
+              api_fixture_id: f.id || null
             })
             .eq('id', existing[0].id);
 
           if (!error) {
             report.results_updated++;
-            log.push('  ✓ ' + home + ' ' + homeScore + '-' + awayScore + ' ' + away);
+            log.push('  ✓ ' + homeName + ' ' + hg + '-' + ag + ' ' + awayName);
           }
         }
       }
@@ -249,6 +260,11 @@ module.exports = async (req, res) => {
       report.steps_completed.push('sync_results ✓');
 
     } catch (e) {
+      const msg = 'sync_results: ' + e.message;
+      log.push('  WARN: ' + msg);
+      report.errors.push(msg);
+      report.steps_completed.push('sync_results ✗');
+    }    } catch (e) {
       const msg = 'sync_results: ' + e.message;
       log.push('  WARN: ' + msg);
       report.errors.push(msg);
@@ -274,57 +290,62 @@ module.exports = async (req, res) => {
       const alreadyProcessed = await getProcessedFixtureIds(db);
       const currentGW        = await getCurrentGameweek(db);
 
-      // Re-use the results we already fetched in Step 2 (API-efficient)
-      const recentRes = await apiGet('/fixtures?league=' + PSL_LEAGUE + '&season=' + SEASON + '&status=FT-AET-PEN&last=15');
+      // Fetch recently finished PSL fixtures with full player stats
+      const recentRes = await smGet('/fixtures/last/20/leagues/' + PSL_LEAGUE + '?include=participants;scores;state');
       report.api_calls_used++;
 
-      const toProcess = (recentRes.response || []).filter(f => {
-        return f.fixture && f.fixture.id && !alreadyProcessed.has(f.fixture.id);
+      const toProcess = (recentRes.data || []).filter(function(f) {
+        const state = f.state && (f.state.developer_name || f.state.name || '');
+        const isFT  = state === 'FT' || state === 'FINISHED' || state === 'AET' || state === 'PEN';
+        return isFT && f.id && !alreadyProcessed.has(f.id);
       });
 
       log.push('  ' + alreadyProcessed.size + ' already processed, ' + toProcess.length + ' new to score');
 
       for (const f of toProcess) {
-        const fix   = f.fixture || {};
-        const teams = f.teams   || {};
-        const goals = f.goals   || {};
+        const participants = f.participants || [];
+        const homeP = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
+        const awayP = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
+        if (!homeP || !awayP) continue;
+
+        const scores   = f.scores || [];
+        const homeScoreObj = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'home'; });
+        const awayScoreObj = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'away'; });
 
         const fixtureObj = {
-          fixture_id: fix.id,
-          date:       fix.date,
-          home:       mapTeamName((teams.home && teams.home.name) || ''),
-          away:       mapTeamName((teams.away && teams.away.name) || ''),
-          hg:         goals.home,
-          ag:         goals.away
+          fixture_id: f.id,
+          date:       f.starting_at,
+          home:       mapTeamName(homeP.name || ''),
+          away:       mapTeamName(awayP.name || ''),
+          hg:         homeScoreObj ? homeScoreObj.score.goals : 0,
+          ag:         awayScoreObj ? awayScoreObj.score.goals : 0
         };
 
-        log.push('  Processing: ' + fixtureObj.home + ' ' + fixtureObj.hg + '-' + fixtureObj.ag + ' ' + fixtureObj.away + ' (API ID: ' + fix.id + ')');
+        log.push('  Processing: ' + fixtureObj.home + ' ' + fixtureObj.hg + '-' + fixtureObj.ag + ' ' + fixtureObj.away);
 
         try {
-          // Fetch player stats for this specific match
-          const statsRes = await apiGet('/fixtures/players?fixture=' + fix.id);
+          // Fetch detailed player stats for this specific fixture from Sportmonks
+          // include=players.statistics.details gives goals, assists, cards, minutes
+          const statsRes = await smGet('/fixtures/' + f.id + '?include=players.statistics.details;players.player');
           report.api_calls_used++;
 
-          const playerStats = extractPlayerStats(statsRes.response || []);
+          const playerStats = extractPlayerStatsFromSportmonks(statsRes.data || {});
           log.push('  Got stats for ' + playerStats.length + ' players');
 
           if (!playerStats.length) {
-            log.push('  No player stats returned yet — skipping (will retry tomorrow)');
+            log.push('  No player stats yet — skipping (will retry tomorrow)');
             continue;
           }
 
-          // Store raw stats in DB (useful for player profile pages later)
           await storePlayerStats(db, playerStats, fixtureObj, currentGW);
 
-          // Build name → stats lookup for fast user scoring
           const statsByName = {};
-          playerStats.forEach(p => {
+          playerStats.forEach(function(p) {
             statsByName[normaliseName(p.player_name)] = p;
           });
 
-          // Score every user
-          const users        = await getAllUsersWithSquads(db);
-          const gwScoreRows  = [];
+          const users       = await getAllUsersWithSquads(db);
+          const gwScoreRows = [];
 
           for (const user of users) {
             let squad;
@@ -339,7 +360,7 @@ module.exports = async (req, res) => {
               user_id:       user.id,
               gameweek:      currentGW,
               points:        gwPts,
-              breakdown:     { fixture_id: fix.id, home: fixtureObj.home, away: fixtureObj.away },
+              breakdown:     { fixture_id: f.id, home: fixtureObj.home, away: fixtureObj.away },
               player_scores: playerBreakdown
             });
           }
@@ -353,13 +374,12 @@ module.exports = async (req, res) => {
             log.push('  No users had players in this match');
           }
 
-          // Mark as processed — this fixture will never be scored again
           await markFixtureProcessed(db, fixtureObj, currentGW, gwScoreRows.length, report.api_calls_used);
           report.fixtures_scored++;
-          log.push('  ✓ Fixture marked as processed');
+          log.push('  ✓ Fixture processed');
 
         } catch (e) {
-          const msg = 'fixture_' + fix.id + ': ' + e.message;
+          const msg = 'fixture_' + f.id + ': ' + e.message;
           log.push('  ERROR: ' + msg);
           report.errors.push(msg);
         }
@@ -416,6 +436,25 @@ module.exports = async (req, res) => {
 
         const nextGW = currentGW + 1;
 
+        // Deadline = 1 hour before first fixture of next GW
+        // Look up the earliest fixture in next GW to set deadline automatically
+        const { data: nextFixtures } = await db
+          .from('fixtures')
+          .select('kickoff_at')
+          .eq('gameweek', nextGW)
+          .order('kickoff_at', { ascending: true })
+          .limit(1);
+
+        let deadlineAt = null;
+        if (nextFixtures && nextFixtures[0] && nextFixtures[0].kickoff_at) {
+          const firstKickoff = new Date(nextFixtures[0].kickoff_at);
+          firstKickoff.setHours(firstKickoff.getHours() - 1); // 1 hour before first match
+          deadlineAt = firstKickoff.toISOString();
+          log.push('  Setting GW' + nextGW + ' deadline: ' + deadlineAt);
+        } else {
+          log.push('  WARN: No fixtures found for GW' + nextGW + ' — deadline not set yet');
+        }
+
         // Check if next GW already exists in DB
         const { data: nextExists } = await db
           .from('gameweeks')
@@ -424,14 +463,21 @@ module.exports = async (req, res) => {
           .maybeSingle();
 
         if (nextExists) {
-          await db.from('gameweeks').update({ is_current: true }).eq('number', nextGW);
+          await db.from('gameweeks')
+            .update({
+              is_current:  true,
+              is_finished: false,
+              ...(deadlineAt ? { deadline_at: deadlineAt } : {})
+            })
+            .eq('number', nextGW);
         } else {
           // Create next GW row automatically
           await db.from('gameweeks').insert({
             number:      nextGW,
             name:        'Gameweek ' + nextGW,
             is_current:  true,
-            is_finished: false
+            is_finished: false,
+            ...(deadlineAt ? { deadline_at: deadlineAt } : {})
           });
           log.push('  Created new GW' + nextGW + ' row in database');
         }
@@ -583,22 +629,63 @@ module.exports = async (req, res) => {
 
 
 // ══════════════════════════════════════════════════════════════════════════
-// API-FOOTBALL HELPER
-// Centralised fetch with error handling so every API call is consistent.
+// SPORTMONKS API HELPER
 // ══════════════════════════════════════════════════════════════════════════
-async function apiGet(path) {
-  const response = await fetch(BASE_URL + path, {
-    headers: {
-      'x-apisports-key': API_KEY,
-      'x-rapidapi-host': 'v3.football.api-sports.io'
-    }
-  });
-  if (!response.ok) throw new Error('API-Football HTTP ' + response.status + ' → ' + path);
+async function smGet(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = SM_BASE + path + sep + 'api_token=' + SPORTMONKS_TOKEN;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Sportmonks HTTP ' + response.status + ' → ' + path);
   const json = await response.json();
-  if (json.errors && Object.keys(json.errors).length > 0) {
-    throw new Error('API-Football returned errors: ' + JSON.stringify(json.errors));
-  }
+  if (json.message) throw new Error('Sportmonks error: ' + json.message);
   return json;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// SPORTMONKS PLAYER STATS EXTRACTOR
+// Converts Sportmonks fixture/players response into our internal format
+// ══════════════════════════════════════════════════════════════════════════
+function extractPlayerStatsFromSportmonks(fixtureData) {
+  const allPlayers = [];
+  const lineups    = fixtureData.players || [];
+
+  lineups.forEach(function(entry) {
+    const player = entry.player || {};
+    const stats  = (entry.statistics || []);
+
+    // Build a flat map of stat type_id → value for easy lookup
+    // Sportmonks uses type_ids: goals=52, assists=79, yellowcards=84,
+    // redcards=83, minutes=119, saves=57, penaltysaved=58, penaltymissed=59
+    const statMap = {};
+    stats.forEach(function(s) {
+      if (s.details) {
+        s.details.forEach(function(d) {
+          statMap[d.type_id] = d.value && d.value.total !== undefined ? d.value.total : (d.value || 0);
+        });
+      }
+    });
+
+    const minutesPlayed = statMap[119] || statMap['minutes_played'] || 0;
+    if (!minutesPlayed) return; // Skip if player didn't play
+
+    allPlayers.push({
+      player_name:     player.common_name || player.display_name || player.name || 'Unknown',
+      team:            entry.team_name || '',
+      position:        entry.position || 'MID',
+      minutes_played:  minutesPlayed,
+      goals:           statMap[52]  || 0,  // goals scored
+      assists:         statMap[79]  || 0,  // assists
+      yellow_cards:    statMap[84]  || 0,  // yellow cards
+      red_cards:       statMap[83]  || 0,  // red cards
+      saves:           statMap[57]  || 0,  // goalkeeper saves
+      penalty_saved:   statMap[58]  || 0,  // penalty saved
+      penalty_missed:  statMap[59]  || 0,  // penalty missed
+      goals_conceded:  statMap[88]  || 0,  // goals conceded (for GK/DEF clean sheet)
+    });
+  });
+
+  return allPlayers;
 }
 
 
