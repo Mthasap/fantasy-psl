@@ -273,196 +273,6 @@
   /* Ad banner spacing from bottom nav */
   #ad-banner { bottom: 70px; }
   
-  /* ══════════════════════════════════════════════════
-     DAY / NIGHT THEME
-  ══════════════════════════════════════════════════ */
-  :root {
-    --bg-page:    #0C0F14;
-    --bg-surface: #13161D;
-    --bg-card:    #191C25;
-    --text-primary:   #ffffff;
-    --text-secondary: rgba(255,255,255,.55);
-    --text-muted:     rgba(255,255,255,.3);
-    --border-color:   rgba(255,255,255,.07);
-    --nav-bg:     rgba(13,16,21,.95);
-    --bnav-bg:    rgba(13,16,21,.96);
-    --input-bg:   #0e1117;
-  }
-  body.light-mode {
-    --bg-page:    #f0f2f5;
-    --bg-surface: #ffffff;
-    --bg-card:    #f7f8fa;
-    --text-primary:   #0d1117;
-    --text-secondary: rgba(0,0,0,.6);
-    --text-muted:     rgba(0,0,0,.38);
-    --border-color:   rgba(0,0,0,.09);
-    --nav-bg:     rgba(255,255,255,.97);
-    --bnav-bg:    rgba(255,255,255,.97);
-    --input-bg:   #eef0f3;
-  }
-  /* Apply vars to core elements */
-  body { background: var(--bg-page) !important; color: var(--text-primary) !important; }
-  body.light-mode .nav { background: var(--nav-bg) !important; border-bottom: 1px solid var(--border-color) !important; }
-  /* Nav: always fixed */
-  .nav { position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
-         z-index:9500 !important; overflow:visible !important; }
-  /* body padding handled by media queries in fantasy-psl.css */
-  .nav-right { overflow:visible !important; }
-  #nav-signup { flex-shrink:0; }
-  /* Hide sponsor ribbon on mobile so it doesn't push nav down */
-  @media(max-width:900px) { .sponsor-ribbon { display:none !important; } }
-  body.light-mode .bottom-nav { background: var(--bnav-bg) !important; border-top: 1px solid var(--border-color) !important; }
-  body.light-mode .bnav-btn { color: rgba(0,0,0,.5) !important; }
-  body.light-mode .bnav-label { color: rgba(0,0,0,.55) !important; }
-  body.light-mode .bnav-btn svg { stroke: rgba(0,0,0,.5) !important; }
-  body.light-mode .bnav-btn.active { color: #fff !important; background: #B91C3A !important; }
-  body.light-mode .bnav-btn.active .bnav-label { color: #fff !important; }
-  body.light-mode .bnav-btn.active svg { stroke: #fff !important; }
-  /* GW badge in light mode */
-  body.light-mode #gw-nav-badge { background: rgba(0,0,0,.08) !important; color: rgba(0,0,0,.55) !important; }
-  body.light-mode #gw-nav-badge span { color: rgba(0,0,0,.55) !important; }
-
-  /* Theme-aware date labels */
-  .fix-date-label { color: rgba(255,255,255,.35); }
-  body.light-mode .fix-date-label { color: rgba(0,0,0,.4) !important; }
-  /* Theme-aware stat rows */
-  .sr-name-text { color: #fff; }
-  body.light-mode .sr-name-text { color: #0d1117 !important; }
-  .sr-club-text { color: rgba(255,255,255,.45); }
-  body.light-mode .sr-club-text { color: rgba(0,0,0,.5) !important; }
-  .sr-score-val { color: #DBA94A; }
-  /* Injury/news card text */
-  .inj-player-name { color: #fff; }
-  body.light-mode .inj-player-name { color: #0d1117 !important; }
-  .inj-club-text { color: rgba(255,255,255,.5); }
-  body.light-mode .inj-club-text { color: rgba(0,0,0,.5) !important; }
-  .inj-desc-text { color: rgba(255,255,255,.6); }
-  body.light-mode .inj-desc-text { color: rgba(0,0,0,.6) !important; }
-  /* Theme-aware page section backgrounds */
-  body.light-mode .page-section { background: var(--bg-page) !important; }
-  body.light-mode #page-news,
-  body.light-mode #page-stats,
-  body.light-mode #page-fixtures,
-  body.light-mode #page-leagues { background: var(--bg-page) !important; }
-  .bnav-label { font-family:var(--font-ui);font-size:.52rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:inherit; }
-  body.light-mode .section-title,
-  body.light-mode .hero-title,
-  body.light-mode .auth-box-title { color: #0d1117 !important; }
-  body.light-mode .hero-sub { color: rgba(0,0,0,.6) !important; }
-  body.light-mode .hero { background: linear-gradient(160deg,#fff8f0,#fff0f3) !important; }
-  body.light-mode .hero-bg, body.light-mode .hero-glow { display:none; }
-  body.light-mode .how-card,
-  body.light-mode .auth-box,
-  body.light-mode .player-modal-box,
-  body.light-mode #club-modal-box { background: var(--bg-surface) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
-  body.light-mode .pli,
-  body.light-mode .pc-shirt { border-color: var(--border-color) !important; }
-  body.light-mode .pli-name,
-  body.light-mode .lt-club-name,
-  body.light-mode .nav-links a,
-  body.light-mode .nav-word-top,
-  body.light-mode .nav-word-mid,
-  body.light-mode .nav-word-bot { color: #0d1117 !important; }
-  body.light-mode .pli-club,
-  body.light-mode .lt-stat,
-  body.light-mode .fix-date,
-  body.light-mode .eyebrow { color: rgba(0,0,0,.5) !important; }
-  body.light-mode .lt-header { background: rgba(0,0,0,.04) !important; color: rgba(0,0,0,.4) !important; }
-  body.light-mode .lt-row { border-color: rgba(0,0,0,.05) !important; }
-  body.light-mode .lt-row:hover { background: rgba(0,0,0,.03) !important; }
-  body.light-mode input,
-  body.light-mode textarea { background: var(--input-bg) !important; color: var(--text-primary) !important; border-color: rgba(0,0,0,.15) !important; }
-  body.light-mode input::placeholder { color: rgba(0,0,0,.35) !important; }
-  body.light-mode .page-section > span.eyebrow { color: #B91C3A !important; }
-  body.light-mode .how-title { color: #0d1117 !important; }
-  body.light-mode .how-desc { color: rgba(0,0,0,.55) !important; }
-  body.light-mode .scoring-wrap { background: var(--bg-surface) !important; }
-  body.light-mode .pts-table th,
-  body.light-mode .pts-table td { color: rgba(0,0,0,.7) !important; }
-  body.light-mode .pts-table tr:nth-child(even) { background: rgba(0,0,0,.02) !important; }
-  body.light-mode .chip { background: rgba(0,0,0,.04) !important; border-color: rgba(0,0,0,.08) !important; }
-  body.light-mode .chip-desc { color: rgba(0,0,0,.55) !important; }
-  body.light-mode footer { background: #e8eaed !important; }
-  body.light-mode .foot-copy,
-  body.light-mode .foot-disclaimer { color: rgba(0,0,0,.4) !important; }
-  body.light-mode #ad-banner { background: #fff !important; border-color: rgba(0,0,0,.12) !important; }
-  body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
-  body.light-mode .bench-tag { color: rgba(0,0,0,.5) !important; }
-  body.light-mode .fix-row { border-color: rgba(0,0,0,.05) !important; background: #fff !important; }
-  body.light-mode .fix-team-name { color: #0d1117 !important; }
-  /* Fixture date group labels */
-  body.light-mode .fix-date-label,
-  body.light-mode [style*="rgba(255,255,255,.35)"] { color: rgba(0,0,0,.45) !important; }
-  body.light-mode .sponsor-ribbon { background: #e8eaed !important; border-color: rgba(0,0,0,.08) !important; }
-  body.light-mode .sponsor-ribbon-text { color: rgba(0,0,0,.45) !important; }
-  body.light-mode .toast { background: #1a1a2e !important; }
-  /* Injury cards */
-  body.light-mode .injury-card,
-  body.light-mode .news-card { background: #fff !important; border-color: rgba(0,0,0,.08) !important; }
-  body.light-mode .injury-player,
-  body.light-mode .injury-desc,
-  body.light-mode .news-title,
-  body.light-mode .news-excerpt { color: #0d1117 !important; }
-  body.light-mode .injury-club,
-  body.light-mode .news-meta { color: rgba(0,0,0,.5) !important; }
-  /* Stats page */
-  body.light-mode .stat-row,
-  body.light-mode .stat-item { background: #fff !important; border-color: rgba(0,0,0,.06) !important; }
-  body.light-mode .stat-player-name,
-  body.light-mode .stat-value,
-  body.light-mode .sr-name { color: #0d1117 !important; }
-  body.light-mode .stat-club-name,
-  body.light-mode .sr-club { color: rgba(0,0,0,.5) !important; }
-  body.light-mode .stat-rank { color: rgba(0,0,0,.3) !important; }
-  /* Player list in squad builder */
-  body.light-mode .pli { background: #fff !important; border-color: rgba(0,0,0,.07) !important; }
-  body.light-mode .pli-name { color: #0d1117 !important; }
-  body.light-mode .pli-club { color: rgba(0,0,0,.5) !important; }
-  body.light-mode .pli-price { color: #22895A !important; }
-  body.light-mode .pli-pts { color: rgba(0,0,0,.5) !important; }
-  /* Filter tabs */
-  body.light-mode .filter-tabs .ftab { color: rgba(0,0,0,.5) !important; background: rgba(0,0,0,.05) !important; border-color: rgba(0,0,0,.08) !important; }
-  body.light-mode .filter-tabs .ftab.active { background: #B91C3A !important; color: #fff !important; }
-  body.light-mode .ftab { color: rgba(0,0,0,.55) !important; }
-  body.light-mode .ftab.active { background: #B91C3A !important; color: #fff !important; }
-  /* Section eyebrows / labels */
-  body.light-mode .section-eyebrow { color: #B91C3A !important; }
-  /* Squad pitch shirts */
-  body.light-mode .pc-name { color: #fff !important; }
-  body.light-mode .pc-pts  { color: rgba(255,255,255,.8) !important; }
-  body.light-mode .bench-tag { color: rgba(0,0,0,.5) !important; }
-  /* Modals */
-  body.light-mode .modal-overlay { background: rgba(0,0,0,.5) !important; }
-  body.light-mode .modal-inner { background: #fff !important; }
-  body.light-mode .modal-title,
-  body.light-mode .pm-name { color: #0d1117 !important; }
-  body.light-mode .pm-pos,
-  body.light-mode .pm-club,
-  body.light-mode .modal-sub { color: rgba(0,0,0,.55) !important; }
-  /* Leagues page */
-  body.light-mode .league-card,
-  body.light-mode .lc-card { background: #fff !important; border-color: rgba(0,0,0,.08) !important; }
-  body.light-mode .lc-name,
-  body.light-mode .league-name { color: #0d1117 !important; }
-  body.light-mode .lc-meta,
-  body.light-mode .league-meta { color: rgba(0,0,0,.5) !important; }
-
-  /* Theme toggle button */
-  .theme-toggle {
-    display:flex; align-items:center; justify-content:center;
-    width:34px; height:34px; border-radius:50%;
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.12);
-    cursor:pointer; transition: background .2s, border-color .2s;
-    flex-shrink:0; color: rgba(255,255,255,.7);
-  }
-  .theme-toggle:hover { background: rgba(255,255,255,.14); }
-  body.light-mode .theme-toggle {
-    background: rgba(0,0,0,.07);
-    border-color: rgba(0,0,0,.15);
-    color: rgba(0,0,0,.65);
-  }
-  body.light-mode .theme-toggle:hover { background: rgba(0,0,0,.12); }
   
 @keyframes livePulse {
   0%,100% { opacity:1; transform:scale(1); }
@@ -512,10 +322,7 @@
     <li><a href="#" onclick="goPage('leagues');return false;">Leagues</a></li>
   </ul>
   <div class="nav-right">
-    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle day/night mode" aria-label="Toggle theme">
-      <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg id="theme-icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
+
     <a href="#" id="nav-login" class="btn-login" onclick="openAuth('login');return false;">Login</a>
     <button id="nav-signup" class="btn-signup" onclick="openAuth('register')">Register</button>
     <div id="nav-user" class="user-menu" style="display:none">
@@ -527,7 +334,7 @@
 
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="auth-modal" onclick="if(event.target===this)closeAuth()">
-  <div class="auth-box" style="position:relative">
+  <div class="auth-box" style="position:relative;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <button class="auth-close" onclick="closeAuth()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
@@ -589,12 +396,14 @@
       <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account — Free</button>
       <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login →</a></div>
     </div>
+  </div>
+</div>
 
 <!-- PLAYER MODAL -->
 <div id="pmodal" class="player-modal" onclick="if(event.target===this)closePmodal()">
   <div class="player-modal-box">
     <div class="pm-header">
-      <button class="pm-close" onclick="closePmodal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <button class="pm-close" onclick="closePmodal()">✕</button>
       <div class="pm-shirt s1" id="pm-shirt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;opacity:.6"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div>
       <div>
         <div class="pm-name" id="pm-name">—</div>
@@ -603,7 +412,8 @@
     </div>
     <div style="padding:1.3rem">
       <div id="pm-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
-      <div id="pm-fitness" style="padding:.6rem 1rem;border-radius:6px;margin-bottom:.9rem;font-family:var(--font-ui);font-size:.82rem;font-weight:700"></div>
+      <div id="pm-fitness" style="padding:.6rem 1rem;border-radius:6px;margin-bottom:.6rem;font-family:var(--font-ui);font-size:.82rem;font-weight:700"></div>
+      <div id="pm-fdr"></div>
       <button id="pm-addbtn" class="auth-submit" style="margin-top:0" onclick="addFromModal()">+ Add to Squad</button>
     </div>
   </div>
@@ -786,7 +596,7 @@
   <!-- ══ MINI POLL MODAL ════════════════════════════════════════════ -->
   <div id="mini-poll-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;align-items:center;justify-content:center;padding:1rem">
     <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:380px;padding:1.5rem;position:relative">
-      <button onclick="document.getElementById('mini-poll-modal').style.display='none'" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.75rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <button onclick="document.getElementById('mini-poll-modal').style.display='none'" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.75rem">✕</button>
       <div id="mini-poll-body"></div>
     </div>
   </div>
@@ -853,8 +663,12 @@
       </div>
       <div class="meta-strip" style="flex-wrap:wrap;gap:.5rem">
         <div class="meta-pill">
-          <div class="meta-pill-label">Budget Left</div>
+          <div class="meta-pill-label">In The Bank</div>
           <div class="meta-pill-val" id="budget-display" style="color:#22895A">R100.0M</div>
+        </div>
+        <div class="meta-pill">
+          <div class="meta-pill-label">Squad Value</div>
+          <div class="meta-pill-val" id="squad-value-display" style="color:#DBA94A">R0.0M</div>
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Players</div>
@@ -868,9 +682,17 @@
           <div class="meta-pill-label">Total Pts</div>
           <div class="meta-pill-val" id="total-pts-display" style="color:#DBA94A">—</div>
         </div>
+        <div class="meta-pill" id="rank-pts-pill" style="display:none">
+          <div class="meta-pill-label">SA Rank</div>
+          <div class="meta-pill-val" id="rank-pts-display" style="color:#DBA94A">—</div>
+        </div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <div id="xfer-badge" style="display:none;font-family:var(--font-ui);font-size:.7rem;font-weight:700;padding:.3rem .7rem;border-radius:6px;letter-spacing:.5px"></div>
           <button id="save-btn" class="btn-hero-primary" style="font-size:.8rem;padding:.6rem 1.2rem" onclick="saveSquad()">Save Squad</button>
+          <button onclick="shareSquad()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.7);font-family:var(--font-ui);font-size:.75rem;font-weight:700;padding:.6rem .9rem;cursor:pointer;display:flex;align-items:center;gap:.4rem" title="Share your squad">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
           <button id="transfer-btn" class="btn-hero-outline" style="font-size:.8rem;padding:.6rem 1rem" onclick="toggleTransfer()">Transfer</button>
         </div>
       </div>
@@ -878,6 +700,12 @@
 
     <!-- GW Points breakdown — populated by loadUserGWPoints() from gw_scores table -->
     <div id="gw-breakdown" style="display:none;background:rgba(255,255,255,.04);border-radius:10px;padding:.8rem 1rem;margin:.6rem 0 0;font-family:var(--font-ui)"></div>
+
+    <!-- Transfer History -->
+    <div id="transfer-history" style="display:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.8rem 1rem;margin:.5rem 0 0;font-family:var(--font-ui)">
+      <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.5rem">Transfer History</div>
+      <div id="transfer-history-list"></div>
+    </div>
 
     <!-- Captain/VC hint — shown when squad is full but cap/VC not set -->
     <div id="cap-vc-hint" style="display:none;background:rgba(219,169,74,.07);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#DBA94A;margin:.4rem 0 0"></div>
@@ -897,6 +725,9 @@
           <div id="p-def" class="prow"></div>
           <div id="p-gk"  class="prow" style="border-top:1px solid rgba(255,255,255,.06);padding-top:.5rem;margin-top:.2rem"></div>
         </div>
+        <!-- Active Chip Display -->
+        <div id="chip-bar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"></div>
+
         <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:flex-start">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
             <span class="bench-tag">Bench (4 subs)</span>
@@ -918,6 +749,7 @@
             <button class="ftab" onclick="filterPos(this,'DEF')">DEF</button>
             <button class="ftab" onclick="filterPos(this,'MID')">MID</button>
             <button class="ftab" onclick="filterPos(this,'FWD')">FWD</button>
+            <button class="ftab" onclick="filterPos(this,'WL')" title="Watchlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;vertical-align:middle"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
           </div>
         </div>
         <div class="panel-search">
@@ -1052,6 +884,10 @@
   <div class="page-section" style="max-width:800px">
     <span class="eyebrow">Manager Profile</span>
     <div id="profile-wrap"><div class="loading-players">Loading profile…</div></div>
+    <div style="margin-top:1.5rem">
+      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">Gameweek History</div>
+      <div id="gw-history-table"><div class="loading-players">Loading history…</div></div>
+    </div>
   </div>
 </div>
 
@@ -1117,7 +953,9 @@
     </div>
     <div style="font-size:.58rem;color:rgba(255,255,255,.18);text-align:center;margin-top:.6rem;padding:0 1rem">
       Headway Projects (PTY) LTD · Registered in South Africa · fantasy-psl.vercel.app
-    </div></footer>
+    </div>
+  </div>
+</footer>
 
 <script>
 // ════════════════════════════════════════════════════
@@ -1179,6 +1017,8 @@ var ST = {
   leagueLogo:       null,
   // ── FPL-style transfer tracking ──────────────────────
   squadRegistered:  false,   // true once user first saves a full 15-man squad
+  activeChip:       null,    // 'wc' | 'tc' | 'bb' | 'fh' | null
+  usedChips:        [],      // chips already played this season
   freeTransfers:    1,       // free transfers available this GW (1 default, max 5)
   transfersMade:    0,       // transfers made this GW (to calculate point cost)
   pendingTransfers: [],      // [{out: player, in: player}] not yet confirmed
@@ -1187,8 +1027,37 @@ var ST = {
   // captainId and vcId stored on each player object (p.isCaptain, p.isVC)
   // ── Bench ordering ───────────────────────────────────
   benchReorder:     false,   // true when user is reordering bench
-  benchPickFirst:   null     // first bench player selected for swap
+  benchPickFirst:   null,    // first bench player selected for swap
+  watchlist:        []       // player IDs on watchlist
 };
+
+// Load watchlist from localStorage
+(function() {
+  try {
+    var wl = localStorage.getItem('fpsl_watchlist');
+    if (wl) ST.watchlist = JSON.parse(wl);
+  } catch(e) { ST.watchlist = []; }
+})();
+
+function toggleWatchlist(id, event) {
+  if (event) event.stopPropagation();
+  var idx = ST.watchlist.indexOf(id);
+  if (idx === -1) {
+    ST.watchlist.push(id);
+    showToast('Added to watchlist', 'success');
+  } else {
+    ST.watchlist.splice(idx, 1);
+    showToast('Removed from watchlist', 'info');
+  }
+  try { localStorage.setItem('fpsl_watchlist', JSON.stringify(ST.watchlist)); } catch(e) {}
+  renderPlayerList();
+}
+
+function filterWatchlist() {
+  ST.filtered = ST.allPlayers.filter(function(p) { return ST.watchlist.indexOf(p.id) !== -1; });
+  ST.playerPage = 0;
+  renderPlayerList();
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 //  RATE LIMITER  —  max 10 DB requests per user per second
@@ -1377,6 +1246,13 @@ function doLogin() {
   });
 }
 
+function generateReferralCode() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var code = 'FPSL-';
+  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 function doRegister() {
   var btn   = document.getElementById('r-btn');
   var email = document.getElementById('r-email').value.trim();
@@ -1386,9 +1262,40 @@ function doRegister() {
   if (!email || !pass || !user || !team) { document.getElementById('r-err').textContent = 'All fields required'; return; }
   if (pass.length < 6) { document.getElementById('r-err').textContent = 'Password must be 6+ characters'; return; }
   btn.textContent = 'Creating…'; btn.disabled = true;
-  db.auth.signUp({ email: email, password: pass, options: { data: { username: user, team_name: team } } }).then(function(res) {
+
+  var firstName    = (document.getElementById('signup-firstname')  || {}).value || null;
+  var lastName     = (document.getElementById('signup-lastname')   || {}).value || null;
+  var age          = (document.getElementById('signup-age')        || {}).value || null;
+  var city         = (document.getElementById('signup-city')       || {}).value || null;
+  var country      = (document.getElementById('signup-country')    || {}).value || 'South Africa';
+  var suppTeam     = (document.getElementById('signup-team')       || {}).value || null;
+  var discovery    = (document.getElementById('signup-discovery')  || {}).value || null;
+  var referralUsed = (document.getElementById('signup-referral')   || {}).value || null;
+  var referralCode = generateReferralCode();
+
+  db.auth.signUp({
+    email: email, password: pass,
+    options: { data: { username: user, team_name: team } }
+  }).then(function(res) {
     btn.textContent = 'Create Account — Free'; btn.disabled = false;
     if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
+    var userId = res.data && res.data.user && res.data.user.id;
+    if (userId) {
+      db.from('profiles').insert({
+        id: userId,
+        username: user,
+        team_name: team,
+        first_name: firstName,
+        last_name: lastName,
+        age: age ? parseInt(age) : null,
+        city: city,
+        country: country,
+        supported_team: suppTeam,
+        discovery_source: discovery,
+        referral_code: referralCode,
+        referred_by: referralUsed || null
+      }).then(function() {});
+    }
     closeAuth();
     showToast('Account created! Check your email to confirm.', 'success');
   });
@@ -1527,18 +1434,27 @@ function renderPlayerList() {
     var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
     var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
 
-    var btnStyle = inSquad
-      ? 'background:#1A6B42;border-color:#1A6B42'
-      : '';
+    var btnStyle = inSquad ? 'background:#1A6B42;border-color:#1A6B42' : '';
     var btnLabel = inSquad ? '✓' : '+';
+    var priceChange = p.price_change || 0;
+    var pcHtml = priceChange > 0
+      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">▲</span>'
+      : priceChange < 0
+      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">▼</span>'
+      : '';
+    var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
+    var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
     return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
       '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
       '<div class="pli-info">' +
-        '<div class="pli-name">' + name + '</div>' +
+        '<div class="pli-name">' + name + ownership + '</div>' +
         '<div class="pli-club">' + club + '</div>' +
       '</div>' +
       '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
-      '<span class="pli-price">R' + (p.price || 0) + 'M</span>' +
+      '<span class="pli-price">R' + (p.price || 0) + 'M' + pcHtml + '</span>' +
+      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 4px;color:' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
+        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+      '</button>' +
       '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
         btnLabel +
       '</button>' +
@@ -1563,7 +1479,13 @@ function filterPos(el, pos) {
   ST.posFilter = pos;
   document.querySelectorAll('.filter-tabs .ftab').forEach(function(t) { t.classList.remove('active'); });
   el.classList.add('active');
-  applyFilter();
+  if (pos === 'WL') {
+    ST.filtered = ST.allPlayers.filter(function(p) { return ST.watchlist.indexOf(p.id) !== -1; });
+    ST.playerPage = 0;
+    renderPlayerList();
+  } else {
+    applyFilter();
+  }
 }
 
 function filterSearch(term) { applyFilter(term); }
@@ -1593,34 +1515,50 @@ function openPmodal(id) {
   var club = p.clubs ? p.clubs.name : 'Unknown Club';
   var icon = posIcon(p.position);
 
-  document.getElementById('pm-shirt').textContent  = icon;
-  document.getElementById('pm-shirt').className    = 'pm-shirt s' + ((id % 6) + 1);
+  var shirtEl = document.getElementById('pm-shirt');
+  if (p.photo) {
+    shirtEl.innerHTML = '<img src="' + p.photo + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)" onerror="this.style.display='none'">';
+  } else {
+    shirtEl.innerHTML = icon;
+  }
+  shirtEl.className = 'pm-shirt s' + ((id % 6) + 1);
   document.getElementById('pm-name').textContent   = name;
   document.getElementById('pm-meta').textContent   = club + ' · ' + p.position;
 
+  var ppg = (p.total_points && p.apps) ? (p.total_points / p.apps).toFixed(1) : '—';
+  var ownership = p.ownership ? p.ownership + '%' : '—';
+  var priceChange = p.price_change || 0;
+  var pcStr = priceChange > 0 ? '▲ R' + priceChange.toFixed(1) + 'M' : priceChange < 0 ? '▼ R' + Math.abs(priceChange).toFixed(1) + 'M' : '—';
+  var pcColor = priceChange > 0 ? '#22895A' : priceChange < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
   var stats = [
     { val: p.total_points || 0,  lbl: 'Season Pts' },
     { val: 'R' + (p.price||0) + 'M', lbl: 'Price' },
-    { val: p.form || '0',        lbl: 'Form' },
+    { val: ppg,                  lbl: 'Pts/Game' },
     { val: p.goals || 0,         lbl: 'Goals' },
     { val: p.assists || 0,       lbl: 'Assists' },
-    { val: p.yellow_cards || 0,  lbl: 'Yellows' }
+    { val: p.apps || 0,          lbl: 'Appearances' },
+    { val: ownership,            lbl: 'Ownership' },
+    { val: p.clean_sheets || 0,  lbl: 'Clean Sheets' },
+    { val: p.yellow_cards || 0,  lbl: 'Yellows' },
   ];
+  document.getElementById('pm-stats').style.gridTemplateColumns = 'repeat(3,1fr)';
   document.getElementById('pm-stats').innerHTML = stats.map(function(s) {
     return '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.65rem;text-align:center">' +
-      '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#DBA94A;line-height:1">' + s.val + '</div>' +
-      '<div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px">' + s.lbl + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A;line-height:1">' + s.val + '</div>' +
+      '<div style="font-family:var(--font-ui);font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px">' + s.lbl + '</div>' +
     '</div>';
-  }).join('');
+  }).join('') +
+  '<div style="grid-column:1/-1;background:rgba(201,150,58,.06);border:1px solid rgba(201,150,58,.15);border-radius:6px;padding:.5rem .8rem;display:flex;justify-content:space-between;align-items:center">' +
+    '<span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase">Price Change</span>' +
+    '<span style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + pcColor + '">' + pcStr + '</span>' +
+  '</div>';
 
   var fit    = document.getElementById('pm-fitness');
   var avail  = p.is_available !== false;
   fit.style.background = avail ? 'rgba(26,107,66,.15)' : 'rgba(185,28,58,.12)';
   fit.style.border     = avail ? '1px solid rgba(26,107,66,.3)' : '1px solid rgba(185,28,58,.3)';
   fit.style.color      = avail ? '#22895A' : '#D4274F';
-  fit.innerHTML = avail
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#22895A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg> Fit and Available'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="#D4274F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Currently Unavailable';
+  fit.textContent      = avail ? '✅ Fit and Available' : ' Currently Unavailable';
 
   var inSquad = ST.squad.some(function(x) { return x.id === id; });
   var btn = document.getElementById('pm-addbtn');
@@ -1628,6 +1566,30 @@ function openPmodal(id) {
   btn.style.background  = inSquad ? '#1A6B42' : '';
   btn.disabled          = inSquad;
 
+  // Next fixture + FDR
+  var nextFix = getNextFixture(club);
+  var fdrHtml = '';
+  if (nextFix) {
+    var fdrDots = '';
+    for (var i = 1; i <= 5; i++) {
+      fdrDots += '<div style="width:14px;height:14px;border-radius:50%;background:' + (i <= nextFix.fdr ? fdrColor(nextFix.fdr) : 'rgba(255,255,255,.1)') + '"></div>';
+    }
+    fdrHtml = '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem 1rem;margin-bottom:.7rem;display:flex;align-items:center;justify-content:space-between">' +
+      '<div>' +
+        '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.2rem">Next Fixture</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">' + (nextFix.isHome ? 'vs ' : '@') + nextFix.opp + ' <span style="font-size:.65rem;color:rgba(255,255,255,.4)">' + (nextFix.isHome ? 'H' : 'A') + '</span></div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.4rem">FDR</div>' +
+        '<div style="display:flex;gap:3px">' + fdrDots + '</div>' +
+      '</div>' +
+    '</div>';
+    var fdrEl = document.getElementById('pm-fdr');
+    if (fdrEl) fdrEl.innerHTML = fdrHtml;
+  } else {
+    var fdrEl = document.getElementById('pm-fdr');
+    if (fdrEl) fdrEl.innerHTML = '';
+  }
   document.getElementById('pmodal').classList.add('open');
 }
 
@@ -1716,6 +1678,10 @@ function getUserDashboard(forceRefresh) {
     if (profile.free_transfers !== undefined) ST.freeTransfers    = profile.free_transfers    || 1;
     if (profile.transfers_this_gw !== undefined) ST.transfersMade = profile.transfers_this_gw || 0;
     ST.squadRegistered = !!(profile.squad_registered);
+    if (profile.active_chip !== undefined) ST.activeChip = profile.active_chip || null;
+    if (profile.used_chips) {
+      try { ST.usedChips = JSON.parse(profile.used_chips) || []; } catch(e) {}
+    }
     console.log('[FPSL] Squad loaded from:', squadSource, '—', savedSquad.length, 'players | Free transfers:', ST.freeTransfers);
     var dashboard = { profile: profile, squad: savedSquad, leagues: leagues };
     CACHE.dashboard = { data: dashboard, ts: Date.now() };
@@ -1983,6 +1949,7 @@ function saveSquad() {
     squad_registered:  isFullSquad,
     free_transfers:    ST.freeTransfers,
     transfers_this_gw: ST.transfersMade,
+    active_chip:       ST.activeChip || null,
     updated_at:        new Date().toISOString()
   };
 
@@ -1998,6 +1965,43 @@ function saveSquad() {
         onSaveDone(null);
       }
     }).catch(function(e) { onSaveDone(e); });
+}
+
+
+function shareSquad() {
+  if (!ST.squad.length) { showToast('Build your squad first', 'warning'); return; }
+  var captain = ST.squad.find(function(p){ return p.isCaptain; });
+  var starters = ST.squad.filter(function(p){ return !p.onBench; });
+  var lines = ['🏆 My Fantasy PSL Squad'];
+  if (ST.user && ST.user.user_metadata) {
+    lines.push('👕 ' + (ST.user.user_metadata.team_name || ''));
+  }
+  lines.push('');
+  var byPos = { GK:[], DEF:[], MID:[], FWD:[] };
+  starters.forEach(function(p){ if (byPos[p.position]) byPos[p.position].push(p); });
+  ['GK','DEF','MID','FWD'].forEach(function(pos){
+    if (byPos[pos].length) {
+      byPos[pos].forEach(function(p){
+        var cap = p.isCaptain ? ' (C)' : p.isVC ? ' (V)' : '';
+        lines.push(pos + ': ' + playerName(p) + cap);
+      });
+    }
+  });
+  lines.push('');
+  if (captain) lines.push('⭐ Captain: ' + playerName(captain));
+  lines.push('💰 Value: R' + ST.squad.reduce(function(s,p){return s+(p.price||0);},0).toFixed(1) + 'M');
+  lines.push('🔗 fantasy-psl.vercel.app');
+  var text = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'My Fantasy PSL Squad', text: text })
+      .catch(function(){});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){
+      showToast('Squad copied to clipboard!', 'success');
+    });
+  } else {
+    showToast('Copy: ' + text.substring(0,80) + '…', 'info');
+  }
 }
 
 function markUnsaved() {
@@ -2036,20 +2040,33 @@ function renderBudget() {
   if (ST.user && CACHE._profile) {
     var gwPts    = CACHE._profile.gw_points    || 0;
     var totalPts = CACHE._profile.total_points || 0;
+    var gwRank   = CACHE._profile.overall_rank || null;
     if (gwEl)    gwEl.textContent    = gwPts;
     if (totalEl) totalEl.textContent = totalPts;
     if (gwPill)    gwPill.style.display    = '';
     if (totalPill) totalPill.style.display = '';
+    // Rank pill
+    var rkPill = document.getElementById('rank-pts-pill');
+    var rkEl   = document.getElementById('rank-pts-display');
+    if (rkPill && gwRank) { rkEl.textContent = '#' + gwRank; rkPill.style.display = ''; }
+    else if (rkPill) rkPill.style.display = 'none';
   } else {
     if (gwPill)    gwPill.style.display    = 'none';
     if (totalPill) totalPill.style.display = 'none';
+    var rkPill = document.getElementById('rank-pts-pill');
+    if (rkPill) rkPill.style.display = 'none';
   }
   var cd = document.getElementById('count-display');
   if (cd) cd.textContent = ST.squad.length + ' / 15';
+  // Squad value
+  var squadVal = ST.squad.reduce(function(s, p) { return s + (p.price || 0); }, 0);
+  var svEl = document.getElementById('squad-value-display');
+  if (svEl) svEl.textContent = 'R' + squadVal.toFixed(1) + 'M';
   var starters = ST.squad.filter(function(x) { return !x.onBench; }).length;
   var bench    = ST.squad.filter(function(x) { return x.onBench; }).length;
   var ss = document.getElementById('squad-summary');
   if (ss) ss.textContent = starters + '/11 starters · ' + bench + '/4 bench';
+  renderChipBar();
   // Show bench order button only when squad is registered (15 players saved)
   var benchOrderBtn = document.getElementById('bench-order-btn');
   if (benchOrderBtn) benchOrderBtn.style.display = ST.squadRegistered ? '' : 'none';
@@ -2350,6 +2367,93 @@ function moveToStarting(id) {
 }
 
 // ── Transfer badge — shows free transfers left, pending cost ──────────
+function addToTransferHistory(outPlayer, inPlayer) {
+  try {
+    var key = 'fpsl_xfer_history_' + (ST.user ? ST.user.id : 'guest');
+    var history = JSON.parse(localStorage.getItem(key) || '[]');
+    history.unshift({
+      out: playerName(outPlayer),
+      in: playerName(inPlayer),
+      gw: ST.gw ? ST.gw.number : '?',
+      ts: new Date().toISOString(),
+      cost: Math.max(0, ST.pendingTransfers.length - ST.freeTransfers) * 4
+    });
+    if (history.length > 30) history = history.slice(0, 30);
+    localStorage.setItem(key, JSON.stringify(history));
+    renderTransferHistory();
+  } catch(e) {}
+}
+
+function renderTransferHistory() {
+  var el = document.getElementById('transfer-history');
+  var list = document.getElementById('transfer-history-list');
+  if (!el || !list) return;
+  try {
+    var key = 'fpsl_xfer_history_' + (ST.user ? ST.user.id : 'guest');
+    var history = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!history.length) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    list.innerHTML = history.slice(0, 5).map(function(t) {
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.75rem">' +
+        '<span style="color:#D4274F;font-weight:700;min-width:60px">GW' + t.gw + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="#D4274F" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+        '<span style="color:rgba(255,255,255,.5);text-decoration:line-through;flex:1">' + t.out + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="#22895A" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+        '<span style="color:#fff;flex:1">' + t.in + '</span>' +
+        (t.cost > 0 ? '<span style="color:#D4274F;font-size:.65rem;font-weight:700">-' + t.cost + 'pts</span>' : '<span style="color:#22895A;font-size:.65rem;font-weight:700">Free</span>') +
+      '</div>';
+    }).join('') +
+    (history.length > 5 ? '<div style="font-size:.65rem;color:rgba(255,255,255,.3);margin-top:.3rem">+ ' + (history.length-5) + ' more transfers</div>' : '');
+  } catch(e) {}
+}
+
+
+// ── CHIP MANAGEMENT ──────────────────────────────────────────────────
+var CHIP_INFO = {
+  wc: { name:'Wildcard',      abbr:'WC', color:'#B91C3A', desc:'Make unlimited transfers this GW at no cost' },
+  tc: { name:'Triple Captain',abbr:'TC', color:'#DBA94A', desc:'Your captain scores 3× this GW' },
+  bb: { name:'Bench Boost',   abbr:'BB', color:'#22895A', desc:'All 15 players score this GW' },
+  fh: { name:'Free Hit',      abbr:'FH', color:'#6eaadd', desc:'Make unlimited transfers — squad reverts after GW' }
+};
+
+function renderChipBar() {
+  var bar = document.getElementById('chip-bar');
+  if (!bar) return;
+  if (!ST.squad.length) { bar.innerHTML = ''; return; }
+  bar.innerHTML = Object.keys(CHIP_INFO).map(function(key) {
+    var chip = CHIP_INFO[key];
+    var isActive = ST.activeChip === key;
+    var isUsed   = ST.usedChips.indexOf(key) !== -1;
+    var bg = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.06)';
+    var border = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.12)';
+    var color = isActive ? '#fff' : isUsed ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.65)';
+    var label = isActive ? chip.abbr + ' Active' : isUsed ? chip.abbr + ' Used' : chip.abbr;
+    return '<button onclick="' + (isUsed ? '' : 'activateChip('' + key + '')') + '" ' +
+      'style="display:flex;align-items:center;gap:.3rem;background:' + bg + ';border:1px solid ' + border + ';border-radius:20px;padding:.3rem .7rem;cursor:' + (isUsed?'default':'pointer') + ';font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:' + color + ';letter-spacing:.5px;transition:all .2s" ' +
+      'title="' + chip.desc + '">' +
+      (isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+      label +
+    '</button>';
+  }).join('');
+}
+
+function activateChip(key) {
+  if (!ST.user) { openAuth('login'); return; }
+  if (ST.deadlinePassed) { showToast('Deadline passed — cannot activate chips', 'warning'); return; }
+  if (ST.usedChips.indexOf(key) !== -1) { showToast(CHIP_INFO[key].name + ' already used this season', 'warning'); return; }
+  if (ST.activeChip === key) {
+    // Deactivate
+    ST.activeChip = null;
+    showToast(CHIP_INFO[key].name + ' deactivated', 'info');
+  } else {
+    if (ST.activeChip) { showToast('Deactivate ' + CHIP_INFO[ST.activeChip].name + ' first', 'warning'); return; }
+    ST.activeChip = key;
+    showToast(CHIP_INFO[key].name + ' activated! Save your squad to confirm.', 'success');
+  }
+  renderChipBar();
+  markUnsaved();
+}
+
 function renderTransferBadge() {
   var badge = document.getElementById('xfer-badge');
   if (!badge) return;
@@ -2522,6 +2626,28 @@ function sn(name) { return SHORT_NAMES[name] || name; }
 
 // Betway Premiership 2025/26 standings — GW22 (5 Mar 2026)
 // W D L GF GA GD Pts  Form (newest last)
+// Fixture Difficulty Rating — 1 (easy) to 5 (hardest)
+function getNextFixture(team) {
+  var upcoming = (REAL_FIXTURES && REAL_FIXTURES.NS) || [];
+  for (var i = 0; i < upcoming.length; i++) {
+    var f = upcoming[i];
+    if (f.home === team || f.away === team) {
+      var opp = f.home === team ? f.away : f.home;
+      var isHome = f.home === team;
+      var tbl = REAL_TABLE.find(function(t){ return t.team === opp; });
+      var pos = tbl ? tbl.pos : 8;
+      // FDR: top 3 = 5 (hardest), bottom 3 = 1 (easiest)
+      var fdr = pos <= 3 ? 5 : pos <= 6 ? 4 : pos <= 10 ? 3 : pos <= 13 ? 2 : 1;
+      return { opp: opp, isHome: isHome, date: f.date, fdr: fdr };
+    }
+  }
+  return null;
+}
+
+function fdrColor(fdr) {
+  return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#DBA94A' : fdr === 2 ? '#88c541' : '#22895A';
+}
+
 var REAL_TABLE = [
   // Source: SuperSport — GW20/21 standings — 11 March 2026
   { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
@@ -2734,7 +2860,7 @@ function showLiveBanner(liveMatches) {
       (m.elapsed ? ' <em>' + m.elapsed + '\'</em>' : '') +
     '</span>';
   }).join('  •  ');
-  el.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.35rem"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#D4274F;animation:livePulse 1.2s ease-in-out infinite"></span>LIVE:</span>  ' + html;
+  el.innerHTML = '🔴 LIVE:  ' + html;
   el.style.display = 'block';
 }
 
@@ -2814,7 +2940,7 @@ function loadFixturesFromData(data) {
   matches.forEach(function(f) {
     var label;
     if (f.is_live || f.isLive) {
-      label = '<span style="display:inline-flex;align-items:center;gap:.35rem"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#D4274F;animation:livePulse 1.2s ease-in-out infinite"></span>LIVE NOW</span>';
+      label = '🔴 LIVE NOW';
     } else if (f.date) {
       label = formatMatchDate(f.date);
     } else {
@@ -3210,29 +3336,7 @@ function loadInjuries() {
       '</div>' +
     '</div>';
   }).join('');
-  // try API in background for more
-  fetch('https://v3.football.api-sports.io/injuries?league=' + PSL_ID + '&season=' + SEASON, {
-    headers: { 'x-apisports-key': FOOTBALL_KEY }
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(j) {
-    var injuries = j.response || [];
-    if (!injuries.length || j.errors) return;
-    c.innerHTML = injuries.slice(0, 8).map(function(inj) {
-      var p = inj.player;
-      var reason = p.reason || 'Unknown';
-      var severe = /(muscle|knee|acl|ligament)/i.test(reason);
-      return '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-left:3px solid ' + (severe ? '#D4274F' : '#DBA94A') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
-        '<div style="font-size:1.2rem;flex-shrink:0">' + (severe ? '!' : '-') + '</div>' +
-        '<div>' +
-          '<div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff">' + p.name + '</div>' +
-          '<div style="font-size:.78rem;color:rgba(255,255,255,.45);margin:.2rem 0">' + (p.type || 'Injury') + ' — ' + reason + '</div>' +
-          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)">' + inj.team.name + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  })
-  .catch(function() {});
+  // Note: live injury API requires paid plan — hardcoded REAL_INJURIES shown above
 }
 
 // ════════════════════════════════════════════════════
@@ -3423,11 +3527,64 @@ function renderGlobalLBRows(c, rows) {
   }).join('');
 }
 
+
+function loadGWHistory() {
+  if (!ST.user) return;
+  db.from('gw_scores')
+    .select('gameweek,points,calculated_at')
+    .eq('user_id', ST.user.id)
+    .order('gameweek', { ascending: false })
+    .limit(20)
+    .then(function(res) {
+      var rows = res.data || [];
+      if (!rows.length) return;
+      var container = document.getElementById('gw-history-table');
+      if (!container) return;
+      var total = rows.reduce(function(s,r){return s+(r.points||0);},0);
+      var avg = (total/rows.length).toFixed(1);
+      var best = rows.reduce(function(b,r){return r.points>b?r.points:b;},0);
+      container.innerHTML =
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.8rem">' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + best + '</div>' +
+            '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Best GW</div>' +
+          '</div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + avg + '</div>' +
+            '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Average</div>' +
+          '</div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + rows.length + '</div>' +
+            '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GWs Played</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">' +
+          '<div style="display:grid;grid-template-columns:60px 1fr 80px;padding:.4rem .8rem;background:rgba(255,255,255,.04);font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35)">' +
+            '<div>GW</div><div>Points Bar</div><div style="text-align:right">Pts</div>' +
+          '</div>' +
+          rows.map(function(r) {
+            var pct = Math.min(100, Math.round((r.points / (best || 1)) * 100));
+            var col = r.points >= best * 0.8 ? '#DBA94A' : r.points >= best * 0.5 ? '#22895A' : '#B91C3A';
+            return '<div style="display:grid;grid-template-columns:60px 1fr 80px;padding:.5rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);align-items:center">' +
+              '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.5)">GW' + r.gameweek + '</div>' +
+              '<div style="padding-right:.8rem">' +
+                '<div style="height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden">' +
+                  '<div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:3px"></div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#DBA94A;text-align:right">' + r.points + '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+    });
+}
+
 function loadProfile() {
   var c = document.getElementById('profile-wrap'); if (!c) return;
   if (!ST.user) { c.innerHTML = '<div class="loading-players">Please log in to view your profile</div>'; return; }
 
   // ── Use dashboard cache (set by getUserDashboard) when warm ──────────
+  loadGWHistory();
   if (CACHE._profile) {
     renderProfileData(c, CACHE._profile);
     return;
@@ -3437,6 +3594,7 @@ function loadProfile() {
   db.from('profiles').select('*').eq('id', ST.user.id).single().then(function(res) {
     var p = res.data;
     CACHE._profile = p;
+    loadGWHistory();
     if (!p) { c.innerHTML = '<div class="loading-players">Profile not found</div>'; return; }
     var initials = (p.team_name || '?').substring(0, 2).toUpperCase();
     c.innerHTML =
@@ -3496,32 +3654,7 @@ function deleteAccount() {
 // ════════════════════════════════════════════════════
 //  TOAST
 // ════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════
-//  DAY / NIGHT THEME TOGGLE
-// ════════════════════════════════════════════════════
-function toggleTheme() {
-  var isLight = document.body.classList.toggle('light-mode');
-  var moon = document.getElementById('theme-icon-moon');
-  var sun  = document.getElementById('theme-icon-sun');
-  if (moon) moon.style.display = isLight ? 'none' : 'block';
-  if (sun)  sun.style.display  = isLight ? 'block' : 'none';
-  try { localStorage.setItem('fpsl_theme', isLight ? 'light' : 'dark'); } catch(e) {}
-}
 
-// Apply saved theme on load
-(function() {
-  try {
-    if (localStorage.getItem('fpsl_theme') === 'light') {
-      document.body.classList.add('light-mode');
-      document.addEventListener('DOMContentLoaded', function() {
-        var moon = document.getElementById('theme-icon-moon');
-        var sun  = document.getElementById('theme-icon-sun');
-        if (moon) moon.style.display = 'none';
-        if (sun)  sun.style.display  = 'block';
-      });
-    }
-  } catch(e) {}
-})();
 
 function showToast(msg, type) {
   var t = document.getElementById('fpsl-toast');
@@ -3856,32 +3989,32 @@ var PSL_ROSTER = [
   // ═══════════════════════════════════════════════════════════════════════
 
   // ── ORLANDO PIRATES  GP13 W9 D2 L2 GF18 GA5 │ 32YC 0RC ──────────────
-  { id:1001, club:'Orlando Pirates', position:'GK',  display_name:'Sipho Chaine',          price:7.5,  apps:13, goals:0, assists:0, clean_sheets:8,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:77 },
+  { id:1001, club:'Orlando Pirates', position:'GK',  display_name:'Sipho Chaine',          price:7.5,  apps:13, goals:0, assists:0, clean_sheets:8,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:77, ownership:19 },
   { id:1002, club:'Orlando Pirates', position:'DEF', display_name:'Nkosinathi Sibisi',      price:5.5,  apps:12, goals:0, assists:0, clean_sheets:7,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.2, total_points:49 },
   { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
   { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
   { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso Monyane',        price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Ratomo',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91 },
+  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Ratomo',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91, ownership:33 },
   { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:19, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:3.8, total_points:76 },
   { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:14, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
-  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:15, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:88 },
+  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:15, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:88, ownership:35 },
   { id:1010, club:'Orlando Pirates', position:'MID', display_name:'Tshepang Moremi',        price:7.5,  apps:19, goals:3, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.4, xa:1.8, total_points:61 },
   { id:1011, club:'Orlando Pirates', position:'FWD', display_name:'Evidence Makgopa',       price:9.0,  apps:16, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.9, xa:2.8, total_points:76 },
   { id:1012, club:'Orlando Pirates', position:'FWD', display_name:'Yamela Mbuthuma',        price:8.0,  apps:13, goals:4, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.6, xa:0.4, total_points:63 },
   { id:1013, club:'Orlando Pirates', position:'FWD', display_name:'Andre De Jong',          price:7.0,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.6, total_points:53 },
 
   // ── MAMELODI SUNDOWNS  GP15 W9 D5 L1 GF24 GA7 │ 48YC 2RC ───────────
-  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:14, goals:0, assists:0, clean_sheets:11, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97 },
+  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:14, goals:0, assists:0, clean_sheets:11, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97, ownership:28 },
   { id:2002, club:'Mamelodi Sundowns', position:'DEF', display_name:'Grant Kekana',         price:5.5,  apps:13, goals:0, assists:0, clean_sheets:8,  yellow_cards:6, red_cards:0, xg:0.2, xa:0.3, total_points:51 },
-  { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',     price:5.5,  apps:11, goals:0, assists:0, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.1, total_points:44 },
+  { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',     price:5.5,  apps:11, goals:0, assists:0, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.1, total_points:44, ownership:15 },
   { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Khuliso Mudau',        price:5.5,  apps:13, goals:0, assists:1, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.9, total_points:46 },
   { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Aubrey Modiba',        price:7.0,  apps:17, goals:1, assists:3, clean_sheets:6,  yellow_cards:5, red_cards:0, xg:0.8, xa:2.5, total_points:63 },
-  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:19, goals:4, assists:4, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:3.5, xa:3.8, total_points:79 },
+  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:19, goals:4, assists:4, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:3.5, xa:3.8, total_points:79, ownership:20 },
   { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Arthur',               price:8.0,  apps:16, goals:3, assists:3, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:2.8, total_points:69 },
   { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Marcelo Allende',      price:7.5,  apps:18, goals:3, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:1, xg:2.6, xa:1.8, total_points:56 },
   { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Monnapule Saleng',     price:8.0,  apps:12, goals:1, assists:4, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.0, xa:3.5, total_points:52 },
   { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',       price:8.5,  apps:14, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.8, xa:1.8, total_points:56 },
-  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:15, goals:9, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:8.2, xa:1.8, total_points:113 },
+  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:15, goals:9, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:8.2, xa:1.8, total_points:113, ownership:38 },
   { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',      price:9.0,  apps:10, goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
   { id:2013, club:'Mamelodi Sundowns', position:'FWD', display_name:'Brayan Leon Muniz',    price:9.0,  apps:6,  goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:3.8, xa:0.8, total_points:59 },
 
@@ -3892,8 +4025,8 @@ var PSL_ROSTER = [
   { id:3004, club:'Golden Arrows', position:'MID', display_name:'Philani Kumalo',           price:8.0,  apps:12, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:66 },
   { id:3005, club:'Golden Arrows', position:'MID', display_name:'Jerome Karlese',           price:6.5,  apps:12, goals:1, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:2.6, total_points:48 },
   { id:3006, club:'Golden Arrows', position:'MID', display_name:'Thokozani Khumalo',        price:7.0,  apps:7,  goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.6, xa:1.8, total_points:55 },
-  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:17, goals:10,assists:1, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:0.9, total_points:124 },
-  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:3.8, xa:4.8, total_points:93 },
+  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:17, goals:10,assists:1, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:0.9, total_points:124, ownership:42 },
+  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:3.8, xa:4.8, total_points:93, ownership:21 },
 
   // ── SEKHUKHUNE UNITED  GP16 W7 D5 L4 GF16 GA10 │ 35YC 1RC ───────────
   { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',      price:5.5,  apps:15, goals:0, assists:0, clean_sheets:6,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
@@ -3903,20 +4036,20 @@ var PSL_ROSTER = [
   { id:4005, club:'Sekhukhune United', position:'MID', display_name:'Mokete Mogaila',       price:7.0,  apps:14, goals:0, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.5, xa:2.7, total_points:39 },
   { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Thabang Monare',       price:6.5,  apps:19, goals:2, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.5, xa:1.6, total_points:52 },
   { id:4007, club:'Sekhukhune United', position:'MID', display_name:'Vusumuzi Mncube',      price:7.0,  apps:20, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.4, xa:1.8, total_points:59 },
-  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:10.5, apps:18, goals:8, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:7.2, xa:1.8, total_points:103 },
+  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:10.5, apps:18, goals:8, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:7.2, xa:1.8, total_points:103, ownership:30 },
 
   // ── AMAZULU  GP15 W8 D3 L4 GF18 GA14 │ 26YC 3RC ──────────────────────
   { id:5001, club:'AmaZulu FC', position:'GK',  display_name:'Darren Johnson',              price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:44 },
   { id:5002, club:'AmaZulu FC', position:'DEF', display_name:'Nkosikhona Radebe',           price:5.0,  apps:20, goals:0, assists:2, clean_sheets:4,  yellow_cards:3, red_cards:0, xg:0.1, xa:1.8, total_points:37 },
   { id:5003, club:'AmaZulu FC', position:'DEF', display_name:'Andiswa Sithole',             price:5.0,  apps:13, goals:0, assists:2, clean_sheets:3,  yellow_cards:2, red_cards:0, xg:0.1, xa:1.8, total_points:32 },
   { id:5004, club:'AmaZulu FC', position:'DEF', display_name:'Tebogo Masuku',               price:5.0,  apps:12, goals:0, assists:2, clean_sheets:3,  yellow_cards:2, red_cards:0, xg:0.1, xa:1.8, total_points:32 },
-  { id:5005, club:'AmaZulu FC', position:'MID', display_name:'Hendrick Ekstein',            price:9.0,  apps:19, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:2.8, total_points:80 },
+  { id:5005, club:'AmaZulu FC', position:'MID', display_name:'Hendrick Ekstein',            price:9.0,  apps:19, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:2.8, total_points:80, ownership:18 },
   { id:5006, club:'AmaZulu FC', position:'MID', display_name:'Mondli Mbanjwa',              price:6.5,  apps:17, goals:2, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:0.9, total_points:46 },
   { id:5007, club:'AmaZulu FC', position:'MID', display_name:'Athini Maqokola',             price:7.0,  apps:15, goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.5, xa:1.8, total_points:56 },
-  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:5.5, xa:0.9, total_points:82 },
+  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:5.5, xa:0.9, total_points:82, ownership:22 },
 
   // ── DURBAN CITY  GP16 W7 D4 L5 GF15 GA11 │ 27YC 1RC ──────────────────
-  { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:20, goals:0, assists:1, clean_sheets:6,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
+  { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:20, goals:0, assists:1, clean_sheets:6,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57, ownership:17 },
   { id:6002, club:'Durban City', position:'DEF', display_name:'Kyle Jurgens',               price:5.5,  apps:18, goals:0, assists:2, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:1.8, total_points:46 },
   { id:6003, club:'Durban City', position:'DEF', display_name:'Haashim Domingo',            price:5.5,  apps:19, goals:2, assists:2, clean_sheets:4,  yellow_cards:4, red_cards:0, xg:1.5, xa:1.8, total_points:54 },
   { id:6004, club:'Durban City', position:'MID', display_name:'Bokang Mokwena',             price:6.5,  apps:20, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.6, xa:0.9, total_points:48 },
@@ -3925,14 +4058,14 @@ var PSL_ROSTER = [
   { id:6007, club:'Durban City', position:'FWD', display_name:'Saziso Magawana',            price:9.0,  apps:20, goals:3, assists:3, clean_sheets:0,  yellow_cards:1, red_cards:1, xg:2.8, xa:2.8, total_points:66 },
 
   // ── KAIZER CHIEFS  GP15 W8 D6 L1 GF15 GA6 │ 36YC 0RC ────────────────
-  { id:7001, club:'Kaizer Chiefs', position:'GK',  display_name:'Bruce Bvuma',              price:7.5,  apps:14, goals:0, assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:82 },
+  { id:7001, club:'Kaizer Chiefs', position:'GK',  display_name:'Bruce Bvuma',              price:7.5,  apps:14, goals:0, assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:82, ownership:26 },
   { id:7002, club:'Kaizer Chiefs', position:'DEF', display_name:'Edmilson Dove',            price:5.5,  apps:14, goals:0, assists:0, clean_sheets:6,  yellow_cards:7, red_cards:0, xg:0.1, xa:0.2, total_points:37 },
   { id:7003, club:'Kaizer Chiefs', position:'DEF', display_name:'Dillon Solomons',          price:5.0,  apps:13, goals:0, assists:0, clean_sheets:5,  yellow_cards:6, red_cards:0, xg:0.1, xa:0.1, total_points:30 },
   { id:7004, club:'Kaizer Chiefs', position:'DEF', display_name:'Bradley Cross',            price:5.0,  apps:12, goals:0, assists:0, clean_sheets:5,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.2, total_points:30 },
   { id:7005, club:'Kaizer Chiefs', position:'MID', display_name:'Mduduzi Shabalala',        price:8.0,  apps:17, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:1.8, total_points:59 },
   { id:7006, club:'Kaizer Chiefs', position:'MID', display_name:'Leandro Sirino',           price:7.0,  apps:13, goals:1, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.9, xa:1.8, total_points:41 },
   { id:7007, club:'Kaizer Chiefs', position:'MID', display_name:'Lebohang Maboe',           price:7.0,  apps:13, goals:1, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:0.9, total_points:36 },
-  { id:7008, club:'Kaizer Chiefs', position:'FWD', display_name:'Flavio Silva',             price:10.0, apps:12, goals:5, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.8, xa:0.9, total_points:79 },
+  { id:7008, club:'Kaizer Chiefs', position:'FWD', display_name:'Flavio Silva',             price:10.0, apps:12, goals:5, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.8, xa:0.9, total_points:79, ownership:23 },
 
   // ── POLOKWANE CITY  GP15 W6 D5 L4 GF11 GA9 │ 27YC 1RC ───────────────
   { id:8001, club:'Polokwane City', position:'GK',  display_name:'Lindokuhle Mathebula',    price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:48 },
@@ -3950,8 +4083,8 @@ var PSL_ROSTER = [
   { id:9004, club:'TS Galaxy', position:'MID', display_name:'Sphesihle Maduna',             price:7.0,  apps:19, goals:2, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.6, xa:2.7, total_points:62 },
   { id:9005, club:'TS Galaxy', position:'MID', display_name:'Nhlanhla Mgaga',               price:6.5,  apps:16, goals:1, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.8, xa:1.8, total_points:45 },
   { id:9006, club:'TS Galaxy', position:'MID', display_name:'Mory Cheick Keita',            price:7.0,  apps:15, goals:3, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:0.9, total_points:59 },
-  { id:9007, club:'TS Galaxy', position:'FWD', display_name:'Seluleko Mahlambi',            price:9.5,  apps:19, goals:5, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.5, xa:2.8, total_points:89 },
-  { id:9008, club:'TS Galaxy', position:'FWD', display_name:'Puso Dithejane',               price:9.0,  apps:12, goals:4, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:1, xg:3.6, xa:3.6, total_points:83 },
+  { id:9007, club:'TS Galaxy', position:'FWD', display_name:'Seluleko Mahlambi',            price:9.5,  apps:19, goals:5, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.5, xa:2.8, total_points:89, ownership:25 },
+  { id:9008, club:'TS Galaxy', position:'FWD', display_name:'Puso Dithejane',               price:9.0,  apps:12, goals:4, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:1, xg:3.6, xa:3.6, total_points:83, ownership:16 },
 
   // ── RICHARDS BAY  GP16 W4 D7 L5 GF14 GA16 │ 27YC 0RC ────────────────
   { id:10001, club:'Richards Bay', position:'GK',  display_name:'Ayanda Mtshali',           price:5.0,  apps:16, goals:0, assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:35 },
@@ -3978,7 +4111,7 @@ var PSL_ROSTER = [
   { id:12004, club:'Stellenbosch FC', position:'MID', display_name:'Devon Titus',           price:8.0,  apps:19, goals:1, assists:4, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:0.9, xa:3.6, total_points:60 },
   { id:12005, club:'Stellenbosch FC', position:'MID', display_name:'Junior Mendieta',       price:6.5,  apps:14, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.6, xa:0.9, total_points:38 },
   { id:12006, club:'Stellenbosch FC', position:'MID', display_name:'Waseem Isaacs',         price:5.5,  apps:12, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.3, total_points:23 },
-  { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:10.5, apps:16, goals:7, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.5, xa:0.9, total_points:91 },
+  { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:10.5, apps:16, goals:7, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.5, xa:0.9, total_points:91, ownership:24 },
 
   // ── MARUMO GALLANTS  GP16 W3 D6 L7 GF12 GA20 │ 29YC 2RC ────────────
   { id:13001, club:'Marumo Gallants', position:'GK',  display_name:'Washington Arubi',      price:4.5,  apps:16, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:25 },
@@ -4943,7 +5076,7 @@ function castPOTMVote(matchKey, playerId) {
 <!-- ── POTM Vote Modal ────────────────────────────────────────────── -->
 <div id="potm-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:1rem">
   <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;padding:1.5rem;position:relative">
-    <button onclick="document.getElementById('potm-modal').style.display='none'" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);font-size:.8rem;border-radius:4px;padding:.2rem .6rem;cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button onclick="document.getElementById('potm-modal').style.display='none'" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);font-size:.8rem;border-radius:4px;padding:.2rem .6rem;cursor:pointer">✕</button>
     <div id="potm-modal-body"></div>
   </div>
 </div>
@@ -4965,31 +5098,13 @@ function castPOTMVote(matchKey, playerId) {
       s.async = true;
       document.getElementById('ad-slot-container').appendChild(s);
     })();
-
-    function generateReferralCode(){
-
- const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code = "FPSL-";
-
- for(let i=0;i<6;i++){
-   code += chars[Math.floor(Math.random()*chars.length)];
- }
-
- return code;
-
-}
-
   </script>
 </div>
 
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
   <div id="action-sheet" onclick="if(event.target===this)closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center">
-    <div style="position:relative;width:100%;max-width:480px;margin:0 auto;background:#1A1D24;border-radius:20px 20px 0 0;padding:1.4rem 1.2rem calc(1.4rem + env(safe-area-inset-bottom, 0px));padding-bottom:calc(90px + env(safe-area-inset-bottom, 16px))">
-      <!-- Close X button -->
-      <button onclick="closeActionSheet()" style="position:absolute;top:.85rem;right:.85rem;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;padding:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <!-- Drag handle -->
+    <div style="position:relative;width:100%;max-width:480px;margin:0 auto;background:#1A1D24;border-radius:20px 20px 0 0;padding:1.4rem 1.2rem;padding-bottom:calc(90px + env(safe-area-inset-bottom,16px))">
+      <button onclick="closeActionSheet()" style="position:absolute;top:.85rem;right:.85rem;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;padding:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       <div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 1.2rem"></div>
       <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.08);padding-right:2rem"></div>
       <div id="action-sheet-btns"></div>
@@ -5008,7 +5123,7 @@ function castPOTMVote(matchKey, playerId) {
   <!-- ── Deadline info modal ── -->
   <div id="deadline-info-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeDeadlineInfo()">
     <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:380px;width:100%;padding:1.6rem;position:relative">
-      <button onclick="closeDeadlineInfo()" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <button onclick="closeDeadlineInfo()" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem">✕</button>
       <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:1.2rem">
         <div style="width:36px;height:36px;border-radius:50%;background:rgba(212,39,79,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="#D4274F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -5045,68 +5160,7 @@ function castPOTMVote(matchKey, playerId) {
   </div>
 
 
-<script>
-function generateReferralCode(){
- const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code="FPSL-";
- for(let i=0;i<6;i++){
-   code+=chars[Math.floor(Math.random()*chars.length)];
- }
- return code;
-}
 
-async function doRegister(){
-
- const email=document.getElementById("r-email").value;
- const password=document.getElementById("r-pass").value;
- const username=document.getElementById("r-user").value;
- const teamName=document.getElementById("r-team").value;
-
- const firstName=document.getElementById("signup-firstname")?.value||null;
- const lastName=document.getElementById("signup-lastname")?.value||null;
- const age=document.getElementById("signup-age")?.value||null;
- const city=document.getElementById("signup-city")?.value||null;
- const country=document.getElementById("signup-country")?.value||"South Africa";
- const supportedTeam=document.getElementById("signup-team")?.value||null;
- const discovery=document.getElementById("signup-discovery")?.value||null;
- const referralUsed=document.getElementById("signup-referral")?.value||null;
-
- const referralCode=generateReferralCode();
-
- // Use the globally defined Supabase client (already initialised at top of file)
- const sb = db;
-
- const { data, error } = await sb.auth.signUp({
-  email: email,
-  password: password
- });
-
- if(error){
-   document.getElementById("r-err").innerText=error.message;
-   return;
- }
-
- const userId=data.user.id;
-
- await sb.from("profiles").insert({
-   id:userId,
-   username:username,
-   team_name:teamName,
-   first_name:firstName,
-   last_name:lastName,
-   age:age,
-   city:city,
-   country:country,
-   supported_team:supportedTeam,
-   discovery_source:discovery,
-   referral_code:referralCode,
-   referred_by:referralUsed
- });
-
- alert("Account created successfully!");
- location.reload();
-}
-</script>
 
 <script>
 // ══ DISKI CHAT JS ══════════════════════════════════════════════════════
@@ -5179,23 +5233,18 @@ function renderFeed(){
     var isOwn=ST.user&&ST.user.id===p.user_id;
     var liked=CHAT.myReactions[p.id]==='like';
     var disliked=CHAT.myReactions[p.id]==='dislike';
-    var likeCount=p.likes||0;
-    var dislikeCount=p.dislikes||0;
-    var repostCount=p.reposts||0;
-    var replyCount=p.reply_count||0;
     var likeColor=liked?'#DBA94A':'rgba(255,255,255,.4)';
     var dislikeColor=disliked?'#D4274F':'rgba(255,255,255,.4)';
     var repostColor=(CHAT.myReposts&&CHAT.myReposts[p.id])?'#22895A':'rgba(255,255,255,.4)';
     var pid=p.id;
-    // Repost banner if this is a repost
     var repostBanner='';
     if(p.repost_of&&p.repost_username){
       repostBanner='<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.55rem;font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.35);font-weight:700">'+DSVG.repost+'<span>'+esc(p.username||'')+'</span><span style="font-weight:400">reposted</span><span style="color:rgba(255,255,255,.55)">@'+esc(p.repost_username)+'</span></div>';
     }
-    var likeBtn='<button onclick="likePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+likeColor+'">'+DSVG.like+'<span style="margin-left:1px">'+likeCount+'</span></button>';
-    var dislikeBtn=ST.user?'<button onclick="dislikePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+dislikeColor+'">'+DSVG.dislike+'<span style="margin-left:1px">'+dislikeCount+'</span></button>':'';
-    var repostBtn=ST.user&&!isOwn?'<button onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'" style="'+btnBase+'color:'+repostColor+'">'+DSVG.repost+'<span>'+repostCount+'</span></button>':'';
-    var replyBtn=ST.user?'<button onclick="openReplyBox(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(255,255,255,.4)">'+DSVG.reply+'<span>Reply'+(replyCount?' ('+replyCount+')':'')+'</span></button>':'';
+    var likeBtn='<button onclick="likePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+likeColor+'">'+DSVG.like+'<span style="margin-left:1px">'+(p.likes||0)+'</span></button>';
+    var dislikeBtn=ST.user?'<button onclick="dislikePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+dislikeColor+'">'+DSVG.dislike+'<span style="margin-left:1px">'+(p.dislikes||0)+'</span></button>':'';
+    var repostBtn=ST.user&&!isOwn?'<button onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'" style="'+btnBase+'color:'+repostColor+'">'+DSVG.repost+'<span>'+(p.reposts||0)+'</span></button>':'';
+    var replyBtn=ST.user?'<button onclick="openReplyBox(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(255,255,255,.4)">'+DSVG.reply+'<span>Reply'+((p.reply_count||0)?' ('+(p.reply_count||0)+')':'')+'</span></button>':'';
     var reportBtn=!isOwn&&ST.user?'<button onclick="reportPost(this)" data-pid="'+pid+'" title="Report" style="'+btnBase+'color:rgba(255,255,255,.2);border-color:transparent">'+DSVG.flag+'</button>':'';
     var deleteBtn=isOwn?'<button onclick="deletePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(212,39,79,.45);border-color:transparent;margin-left:auto">'+DSVG.trash+'</button>':'';
     return '<div id="post-'+pid+'" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem">'
@@ -5221,6 +5270,7 @@ function renderFeed(){
     +'</div>';
   }).join('');
 }
+
 function chatInputChange(el){
   var len=el.value.length;var cc=document.getElementById('chat-charcount');
   if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':'rgba(255,255,255,.3)';}
@@ -5258,7 +5308,7 @@ function likePost(btn){
 }
 function dislikePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
-  if(!ST.user){showToast('Log in to react to posts','warning');return;}
+  if(!ST.user){showToast('Log in to react','warning');return;}
   var alreadyDisliked=CHAT.myReactions[pid]==='dislike';
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
@@ -5273,21 +5323,16 @@ function dislikePost(btn){
 function repostPost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user){showToast('Log in to repost','warning');return;}
-  if(CHAT.myReposts&&CHAT.myReposts[pid]){showToast('You already reposted this','info');return;}
+  if(CHAT.myReposts&&CHAT.myReposts[pid]){showToast('Already reposted','info');return;}
   var original=CHAT.posts.find(function(p){return p.id===pid;});
   if(!original)return;
   var origUsername=btn.getAttribute('data-username')||original.username||'';
   var m=ST.user.user_metadata||{};
   var myUsername=m.username||ST.user.email.split('@')[0];
-  // Insert new post that references the original
   db.from('diski_posts').insert({
-    user_id:ST.user.id,
-    username:myUsername,
-    team_name:m.team_name||null,
-    content:original.content,
-    likes:0,dislikes:0,reposts:0,
-    repost_of:pid,
-    repost_username:origUsername
+    user_id:ST.user.id,username:myUsername,team_name:m.team_name||null,
+    content:original.content,likes:0,dislikes:0,reposts:0,
+    repost_of:pid,repost_username:origUsername
   }).select().single().then(function(res){
     if(res.error){showToast('Could not repost','error');return;}
     if(!CHAT.myReposts)CHAT.myReposts={};
