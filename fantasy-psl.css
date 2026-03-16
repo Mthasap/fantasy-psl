@@ -1220,7 +1220,14 @@ html, body {
    DESKTOP: hide bottom nav (top nav used instead)
    ===================================================== */
 @media(min-width:901px) {
-  .nav { display:none !important; }
-  body { padding-top:0 !important; }
-  .bottom-nav { display:flex !important; bottom:1.5rem; min-width:520px; width:auto; }
+  .nav { display:flex !important; height:60px; padding:0 2rem; justify-content:space-between; }
+  body { padding-top:60px !important; padding-bottom:0 !important; }
+  .bottom-nav { display:none !important; }
+  .nav-links { display:flex !important; align-items:center; gap:1.5rem; list-style:none; flex:1; margin-left:1.5rem; }
+  .nav-links a { font-size:.8rem; letter-spacing:.8px; }
+  .nav-right { display:flex; align-items:center; gap:.5rem; }
+  .theme-toggle { display:none !important; }
+  .page-section,.page-wrap { padding-left:2rem; padding-right:2rem; }
+  .squad-body-grid { grid-template-columns:1fr 420px; align-items:start; }
+  .player-panel { position:sticky; top:80px; max-height:calc(100vh - 96px); overflow-y:auto; }
 }
