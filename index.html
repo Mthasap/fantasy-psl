@@ -100,15 +100,73 @@
   }
   
   
+  /* ── Guest Ad Banner ─────────────────────────────────────────────────── */
+  #guest-ad-banner { transition: opacity .3s, transform .3s; }
+  #guest-ad-banner.hide { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
+
+  /* ── Footer disclaimer ───────────────────────────────────────────────── */
+  .foot-disclaimer {
+    font-size:.65rem; color:rgba(255,255,255,.25); line-height:1.5;
+    margin-top:.8rem; padding-top:.8rem; border-top:1px solid rgba(255,255,255,.06);
+    text-align:center; max-width:500px; margin-left:auto; margin-right:auto;
+  }
   .foot-disclaimer strong { color:rgba(255,255,255,.4); }
   .foot-copy { font-size:.72rem; color:rgba(255,255,255,.3); text-align:center; margin-top:.5rem; }
   
   
-  #ad-banner ins.    display: block;
-    flex: 1;
-    min-height: 50px;
-    background: transparent;
+  /* ── Ad Banner ────────────────────────────────────────────────────── */
+  #ad-banner {
+    position: fixed;
+    bottom: 64px;           /* above bottom nav */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 420px;
+    background: rgba(10,10,18,.96);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 10px 12px 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 8000;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    backdrop-filter: blur(10px);
+    transition: opacity .3s, transform .3s;
   }
+  #ad-banner.hide {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+  }
+  .ad-label {
+    font-family: var(--font-ui);
+    font-size: .52rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ad-close {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    color: rgba(255,255,255,.5);
+    font-size: .8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+  }
+  .ad-close:hover { background: rgba(255,255,255,.1); color: #fff; }
+  
+  
   /* ══════════════════════════════════════════════════
      MOBILE-FIRST OVERRIDES — works on all phones
   ══════════════════════════════════════════════════ */
@@ -207,6 +265,8 @@
   }
 
   /* Ad banner spacing from bottom nav */
+  #ad-banner { bottom: 70px; }
+  
   /* ══════════════════════════════════════════════════
      DAY / NIGHT THEME
   ══════════════════════════════════════════════════ */
@@ -319,7 +379,8 @@
   body.light-mode footer { background: #e8eaed !important; }
   body.light-mode .foot-copy,
   body.light-mode .foot-disclaimer { color: rgba(0,0,0,.4) !important; }
-  body.light-mode body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
+  body.light-mode #ad-banner { background: #fff !important; border-color: rgba(0,0,0,.12) !important; }
+  body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
   body.light-mode .bench-tag { color: rgba(0,0,0,.5) !important; }
   body.light-mode .fix-row { border-color: rgba(0,0,0,.05) !important; background: #fff !important; }
   body.light-mode .fix-team-name { color: #0d1117 !important; }
@@ -408,6 +469,9 @@
     Publisher ID from adsense.google.com once your site is approved.
     Remove the HTML comment markers to activate.
   ═══════════════════════════════════════════════════════════════ -->
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+  -->
 </head>
 <body>
 
@@ -436,13 +500,12 @@
     <li><a href="#" onclick="goPage('home');return false;">Home</a></li>
     <li><a href="#" onclick="goPage('squad');return false;">My Squad</a></li>
     <li><a href="#" onclick="goPage('fixtures');return false;">Fixtures</a></li>
-    <li><a href="#" onclick="goPage('chat');return false;">Diski Chat</a></li>
     <li><a href="#" onclick="goPage('news');return false;">News</a></li>
     <li><a href="#" onclick="goPage('stats');return false;">Stats</a></li>
     <li><a href="#" onclick="goPage('leagues');return false;">Leagues</a></li>
   </ul>
   <div class="nav-right">
-    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" style="display:none" title="Toggle day/night mode" aria-label="Toggle theme">
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle day/night mode" aria-label="Toggle theme">
       <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <svg id="theme-icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
@@ -458,61 +521,128 @@
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="auth-modal" onclick="if(event.target===this)closeAuth()">
   <div class="auth-box" style="position:relative">
-    <button class="auth-close" onclick="closeAuth()">&#x2715;</button>
+    <button class="auth-close" onclick="closeAuth()">✕</button>
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
-      <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;align-items:center;gap:.5rem">
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected</span>
+      <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"></div>
+      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
         <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#B91C3A;cursor:pointer" checked>
-        <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me</label>
+        <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me on this device</label>
       </div>
       <div class="auth-error" id="l-err"></div>
       <button class="auth-submit" id="l-btn" onclick="doLogin()">Login</button>
-      <div class="auth-switch">No account? <a onclick="openAuth('register')">Register free &#x2192;</a></div>
+      <div class="auth-switch">No account? <a onclick="openAuth('register')">Register free →</a></div>
     </div>
     <div id="auth-reg-panel" style="display:none">
       <div class="auth-box-title">Create Account</div>
-      <div class="auth-field"><label>Email <span style="color:#D4274F">*</span></label><input id="r-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Username <span style="color:#D4274F">*</span></label><input id="r-user" type="text" autocomplete="username" placeholder="e.g. BafanaMgr"></div>
-      <div class="auth-field"><label>Team Name <span style="color:#D4274F">*</span></label><input id="r-team" type="text" placeholder="e.g. Soweto Stars FC"></div>
-      <div class="auth-row">
-        <div class="auth-field"><label>First Name</label><input id="signup-firstname" type="text" autocomplete="given-name"></div>
-        <div class="auth-field"><label>Last Name</label><input id="signup-lastname" type="text" autocomplete="family-name"></div>
-      </div>
-      <div class="auth-row">
-        <div class="auth-field"><label>Age</label><input id="signup-age" type="number" min="13" max="99" placeholder="24"></div>
-        <div class="auth-field"><label>City</label><input id="signup-city" type="text" placeholder="e.g. Soweto"></div>
-      </div>
-      <div class="auth-field"><label>Country</label><input id="signup-country" type="text" value="South Africa"></div>
-      <div class="auth-field"><label>PSL Team You Support</label><select id="signup-team">
-        <option value="">Select your team</option>
-        <option>Mamelodi Sundowns</option><option>Orlando Pirates</option>
-        <option>Kaizer Chiefs</option><option>AmaZulu FC</option>
-        <option>Stellenbosch FC</option><option>Sekhukhune United</option>
-        <option>Durban City</option><option>Golden Arrows</option>
-        <option>Polokwane City</option><option>TS Galaxy</option>
-        <option>Richards Bay</option><option>Chippa United</option>
-        <option>Marumo Gallants</option><option>Siwelele FC</option>
-        <option>Orbit College FC</option><option>Magesi FC</option>
-      </select></div>
-      <div class="auth-field"><label>How did you hear about us?</label><select id="signup-discovery">
-        <option value="">Select...</option><option value="Instagram">Instagram</option>
-        <option value="Twitter/X">Twitter / X</option><option value="TikTok">TikTok</option>
-        <option value="YouTube">YouTube</option><option value="Friend">Friend / Word of mouth</option>
-        <option value="Football Website">Football website</option>
-        <option value="Google">Google</option><option value="Other">Other</option>
-      </select></div>
-      <div class="auth-field"><label>Referral Code <span style="font-weight:400;color:rgba(255,255,255,.3);text-transform:none;letter-spacing:0">(optional)</span></label>
-        <input id="signup-referral" type="text" placeholder="FPSL-XXXXXX" style="text-transform:uppercase"></div>
-      <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
-        <input id="r-pass" type="password" autocomplete="new-password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022; (min 6 chars)"></div>
-      <div class="auth-error" id="r-err"></div>
-      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account &#x2014; Free</button>
-      <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login &#x2192;</a></div>
+      <div class="auth-field"><label>Email</label><input id="r-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="e.g. BafanaMgr"></div>
+      <div class="auth-field"><label>Team Name</label><input id="r-team" type="text" placeholder="e.g. Soweto Stars FC"></div>
+        <!-- removed duplicate panel -->
+
+  <div class="auth-field">
+    <label>Email</label>
+    <input id="r-email" type="email">
+  </div>
+
+  <div class="auth-field">
+    <label>Username</label>
+    <input id="r-user" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Team Name</label>
+    <input id="r-team" type="text">
+  </div>
+
+
+  <!-- ADD NEW FIELDS HERE -->
+
+
+  <div class="auth-field">
+    <label>First Name</label>
+    <input id="signup-firstname" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Last Name</label>
+    <input id="signup-lastname" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Age</label>
+    <input id="signup-age" type="number">
+  </div>
+
+  <div class="auth-field">
+    <label>City</label>
+    <input id="signup-city" type="text">
+  </div>
+
+  <div class="auth-field">
+    <label>Country</label>
+    <input id="signup-country" type="text" value="South Africa">
+  </div>
+
+  <div class="auth-field">
+    <label>PSL Team You Support</label>
+    <select id="signup-team">
+      <option value="">Select Team</option>
+      <option>Kaizer Chiefs</option>
+      <option>Orlando Pirates</option>
+      <option>Mamelodi Sundowns</option>
+      <option>SuperSport United</option>
+      <option>Stellenbosch FC</option>
+      <option>AmaZulu FC</option>
+      <option>Golden Arrows</option>
+      <option>Chippa United</option>
+      <option>Sekhukhune United</option>
+      <option>Polokwane City</option>
+      <option>TS Galaxy</option>
+      <option>Richards Bay</option>
+      <option>Magesi FC</option>
+    </select>
+  </div>
+
+  <div class="auth-field">
+    <label>How did you hear about FantasyPSL?</label>
+    <select id="signup-discovery">
+      <option>Instagram</option>
+      <option>Twitter/X</option>
+      <option>TikTok</option>
+      <option>YouTube</option>
+      <option>Friend</option>
+      <option>Football Website</option>
+      <option>Other</option>
+    </select>
+  </div>
+
+  <div class="auth-field">
+    <label>Referral Code (optional)</label>
+    <input id="signup-referral" type="text">
+  </div>
+
+
+  <!-- EXISTING PASSWORD FIELD -->
+
+
+  <div class="auth-field">
+    <label>Password</label>
+    <input id="r-pass" type="password">
+  </div>
+
+  <div class="auth-error" id="r-err"></div>
+
+  <button class="auth-submit" id="r-btn" onclick="doRegister()">
+    Create Account — Free
+  </button>
+
+</div>
     </div>
   </div>
 </div>
@@ -606,9 +736,9 @@
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     <span class="bnav-label">Fixtures</span>
   </button>
-  <button class="bnav-btn" id="bn-chat" onclick="goPage('chat')">
-    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span class="bnav-label">Diski</span>
+  <button class="bnav-btn" id="bn-news" onclick="goPage('news')">
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    <span class="bnav-label">News</span>
   </button>
   <button class="bnav-btn" id="bn-stats" onclick="goPage('stats')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -982,39 +1112,6 @@
   </div>
 </div>
 
-<!-- ══ DISKI CHAT ══ -->
-<div id="page-chat" class="page">
-  <div class="page-section" style="max-width:680px;padding-bottom:100px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem">
-      <div><span class="eyebrow">Community</span><h1 class="section-title" style="margin:0">Diski Chat</h1></div>
-    </div>
-    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;margin-bottom:1.2rem">
-      <div style="display:flex;gap:.75rem;align-items:flex-start">
-        <div id="chat-avatar" style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">?</div>
-        <div style="flex:1">
-          <textarea id="chat-input" placeholder="What's on your mind?" maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.55;resize:none;min-height:72px;max-height:160px" oninput="chatInputChange(this)"></textarea>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
-            <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
-            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer">Post</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1.2rem 1rem;margin-bottom:1.2rem;text-align:center">
-      <div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem">Join the conversation</div>
-      <div style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.8rem">Create a free account to post and react</div>
-      <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.2rem;cursor:pointer">Register Free</button>
-    </div>
-    <div style="display:flex;gap:.4rem;margin-bottom:1rem">
-      <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">Latest</button>
-      <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">Top</button>
-    </div>
-    <div id="chat-feed"><div class="loading-players">Loading Diski Chat...</div></div>
-    <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
-      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more</button>
-    </div>
-  </div>
-</div>
 <!-- FOOTER -->
 <footer>
   <div class="foot-inner">
@@ -1114,8 +1211,7 @@ var ST = {
   // captainId and vcId stored on each player object (p.isCaptain, p.isVC)
   // ── Bench ordering ───────────────────────────────────
   benchReorder:     false,   // true when user is reordering bench
-  benchPickFirst:   null,    // first bench player selected for swap
-  subOutPlayer:     null     // player selected for substitution
+  benchPickFirst:   null     // first bench player selected for swap
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1171,7 +1267,8 @@ db.auth.onAuthStateChange(function(event, session) {
   ST.user = session ? session.user : null;
   syncNav();
   // Show/hide ad banner based on login state
-if (ST.user) {
+  updateAdVisibility();
+  if (ST.user) {
     loadGW(function() { loadMySquad(); });
   } else {
     ST.squad = [];
@@ -1182,7 +1279,8 @@ if (ST.user) {
 
 document.addEventListener('DOMContentLoaded', function() {
   // Init ad visibility
-// Set logo src
+  updateAdVisibility();
+  // Set logo src
   var imgs = document.querySelectorAll('#nav-logo-img, #footer-logo');
   imgs.forEach(function(img) { img.src = LOGO_PATH; });
 
@@ -1199,8 +1297,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ════════════════════════════════════════════════════
 //  NAVIGATION
 // ════════════════════════════════════════════════════
-var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-chat','bn-stats','bn-leagues'];
-var BN_MAP = { home:0, squad:1, fixtures:2, chat:3, news:3, stats:4, leagues:5 };
+var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-news','bn-stats','bn-leagues'];
+var BN_MAP = { home:0, squad:1, fixtures:2, news:3, stats:4, leagues:5 };
 
 function goPage(id) {
   var guarded = ['squad','leagues','profile'];
@@ -1221,7 +1319,6 @@ function goPage(id) {
 
   if (id === 'fixtures') { loadFixtures(); loadTable(); }
   if (id === 'news')     { loadNews(); loadInjuries(); }
-  if (id === 'chat')     { if(typeof loadDiskiChat==='function') loadDiskiChat(); }
   if (id === 'stats')    loadStats();
   if (id === 'leagues')  loadLeagues();
   if (id === 'profile')  loadProfile();
@@ -1244,6 +1341,7 @@ function syncNav() {
     if (um) { um.style.display = 'none'; um.classList.remove('visible'); }
   }
   // Show ad for guests, hide for logged-in users
+  updateAdVisibility();
 }
 
 // ════════════════════════════════════════════════════
@@ -1545,7 +1643,7 @@ function openPmodal(id) {
   var club = p.clubs ? p.clubs.name : 'Unknown Club';
   var icon = posIcon(p.position);
 
-  document.getElementById('pm-shirt').textContent  = icon;
+  document.getElementById('pm-shirt').innerHTML  = icon;
   document.getElementById('pm-shirt').className    = 'pm-shirt s' + ((id % 6) + 1);
   document.getElementById('pm-name').textContent   = name;
   document.getElementById('pm-meta').textContent   = club + ' · ' + p.position;
@@ -1821,12 +1919,12 @@ function addPlayer(id) {
     if (clubCount >= 3) { showToast('Max 3 players from ' + clubName, 'warning'); return; }
   }
 
-  // EPL: max starters per pos GK:1 DEF:5 MID:5 FWD:3
-  var maxStartersByPos = { GK:1, DEF:5, MID:5, FWD:3 };
+  var starterSlots  = { GK:1, DEF:4, MID:4, FWD:2 };
+  var maxByPos     = { GK:1, DEF:5, MID:5, FWD:3 };
   var starterCount = ST.squad.filter(function(x) { return !x.onBench; }).length;
   var posStarters  = ST.squad.filter(function(x) { return !x.onBench && x.position === p.position; }).length;
-  var onBench      = (starterCount >= 11) || (posStarters >= maxStartersByPos[p.position]);
-  var benchOrd     = onBench ? ST.squad.filter(function(x) { return x.onBench; }).length : -1;
+  var onBench      = (starterCount >= 11) || (posStarters >= maxByPos[p.position]);
+  var benchOrd      = onBench ? benchPlayers.length : -1;
 
   var np = Object.assign({}, p, { onBench: onBench, benchOrder: benchOrd, isCaptain: false, isVC: false });
   ST.squad.push(np);
@@ -2037,7 +2135,6 @@ function renderPitch() {
   var mode = ST.deadlinePassed ? 'locked'
            : ST.xferMode        ? 'transfer'
            : ST.benchReorder    ? 'bench'
-           : ST.subOutPlayer    ? 'sub'
            : 'normal';
 
   // Row IDs mapped to positions — FWD at top (attacking end), GK at bottom
@@ -2058,14 +2155,6 @@ function renderPitch() {
       if (mode === 'locked')        { clickFn = ''; titleTxt = 'Squad locked'; }
       else if (mode === 'transfer') { clickFn = 'onclick="removePlayer(' + p.id + ')"'; titleTxt = 'Transfer OUT'; }
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
-      else if (mode === 'sub') {
-        var isSel=ST.subOutPlayer&&ST.subOutPlayer.id===p.id;
-        if(isSel){clickFn='onclick="cancelSub()"';titleTxt='Cancel sub';}
-        else if(ST.subOutPlayer&&ST.subOutPlayer.onBench){
-          clickFn='onclick="completeSub('+p.id+','+ST.subOutPlayer.id+')"';
-          titleTxt='Sub in '+playerName(ST.subOutPlayer).split(' ').pop();
-        }else{clickFn='onclick="pitchPlayerTap('+p.id+')"';titleTxt='Tap for options';}
-      }
       else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
       var bottomLabel = (typeof p.gwPoints !== 'undefined') ? p.gwPoints + ' pts' : (p.price ? 'R' + p.price + 'M' : '');
       return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
@@ -2106,14 +2195,10 @@ function renderPitch() {
     var isSelected = ST.benchPickFirst && ST.benchPickFirst.id === p.id;
     var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #DBA94A;' : '';
     var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#DBA94A;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
-    var clickAction;
-    if      (mode==='bench')    {clickAction='onclick="benchTap('+p.id+')"';}
-    else if (mode==='locked')   {clickAction='';}
-    else if (mode==='transfer') {clickAction='';}
-    else if (mode==='sub'&&ST.subOutPlayer&&!ST.subOutPlayer.onBench) {
-      clickAction='onclick="completeSub('+ST.subOutPlayer.id+','+p.id+')"';
-    }
-    else {clickAction='onclick="benchPlayerTap('+p.id+')"';}
+    var clickAction = mode === 'bench' ? 'onclick="benchTap(' + p.id + ')"'
+                    : mode === 'locked' ? ''
+                    : mode === 'transfer' ? ''
+                    : 'onclick="benchPlayerTap(' + p.id + ')"';
     return '<div class="pc" ' + clickAction + ' title="Sub priority ' + (idx+1) + '" style="position:relative;opacity:.75;cursor:pointer;">' +
       '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="width:36px;height:36px;font-size:.85rem;' + selStyle + '">' +
         orderBadge + posIcon(p.position) +
@@ -2140,78 +2225,44 @@ function renderPitch() {
 // Tapping a player on the pitch in normal mode opens an action sheet:
 // "Set Captain", "Set Vice-Captain", "Transfer Out", "Remove"
 function pitchPlayerTap(id) {
-  var p=ST.squad.find(function(x){return x.id===id;});
-  if(!p) return;
-  if(ST.subOutPlayer&&ST.subOutPlayer.onBench){completeSub(ST.subOutPlayer.id,id);return;}
-  var actions=[];
-  if(!p.isCaptain) actions.push({label:'★ Make Captain — scores double',fn:'setCaptain('+id+')',accent:'#DBA94A'});
-  if(!p.isVC&&!p.isCaptain) actions.push({label:'★ Make Vice-Captain',fn:'setVC('+id+')',accent:'#c0c0c0'});
-  if(p.isCaptain) actions.push({label:'Remove Captain armband',fn:'setCaptain('+id+')',accent:'#666'});
-  if(p.isVC)      actions.push({label:'Remove Vice-Captain armband',fn:'setVC('+id+')',accent:'#666'});
-  if(!ST.deadlinePassed){
-    if(ST.squad.some(function(x){return x.onBench;}))
-      actions.push({label:'⇄ Substitute — swap with bench',fn:'startSubOut('+id+')',accent:'#22895A'});
-    actions.push({label:'⇆ Transfer Out — pick replacement',fn:'startTransferOut('+id+')',accent:'#D4274F'});
-    if(!ST.squadRegistered) actions.push({label:'✕ Remove from Squad',fn:'removePlayer('+id+')',accent:'#D4274F'});
+  var p = ST.squad.find(function(x) { return x.id === id; });
+  if (!p) return;
+
+  // Build action sheet modal
+  var name = playerName(p);
+  var isLocked = false; // could check if their club's match started
+
+  var actions = [];
+  // Captain & VC always allowed — even after deadline
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) — scores double', fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
+  if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) — scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
+  if (p.isCaptain)  actions.push({ label: 'Remove Captain armband',  fn: 'setCaptain(' + id + ')', accent: '#888' });
+  if (p.isVC)       actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
+  // Transfers & removals only allowed before deadline
+  if (!ST.deadlinePassed) {
+    actions.push({ label: 'Transfer Out — pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
+    if (!ST.squadRegistered) actions.push({ label: 'Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
   }
-  showActionSheet(playerName(p),actions);
-}
 
+  var sheet = document.getElementById('action-sheet');
+  var sheetTitle = document.getElementById('action-sheet-title');
+  var sheetBtns  = document.getElementById('action-sheet-btns');
+  if (!sheet) return;
 
-// ── Centralised action sheet renderer ─────────────────────────────
-function showActionSheet(title,actions){
-  var sheet=document.getElementById('action-sheet');
-  var titleEl=document.getElementById('action-sheet-title');
-  var btns=document.getElementById('action-sheet-btns');
-  if(!sheet) return;
-  if(titleEl) titleEl.textContent=title;
-  if(btns) btns.innerHTML=actions.map(function(a){
-    return '<button onclick="closeActionSheet();'+a.fn+'" style="display:block;width:100%;'+
-      'padding:.8rem 1.1rem;margin:.3rem 0;background:rgba(255,255,255,.04);'+
-      'border:1px solid rgba(255,255,255,.08);border-radius:10px;color:'+(a.accent||'#fff')+';'+
-      'font-family:var(--font-ui);font-size:.82rem;font-weight:700;letter-spacing:.3px;'+
-      'cursor:pointer;text-align:left;transition:background .15s;-webkit-tap-highlight-color:transparent">'+
-      a.label+'</button>';
+  sheetTitle.textContent = name;
+  sheetBtns.innerHTML = actions.map(function(a) {
+    var col = a.accent || '#fff';
+    return '<button onclick="closeActionSheet();' + a.fn + '" style="' +
+      'display:block;width:100%;padding:.8rem 1.1rem;margin:.3rem 0;' +
+      'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);' +
+      'border-radius:10px;color:' + col + ';font-family:var(--font-ui);font-size:.82rem;' +
+      'font-weight:700;letter-spacing:.3px;cursor:pointer;text-align:left;' +
+      'transition:background .15s">' +
+      a.label + '</button>';
   }).join('');
-  sheet.style.display='flex';
-}
 
-// ── SUBSTITUTION SYSTEM ────────────────────────────────────────────
-function startSubOut(starterId){
-  var p=ST.squad.find(function(x){return x.id===starterId;});
-  if(!p) return;
-  ST.subOutPlayer=p;
-  closeActionSheet();
-  showToast('Tap a bench player to bring on for '+playerName(p),'info');
-  renderPitch();
+  sheet.style.display = 'flex';
 }
-function startSubIn(benchId){
-  var p=ST.squad.find(function(x){return x.id===benchId;});
-  if(!p) return;
-  ST.subOutPlayer=p;
-  closeActionSheet();
-  showToast('Tap a starter on the pitch to sub off','info');
-  renderPitch();
-}
-function completeSub(aId,bId){
-  var a=ST.squad.find(function(x){return x.id===aId;});
-  var b=ST.squad.find(function(x){return x.id===bId;});
-  if(!a||!b){cancelSub();return;}
-  var starter=!a.onBench?a:b, bencher=a.onBench?a:b;
-  if(starter.onBench===bencher.onBench){showToast('Swap a starter with a bench player','warning');cancelSub();return;}
-  var tb=starter.onBench,to=starter.benchOrder;
-  starter.onBench=bencher.onBench; starter.benchOrder=bencher.benchOrder;
-  bencher.onBench=tb; bencher.benchOrder=to;
-  ST.subOutPlayer=null;
-  markUnsaved(); renderPitch(); renderBudget();
-  showToast(playerName(bencher)+' ⇄ '+playerName(starter)+' ✓','success');
-}
-function cancelSub(){
-  ST.subOutPlayer=null;
-  renderPitch();
-  showToast('Substitution cancelled','info');
-}
-// ── END SUB SYSTEM ─────────────────────────────────────────────────
 
 function closeActionSheet() {
   var sheet = document.getElementById('action-sheet');
@@ -2291,22 +2342,42 @@ function benchTap(id) {
 
 // Tap bench player in normal mode — offer actions (move to starting XI, etc.)
 function benchPlayerTap(id) {
-  var p=ST.squad.find(function(x){return x.id===id;});
-  if(!p) return;
-  if(ST.subOutPlayer&&!ST.subOutPlayer.onBench){completeSub(ST.subOutPlayer.id,id);return;}
-  var starters=ST.squad.filter(function(x){return!x.onBench;});
-  var actions=[];
-  if(!p.isCaptain) actions.push({label:'★ Make Captain — scores double',fn:'setCaptain('+id+')',accent:'#DBA94A'});
-  if(!p.isVC&&!p.isCaptain) actions.push({label:'★ Make Vice-Captain',fn:'setVC('+id+')',accent:'#c0c0c0'});
-  if(p.isCaptain) actions.push({label:'Remove Captain armband',fn:'setCaptain('+id+')',accent:'#666'});
-  if(p.isVC)      actions.push({label:'Remove Vice-Captain armband',fn:'setVC('+id+')',accent:'#666'});
-  if(!ST.deadlinePassed){
-    actions.push({label:'⇄ Sub In — tap a starter on pitch to swap',fn:'startSubIn('+id+')',accent:'#22895A'});
-    if(starters.length<11) actions.push({label:'↑ Move to Starting XI',fn:'moveToStarting('+id+')',accent:'#4CAF50'});
-    actions.push({label:'⇆ Transfer Out',fn:'startTransferOut('+id+')',accent:'#D4274F'});
-    if(!ST.squadRegistered) actions.push({label:'✕ Remove from Squad',fn:'removePlayer('+id+')',accent:'#D4274F'});
+  var p = ST.squad.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var name = playerName(p);
+  var sheet = document.getElementById('action-sheet');
+  var sheetTitle = document.getElementById('action-sheet-title');
+  var sheetBtns  = document.getElementById('action-sheet-btns');
+  if (!sheet) return;
+
+  var starters    = ST.squad.filter(function(x) { return !x.onBench; });
+  var canStart    = starters.length < 11;
+
+  sheetTitle.textContent = name + ' (Bench)';
+  var actions = [];
+  // Captain & VC can always be assigned — even from bench, even after deadline
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) — scores double',           fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
+  if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) — scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
+  if (p.isCaptain) actions.push({ label: 'Remove Captain armband',     fn: 'setCaptain(' + id + ')', accent: '#888' });
+  if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
+  // Moves and transfers only before deadline
+  if (!ST.deadlinePassed) {
+    if (canStart) actions.push({ label: 'Move to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#4CAF50' });
+    actions.push({ label: 'Transfer Out — pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
+    if (!ST.squadRegistered) actions.push({ label: 'Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
   }
-  showActionSheet(playerName(p)+' (Bench)',actions);
+
+  sheetBtns.innerHTML = actions.map(function(a) {
+    var col = a.accent || '#fff';
+    return '<button onclick="closeActionSheet();' + a.fn + '" style="' +
+      'display:block;width:100%;padding:.8rem 1.1rem;margin:.3rem 0;' +
+      'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);' +
+      'border-radius:10px;color:' + col + ';font-family:var(--font-ui);font-size:.82rem;' +
+      'font-weight:700;letter-spacing:.3px;cursor:pointer;text-align:left;' +
+      'transition:background .15s">' +
+      a.label + '</button>';
+  }).join('');
+  sheet.style.display = 'flex';
 }
 
 // Move a bench player into the starting XI (swap with first available starter)
@@ -2500,23 +2571,23 @@ function sn(name) { return SHORT_NAMES[name] || name; }
 // Betway Premiership 2025/26 standings — GW22 (5 Mar 2026)
 // W D L GF GA GD Pts  Form (newest last)
 var REAL_TABLE = [
-  // Source: SuperSport — updated 16 March 2026 (GW22 complete)
-  { pos:1,  team:'Orlando Pirates',    p:22, w:15, d:4, l:3,  gf:35, ga:10, gd:25,  pts:49, form:['W','D','W','D','L'] },
-  { pos:2,  team:'Mamelodi Sundowns',  p:21, w:14, d:6, l:1,  gf:36, ga:11, gd:25,  pts:48, form:['W','W','W','W','D'] },
-  { pos:3,  team:'Sekhukhune United',  p:22, w:9,  d:7, l:6,  gf:22, ga:16, gd:6,   pts:34, form:['D','D','W','D','L'] },
-  { pos:4,  team:'AmaZulu FC',         p:22, w:10, d:4, l:8,  gf:21, ga:20, gd:1,   pts:34, form:['W','D','L','L','D'] },
-  { pos:5,  team:'Kaizer Chiefs',      p:20, w:10, d:6, l:4,  gf:18, ga:12, gd:6,   pts:36, form:['W','W','L','L','W'] },
-  { pos:6,  team:'Durban City',        p:22, w:9,  d:5, l:8,  gf:20, ga:17, gd:3,   pts:32, form:['L','D','W','W','L'] },
-  { pos:7,  team:'Polokwane City',     p:21, w:7,  d:8, l:6,  gf:17, ga:14, gd:3,   pts:29, form:['D','D','W','D','L'] },
-  { pos:8,  team:'TS Galaxy',          p:22, w:8,  d:4, l:10, gf:25, ga:23, gd:2,   pts:28, form:['W','L','W','L','L'] },
-  { pos:9,  team:'Golden Arrows',      p:21, w:8,  d:3, l:10, gf:28, ga:26, gd:2,   pts:27, form:['W','L','W','W','L'] },
-  { pos:10, team:'Stellenbosch FC',    p:21, w:6,  d:6, l:9,  gf:16, ga:22, gd:-6,  pts:24, form:['D','W','L','D','L'] },
-  { pos:11, team:'Siwelele FC',        p:21, w:5,  d:9, l:7,  gf:12, ga:16, gd:-4,  pts:24, form:['D','D','D','W','D'] },
-  { pos:12, team:'Richards Bay',       p:22, w:5,  d:8, l:9,  gf:16, ga:25, gd:-9,  pts:23, form:['D','D','L','D','L'] },
-  { pos:13, team:'Chippa United',      p:22, w:4,  d:8, l:10, gf:17, ga:28, gd:-11, pts:20, form:['D','D','W','L','D'] },
-  { pos:14, team:'Marumo Gallants',    p:22, w:4,  d:6, l:12, gf:17, ga:31, gd:-14, pts:18, form:['L','W','D','L','L'] },
-  { pos:15, team:'Orbit College FC',   p:22, w:4,  d:3, l:15, gf:13, ga:35, gd:-22, pts:15, form:['L','L','L','W','L'] },
-  { pos:16, team:'Magesi FC',          p:22, w:2,  d:8, l:12, gf:12, ga:29, gd:-17, pts:14, form:['D','L','D','D','L'] }
+  // Source: SuperSport — GW20/21 standings — 11 March 2026
+  { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
+  { pos:2,  team:'Orlando Pirates',    p:20, w:14, d:3, l:3,  gf:31, ga:8,  gd:23,  pts:45, form:['W','L','W','W','D'] },
+  { pos:3,  team:'Sekhukhune United',  p:20, w:9,  d:6, l:5,  gf:21, ga:14, gd:7,   pts:33, form:['D','L','W','W','L'] },
+  { pos:4,  team:'Durban City',        p:20, w:9,  d:5, l:6,  gf:19, ga:14, gd:5,   pts:32, form:['D','W','W','L','W'] },
+  { pos:5,  team:'AmaZulu FC',         p:20, w:9,  d:4, l:7,  gf:19, ga:18, gd:1,   pts:31, form:['D','L','L','L','W'] },
+  { pos:6,  team:'Kaizer Chiefs',      p:18, w:8,  d:6, l:4,  gf:16, ga:12, gd:4,   pts:30, form:['L','L','L','W','L'] },
+  { pos:7,  team:'Polokwane City',     p:19, w:7,  d:7, l:5,  gf:16, ga:13, gd:3,   pts:28, form:['L','W','D','D','D'] },
+  { pos:8,  team:'TS Galaxy',          p:20, w:7,  d:3, l:10, gf:23, ga:22, gd:1,   pts:24, form:['L','L','L','L','L'] },
+  { pos:9,  team:'Richards Bay',       p:20, w:5,  d:9, l:6,  gf:15, ga:19, gd:-4,  pts:24, form:['W','D','L','D','D'] },
+  { pos:10, team:'Stellenbosch FC',    p:19, w:6,  d:5, l:8,  gf:15, ga:20, gd:-5,  pts:23, form:['D','W','W','D','D'] },
+  { pos:11, team:'Siwelele FC',        p:19, w:5,  d:7, l:7,  gf:10, ga:14, gd:-4,  pts:22, form:['D','W','D','D','D'] },
+  { pos:12, team:'Golden Arrows',      p:19, w:6,  d:3, l:10, gf:24, ga:24, gd:0,   pts:21, form:['L','D','W','D','L'] },
+  { pos:13, team:'Chippa United',      p:20, w:4,  d:7, l:9,  gf:14, ga:24, gd:-10, pts:19, form:['L','D','W','W','W'] },
+  { pos:14, team:'Marumo Gallants',    p:20, w:4,  d:6, l:10, gf:15, ga:26, gd:-11, pts:18, form:['W','L','D','L','L'] },
+  { pos:15, team:'Orbit College FC',   p:21, w:5,  d:3, l:13, gf:13, ga:32, gd:-19, pts:18, form:['W','L','L','L','L'] },
+  { pos:16, team:'Magesi FC',          p:19, w:2,  d:7, l:10, gf:10, ga:25, gd:-15, pts:13, form:['D','D','L','L','L'] }
 ]
 var REAL_FIXTURES = {
   // GW22 results — verified SuperSport
@@ -3476,8 +3547,8 @@ function deleteAccount() {
 // ════════════════════════════════════════════════════
 //  DAY / NIGHT THEME TOGGLE
 // ════════════════════════════════════════════════════
-function toggleTheme() { /* night mode only — disabled */
-  var isLight = false;
+function toggleTheme() {
+  var isLight = document.body.classList.toggle('light-mode');
   var moon = document.getElementById('theme-icon-moon');
   var sun  = document.getElementById('theme-icon-sun');
   if (moon) moon.style.display = isLight ? 'none' : 'block';
@@ -3485,7 +3556,20 @@ function toggleTheme() { /* night mode only — disabled */
   try { localStorage.setItem('fpsl_theme', isLight ? 'light' : 'dark'); } catch(e) {}
 }
 
-// Night mode only — always dark
+// Apply saved theme on load
+(function() {
+  try {
+    if (localStorage.getItem('fpsl_theme') === 'light') {
+      document.body.classList.add('light-mode');
+      document.addEventListener('DOMContentLoaded', function() {
+        var moon = document.getElementById('theme-icon-moon');
+        var sun  = document.getElementById('theme-icon-sun');
+        if (moon) moon.style.display = 'none';
+        if (sun)  sun.style.display  = 'block';
+      });
+    }
+  } catch(e) {}
+})();
 
 function showToast(msg, type) {
   var t = document.getElementById('fpsl-toast');
@@ -3825,10 +3909,10 @@ var PSL_ROSTER = [
   { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
   { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
   { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso Monyane',        price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91 },
-  { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:19, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:3.8, total_points:76 },
+  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',     price:10.0, apps:19, goals:5, assists:6, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:4.0, xa:5.5, total_points:103 },
+  { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:9.0,  apps:21, goals:3, assists:7, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.8, xa:6.5, total_points:88 },
   { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:14, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
-  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:15, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:88 },
+  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:10.0, apps:18, goals:7, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:6.2, xa:1.8, total_points:98 },
   { id:1010, club:'Orlando Pirates', position:'MID', display_name:'Tshepang Moremi',        price:7.5,  apps:19, goals:3, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.4, xa:1.8, total_points:61 },
   { id:1011, club:'Orlando Pirates', position:'FWD', display_name:'Evidence Makgopa',       price:9.0,  apps:16, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.9, xa:2.8, total_points:76 },
   { id:1012, club:'Orlando Pirates', position:'FWD', display_name:'Yamela Mbuthuma',        price:8.0,  apps:13, goals:4, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.6, xa:0.4, total_points:63 },
@@ -3845,7 +3929,7 @@ var PSL_ROSTER = [
   { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Marcelo Allende',      price:7.5,  apps:18, goals:3, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:1, xg:2.6, xa:1.8, total_points:56 },
   { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Monnapule Saleng',     price:8.0,  apps:12, goals:1, assists:4, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.0, xa:3.5, total_points:52 },
   { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',       price:8.5,  apps:14, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.8, xa:1.8, total_points:56 },
-  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:15, goals:9, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:8.2, xa:1.8, total_points:113 },
+  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:12.0, apps:18, goals:10,assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:9.0, xa:1.8, total_points:124 },
   { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',      price:9.0,  apps:10, goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
   { id:2013, club:'Mamelodi Sundowns', position:'FWD', display_name:'Brayan Leon Muniz',    price:9.0,  apps:6,  goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:3.8, xa:0.8, total_points:59 },
 
@@ -3856,8 +3940,8 @@ var PSL_ROSTER = [
   { id:3004, club:'Golden Arrows', position:'MID', display_name:'Philani Kumalo',           price:8.0,  apps:12, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:66 },
   { id:3005, club:'Golden Arrows', position:'MID', display_name:'Jerome Karlese',           price:6.5,  apps:12, goals:1, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:2.6, total_points:48 },
   { id:3006, club:'Golden Arrows', position:'MID', display_name:'Thokozani Khumalo',        price:7.0,  apps:7,  goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.6, xa:1.8, total_points:55 },
-  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:17, goals:10,assists:1, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:0.9, total_points:124 },
-  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:3.8, xa:4.8, total_points:93 },
+  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:13.0, apps:21, goals:12,assists:2, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:11.2, xa:1.8, total_points:142 },
+  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:21, goals:5, assists:6, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:4.5, xa:5.5, total_points:103 },
 
   // ── SEKHUKHUNE UNITED  GP16 W7 D5 L4 GF16 GA10 │ 35YC 1RC ───────────
   { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',      price:5.5,  apps:15, goals:0, assists:0, clean_sheets:6,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
@@ -3867,7 +3951,7 @@ var PSL_ROSTER = [
   { id:4005, club:'Sekhukhune United', position:'MID', display_name:'Mokete Mogaila',       price:7.0,  apps:14, goals:0, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.5, xa:2.7, total_points:39 },
   { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Thabang Monare',       price:6.5,  apps:19, goals:2, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.5, xa:1.6, total_points:52 },
   { id:4007, club:'Sekhukhune United', position:'MID', display_name:'Vusumuzi Mncube',      price:7.0,  apps:20, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.4, xa:1.8, total_points:59 },
-  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:10.5, apps:18, goals:8, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:7.2, xa:1.8, total_points:103 },
+  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:11.0, apps:21, goals:9, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:8.0, xa:1.8, total_points:113 },
 
   // ── AMAZULU  GP15 W8 D3 L4 GF18 GA14 │ 26YC 3RC ──────────────────────
   { id:5001, club:'AmaZulu FC', position:'GK',  display_name:'Darren Johnson',              price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:44 },
@@ -3877,7 +3961,7 @@ var PSL_ROSTER = [
   { id:5005, club:'AmaZulu FC', position:'MID', display_name:'Hendrick Ekstein',            price:9.0,  apps:19, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:2.8, total_points:80 },
   { id:5006, club:'AmaZulu FC', position:'MID', display_name:'Mondli Mbanjwa',              price:6.5,  apps:17, goals:2, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:0.9, total_points:46 },
   { id:5007, club:'AmaZulu FC', position:'MID', display_name:'Athini Maqokola',             price:7.0,  apps:15, goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.5, xa:1.8, total_points:56 },
-  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:5.5, xa:0.9, total_points:82 },
+  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:10.0, apps:20, goals:7, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:6.2, xa:0.9, total_points:92 },
 
   // ── DURBAN CITY  GP16 W7 D4 L5 GF15 GA11 │ 27YC 1RC ──────────────────
   { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:20, goals:0, assists:1, clean_sheets:6,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
@@ -3942,7 +4026,7 @@ var PSL_ROSTER = [
   { id:12004, club:'Stellenbosch FC', position:'MID', display_name:'Devon Titus',           price:8.0,  apps:19, goals:1, assists:4, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:0.9, xa:3.6, total_points:60 },
   { id:12005, club:'Stellenbosch FC', position:'MID', display_name:'Junior Mendieta',       price:6.5,  apps:14, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.6, xa:0.9, total_points:38 },
   { id:12006, club:'Stellenbosch FC', position:'MID', display_name:'Waseem Isaacs',         price:5.5,  apps:12, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.3, total_points:23 },
-  { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:10.5, apps:16, goals:7, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.5, xa:0.9, total_points:91 },
+  { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:11.0, apps:19, goals:8, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:7.2, xa:0.9, total_points:101 },
 
   // ── MARUMO GALLANTS  GP16 W3 D6 L7 GF12 GA20 │ 29YC 2RC ────────────
   { id:13001, club:'Marumo Gallants', position:'GK',  display_name:'Washington Arubi',      price:4.5,  apps:16, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:25 },
@@ -4610,7 +4694,28 @@ function closeClubProfile() {
 // ═══════════════════════════════════════════════════════════════
 
 // ── Ad Banner ────────────────────────────────────────────────
+function updateAdVisibility() {
+  var banner = document.getElementById('ad-banner');
+  if (!banner) return;
+  try {
+    var dismissed = sessionStorage.getItem('ad_dismissed');
+    if (ST.user || dismissed) {
+      banner.style.display = 'none';
+    } else {
+      banner.style.display = 'flex';
+      setTimeout(function() { banner.style.opacity = '1'; }, 1500);
+    }
+  } catch(e) {}
+}
 
+function dismissAd() {
+  var banner = document.getElementById('ad-banner');
+  if (banner) {
+    banner.style.opacity = '0';
+    setTimeout(function() { banner.style.display = 'none'; }, 300);
+  }
+  try { sessionStorage.setItem('ad_dismissed', '1'); } catch(e) {}
+}
 
 // ── Game Week display ────────────────────────────────────────
 function updateGWDisplay(gwNumber) {
@@ -4891,20 +4996,25 @@ function castPOTMVote(matchKey, playerId) {
   </div>
 </div>
 
-  <!-- Effective Gate CPM Ad -->
-  <div id="ad-slot-container" style="min-height:60px;display:flex;align-items:center;justify-content:center"></div>
-  
+<!-- ── Guest Ad Banner ─────────────────────────────────────────────── -->
+<div id="ad-banner" style="display:none;position:fixed;bottom:78px;left:50%;transform:translateX(-50%);width:calc(100% - 1.5rem);max-width:460px;z-index:8000;background:var(--bg-card,#16181f);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:.5rem .75rem .6rem;box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .4s">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
+    <span style="font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.22)">Sponsored</span>
+    <button onclick="dismissAd()" title="Close" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:.75rem;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;gap:3px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
 </div>
 
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
-  <div id="action-sheet" onclick="if(event.target===this)closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#1A1D24;border-radius:16px 16px 0 0;max-width:480px;margin:0 auto;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
-      <div style="padding:1.1rem 1.2rem .75rem;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative">
-        <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;padding-right:2.2rem"></div>
-        <button onclick="closeActionSheet()" style="position:absolute;top:.85rem;right:1rem;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);cursor:pointer;font-size:.85rem;-webkit-tap-highlight-color:transparent">&#x2715;</button>
+  <div id="action-sheet" onclick="if(event.target===this)closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#1A1D24;border-radius:16px 16px 0 0;max-width:480px;margin:0 auto;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:1.1rem 1.2rem .75rem;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative;display:flex;align-items:center">
+        <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff;flex:1;padding-right:2rem;line-height:1.2"></div>
+        <button onclick="closeActionSheet()" style="position:absolute;top:.75rem;right:.9rem;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);cursor:pointer;font-size:.85rem;flex-shrink:0;-webkit-tap-highlight-color:transparent">&#x2715;</button>
       </div>
-      <div id="action-sheet-btns" style="overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:.5rem 1.2rem;flex:1;min-height:0"></div>
-      <div style="padding:.4rem 1.2rem;padding-bottom:calc(.8rem + env(safe-area-inset-bottom,0px));flex-shrink:0;border-top:1px solid rgba(255,255,255,.06)">
+      <div id="action-sheet-btns" style="overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:.5rem 1.2rem .4rem;flex:1;min-height:0"></div>
+      <div style="padding:.35rem 1.2rem;padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px));flex-shrink:0;border-top:1px solid rgba(255,255,255,.06)">
         <button onclick="closeActionSheet()" style="display:block;width:100%;padding:.75rem;background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.4);font-family:var(--font-ui);font-size:.85rem;cursor:pointer;-webkit-tap-highlight-color:transparent">Cancel</button>
       </div>
     </div>
@@ -4958,24 +5068,201 @@ function castPOTMVote(matchKey, playerId) {
   </div>
 
 
-</body>
-</html>
-
 <script>
-// ══ DISKI CHAT JS ══════════════════════════════════════════
-var DSVG={like:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',reply:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'};
+// ══ DISKI CHAT ══════════════════════════════════════════════════════════
+var DSVG={
+  like:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:block"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
+  reply:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:block"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+};
 var CHAT={posts:[],tab:'latest',page:0,PAGE_SIZE:15,hasMore:false,myReactions:{}};
 var BW=['fuck','shit','cunt','bitch','asshole','pussy','nigger','nigga','faggot','slut','kaffir'];
 var URL_RE=/https?:\/\/[^\s]+|www\.[^\s]+/gi;
-function filterContent(t){if(!t||!t.trim())return{ok:false,reason:'Post cannot be empty'};if(t.length>280)return{ok:false,reason:'Post exceeds 280 characters'};URL_RE.lastIndex=0;if(URL_RE.test(t))return{ok:false,reason:'Links are not allowed'};var lo=t.toLowerCase();for(var i=0;i<BW.length;i++)if(lo.indexOf(BW[i])!==-1)return{ok:false,reason:'Post contains language that is not allowed'};return{ok:true};}
+
+function filterContent(t){
+  if(!t||!t.trim())return{ok:false,reason:'Post cannot be empty'};
+  if(t.length>280)return{ok:false,reason:'Post exceeds 280 characters'};
+  URL_RE.lastIndex=0;
+  if(URL_RE.test(t))return{ok:false,reason:'Links are not allowed'};
+  var lo=t.toLowerCase();
+  for(var i=0;i<BW.length;i++)if(lo.indexOf(BW[i])!==-1)return{ok:false,reason:'Post contains language that is not allowed'};
+  return{ok:true};
+}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function chatTimeAgo(ts){if(!ts)return'';var d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
-function loadDiskiChat(){var compose=document.getElementById('chat-compose'),prompt=document.getElementById('chat-login-prompt');if(ST.user){if(compose)compose.style.display='block';if(prompt)prompt.style.display='none';var av=document.getElementById('chat-avatar');if(av){var m=ST.user.user_metadata||{};av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();}}else{if(compose)compose.style.display='none';if(prompt)prompt.style.display='block';}fetchPosts(true);}
-function setChatTab(tab,el){CHAT.tab=tab;document.querySelectorAll('#ctab-latest,#ctab-top').forEach(function(b){b.classList.remove('active');});if(el)el.classList.add('active');fetchPosts(true);}
-function fetchPosts(reset){if(reset){CHAT.posts=[];CHAT.page=0;}var feed=document.getElementById('chat-feed');if(!feed)return;if(reset)feed.innerHTML='<div class="loading-players">Loading...</div>';var order=CHAT.tab==='top'?'likes':'created_at';db.from('diski_posts').select('*').eq('is_removed',false).order(order,{ascending:false}).range(CHAT.page*CHAT.PAGE_SIZE,(CHAT.page+1)*CHAT.PAGE_SIZE).then(function(res){var posts=res.data||[];CHAT.hasMore=posts.length>CHAT.PAGE_SIZE;if(CHAT.hasMore)posts=posts.slice(0,CHAT.PAGE_SIZE);CHAT.posts=reset?posts:CHAT.posts.concat(posts);renderFeed();var lm=document.getElementById('chat-load-more');if(lm)lm.style.display=CHAT.hasMore?'block':'none';}).catch(function(){if(feed)feed.innerHTML='<div class="loading-players">Could not load posts.</div>';});}
+
+function loadDiskiChat(){
+  var compose=document.getElementById('chat-compose'),prompt=document.getElementById('chat-login-prompt');
+  if(ST.user){
+    if(compose)compose.style.display='block';
+    if(prompt)prompt.style.display='none';
+    var av=document.getElementById('chat-avatar');
+    if(av){var m=ST.user.user_metadata||{};av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();}
+  }else{
+    if(compose)compose.style.display='none';
+    if(prompt)prompt.style.display='block';
+  }
+  fetchPosts(true);
+}
+
+function setChatTab(tab,el){
+  CHAT.tab=tab;
+  document.querySelectorAll('#ctab-latest,#ctab-top').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  fetchPosts(true);
+}
+
+function fetchPosts(reset){
+  if(reset){CHAT.posts=[];CHAT.page=0;}
+  var feed=document.getElementById('chat-feed');if(!feed)return;
+  if(reset)feed.innerHTML='<div class="loading-players">Loading...</div>';
+  var order=CHAT.tab==='top'?'likes':'created_at';
+  db.from('diski_posts').select('*').eq('is_removed',false).order(order,{ascending:false})
+    .range(CHAT.page*CHAT.PAGE_SIZE,(CHAT.page+1)*CHAT.PAGE_SIZE)
+    .then(function(res){
+      var posts=res.data||[];
+      CHAT.hasMore=posts.length>CHAT.PAGE_SIZE;
+      if(CHAT.hasMore)posts=posts.slice(0,CHAT.PAGE_SIZE);
+      CHAT.posts=reset?posts:CHAT.posts.concat(posts);
+      renderFeed();
+      var lm=document.getElementById('chat-load-more');
+      if(lm)lm.style.display=CHAT.hasMore?'block':'none';
+    }).catch(function(){if(feed)feed.innerHTML='<div class="loading-players">Could not load posts.</div>';});
+}
+
 function loadMorePosts(){CHAT.page++;fetchPosts(false);}
-function renderFeed(){var feed=document.getElementById('chat-feed');if(!feed)return;if(!CHAT.posts.length){feed.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet \u2014 be the first!</div>';return;}feed.innerHTML=CHAT.posts.map(function(p){var isOwn=ST.user&&ST.user.id===p.user_id;return'<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem"><div style="display:flex;gap:.7rem"><div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem"><span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'+(p.team_name?'<span style="font-size:.7rem;color:rgba(255,255,255,.3)">'+esc(p.team_name)+'</span>':'')+'<span style="font-size:.65rem;color:rgba(255,255,255,.22);margin-left:auto">'+chatTimeAgo(p.created_at)+'</span></div><div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.7rem;word-break:break-word">'+esc(p.content)+'</div><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+(isOwn?'<button onclick="deletePost(\''+p.id+'\')" style="display:flex;align-items:center;background:none;border:none;color:rgba(212,39,79,.4);cursor:pointer;padding:.3rem .4rem;border-radius:6px;margin-left:auto">'+DSVG.trash+'</button>':'')+'</div></div></div></div>';}).join('');}
-function chatInputChange(el){var len=el.value.length;var cc=document.getElementById('chat-charcount');if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':'rgba(255,255,255,.3)';}el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';}
-function submitPost(){if(!ST.user){openAuth('login');return;}var input=document.getElementById('chat-input'),text=input?input.value:'';var chk=filterContent(text.trim());if(!chk.ok){showToast(chk.reason,'warning');return;}var btn=document.getElementById('chat-submit-btn');if(btn){btn.disabled=true;btn.textContent='Posting...';}var m=ST.user.user_metadata||{};db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim()}).select().single().then(function(res){if(btn){btn.disabled=false;btn.textContent='Post';}if(res.error){showToast('Could not post. Please try again.','error');return;}if(input){input.value='';chatInputChange(input);}CHAT.posts.unshift(res.data);renderFeed();showToast('Posted!','success');});}
-function deletePost(pid){if(!ST.user||!confirm('Delete this post?'))return;db.from('diski_posts').delete().match({id:pid,user_id:ST.user.id}).then(function(){CHAT.posts=CHAT.posts.filter(function(p){return p.id!==pid;});renderFeed();showToast('Post deleted','info');});}
+
+function renderFeed(){
+  var feed=document.getElementById('chat-feed');if(!feed)return;
+  if(!CHAT.posts.length){
+    feed.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet — be the first!</div>';
+    return;
+  }
+  var btnBase='display:flex;align-items:center;gap:.3rem;background:none;border:1px solid rgba(255,255,255,.08);border-radius:20px;cursor:pointer;padding:.28rem .65rem;font-family:var(--font-ui);font-size:.65rem;font-weight:700;transition:all .15s;-webkit-tap-highlight-color:transparent;';
+  feed.innerHTML=CHAT.posts.map(function(p){
+    var isOwn=ST.user&&ST.user.id===p.user_id;
+    var liked=CHAT.myReactions[p.id]==='like';
+    var likeCount=p.likes||0;
+    var replyCount=p.reply_count||0;
+    var likeColor=liked?'#DBA94A':'rgba(255,255,255,.4)';
+    var pid=p.id;
+    var likeBtn='<button onclick="likePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+likeColor+'">'+DSVG.like+'<span style="margin-left:1px">'+likeCount+'</span></button>';
+    var replyBtn=ST.user?'<button onclick="openReplyBox(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(255,255,255,.4)">'+DSVG.reply+'<span>Reply'+(replyCount?' ('+replyCount+')':'')+'</span></button>':'';
+    var reportBtn=!isOwn&&ST.user?'<button onclick="reportPost(this)" data-pid="'+pid+'" title="Report" style="'+btnBase+'color:rgba(255,255,255,.2);border-color:transparent">'+DSVG.flag+'</button>':'';
+    var deleteBtn=isOwn?'<button onclick="deletePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(212,39,79,.45);border-color:transparent;margin-left:auto">'+DSVG.trash+'</button>':'';
+    return '<div id="post-'+pid+'" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem">'
+      +'<div style="display:flex;gap:.7rem">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">'
+            +'<span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'
+            +(p.team_name?'<span style="font-size:.7rem;color:rgba(255,255,255,.3)">'+esc(p.team_name)+'</span>':'')
+            +'<span style="font-size:.65rem;color:rgba(255,255,255,.22);margin-left:auto">'+chatTimeAgo(p.created_at)+'</span>'
+          +'</div>'
+          +'<div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.75rem;word-break:break-word">'+esc(p.content)+'</div>'
+          +'<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">'+likeBtn+replyBtn+reportBtn+deleteBtn+'</div>'
+          +'<div id="reply-box-'+pid+'" style="display:none;margin-top:.7rem">'
+            +'<div style="display:flex;gap:.5rem">'
+              +'<textarea placeholder="Write a reply..." maxlength="280" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-body);font-size:.82rem;padding:.5rem .7rem;resize:none;outline:none;min-height:56px;" id="reply-input-'+pid+'"></textarea>'
+              +'<button onclick="submitReply(this)" data-pid="'+pid+'" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.72rem;font-weight:700;padding:.5rem .8rem;cursor:pointer;align-self:flex-end">Reply</button>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function chatInputChange(el){
+  var len=el.value.length;var cc=document.getElementById('chat-charcount');
+  if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':'rgba(255,255,255,.3)';}
+  el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';
+}
+
+function submitPost(){
+  if(!ST.user){openAuth('login');return;}
+  var input=document.getElementById('chat-input'),text=input?input.value:'';
+  var chk=filterContent(text.trim());
+  if(!chk.ok){showToast(chk.reason,'warning');return;}
+  var btn=document.getElementById('chat-submit-btn');
+  if(btn){btn.disabled=true;btn.textContent='Posting...';}
+  var m=ST.user.user_metadata||{};
+  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim(),likes:0}).select().single()
+    .then(function(res){
+      if(btn){btn.disabled=false;btn.textContent='Post';}
+      if(res.error){showToast('Could not post. Please try again.','error');return;}
+      if(input){input.value='';chatInputChange(input);}
+      CHAT.posts.unshift(res.data);renderFeed();showToast('Posted!','success');
+    });
+}
+
+function likePost(btn){
+  var pid=btn?btn.getAttribute('data-pid'):null; if(!pid)return;
+  if(!ST.user){showToast('Log in to like posts','warning');return;}
+  var alreadyLiked=CHAT.myReactions[pid]==='like';
+  var post=CHAT.posts.find(function(p){return p.id===pid;});
+  if(!post)return;
+  if(alreadyLiked){
+    CHAT.myReactions[pid]=null;
+    post.likes=Math.max(0,(post.likes||0)-1);
+    db.from('diski_posts').update({likes:post.likes}).eq('id',pid);
+  }else{
+    CHAT.myReactions[pid]='like';
+    post.likes=(post.likes||0)+1;
+    db.from('diski_posts').update({likes:post.likes}).eq('id',pid);
+  }
+  renderFeed();
+}
+
+function openReplyBox(btn){
+  var pid=btn?btn.getAttribute('data-pid'):null; if(!pid)return;
+  var box=document.getElementById('reply-box-'+pid);
+  if(!box)return;
+  var isOpen=box.style.display!=='none';
+  box.style.display=isOpen?'none':'block';
+  if(!isOpen){var ta=document.getElementById('reply-input-'+pid);if(ta)ta.focus();}
+}
+
+function submitReply(btn){
+  var pid=btn?btn.getAttribute('data-pid'):null; if(!pid)return;
+  if(!ST.user){openAuth('login');return;}
+  var input=document.getElementById('reply-input-'+pid);
+  var text=input?input.value.trim():'';
+  var chk=filterContent(text);
+  if(!chk.ok){showToast(chk.reason,'warning');return;}
+  var m=ST.user.user_metadata||{};
+  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:'↪ '+text,likes:0,parent_id:pid}).select().single()
+    .then(function(res){
+      if(res.error){showToast('Could not reply.','error');return;}
+      if(input)input.value='';
+      var box=document.getElementById('reply-box-'+pid);if(box)box.style.display='none';
+      var parent=CHAT.posts.find(function(p){return p.id===pid;});
+      if(parent)parent.reply_count=(parent.reply_count||0)+1;
+      CHAT.posts.unshift(res.data);renderFeed();
+      showToast('Reply posted!','success');
+    });
+}
+
+function reportPost(btn){
+  var pid=btn?btn.getAttribute('data-pid'):null; if(!pid)return;
+  if(!ST.user){showToast('Log in to report','warning');return;}
+  if(!confirm('Report this post as inappropriate?'))return;
+  db.from('diski_reports').insert({post_id:pid,reported_by:ST.user.id}).then(function(){
+    showToast('Report submitted. Thank you.','info');
+  }).catch(function(){showToast('Could not submit report.','error');});
+}
+
+function deletePost(btn){
+  var pid=btn?btn.getAttribute('data-pid'):null; if(!pid)return;
+  if(!ST.user||!confirm('Delete this post?'))return;
+  db.from('diski_posts').update({is_removed:true}).match({id:pid,user_id:ST.user.id})
+    .then(function(){
+      CHAT.posts=CHAT.posts.filter(function(p){return p.id!==pid;});
+      renderFeed();showToast('Post deleted','info');
+    });
+}
 </script>
+
+</body>
+</html>
