@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
     log.push('━━ STEP 1: Sync upcoming fixtures ━━');
     try {
       const sid = await getSeasonId();
-      const d   = await smGet('/fixtures/upcoming/season/'+sid+'?filters=leagueId:'+PSL_ID+'&include=participants;round&per_page=40');
+      const d   = await smGet('/fixtures/upcoming/season/'+sid+'?include=participants;round&per_page=40');
       report.api_calls_used++;
       const currentGW = await getCurrentGameweek(db);
       const rows = [];
@@ -99,7 +99,7 @@ module.exports = async (req, res) => {
     let recentFixtures = [];
     try {
       const sid = await getSeasonId();
-      const d   = await smGet('/fixtures/past/season/'+sid+'?filters=leagueId:'+PSL_ID+'&include=participants;scores&per_page=15');
+      const d   = await smGet('/fixtures/past/season/'+sid+'?include=participants;scores&per_page=15');
       report.api_calls_used++;
       recentFixtures = d.data||[];
       log.push('  Found '+recentFixtures.length+' completed matches');
