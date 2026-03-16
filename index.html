@@ -101,6 +101,8 @@
   
   
   /* ── Guest Ad Banner ─────────────────────────────────────────────────── */
+  #guest-ad-banner { transition: opacity .3s, transform .3s; }
+  #guest-ad-banner.hide { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
 
   /* ── Footer disclaimer ───────────────────────────────────────────────── */
   .foot-disclaimer {
@@ -109,11 +111,7 @@
     text-align:center; max-width:500px; margin-left:auto; margin-right:auto;
   }
   .foot-disclaimer strong { color:rgba(255,255,255,.4); }
-  .foot-copy { font-size:.72rem; color:rgba(255,255,255,.3); text-align:center; margin-top:.5rem; }
-  
-  
-  /* ── Ad Banner ────────────────────────────────────────────────────── */
-  
+  .foot-copy { font-size:.72rem; color:rgba(255,255,255,.3); text-align:center; margin-top:.5rem; }  
   
   /* ══════════════════════════════════════════════════
      MOBILE-FIRST OVERRIDES — works on all phones
@@ -212,8 +210,7 @@
     max-width: 480px;
   }
 
-  /* Ad banner spacing from bottom nav */
-  
+  /* Ad banner spacing from bottom nav */  
   /* ══════════════════════════════════════════════════
      DAY / NIGHT THEME
   ══════════════════════════════════════════════════ */
@@ -326,7 +323,7 @@
   body.light-mode footer { background: #e8eaed !important; }
   body.light-mode .foot-copy,
   body.light-mode .foot-disclaimer { color: rgba(0,0,0,.4) !important; }
-  body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
+  body.light-mode  body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
   body.light-mode .bench-tag { color: rgba(0,0,0,.5) !important; }
   body.light-mode .fix-row { border-color: rgba(0,0,0,.05) !important; background: #fff !important; }
   body.light-mode .fix-team-name { color: #0d1117 !important; }
@@ -449,7 +446,7 @@
     <li><a href="#" onclick="goPage('leagues');return false;">Leagues</a></li>
   </ul>
   <div class="nav-right">
-    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle day/night mode" aria-label="Toggle theme" style="display:none">
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" style="display:none" title="Toggle day/night mode" aria-label="Toggle theme">
       <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <svg id="theme-icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
@@ -468,9 +465,6 @@
     <button class="auth-close" onclick="closeAuth()">&#x2715;</button>
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
-      <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;align-items:center;gap:.5rem">
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected</span>
-      </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"></div>
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
@@ -497,25 +491,22 @@
       <div class="auth-field"><label>Country</label><input id="signup-country" type="text" value="South Africa"></div>
       <div class="auth-field"><label>PSL Team You Support</label><select id="signup-team">
         <option value="">Select your team</option>
-        <option>Mamelodi Sundowns</option><option>Orlando Pirates</option>
-        <option>Kaizer Chiefs</option><option>AmaZulu FC</option>
-        <option>Stellenbosch FC</option><option>Sekhukhune United</option>
-        <option>Durban City</option><option>Golden Arrows</option>
-        <option>Polokwane City</option><option>TS Galaxy</option>
-        <option>Richards Bay</option><option>Chippa United</option>
-        <option>Marumo Gallants</option><option>Siwelele FC</option>
-        <option>Orbit College FC</option><option>Magesi FC</option>
-      </select></div>
+        <option>Mamelodi Sundowns</option><option>Orlando Pirates</option><option>Kaizer Chiefs</option>
+        <option>AmaZulu FC</option><option>Stellenbosch FC</option><option>Sekhukhune United</option>
+        <option>Durban City</option><option>Golden Arrows</option><option>Polokwane City</option>
+        <option>TS Galaxy</option><option>Richards Bay</option><option>Chippa United</option>
+        <option>Marumo Gallants</option><option>Siwelele FC</option><option>Orbit College FC</option>
+        <option>Magesi FC</option></select></div>
       <div class="auth-field"><label>How did you hear about us?</label><select id="signup-discovery">
-        <option value="">Select...</option>
-        <option value="Instagram">Instagram</option><option value="Twitter/X">Twitter / X</option>
-        <option value="TikTok">TikTok</option><option value="YouTube">YouTube</option>
-        <option value="Friend">Friend / Word of mouth</option>
-        <option value="Football Website">Football website</option>
-        <option value="Google">Google</option><option value="Other">Other</option>
-      </select></div>
-      <div class="auth-field"><label>Referral Code <span style="font-weight:400;color:rgba(255,255,255,.3);text-transform:none;letter-spacing:0">(optional)</span></label><input id="signup-referral" type="text" placeholder="FPSL-XXXXXX" style="text-transform:uppercase"></div>
-      <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label><input id="r-pass" type="password" autocomplete="new-password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022; (min 6 chars)"></div>
+        <option value="">Select...</option><option value="Instagram">Instagram</option>
+        <option value="Twitter/X">Twitter / X</option><option value="TikTok">TikTok</option>
+        <option value="YouTube">YouTube</option><option value="Friend">Friend / Word of mouth</option>
+        <option value="Football Website">Football website</option><option value="Google">Google</option>
+        <option value="Other">Other</option></select></div>
+      <div class="auth-field"><label>Referral Code <span style="font-weight:400;color:rgba(255,255,255,.3);text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input id="signup-referral" type="text" placeholder="FPSL-XXXXXX" style="text-transform:uppercase"></div>
+      <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
+        <input id="r-pass" type="password" autocomplete="new-password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022; (min 6 chars)"></div>
       <div class="auth-error" id="r-err"></div>
       <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account &#x2014; Free</button>
       <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login &#x2192;</a></div>
@@ -525,27 +516,26 @@
 
 <!-- PLAYER MODAL -->
 <div id="pmodal" class="player-modal" onclick="if(event.target===this)closePmodal()">
-  <div class="player-modal-box" style="max-width:460px">
-    <!-- Close -->
-    <button class="pm-close" onclick="closePmodal()" style="position:absolute;top:.8rem;right:.8rem;z-index:2;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);cursor:pointer;font-size:.9rem">&#x2715;</button>
-    <!-- Photo + header row -->
-    <div class="pm-header" style="display:flex;gap:.9rem;align-items:center;padding:1.1rem 1.1rem .8rem;border-bottom:1px solid rgba(255,255,255,.07)">
-      <div id="pm-photo-wrap" style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center">
-        <div class="pm-shirt s1" id="pm-shirt" style="width:100%;height:100%;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:#fff"></div>
+  <div class="player-modal-box">
+    <!-- Header: photo + name -->
+    <div class="pm-header">
+      <div id="pm-photo-wrap" style="width:52px;height:52px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center">
+        <div class="pm-shirt s1" id="pm-shirt" style="width:100%;height:100%;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:900"></div>
       </div>
-      <div style="min-width:0;flex:1">
-        <div class="pm-name" id="pm-name" style="font-size:1.05rem;font-weight:900">&#x2014;</div>
-        <div style="font-size:.74rem;color:rgba(255,255,255,.45);margin-top:.15rem" id="pm-meta">&#x2014;</div>
+      <div style="min-width:0;flex:1;padding-right:2rem">
+        <div class="pm-name" id="pm-name">&#x2014;</div>
+        <div style="font-size:.74rem;color:rgba(255,255,255,.45);margin-top:.15rem;line-height:1.3" id="pm-meta">&#x2014;</div>
       </div>
+      <button class="pm-close" onclick="closePmodal()">&#x2715;</button>
     </div>
-    <!-- Stats grid (EPL-style: 6 key stats) -->
-    <div style="padding:.9rem 1.1rem .6rem">
-      <div id="pm-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.75rem"></div>
-      <!-- Fitness badge -->
-      <div id="pm-fitness" style="padding:.5rem .85rem;border-radius:6px;margin-bottom:.75rem;font-family:var(--font-ui);font-size:.8rem;font-weight:700"></div>
-      <!-- Wikipedia bio (loads async) -->
-      <div id="pm-wiki" style="margin-bottom:.75rem;min-height:0;overflow:hidden"></div>
-      <!-- Add button -->
+    <!-- Stats grid (6 cells) -->
+    <div class="pm-stat-grid" id="pm-stats"></div>
+    <!-- Fitness -->
+    <div id="pm-fitness" style="padding:.5rem .85rem;border-radius:6px;margin:0 1rem .7rem;font-family:var(--font-ui);font-size:.8rem;font-weight:700"></div>
+    <!-- Wikipedia bio (loads async) -->
+    <div class="pm-wiki" id="pm-wiki" style="min-height:0"></div>
+    <!-- Add button -->
+    <div class="pm-body">
       <button id="pm-addbtn" class="auth-submit" style="margin-top:0" onclick="addFromModal()">+ Add to Squad</button>
     </div>
   </div>
@@ -1011,10 +1001,10 @@
       <div style="display:flex;gap:.75rem;align-items:flex-start">
         <div id="chat-avatar" style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">?</div>
         <div style="flex:1">
-          <textarea id="chat-input" placeholder="What's on your mind? Share with the community..." maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.55;resize:none;min-height:72px;max-height:160px" oninput="chatInputChange(this)"></textarea>
+          <textarea id="chat-input" placeholder="What's on your mind?" maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.55;resize:none;min-height:72px;max-height:160px" oninput="chatInputChange(this)"></textarea>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
             <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
-            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer;letter-spacing:.5px">Post</button>
+            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer">Post</button>
           </div>
         </div>
       </div>
@@ -1035,7 +1025,7 @@
   </div>
 </div>
 <div id="notif-modal" onclick="if(event.target===this)closeNotifications()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:4000;align-items:flex-end;justify-content:center">
-  <div style="width:100%;max-width:480px;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.2rem 1rem 2rem;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="width:100%;max-width:480px;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.2rem 1rem 2rem;max-height:70vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.07)">
       <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff">Notifications</div>
       <button onclick="closeNotifications()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer">&#x2715;</button>
@@ -1048,7 +1038,6 @@
     <button onclick="closeReportModal()" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer">&#x2715;</button>
     <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1rem">Report Content</div>
     <div id="report-options" style="display:flex;flex-direction:column;gap:.5rem"></div>
-    <div style="font-size:.7rem;color:rgba(255,255,255,.25);margin-top:.8rem;line-height:1.4">Reports are reviewed by moderators. Repeated false reports may result in a ban.</div>
   </div>
 </div>
 <div id="replies-modal" onclick="if(event.target===this)closeReplies()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:4000;align-items:flex-end;justify-content:center">
@@ -1057,8 +1046,8 @@
       <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff">Replies</div>
       <button onclick="closeReplies()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer">&#x2715;</button>
     </div>
-    <div id="replies-list" style="overflow-y:auto;flex:1;padding-bottom:.5rem;-webkit-overflow-scrolling:touch"></div>
-    <div id="reply-compose" style="display:none;padding:.8rem 0 calc(.8rem + env(safe-area-inset-bottom,0px));flex-shrink:0;border-top:1px solid rgba(255,255,255,.06)">
+    <div id="replies-list" style="overflow-y:auto;flex:1;padding-bottom:.5rem"></div>
+    <div id="reply-compose" style="display:none;padding:.8rem 0;flex-shrink:0;border-top:1px solid rgba(255,255,255,.06)">
       <div style="display:flex;gap:.6rem;align-items:flex-end">
         <textarea id="reply-input" placeholder="Write a reply..." maxlength="280" style="flex:1;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem .8rem;color:#fff;font-family:var(--font-body);font-size:.85rem;resize:none;min-height:44px;max-height:120px;outline:none" oninput="replyInputChange(this)"></textarea>
         <button onclick="submitReply()" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.55rem .9rem;cursor:pointer;flex-shrink:0">Reply</button>
@@ -1168,7 +1157,7 @@ var ST = {
   // ── Bench ordering ───────────────────────────────────
   benchReorder:     false,   // true when user is reordering bench
   benchPickFirst:   null,    // first bench player selected for swap
-  subOutPlayer:     null     // player currently selected for substitution
+  subOutPlayer:     null     // player selected for substitution
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1214,6 +1203,7 @@ function cacheValid(key) {
 // ═══════════════════════════════════════════════════════════════════════
 //  POTM CACHE  —  Player of the Match voting results
 // ═══════════════════════════════════════════════════════════════════════
+
 
 
 // ════════════════════════════════════════════════════
@@ -1354,20 +1344,14 @@ function doLogin() {
   });
 }
 
-function generateReferralCode() {
-  var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  var code='FPSL-';
-  for(var i=0;i<6;i++) code+=chars[Math.floor(Math.random()*chars.length)];
-  return code;
-}
-
-async function doRegister() {
-  var btn=document.getElementById('r-btn'), errEl=document.getElementById('r-err');
+function generateReferralCode(){var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';var code='FPSL-';for(var i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code;}
+async function doRegister(){
+  var btn=document.getElementById('r-btn'),errEl=document.getElementById('r-err');
   var email=(document.getElementById('r-email').value||'').trim();
   var pass=(document.getElementById('r-pass').value||'');
   var user=(document.getElementById('r-user').value||'').trim();
   var team=(document.getElementById('r-team').value||'').trim();
-  if(errEl) errEl.textContent='';
+  if(errEl)errEl.textContent='';
   if(!email){if(errEl)errEl.textContent='Email is required';return;}
   if(!user){if(errEl)errEl.textContent='Username is required';return;}
   if(!team){if(errEl)errEl.textContent='Team name is required';return;}
@@ -1384,30 +1368,22 @@ async function doRegister() {
   var rc=generateReferralCode();
   try{
     var res=await db.auth.signUp({email:email,password:pass,options:{data:{username:user,team_name:team}}});
-    if(res.error) throw new Error(res.error.message);
+    if(res.error)throw new Error(res.error.message);
     var uid=res.data&&res.data.user&&res.data.user.id;
-    if(!uid) throw new Error('Check your email to confirm your account.');
-    await db.from('profiles').insert({
-      id:uid,username:user,team_name:team,
-      first_name:fn?fn.trim():null,last_name:ln?ln.trim():null,
-      age:age?parseInt(age):null,city:city?city.trim():null,
-      country:country||'South Africa',supported_team:st||null,
-      discovery_source:dis||null,referral_code:rc,
-      referred_by:ref||null,referral_count:0
-    });
-    if(ref){
-      var rf=await db.from('profiles').select('id,referral_count').eq('referral_code',ref).single();
-      if(rf.data) await db.from('profiles').update({referral_count:(rf.data.referral_count||0)+1}).eq('id',rf.data.id);
-    }
+    if(!uid)throw new Error('Check your email to confirm your account.');
+    await db.from('profiles').insert({id:uid,username:user,team_name:team,
+      first_name:fn?fn.trim():null,last_name:ln?ln.trim():null,age:age?parseInt(age):null,
+      city:city?city.trim():null,country:country||'South Africa',supported_team:st||null,
+      discovery_source:dis||null,referral_code:rc,referred_by:ref||null,referral_count:0});
+    if(ref){var rf=await db.from('profiles').select('id,referral_count').eq('referral_code',ref).single();
+      if(rf.data)await db.from('profiles').update({referral_count:(rf.data.referral_count||0)+1}).eq('id',rf.data.id);}
     if(btn){btn.textContent='Create Account — Free';btn.disabled=false;}
-    closeAuth();
-    showToast('Account created! Check your email to confirm, then log in.','success');
+    closeAuth();showToast('Account created! Check your email to confirm, then log in.','success');
   }catch(err){
     if(btn){btn.textContent='Create Account — Free';btn.disabled=false;}
-    var msg=err.message||'Registration failed. Please try again.';
-    if(msg.includes('already registered')||msg.includes('already been registered'))
-      msg='This email is already registered. Try logging in.';
-    if(errEl) errEl.textContent=msg;
+    var msg=err.message||'Registration failed.';
+    if(msg.includes('already registered'))msg='This email is already registered. Try logging in.';
+    if(errEl)errEl.textContent=msg;
   }
 }
 
@@ -1548,7 +1524,11 @@ function renderPlayerList() {
       ? 'background:#1A6B42;border-color:#1A6B42'
       : '';
     var btnLabel = inSquad ? '✓' : '+';
-    return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
+    // In transfer mode: clicking the row OR the + directly adds/transfers the player
+    var rowClick  = ST.xferMode ? 'addPlayer(' + p.id + ')' : 'openPmodal(' + p.id + ')';
+    var btnAction = ST.xferMode ? 'event.stopPropagation();addPlayer(' + p.id + ')' :
+                    'event.stopPropagation();togglePlayerFromList(' + p.id + ')';
+    return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="' + rowClick + '" style="cursor:pointer">' +
       '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
       '<div class="pli-info">' +
         '<div class="pli-name">' + name + '</div>' +
@@ -1556,7 +1536,7 @@ function renderPlayerList() {
       '</div>' +
       '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
       '<span class="pli-price">R' + (p.price || 0) + 'M</span>' +
-      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
+      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="' + btnAction + '">' +
         btnLabel +
       '</button>' +
     '</div>';
@@ -1603,7 +1583,7 @@ function applyFilter(term) {
 // ════════════════════════════════════════════════════
 function openPmodal(id) {
   var p = (ST.allPlayers && ST.allPlayers.length ? ST.allPlayers : PSL_ROSTER)
-            .find(function(x) { return x.id === id; });
+            .find(function(x){ return x.id === id; });
   if (!p) return;
   ST.activeId = id;
 
@@ -1611,119 +1591,114 @@ function openPmodal(id) {
   if (!modal) return;
 
   var name = p.display_name || p.first_name || 'Player';
-  var posLabels = { GK:'Goalkeeper', DEF:'Defender', MID:'Midfielder', FWD:'Forward' };
   var posColors = { GK:'#DBA94A', DEF:'#22895A', MID:'#4A90D9', FWD:'#D4274F' };
+  var posLabels = { GK:'Goalkeeper', DEF:'Defender', MID:'Midfielder', FWD:'Forward' };
   var col = posColors[p.position] || '#888';
 
-  // ── Header ────────────────────────────────────────────────
-  var nameEl = document.getElementById('pm-name');
-  var metaEl = document.getElementById('pm-meta');
-  if (nameEl) nameEl.textContent = name;
-  if (metaEl) metaEl.textContent = (posLabels[p.position] || p.position || '') + '  ·  ' + (p.club || '') + '  ·  R' + (p.price || 0) + 'M';
+  // Header
+  var nameEl=document.getElementById('pm-name');
+  var metaEl=document.getElementById('pm-meta');
+  if(nameEl) nameEl.textContent = name;
+  if(metaEl) metaEl.textContent =
+    (posLabels[p.position]||p.position||'') + '  ·  ' +
+    (p.club||'') + '  ·  R' + (p.price||0) + 'M';
 
-  var shirtEl = document.getElementById('pm-shirt');
-  if (shirtEl) {
-    shirtEl.className = 'pm-shirt s' + ((id % 6) + 1);
-    shirtEl.style.background = col + '22';
-    shirtEl.style.border = '2px solid ' + col + '55';
-    shirtEl.innerHTML = '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:' + col + '">' + (p.position || '') + '</span>';
+  // Shirt icon (replaced by photo if Wikipedia responds)
+  var shirtEl=document.getElementById('pm-shirt');
+  if(shirtEl){
+    shirtEl.className='pm-shirt s'+((id%6)+1);
+    shirtEl.style.background=col+'22';
+    shirtEl.style.border='2px solid '+col+'44';
+    shirtEl.innerHTML='<span style="color:'+col+';font-size:.9rem;font-family:var(--font-display);font-weight:900">'+
+      (p.position||'')+'</span>';
   }
 
-  // ── Stats grid (EPL-style: 6 key stats) ──────────────────
-  var statsEl = document.getElementById('pm-stats');
-  if (statsEl) {
-    var stats = [
-      { lbl: 'Price',     val: 'R' + (p.price || 0) + 'M', color: col },
-      { lbl: 'GW Pts',    val: p.total_points || 0,         color: '#fff' },
-      { lbl: 'Apps',      val: p.apps || 0,                 color: '#fff' },
-      { lbl: 'Goals',     val: p.goals || 0,                color: '#22895A' },
-      { lbl: 'Assists',   val: p.assists || 0,              color: '#4A90D9' },
-      { lbl: 'Yel Cards', val: p.yellow_cards || 0,         color: '#DBA94A' },
+  // Stats grid (EPL-style 6 cells)
+  var statsEl=document.getElementById('pm-stats');
+  if(statsEl){
+    var cells=[
+      {lbl:'Price',    val:'R'+(p.price||0)+'M',    col:col},
+      {lbl:'Points',   val:(p.total_points||0),      col:'#fff'},
+      {lbl:'Apps',     val:(p.apps||0),              col:'#fff'},
+      {lbl:'Goals',    val:(p.goals||0),             col:'#22895A'},
+      {lbl:'Assists',  val:(p.assists||0),           col:'#4A90D9'},
+      {lbl:'Yel Cards',val:(p.yellow_cards||0),      col:'#DBA94A'},
     ];
-    statsEl.innerHTML = stats.map(function(s) {
-      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);' +
-        'border-radius:8px;padding:.55rem .3rem;text-align:center">' +
-        '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;' +
-          'color:' + s.color + ';line-height:1">' + s.val + '</div>' +
-        '<div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;' +
-          'letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.38);margin-top:3px">' + s.lbl + '</div>' +
+    statsEl.className='pm-stat-grid';
+    statsEl.innerHTML=cells.map(function(s){
+      return '<div class="pm-stat-cell">'+
+        '<div class="pm-stat-val" style="color:'+s.col+'">'+s.val+'</div>'+
+        '<div class="pm-stat-lbl">'+s.lbl+'</div>'+
       '</div>';
     }).join('');
   }
 
-  // ── Fitness ───────────────────────────────────────────────
-  var fitEl = document.getElementById('pm-fitness');
-  if (fitEl) {
-    var avail = p.available !== false;
-    fitEl.textContent  = avail ? '✅ Fit and Available' : '⚠️ Currently Unavailable';
-    fitEl.style.background = avail ? 'rgba(34,137,90,.12)' : 'rgba(212,39,79,.12)';
-    fitEl.style.color      = avail ? '#22895A' : '#D4274F';
+  // Fitness
+  var fitEl=document.getElementById('pm-fitness');
+  if(fitEl){
+    var avail=p.available!==false;
+    fitEl.textContent=avail?'✅ Fit and Available':'⚠️ Unavailable';
+    fitEl.style.background=avail?'rgba(34,137,90,.12)':'rgba(212,39,79,.12)';
+    fitEl.style.color=avail?'#22895A':'#D4274F';
   }
 
-  // ── Add button ────────────────────────────────────────────
-  var inSquad = ST.squad.some(function(x) { return x.id === id; });
-  var addBtn  = document.getElementById('pm-addbtn');
-  if (addBtn) {
-    if (inSquad) {
-      addBtn.textContent = '✓ Already in Your Squad';
-      addBtn.disabled    = true;
-      addBtn.style.opacity = '.5';
+  // Add button
+  var inSquad=ST.squad.some(function(x){return x.id===id;});
+  var addBtn=document.getElementById('pm-addbtn');
+  if(addBtn){
+    if(inSquad){
+      addBtn.innerHTML='✓ In Your Squad';
+      addBtn.disabled=true; addBtn.style.opacity='.5';
     } else {
-      addBtn.textContent = '+ Add to Squad  ·  R' + (p.price || 0) + 'M';
-      addBtn.disabled    = false;
-      addBtn.style.opacity = '1';
+      addBtn.innerHTML='+ Add to Squad &nbsp;·&nbsp; R'+(p.price||0)+'M';
+      addBtn.disabled=false; addBtn.style.opacity='1';
     }
   }
 
-  // ── Show modal ────────────────────────────────────────────
+  // Clear wiki section
+  var wikiEl=document.getElementById('pm-wiki');
+  if(wikiEl) wikiEl.innerHTML='';
+
+  // Show modal
   modal.classList.add('open');
+  document.body.style.overflow='hidden';
 
-  // ── Wikipedia: fetch photo + bio ──────────────────────────
-  var wikiEl = document.getElementById('pm-wiki');
-  if (wikiEl) {
-    wikiEl.innerHTML = '';
-    var photoWrap = document.getElementById('pm-photo-wrap');
-
-    var wikiTitle = p.wiki || name.replace(/ /g, '_');
-    fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(wikiTitle))
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        if (!data) return;
-
-        // Swap shirt icon for real photo
-        if (data.thumbnail && data.thumbnail.source && photoWrap) {
-          var img = document.createElement('img');
-          img.src   = data.thumbnail.source;
-          img.alt   = name;
-          img.style = 'width:100%;height:100%;object-fit:cover;border-radius:8px';
-          img.onerror = function() { this.style.display = 'none'; };
-          photoWrap.innerHTML = '';
-          photoWrap.appendChild(img);
-        }
-
-        // Bio text
-        if (data.extract && wikiEl) {
-          var sentences = data.extract.split('. ').slice(0, 2).join('. ') + '.';
-          var wikiHtml = '<p style="font-size:.78rem;color:rgba(255,255,255,.55);' +
-            'line-height:1.55;margin:0 0 .4rem">' + sentences + '</p>';
-          var pageUrl = data.content_urls && data.content_urls.mobile
-            ? data.content_urls.mobile.page
-            : 'https://en.wikipedia.org/wiki/' + wikiTitle;
-          wikiHtml += '<a href="' + pageUrl + '" target="_blank" rel="noopener" ' +
-            'style="font-size:.7rem;color:#6eaadd;font-family:var(--font-ui);' +
-            'font-weight:700;text-decoration:none">' +
-            'View Wikipedia profile →</a>';
-          wikiEl.innerHTML = wikiHtml;
-        }
-      })
-      .catch(function() {}); // silent fail — not all players have Wikipedia pages
-  }
+  // Wikipedia: fetch photo + bio asynchronously (no key needed)
+  var wikiTitle=p.wiki||name.replace(/ /g,'_');
+  fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(wikiTitle))
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data) return;
+      // Swap position badge for real photo
+      var wrap=document.getElementById('pm-photo-wrap');
+      if(data.thumbnail&&data.thumbnail.source&&wrap){
+        var img=document.createElement('img');
+        img.src=data.thumbnail.source; img.alt=name;
+        img.style='width:100%;height:100%;object-fit:cover;border-radius:8px';
+        img.onerror=function(){this.style.display='none';};
+        wrap.innerHTML=''; wrap.appendChild(img);
+      }
+      // Bio text
+      if(data.extract&&wikiEl){
+        var bio=data.extract.split('. ').slice(0,2).join('. ')+'.';
+        var pageUrl=(data.content_urls&&data.content_urls.mobile&&data.content_urls.mobile.page)
+          ||'https://en.wikipedia.org/wiki/'+wikiTitle;
+        wikiEl.innerHTML=
+          '<p style="margin:0 0 .4rem">'+bio+'</p>'+
+          '<a href="'+pageUrl+'" target="_blank" rel="noopener" '+
+          'style="color:#6eaadd;font-family:var(--font-ui);font-size:.7rem;font-weight:700;text-decoration:none">'+
+          'View Wikipedia profile →</a>';
+      }
+    }).catch(function(){});
 }
 
 function closePmodal() {
-  document.getElementById('pmodal').classList.remove('open');
-  ST.activeId = null;
+  var modal=document.getElementById('pmodal');
+  if(modal) modal.classList.remove('open');
+  document.body.style.overflow='';
 }
+
+
 
 function addFromModal() {
   if (ST.activeId) addPlayer(ST.activeId);
@@ -1960,8 +1935,7 @@ function addPlayer(id) {
     if (clubCount >= 3) { showToast('Max 3 players from ' + clubName, 'warning'); return; }
   }
 
-  // EPL formation model: max starters per pos GK:1 DEF:5 MID:5 FWD:3
-  // Player goes to bench ONLY when 11 starters are full OR pos max is hit
+  // EPL model: GK:1 DEF:5 MID:5 FWD:3 max starters; bench when 11 full OR pos max hit
   var maxStartersByPos = { GK:1, DEF:5, MID:5, FWD:3 };
   var starterCount = ST.squad.filter(function(x) { return !x.onBench; }).length;
   var posStarters  = ST.squad.filter(function(x) { return !x.onBench && x.position === p.position; }).length;
@@ -2179,22 +2153,9 @@ function renderPitch() {
            : ST.benchReorder    ? 'bench'
            : ST.subOutPlayer    ? 'sub'
            : 'normal';
-
-  // Update sub banner visibility
-  var subBanner = document.getElementById('sub-banner');
-  var subBannerTxt = document.getElementById('sub-banner-text');
-  if (subBanner) {
-    if (mode === 'sub' && ST.subOutPlayer) {
-      subBanner.style.display = 'flex';
-      if (subBannerTxt) {
-        var fromBench = ST.subOutPlayer.onBench;
-        subBannerTxt.textContent = '⇄ ' + playerName(ST.subOutPlayer) +
-          ' selected — tap ' + (fromBench ? 'a STARTER on pitch' : 'a BENCH player') + ' to complete sub';
-      }
-    } else if (mode !== 'sub') {
-      subBanner.style.display = 'none';
-    }
-  }
+  // Update sub banner
+  var _sb=document.getElementById('sub-banner'),_sbt=document.getElementById('sub-banner-text');
+  if(_sb){if(mode==='sub'&&ST.subOutPlayer){_sb.style.display='flex';if(_sbt)_sbt.textContent='⇄ '+playerName(ST.subOutPlayer)+' — tap '+(ST.subOutPlayer.onBench?'a STARTER on pitch':'a BENCH player');}else if(mode!=='sub')_sb.style.display='none';}
 
   // Row IDs mapped to positions — FWD at top (attacking end), GK at bottom
   var rows  = { GK:'p-gk', DEF:'p-def', MID:'p-mid', FWD:'p-fwd' };
@@ -2207,24 +2168,21 @@ function renderPitch() {
     var totalSlots = Math.max(minSlots[pos], players.length);
 
     var filled = players.map(function(p) {
-      var isOut    = ST.xferOut && ST.xferOut.id === p.id;
-      var isSubSel = ST.subOutPlayer && ST.subOutPlayer.id === p.id;
-      var outStyle = isOut    ? 'box-shadow:0 0 0 3px #DBA94A;opacity:.7'
-                   : isSubSel ? 'box-shadow:0 0 0 3px #22895A;'
-                   : '';
-      var shortName = (playerName(p)).split(' ').pop();
+      var isOut=ST.xferOut&&ST.xferOut.id===p.id;
+      var isSubSel=ST.subOutPlayer&&ST.subOutPlayer.id===p.id&&!ST.subOutPlayer.onBench;
+      var outStyle=isOut?'box-shadow:0 0 0 3px #DBA94A;opacity:.7':isSubSel?'box-shadow:0 0 0 3px #22895A':'';
+      var shortName   = (playerName(p)).split(' ').pop();
       var clickFn, titleTxt;
       if (mode === 'locked')        { clickFn = ''; titleTxt = 'Squad locked'; }
       else if (mode === 'transfer') { clickFn = 'onclick="removePlayer(' + p.id + ')"'; titleTxt = 'Transfer OUT'; }
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
       else if (mode === 'sub') {
-        if (isSubSel) { clickFn = 'onclick="cancelSub()"'; titleTxt = 'Cancel sub'; }
-        else if (ST.subOutPlayer && ST.subOutPlayer.onBench) {
-          clickFn = 'onclick="completeSub(' + p.id + ',' + ST.subOutPlayer.id + ')"';
-          titleTxt = 'Bring on ' + playerName(ST.subOutPlayer).split(' ').pop();
-        } else { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
+        var isSel=ST.subOutPlayer&&ST.subOutPlayer.id===p.id;
+        if(isSel){clickFn='onclick="cancelSub()"';titleTxt='Cancel sub';}
+        else if(ST.subOutPlayer&&ST.subOutPlayer.onBench){clickFn='onclick="completeSub('+p.id+','+ST.subOutPlayer.id+')"';titleTxt='Bring on '+playerName(ST.subOutPlayer).split(' ').pop();}
+        else{clickFn='onclick="pitchPlayerTap('+p.id+')"';titleTxt='Tap for options';}
       }
-      else { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
+      else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
       var bottomLabel = (typeof p.gwPoints !== 'undefined') ? p.gwPoints + ' pts' : (p.price ? 'R' + p.price + 'M' : '');
       return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
         '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
@@ -2264,28 +2222,15 @@ function renderPitch() {
     var isSelected = ST.benchPickFirst && ST.benchPickFirst.id === p.id;
     var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #DBA94A;' : '';
     var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#DBA94A;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
-    var isSubBenchSel = ST.subOutPlayer && ST.subOutPlayer.id === p.id;
-    var benchRingStyle = isSubBenchSel ? 'box-shadow:0 0 0 3px #22895A;' : '';
-    var clickAction;
-    if      (mode === 'bench')    { clickAction = 'onclick="benchTap(' + p.id + ')"'; }
-    else if (mode === 'locked')   { clickAction = ''; }
-    else if (mode === 'transfer') { clickAction = ''; }
-    else if (mode === 'sub') {
-      if (ST.subOutPlayer && !ST.subOutPlayer.onBench) {
-        // Starter selected — tapping bench player completes the swap
-        clickAction = 'onclick="completeSub(' + ST.subOutPlayer.id + ',' + p.id + ')"';
-      } else {
-        clickAction = 'onclick="benchPlayerTap(' + p.id + ')"';
-      }
-    }
-    else { clickAction = 'onclick="benchPlayerTap(' + p.id + ')"'; }
-    var benchOpacity = (mode === 'sub' && ST.subOutPlayer && !ST.subOutPlayer.onBench) ? '1' : '.75';
-    return '<div class="pc" ' + clickAction + ' title="Sub priority ' + (idx+1) + '" style="position:relative;opacity:' + benchOpacity + ';cursor:pointer;">' +
-      '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="width:40px;height:40px;font-size:.85rem;' + selStyle + benchRingStyle + '">' +
+    var clickAction = mode === 'bench' ? 'onclick="benchTap(' + p.id + ')"'
+                    : mode === 'locked' ? ''
+                    : mode === 'transfer' ? ''
+                    : 'onclick="benchPlayerTap(' + p.id + ')"';
+    return '<div class="pc" ' + clickAction + ' title="Sub priority ' + (idx+1) + '" style="position:relative;opacity:.75;cursor:pointer;">' +
+      '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="width:36px;height:36px;font-size:.85rem;' + selStyle + '">' +
         orderBadge + posIcon(p.position) +
       '</div>' +
       '<div class="pc-name">' + shortName + '</div>' +
-      '<div style="font-size:.52rem;color:rgba(255,255,255,.35);font-family:var(--font-ui);font-weight:700">' + p.position + '</div>' +
     '</div>';
   }).join('');
   var bEmpty = '';
@@ -2307,136 +2252,88 @@ function renderPitch() {
 // Tapping a player on the pitch in normal mode opens an action sheet:
 // "Set Captain", "Set Vice-Captain", "Transfer Out", "Remove"
 function pitchPlayerTap(id) {
-  var p = ST.squad.find(function(x) { return x.id === id; });
-  if (!p) return;
-
-  // If sub mode active and a bench player was picked first — complete the swap
-  if (ST.subOutPlayer && ST.subOutPlayer.onBench) {
-    completeSub(ST.subOutPlayer.id, id);
-    return;
+  var p=ST.squad.find(function(x){return x.id===id;});
+  if(!p) return;
+  if(ST.subOutPlayer&&ST.subOutPlayer.onBench){completeSub(ST.subOutPlayer.id,id);return;}
+  var actions=[];
+  if(!p.isCaptain) actions.push({label:'★ Make Captain — scores double',fn:'setCaptain('+id+')',accent:'#DBA94A'});
+  if(!p.isVC&&!p.isCaptain) actions.push({label:'★ Make Vice-Captain',fn:'setVC('+id+')',accent:'#c0c0c0'});
+  if(p.isCaptain) actions.push({label:'Remove Captain armband',fn:'setCaptain('+id+')',accent:'#666'});
+  if(p.isVC)      actions.push({label:'Remove Vice-Captain armband',fn:'setVC('+id+')',accent:'#666'});
+  if(!ST.deadlinePassed){
+    if(ST.squad.some(function(x){return x.onBench;}))
+      actions.push({label:'⇄ Substitute — swap with bench',fn:'startSubOut('+id+')',accent:'#22895A'});
+    actions.push({label:'⇆ Transfer Out — pick replacement',fn:'startTransferOut('+id+')',accent:'#D4274F'});
+    if(!ST.squadRegistered) actions.push({label:'✕ Remove from Squad',fn:'removePlayer('+id+')',accent:'#D4274F'});
   }
-
-  var name = playerName(p);
-  var actions = [];
-
-  // Captain & VC always allowed — even after deadline
-  if (!p.isCaptain) actions.push({ label: '★ Make Captain — scores double', fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
-  if (!p.isVC && !p.isCaptain) actions.push({ label: '★ Make Vice-Captain — scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
-  if (p.isCaptain)  actions.push({ label: 'Remove Captain armband',       fn: 'setCaptain(' + id + ')', accent: '#666' });
-  if (p.isVC)       actions.push({ label: 'Remove Vice-Captain armband',   fn: 'setVC(' + id + ')',     accent: '#666' });
-
-  if (!ST.deadlinePassed) {
-    var hasBench = ST.squad.some(function(x) { return x.onBench; });
-    if (hasBench) actions.push({ label: '⇄ Substitute — swap with bench player', fn: 'startSubOut(' + id + ')', accent: '#22895A' });
-    actions.push({ label: '⇆ Transfer Out — pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
-    if (!ST.squadRegistered) actions.push({ label: '✕ Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
-  }
-
-  showActionSheet(name, actions);
+  showActionSheet(playerName(p),actions);
 }
 
 
-// ── Centralised action sheet renderer ─────────────────────────────────
-function showActionSheet(title, actions) {
-  var sheet = document.getElementById('action-sheet');
-  var titleEl = document.getElementById('action-sheet-title');
-  var btns    = document.getElementById('action-sheet-btns');
-  var banner  = document.getElementById('sub-banner');
-  if (!sheet) return;
-
-  if (titleEl) titleEl.textContent = title;
-  if (banner)  banner.style.display = 'none';
-
-  if (btns) {
-    btns.innerHTML = actions.map(function(a) {
-      return '<button onclick="closeActionSheet();' + a.fn + '" style="' +
-        'display:block;width:100%;padding:.8rem 1.1rem;margin:.3rem 0;' +
-        'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);' +
-        'border-radius:10px;color:' + (a.accent||'#fff') + ';font-family:var(--font-ui);' +
-        'font-size:.82rem;font-weight:700;letter-spacing:.3px;cursor:pointer;' +
-        'text-align:left;transition:background .15s;-webkit-tap-highlight-color:transparent">' +
-        a.label + '</button>';
-    }).join('');
-  }
-  sheet.style.display = 'flex';
+// ── Centralised action sheet renderer ─────────────────────────────
+function showActionSheet(title,actions){
+  var sheet=document.getElementById('action-sheet');
+  var titleEl=document.getElementById('action-sheet-title');
+  var btns=document.getElementById('action-sheet-btns');
+  var banner=document.getElementById('sub-banner');
+  if(!sheet) return;
+  if(titleEl) titleEl.textContent=title;
+  if(banner) banner.style.display='none';
+  if(btns) btns.innerHTML=actions.map(function(a){
+    return '<button onclick="closeActionSheet();'+a.fn+'" style="display:block;width:100%;'+
+      'padding:.8rem 1.1rem;margin:.3rem 0;background:rgba(255,255,255,.04);'+
+      'border:1px solid rgba(255,255,255,.08);border-radius:10px;color:'+(a.accent||'#fff')+';'+
+      'font-family:var(--font-ui);font-size:.82rem;font-weight:700;letter-spacing:.3px;'+
+      'cursor:pointer;text-align:left;transition:background .15s;'+
+      '-webkit-tap-highlight-color:transparent">'+a.label+'</button>';
+  }).join('');
+  sheet.style.display='flex';
 }
 
-// ── SUBSTITUTION SYSTEM (EPL-style) ───────────────────────────────────
-// Tap starter → Sub Out → tap bench player → swap
-// OR tap bench → Sub In → tap starter → swap
-
-function startSubOut(starterId) {
-  var p = ST.squad.find(function(x) { return x.id === starterId; });
-  if (!p) return;
-  ST.subOutPlayer = p;
+// ── SUBSTITUTION SYSTEM ────────────────────────────────────────────
+function startSubOut(starterId){
+  var p=ST.squad.find(function(x){return x.id===starterId;});
+  if(!p) return;
+  ST.subOutPlayer=p;
   closeActionSheet();
-
-  // Show sub banner
-  var banner   = document.getElementById('sub-banner');
-  var bannerTxt = document.getElementById('sub-banner-text');
-  if (banner) {
-    banner.style.display = 'flex';
-    if (bannerTxt) bannerTxt.textContent = '⇄ ' + playerName(p) + ' selected — tap a BENCH player to bring on';
-  }
-  showToast('Tap a bench player to bring on for ' + playerName(p), 'info');
+  var b=document.getElementById('sub-banner'),bt=document.getElementById('sub-banner-text');
+  if(b){b.style.display='flex';if(bt)bt.textContent='⇄ '+playerName(p)+' selected — tap a BENCH player to bring on';}
+  showToast('Tap a bench player to bring on for '+playerName(p),'info');
   renderPitch();
 }
-
-function startSubIn(benchId) {
-  var p = ST.squad.find(function(x) { return x.id === benchId; });
-  if (!p) return;
-  ST.subOutPlayer = p;
+function startSubIn(benchId){
+  var p=ST.squad.find(function(x){return x.id===benchId;});
+  if(!p) return;
+  ST.subOutPlayer=p;
   closeActionSheet();
-
-  var banner   = document.getElementById('sub-banner');
-  var bannerTxt = document.getElementById('sub-banner-text');
-  if (banner) {
-    banner.style.display = 'flex';
-    if (bannerTxt) bannerTxt.textContent = '⇄ ' + playerName(p) + ' selected — tap a STARTER on the pitch to replace';
-  }
-  showToast('Tap a starter on the pitch to substitute off', 'info');
+  var b=document.getElementById('sub-banner'),bt=document.getElementById('sub-banner-text');
+  if(b){b.style.display='flex';if(bt)bt.textContent='⇄ '+playerName(p)+' selected — tap a STARTER on pitch to replace';}
+  showToast('Tap a starter on the pitch to sub them off','info');
   renderPitch();
 }
-
-function completeSub(playerAId, playerBId) {
-  var a = ST.squad.find(function(x) { return x.id === playerAId; });
-  var b = ST.squad.find(function(x) { return x.id === playerBId; });
-  if (!a || !b) { cancelSub(); return; }
-
-  // Determine which is starter and which is bencher
-  var starter = !a.onBench ? a : b;
-  var bencher  =  a.onBench ? a : b;
-
-  if (starter.onBench === bencher.onBench) {
-    showToast('Please swap a starter with a bench player', 'warning');
-    cancelSub(); return;
-  }
-
-  // Swap bench status and bench order
-  var tmpBench = starter.onBench;
-  var tmpOrder = starter.benchOrder;
-  starter.onBench    = bencher.onBench;
-  starter.benchOrder = bencher.benchOrder;
-  bencher.onBench    = tmpBench;
-  bencher.benchOrder = tmpOrder;
-
-  ST.subOutPlayer = null;
-  var banner = document.getElementById('sub-banner');
-  if (banner) banner.style.display = 'none';
-
-  markUnsaved();
-  renderPitch(); renderBudget();
-  showToast(playerName(bencher) + ' ⇄ ' + playerName(starter) + ' substitution made ✓', 'success');
+function completeSub(aId,bId){
+  var a=ST.squad.find(function(x){return x.id===aId;});
+  var b=ST.squad.find(function(x){return x.id===bId;});
+  if(!a||!b){cancelSub();return;}
+  var starter=!a.onBench?a:b, bencher=a.onBench?a:b;
+  if(starter.onBench===bencher.onBench){showToast('Please swap a starter with a bench player','warning');cancelSub();return;}
+  var tb=starter.onBench, to=starter.benchOrder;
+  starter.onBench=bencher.onBench; starter.benchOrder=bencher.benchOrder;
+  bencher.onBench=tb; bencher.benchOrder=to;
+  ST.subOutPlayer=null;
+  var banner=document.getElementById('sub-banner');
+  if(banner) banner.style.display='none';
+  markUnsaved(); renderPitch(); renderBudget();
+  showToast(playerName(bencher)+' ⇄ '+playerName(starter)+' ✓','success');
 }
-
-function cancelSub() {
-  ST.subOutPlayer = null;
-  var banner = document.getElementById('sub-banner');
-  if (banner) banner.style.display = 'none';
+function cancelSub(){
+  ST.subOutPlayer=null;
+  var banner=document.getElementById('sub-banner');
+  if(banner) banner.style.display='none';
   renderPitch();
-  showToast('Substitution cancelled', 'info');
+  showToast('Substitution cancelled','info');
 }
-// ── END SUBSTITUTION ───────────────────────────────────────────────────
+// ── END SUB SYSTEM ─────────────────────────────────────────────────
 
 function closeActionSheet() {
   var sheet = document.getElementById('action-sheet');
@@ -2516,33 +2413,22 @@ function benchTap(id) {
 
 // Tap bench player in normal mode — offer actions (move to starting XI, etc.)
 function benchPlayerTap(id) {
-  var p = ST.squad.find(function(x) { return x.id === id; });
-  if (!p) return;
-
-  // If sub mode active and a starter was picked first — complete the swap
-  if (ST.subOutPlayer && !ST.subOutPlayer.onBench) {
-    completeSub(ST.subOutPlayer.id, id);
-    return;
+  var p=ST.squad.find(function(x){return x.id===id;});
+  if(!p) return;
+  if(ST.subOutPlayer&&!ST.subOutPlayer.onBench){completeSub(ST.subOutPlayer.id,id);return;}
+  var starters=ST.squad.filter(function(x){return!x.onBench;});
+  var actions=[];
+  if(!p.isCaptain) actions.push({label:'★ Make Captain — scores double',fn:'setCaptain('+id+')',accent:'#DBA94A'});
+  if(!p.isVC&&!p.isCaptain) actions.push({label:'★ Make Vice-Captain',fn:'setVC('+id+')',accent:'#c0c0c0'});
+  if(p.isCaptain) actions.push({label:'Remove Captain armband',fn:'setCaptain('+id+')',accent:'#666'});
+  if(p.isVC)      actions.push({label:'Remove Vice-Captain armband',fn:'setVC('+id+')',accent:'#666'});
+  if(!ST.deadlinePassed){
+    actions.push({label:'⇄ Sub In — tap a starter to swap',fn:'startSubIn('+id+')',accent:'#22895A'});
+    if(starters.length<11) actions.push({label:'↑ Move to Starting XI',fn:'moveToStarting('+id+')',accent:'#4CAF50'});
+    actions.push({label:'⇆ Transfer Out',fn:'startTransferOut('+id+')',accent:'#D4274F'});
+    if(!ST.squadRegistered) actions.push({label:'✕ Remove from Squad',fn:'removePlayer('+id+')',accent:'#D4274F'});
   }
-
-  var name = playerName(p);
-  var starters = ST.squad.filter(function(x) { return !x.onBench; });
-  var canStart  = starters.length < 11;
-  var actions   = [];
-
-  if (!p.isCaptain) actions.push({ label: '★ Make Captain — scores double', fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
-  if (!p.isVC && !p.isCaptain) actions.push({ label: '★ Make Vice-Captain', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
-  if (p.isCaptain) actions.push({ label: 'Remove Captain armband',     fn: 'setCaptain(' + id + ')', accent: '#666' });
-  if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')',     accent: '#666' });
-
-  if (!ST.deadlinePassed) {
-    actions.push({ label: '⇄ Sub In — tap a starter on the pitch to swap', fn: 'startSubIn(' + id + ')', accent: '#22895A' });
-    if (canStart) actions.push({ label: '↑ Move directly to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#4CAF50' });
-    actions.push({ label: '⇆ Transfer Out — pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
-    if (!ST.squadRegistered) actions.push({ label: '✕ Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
-  }
-
-  showActionSheet(name + ' (Bench)', actions);
+  showActionSheet(playerName(p)+' (Bench)',actions);
 }
 
 // Move a bench player into the starting XI (swap with first available starter)
@@ -2736,23 +2622,23 @@ function sn(name) { return SHORT_NAMES[name] || name; }
 // Betway Premiership 2025/26 standings — GW22 (5 Mar 2026)
 // W D L GF GA GD Pts  Form (newest last)
 var REAL_TABLE = [
-  // Source: SuperSport — GW20/21 standings — 11 March 2026
-  { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
-  { pos:2,  team:'Orlando Pirates',    p:20, w:14, d:3, l:3,  gf:31, ga:8,  gd:23,  pts:45, form:['W','L','W','W','D'] },
-  { pos:3,  team:'Sekhukhune United',  p:20, w:9,  d:6, l:5,  gf:21, ga:14, gd:7,   pts:33, form:['D','L','W','W','L'] },
-  { pos:4,  team:'Durban City',        p:20, w:9,  d:5, l:6,  gf:19, ga:14, gd:5,   pts:32, form:['D','W','W','L','W'] },
-  { pos:5,  team:'AmaZulu FC',         p:20, w:9,  d:4, l:7,  gf:19, ga:18, gd:1,   pts:31, form:['D','L','L','L','W'] },
-  { pos:6,  team:'Kaizer Chiefs',      p:18, w:8,  d:6, l:4,  gf:16, ga:12, gd:4,   pts:30, form:['L','L','L','W','L'] },
-  { pos:7,  team:'Polokwane City',     p:19, w:7,  d:7, l:5,  gf:16, ga:13, gd:3,   pts:28, form:['L','W','D','D','D'] },
-  { pos:8,  team:'TS Galaxy',          p:20, w:7,  d:3, l:10, gf:23, ga:22, gd:1,   pts:24, form:['L','L','L','L','L'] },
-  { pos:9,  team:'Richards Bay',       p:20, w:5,  d:9, l:6,  gf:15, ga:19, gd:-4,  pts:24, form:['W','D','L','D','D'] },
-  { pos:10, team:'Stellenbosch FC',    p:19, w:6,  d:5, l:8,  gf:15, ga:20, gd:-5,  pts:23, form:['D','W','W','D','D'] },
-  { pos:11, team:'Siwelele FC',        p:19, w:5,  d:7, l:7,  gf:10, ga:14, gd:-4,  pts:22, form:['D','W','D','D','D'] },
-  { pos:12, team:'Golden Arrows',      p:19, w:6,  d:3, l:10, gf:24, ga:24, gd:0,   pts:21, form:['L','D','W','D','L'] },
-  { pos:13, team:'Chippa United',      p:20, w:4,  d:7, l:9,  gf:14, ga:24, gd:-10, pts:19, form:['L','D','W','W','W'] },
-  { pos:14, team:'Marumo Gallants',    p:20, w:4,  d:6, l:10, gf:15, ga:26, gd:-11, pts:18, form:['W','L','D','L','L'] },
-  { pos:15, team:'Orbit College FC',   p:21, w:5,  d:3, l:13, gf:13, ga:32, gd:-19, pts:18, form:['W','L','L','L','L'] },
-  { pos:16, team:'Magesi FC',          p:19, w:2,  d:7, l:10, gf:10, ga:25, gd:-15, pts:13, form:['D','D','L','L','L'] }
+  // Source: SuperSport — updated 15 March 2026 (GW21 complete)
+  { pos:1,  team:'Orlando Pirates',    p:21, w:15, d:3, l:3,  gf:34, ga:9,  gd:25,  pts:48, form:['W','W','W','D','L'] },
+  { pos:2,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
+  { pos:3,  team:'Sekhukhune United',  p:21, w:9,  d:7, l:5,  gf:21, ga:14, gd:7,   pts:34, form:['D','D','W','D','L'] },
+  { pos:4,  team:'AmaZulu FC',         p:21, w:10, d:4, l:7,  gf:21, ga:19, gd:2,   pts:34, form:['W','D','L','L','W'] },
+  { pos:5,  team:'Kaizer Chiefs',      p:19, w:9,  d:6, l:4,  gf:17, ga:12, gd:5,   pts:33, form:['W','L','L','W','L'] },
+  { pos:6,  team:'Durban City',        p:21, w:9,  d:5, l:7,  gf:19, ga:15, gd:4,   pts:32, form:['L','D','W','W','L'] },
+  { pos:7,  team:'Polokwane City',     p:20, w:7,  d:8, l:5,  gf:16, ga:13, gd:3,   pts:29, form:['D','L','W','D','D'] },
+  { pos:8,  team:'TS Galaxy',          p:21, w:7,  d:4, l:10, gf:24, ga:23, gd:1,   pts:25, form:['L','W','L','L','L'] },
+  { pos:9,  team:'Golden Arrows',      p:20, w:7,  d:3, l:10, gf:26, ga:25, gd:1,   pts:24, form:['W','L','D','W','L'] },
+  { pos:10, team:'Stellenbosch FC',    p:20, w:6,  d:6, l:8,  gf:16, ga:21, gd:-5,  pts:24, form:['D','W','W','D','D'] },
+  { pos:11, team:'Siwelele FC',        p:20, w:5,  d:8, l:7,  gf:11, ga:15, gd:-4,  pts:23, form:['D','D','W','D','D'] },
+  { pos:12, team:'Richards Bay',       p:21, w:5,  d:8, l:8,  gf:16, ga:23, gd:-7,  pts:23, form:['D','D','W','D','L'] },
+  { pos:13, team:'Chippa United',      p:21, w:4,  d:8, l:9,  gf:16, ga:26, gd:-10, pts:20, form:['D','D','W','W','L'] },
+  { pos:14, team:'Marumo Gallants',    p:21, w:4,  d:6, l:11, gf:16, ga:28, gd:-12, pts:18, form:['L','W','D','L','L'] },
+  { pos:15, team:'Orbit College FC',   p:21, w:4,  d:3, l:14, gf:13, ga:33, gd:-20, pts:15, form:['L','L','L','W','L'] },
+  { pos:16, team:'Magesi FC',          p:21, w:2,  d:8, l:11, gf:12, ga:27, gd:-15, pts:14, form:['D','L','D','D','L'] }
 ]
 var REAL_FIXTURES = {
   // GW22 results — verified SuperSport
@@ -3712,8 +3598,8 @@ function deleteAccount() {
 // ════════════════════════════════════════════════════
 //  DAY / NIGHT THEME TOGGLE
 // ════════════════════════════════════════════════════
-function toggleTheme() { /* night mode only — disabled */
-  var isLight = false; // always dark
+function toggleTheme() { /* night mode only */
+  var isLight = false;
   var moon = document.getElementById('theme-icon-moon');
   var sun  = document.getElementById('theme-icon-sun');
   if (moon) moon.style.display = isLight ? 'none' : 'block';
@@ -5128,17 +5014,17 @@ function castPOTMVote(matchKey, playerId) {
 </div>
 
 
+
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
   <div id="action-sheet" onclick="if(event.target===this)closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
     <div style="position:absolute;bottom:0;left:0;right:0;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.5rem 1.2rem calc(1.5rem + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto">
       <div style="position:relative;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.08)">
-        <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;padding-right:2rem"></div>
+        <div id="action-sheet-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;padding-right:2.2rem"></div>
         <button onclick="closeActionSheet()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);cursor:pointer;font-size:.9rem">&#x2715;</button>
       </div>
-      <!-- Sub mode banner -->
-      <div id="sub-banner" style="display:none;background:rgba(34,137,90,.1);border:1px solid rgba(34,137,90,.3);border-radius:8px;padding:.6rem .9rem;margin-bottom:.75rem;font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:#22895A;display:flex;align-items:center;gap:.5rem">
-        <span id="sub-banner-text"></span>
-        <button onclick="cancelSub()" style="margin-left:auto;background:none;border:1px solid rgba(34,137,90,.4);border-radius:4px;color:#22895A;font-size:.7rem;font-family:var(--font-ui);padding:.2rem .6rem;cursor:pointer">Cancel</button>
+      <div id="sub-banner" style="display:none;background:rgba(34,137,90,.1);border:1px solid rgba(34,137,90,.3);border-radius:8px;padding:.55rem .9rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
+        <span id="sub-banner-text" style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:#22895A;flex:1"></span>
+        <button onclick="cancelSub()" style="background:none;border:1px solid rgba(34,137,90,.4);border-radius:4px;color:#22895A;font-size:.7rem;font-family:var(--font-ui);font-weight:700;padding:.2rem .6rem;cursor:pointer;flex-shrink:0">Cancel</button>
       </div>
       <div id="action-sheet-btns"></div>
     </div>
@@ -5192,144 +5078,33 @@ function castPOTMVote(matchKey, playerId) {
   </div>
 
 
+</body>
+</html>
+
 <script>
 // ══════════════════════════════════════════════════════════
-//  DISKI CHAT — SVG icons only, no emojis
+//  DISKI CHAT
 // ══════════════════════════════════════════════════════════
-var DSVG={
-  like:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
-  dislike:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>',
-  star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-  repost:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
-  reply:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
-  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
-};
+var DSVG={like:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',dislike:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>',star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',repost:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',reply:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:block"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'};
 var CHAT={posts:[],tab:'latest',page:0,PAGE_SIZE:15,hasMore:false,replyPostId:null,myReactions:{}};
 var CHAT_REPORT_TARGET=null;
-var BLOCKED_WORDS=['fuck','shit','cunt','bitch','asshole','dick','cock','pussy','nigger','nigga','faggot','slut','whore','bastard','wanker','kaffir','porn','xxx','nude','naked','onlyfans','kill yourself','kys'];
-var URL_RE=/https?:\/\/[^\s]+|www\.[^\s]+|\b\w+\.(com|co\.za|net|org|io|xyz)\b/gi;
-
-function filterContent(t){
-  if(!t||!t.trim())return{ok:false,reason:'Post cannot be empty'};
-  if(t.length>280)return{ok:false,reason:'Post exceeds 280 characters'};
-  URL_RE.lastIndex=0;
-  if(URL_RE.test(t))return{ok:false,reason:'Links are not allowed in Diski Chat'};
-  var lo=t.toLowerCase();
-  for(var i=0;i<BLOCKED_WORDS.length;i++)if(lo.indexOf(BLOCKED_WORDS[i])!==-1)return{ok:false,reason:'Your post contains language that is not allowed'};
-  return{ok:true};
-}
-function loadDiskiChat(){
-  var compose=document.getElementById('chat-compose'),prompt=document.getElementById('chat-login-prompt'),nb=document.getElementById('chat-notif-btn');
-  if(ST.user){
-    if(compose)compose.style.display='block';if(prompt)prompt.style.display='none';if(nb)nb.style.display='flex';
-    var av=document.getElementById('chat-avatar');
-    if(av){var m=ST.user.user_metadata||{};av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();}
-    loadChatNotifications();
-  }else{if(compose)compose.style.display='none';if(prompt)prompt.style.display='block';if(nb)nb.style.display='none';}
-  fetchPosts(true);
-}
+var BW=['fuck','shit','cunt','bitch','asshole','pussy','nigger','nigga','faggot','slut','whore','bastard','kaffir','porn','xxx','nude','naked','onlyfans','kys'];
+var URL_RE=/https?:\/\/[^\s]+|www\.[^\s]+|\b\w+\.(com|co\.za|net|org|io)\b/gi;
+function filterContent(t){if(!t||!t.trim())return{ok:false,reason:'Post cannot be empty'};if(t.length>280)return{ok:false,reason:'Post exceeds 280 characters'};URL_RE.lastIndex=0;if(URL_RE.test(t))return{ok:false,reason:'Links are not allowed in Diski Chat'};var lo=t.toLowerCase();for(var i=0;i<BW.length;i++)if(lo.indexOf(BW[i])!==-1)return{ok:false,reason:'Your post contains language that is not allowed'};return{ok:true};}
+function loadDiskiChat(){var compose=document.getElementById('chat-compose'),prompt=document.getElementById('chat-login-prompt'),nb=document.getElementById('chat-notif-btn');if(ST.user){if(compose)compose.style.display='block';if(prompt)prompt.style.display='none';if(nb)nb.style.display='flex';var av=document.getElementById('chat-avatar');if(av){var m=ST.user.user_metadata||{};av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();}loadChatNotifications();}else{if(compose)compose.style.display='none';if(prompt)prompt.style.display='block';if(nb)nb.style.display='none';}fetchPosts(true);}
 function setChatTab(tab,el){CHAT.tab=tab;document.querySelectorAll('#ctab-latest,#ctab-top').forEach(function(b){b.classList.remove('active');});if(el)el.classList.add('active');fetchPosts(true);}
-function fetchPosts(reset){
-  if(reset){CHAT.posts=[];CHAT.page=0;}
-  var feed=document.getElementById('chat-feed');if(!feed)return;
-  if(reset)feed.innerHTML='<div class="loading-players">Loading...</div>';
-  var order=CHAT.tab==='top'?'likes':'created_at';
-  db.from('diski_posts').select('*').eq('is_removed',false).order(order,{ascending:false}).range(CHAT.page*CHAT.PAGE_SIZE,(CHAT.page+1)*CHAT.PAGE_SIZE).then(function(res){
-    var posts=res.data||[];CHAT.hasMore=posts.length>CHAT.PAGE_SIZE;if(CHAT.hasMore)posts=posts.slice(0,CHAT.PAGE_SIZE);
-    CHAT.posts=reset?posts:CHAT.posts.concat(posts);
-    if(ST.user&&CHAT.posts.length){
-      db.from('diski_reactions').select('target_id,reaction').eq('user_id',ST.user.id).in('target_id',CHAT.posts.map(function(p){return p.id;})).then(function(r){
-        (r.data||[]).forEach(function(rx){if(!CHAT.myReactions[rx.target_id])CHAT.myReactions[rx.target_id]={};CHAT.myReactions[rx.target_id][rx.reaction]=true;});renderFeed();});
-    }else renderFeed();
-    var lm=document.getElementById('chat-load-more');if(lm)lm.style.display=CHAT.hasMore?'block':'none';
-  }).catch(function(){if(feed)feed.innerHTML='<div class="loading-players">Could not load posts.</div>';});
-}
+function fetchPosts(reset){if(reset){CHAT.posts=[];CHAT.page=0;}var feed=document.getElementById('chat-feed');if(!feed)return;if(reset)feed.innerHTML='<div class="loading-players">Loading...</div>';var order=CHAT.tab==='top'?'likes':'created_at';db.from('diski_posts').select('*').eq('is_removed',false).order(order,{ascending:false}).range(CHAT.page*CHAT.PAGE_SIZE,(CHAT.page+1)*CHAT.PAGE_SIZE).then(function(res){var posts=res.data||[];CHAT.hasMore=posts.length>CHAT.PAGE_SIZE;if(CHAT.hasMore)posts=posts.slice(0,CHAT.PAGE_SIZE);CHAT.posts=reset?posts:CHAT.posts.concat(posts);if(ST.user&&CHAT.posts.length){db.from('diski_reactions').select('target_id,reaction').eq('user_id',ST.user.id).in('target_id',CHAT.posts.map(function(p){return p.id;})).then(function(r){(r.data||[]).forEach(function(rx){if(!CHAT.myReactions[rx.target_id])CHAT.myReactions[rx.target_id]={};CHAT.myReactions[rx.target_id][rx.reaction]=true;});renderFeed();});}else renderFeed();var lm=document.getElementById('chat-load-more');if(lm)lm.style.display=CHAT.hasMore?'block':'none';}).catch(function(){if(feed)feed.innerHTML='<div class="loading-players">Could not load posts.</div>';});}
 function loadMorePosts(){CHAT.page++;fetchPosts(false);}
-function renderFeed(){
-  var feed=document.getElementById('chat-feed');if(!feed)return;
-  if(!CHAT.posts.length){feed.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3)"><div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet &#x2014; be the first!</div></div>';return;}
-  feed.innerHTML=CHAT.posts.map(function(p,i){return renderPostCard(p,i);}).join('');
-}
-function renderPostCard(p,idx){
-  var myR=CHAT.myReactions[p.id]||{},ago=chatTimeAgo(p.created_at),isOwn=ST.user&&ST.user.id===p.user_id;
-  var adSlot=(idx>0&&idx%8===0)?'<div style="text-align:center;padding:.4rem;margin:.3rem 0;background:rgba(255,255,255,.02);border-radius:6px"><span style="font-size:.55rem;color:rgba(255,255,255,.18);letter-spacing:1px;text-transform:uppercase">Sponsored</span></div>':'';
-  return adSlot+'<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem">'+
-    '<div style="display:flex;gap:.7rem"><div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div>'+
-    '<div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">'+
-    '<span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'+
-    (p.team_name?'<span style="font-size:.7rem;color:rgba(255,255,255,.3)">'+esc(p.team_name)+'</span>':'')+
-    '<span style="font-size:.65rem;color:rgba(255,255,255,.22);margin-left:auto">'+ago+'</span></div>'+
-    '<div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.7rem;word-break:break-word">'+esc(p.content)+'</div>'+
-    '<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">'+
-    rBtn('like',p.likes,p.id,myR.like,'#22895A')+rBtn('dislike',p.dislikes,p.id,myR.dislike,'#D4274F')+
-    rBtn('star',p.stars,p.id,myR.star,'#DBA94A')+rBtn('repost',p.reposts,p.id,myR.repost,'#6eaadd')+
-    '<button onclick="openReplies(\''+p.id+'\')" style="display:flex;align-items:center;gap:.3rem;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:.3rem .5rem;border-radius:6px">'+DSVG.reply+'<span style="font-family:var(--font-ui);font-size:.72rem">'+(p.reply_count||0)+'</span></button>'+
-    '<button onclick="openReport(\''+p.id+'\',\'post\')" style="display:flex;align-items:center;background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;padding:.3rem .4rem;border-radius:6px;margin-left:auto">'+DSVG.flag+'</button>'+
-    (isOwn?'<button onclick="deletePost(\''+p.id+'\')" style="display:flex;align-items:center;background:none;border:none;color:rgba(212,39,79,.35);cursor:pointer;padding:.3rem .4rem;border-radius:6px">'+DSVG.trash+'</button>':'')+
-    '</div></div></div></div>';
-}
-function rBtn(type,count,postId,active,ac){
-  return '<button onclick="react(\''+postId+'\',\'post\',\''+type+'\')" style="display:flex;align-items:center;gap:.3rem;background:none;border:none;color:'+(active?ac:'rgba(255,255,255,.4)')+';cursor:pointer;padding:.3rem .5rem;border-radius:6px">'+DSVG[type]+'<span style="font-family:var(--font-ui);font-size:.72rem">'+(count||0)+'</span></button>';
-}
+function renderFeed(){var feed=document.getElementById('chat-feed');if(!feed)return;if(!CHAT.posts.length){feed.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3)"><div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet &#x2014; be the first!</div></div>';return;}feed.innerHTML=CHAT.posts.map(function(p,i){return renderPostCard(p,i);}).join('');}
+function renderPostCard(p,idx){var myR=CHAT.myReactions[p.id]||{},isOwn=ST.user&&ST.user.id===p.user_id,ago=chatTimeAgo(p.created_at);var ad=(idx>0&&idx%8===0)?'<div style="text-align:center;padding:.4rem;margin:.3rem 0;background:rgba(255,255,255,.02);border-radius:6px"><span style="font-size:.55rem;color:rgba(255,255,255,.18);letter-spacing:1px;text-transform:uppercase">Sponsored</span></div>':'';return ad+'<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem"><div style="display:flex;gap:.7rem"><div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem"><span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'+(p.team_name?'<span style="font-size:.7rem;color:rgba(255,255,255,.3)">'+esc(p.team_name)+'</span>':'')+'<span style="font-size:.65rem;color:rgba(255,255,255,.22);margin-left:auto">'+ago+'</span></div><div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.7rem;word-break:break-word">'+esc(p.content)+'</div><div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">'+rBtn('like',p.likes,p.id,myR.like,'#22895A')+rBtn('dislike',p.dislikes,p.id,myR.dislike,'#D4274F')+rBtn('star',p.stars,p.id,myR.star,'#DBA94A')+rBtn('repost',p.reposts,p.id,myR.repost,'#6eaadd')+'<button onclick="openReplies(\''+p.id+'\')" style="display:flex;align-items:center;gap:.3rem;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:.3rem .5rem;border-radius:6px">'+DSVG.reply+'<span style="font-family:var(--font-ui);font-size:.72rem">'+(p.reply_count||0)+'</span></button><button onclick="openReport(\''+p.id+'\',\'post\')" style="display:flex;align-items:center;background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;padding:.3rem .4rem;border-radius:6px;margin-left:auto">'+DSVG.flag+'</button>'+(isOwn?'<button onclick="deletePost(\''+p.id+'\')" style="display:flex;align-items:center;background:none;border:none;color:rgba(212,39,79,.35);cursor:pointer;padding:.3rem .4rem;border-radius:6px">'+DSVG.trash+'</button>':'')+'</div></div></div></div>';}
+function rBtn(type,count,postId,active,ac){return '<button onclick="react(\''+postId+'\',\'post\',\''+type+'\')" style="display:flex;align-items:center;gap:.3rem;background:none;border:none;color:'+(active?ac:'rgba(255,255,255,.4)')+';cursor:pointer;padding:.3rem .5rem;border-radius:6px">'+DSVG[type]+'<span style="font-family:var(--font-ui);font-size:.72rem">'+(count||0)+'</span></button>';}
 function chatInputChange(el){var len=el.value.length;var cc=document.getElementById('chat-charcount');if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':len>230?'#DBA94A':'rgba(255,255,255,.3)';}el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';}
-function submitPost(){
-  if(!ST.user){openAuth('login');return;}
-  var input=document.getElementById('chat-input'),text=input?input.value:'';
-  var chk=filterContent(text.trim());if(!chk.ok){showToast(chk.reason,'warning');return;}
-  var btn=document.getElementById('chat-submit-btn');if(btn){btn.disabled=true;btn.textContent='Posting...';}
-  var m=ST.user.user_metadata||{};
-  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim()}).select().single().then(function(res){
-    if(btn){btn.disabled=false;btn.textContent='Post';}
-    if(res.error){showToast('Could not post. Please try again.','error');return;}
-    if(input){input.value='';chatInputChange(input);}CHAT.posts.unshift(res.data);renderFeed();showToast('Posted!','success');
-  });
-}
-function react(tid,ttype,reaction){
-  if(!ST.user){openAuth('login');return;}
-  var myR=CHAT.myReactions[tid]||{},done=!!myR[reaction];
-  if(done){
-    db.from('diski_reactions').delete().match({user_id:ST.user.id,target_id:tid,reaction:reaction}).then(function(){
-      if(!CHAT.myReactions[tid])return;delete CHAT.myReactions[tid][reaction];
-      var p=CHAT.posts.find(function(x){return x.id===tid;});if(p&&p[reaction+'s']!==undefined)p[reaction+'s']=Math.max(0,p[reaction+'s']-1);renderFeed();});
-  }else{
-    db.from('diski_reactions').upsert({user_id:ST.user.id,target_id:tid,target_type:ttype,reaction:reaction},{onConflict:'user_id,target_id,reaction'}).then(function(res){
-      if(res.error)return;if(!CHAT.myReactions[tid])CHAT.myReactions[tid]={};CHAT.myReactions[tid][reaction]=true;
-      var p=CHAT.posts.find(function(x){return x.id===tid;});if(p&&p[reaction+'s']!==undefined)p[reaction+'s']++;renderFeed();
-      if(p&&p.user_id!==ST.user.id){var m=ST.user.user_metadata||{},from=m.username||ST.user.email.split('@')[0];var lbl={like:'liked',dislike:'disliked',star:'starred',repost:'reposted'};
-        db.from('diski_notifications').insert({user_id:p.user_id,from_username:from,post_id:tid,type:reaction,message:from+' '+(lbl[reaction]||reaction)+' your post'});}});
-  }
-}
-function openReplies(pid){
-  CHAT.replyPostId=pid;var modal=document.getElementById('replies-modal'),list=document.getElementById('replies-list'),comp=document.getElementById('reply-compose');
-  if(!modal)return;if(comp)comp.style.display=ST.user?'block':'none';if(list)list.innerHTML='<div class="loading-players" style="padding:1rem">Loading...</div>';modal.style.display='flex';
-  db.from('diski_replies').select('*').eq('post_id',pid).eq('is_removed',false).order('created_at',{ascending:true}).then(function(res){
-    var replies=res.data||[];if(!list)return;
-    if(!replies.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No replies yet</div>';return;}
-    list.innerHTML=replies.map(function(r){var own=ST.user&&ST.user.id===r.user_id;
-      return '<div style="display:flex;gap:.6rem;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04)">'+
-        '<div style="width:28px;height:28px;border-radius:50%;background:#1A6B42;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(r.username||'?')[0].toUpperCase()+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="display:flex;gap:.4rem;align-items:baseline;flex-wrap:wrap">'+
-        '<span style="font-size:.82rem;font-weight:700;color:#fff">'+esc(r.username)+'</span>'+
-        '<span style="font-size:.62rem;color:rgba(255,255,255,.25)">'+chatTimeAgo(r.created_at)+'</span></div>'+
-        '<div style="font-size:.84rem;color:rgba(255,255,255,.8);line-height:1.5;margin-top:.2rem;word-break:break-word">'+esc(r.content)+'</div></div>'+
-        (own?'<button onclick="deleteReply(\''+r.id+'\')" style="background:none;border:none;color:rgba(212,39,79,.35);cursor:pointer;flex-shrink:0;padding:.2rem;display:flex;align-items:flex-start">'+DSVG.trash+'</button>':'')+
-      '</div>';}).join('');
-  });
-}
+function submitPost(){if(!ST.user){openAuth('login');return;}var input=document.getElementById('chat-input'),text=input?input.value:'';var chk=filterContent(text.trim());if(!chk.ok){showToast(chk.reason,'warning');return;}var btn=document.getElementById('chat-submit-btn');if(btn){btn.disabled=true;btn.textContent='Posting...';}var m=ST.user.user_metadata||{};db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim()}).select().single().then(function(res){if(btn){btn.disabled=false;btn.textContent='Post';}if(res.error){showToast('Could not post. Please try again.','error');return;}if(input){input.value='';chatInputChange(input);}CHAT.posts.unshift(res.data);renderFeed();showToast('Posted!','success');});}
+function react(tid,ttype,reaction){if(!ST.user){openAuth('login');return;}var myR=CHAT.myReactions[tid]||{},done=!!myR[reaction];if(done){db.from('diski_reactions').delete().match({user_id:ST.user.id,target_id:tid,reaction:reaction}).then(function(){if(!CHAT.myReactions[tid])return;delete CHAT.myReactions[tid][reaction];var p=CHAT.posts.find(function(x){return x.id===tid;});if(p&&p[reaction+'s']!==undefined)p[reaction+'s']=Math.max(0,p[reaction+'s']-1);renderFeed();});}else{db.from('diski_reactions').upsert({user_id:ST.user.id,target_id:tid,target_type:ttype,reaction:reaction},{onConflict:'user_id,target_id,reaction'}).then(function(res){if(res.error)return;if(!CHAT.myReactions[tid])CHAT.myReactions[tid]={};CHAT.myReactions[tid][reaction]=true;var p=CHAT.posts.find(function(x){return x.id===tid;});if(p&&p[reaction+'s']!==undefined)p[reaction+'s']++;renderFeed();if(p&&p.user_id!==ST.user.id){var m=ST.user.user_metadata||{},from=m.username||ST.user.email.split('@')[0];var lbl={like:'liked',dislike:'disliked',star:'starred',repost:'reposted'};db.from('diski_notifications').insert({user_id:p.user_id,from_username:from,post_id:tid,type:reaction,message:from+' '+(lbl[reaction]||reaction)+' your post'});}});}}
+function openReplies(pid){CHAT.replyPostId=pid;var modal=document.getElementById('replies-modal'),list=document.getElementById('replies-list'),comp=document.getElementById('reply-compose');if(!modal)return;if(comp)comp.style.display=ST.user?'block':'none';if(list)list.innerHTML='<div class="loading-players" style="padding:1rem">Loading...</div>';modal.style.display='flex';db.from('diski_replies').select('*').eq('post_id',pid).eq('is_removed',false).order('created_at',{ascending:true}).then(function(res){var replies=res.data||[];if(!list)return;if(!replies.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No replies yet</div>';return;}list.innerHTML=replies.map(function(r){var own=ST.user&&ST.user.id===r.user_id;return'<div style="display:flex;gap:.6rem;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="width:28px;height:28px;border-radius:50%;background:#1A6B42;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(r.username||'?')[0].toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="display:flex;gap:.4rem;align-items:baseline;flex-wrap:wrap"><span style="font-size:.82rem;font-weight:700;color:#fff">'+esc(r.username)+'</span><span style="font-size:.62rem;color:rgba(255,255,255,.25)">'+chatTimeAgo(r.created_at)+'</span></div><div style="font-size:.84rem;color:rgba(255,255,255,.8);line-height:1.5;margin-top:.2rem;word-break:break-word">'+esc(r.content)+'</div></div>'+(own?'<button onclick="deleteReply(\''+r.id+'\')" style="background:none;border:none;color:rgba(212,39,79,.35);cursor:pointer;flex-shrink:0;padding:.2rem;display:flex;align-items:flex-start">'+DSVG.trash+'</button>':'')+'</div>';}).join('');});}
 function closeReplies(){var m=document.getElementById('replies-modal');if(m)m.style.display='none';CHAT.replyPostId=null;var i=document.getElementById('reply-input');if(i)i.value='';}
 function replyInputChange(el){var len=el.value.length;var cc=document.getElementById('reply-charcount');if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':'rgba(255,255,255,.3)';}el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
-function submitReply(){
-  if(!ST.user||!CHAT.replyPostId)return;var input=document.getElementById('reply-input'),text=input?input.value:'';
-  var chk=filterContent(text.trim());if(!chk.ok){showToast(chk.reason,'warning');return;}
-  var m=ST.user.user_metadata||{};
-  db.from('diski_replies').insert({post_id:CHAT.replyPostId,user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim()}).then(function(res){
-    if(res.error){showToast('Could not post reply','error');return;}if(input){input.value='';replyInputChange(input);}showToast('Reply posted','success');
-    var p=CHAT.posts.find(function(x){return x.id===CHAT.replyPostId;});
-    if(p){p.reply_count=(p.reply_count||0)+1;renderFeed();if(p.user_id!==ST.user.id){var from=m.username||ST.user.email.split('@')[0];db.from('diski_notifications').insert({user_id:p.user_id,from_username:from,post_id:CHAT.replyPostId,type:'reply',message:from+' replied to your post'});}}
-    openReplies(CHAT.replyPostId);
-  });
-}
+function submitReply(){if(!ST.user||!CHAT.replyPostId)return;var input=document.getElementById('reply-input'),text=input?input.value:'';var chk=filterContent(text.trim());if(!chk.ok){showToast(chk.reason,'warning');return;}var m=ST.user.user_metadata||{};db.from('diski_replies').insert({post_id:CHAT.replyPostId,user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim()}).then(function(res){if(res.error){showToast('Could not post reply','error');return;}if(input){input.value='';replyInputChange(input);}showToast('Reply posted','success');var p=CHAT.posts.find(function(x){return x.id===CHAT.replyPostId;});if(p){p.reply_count=(p.reply_count||0)+1;renderFeed();if(p.user_id!==ST.user.id){var from=m.username||ST.user.email.split('@')[0];db.from('diski_notifications').insert({user_id:p.user_id,from_username:from,post_id:CHAT.replyPostId,type:'reply',message:from+' replied to your post'});}}openReplies(CHAT.replyPostId);});}
 function deletePost(pid){if(!ST.user||!confirm('Delete this post?'))return;db.from('diski_posts').delete().match({id:pid,user_id:ST.user.id}).then(function(){CHAT.posts=CHAT.posts.filter(function(p){return p.id!==pid;});renderFeed();showToast('Post deleted','info');});}
 function deleteReply(rid){if(!ST.user||!confirm('Delete this reply?'))return;db.from('diski_replies').delete().match({id:rid,user_id:ST.user.id}).then(function(){showToast('Reply deleted','info');if(CHAT.replyPostId)openReplies(CHAT.replyPostId);});}
 var REPORT_REASONS=[{key:'hate_speech',label:'Hate speech or slurs'},{key:'harassment',label:'Harassment or threats'},{key:'inappropriate',label:'Inappropriate content'},{key:'spam',label:'Spam or repeated posts'},{key:'misinformation',label:'Misinformation'},{key:'other',label:'Other'}];
@@ -5337,19 +5112,8 @@ function openReport(tid,ttype){if(!ST.user){openAuth('login');return;}CHAT_REPOR
 function closeReportModal(){var m=document.getElementById('report-modal');if(m)m.style.display='none';CHAT_REPORT_TARGET=null;}
 function submitReport(reason){if(!ST.user||!CHAT_REPORT_TARGET)return;db.from('diski_reports').insert({reporter_id:ST.user.id,target_id:CHAT_REPORT_TARGET.id,target_type:CHAT_REPORT_TARGET.type,reason:reason}).then(function(res){closeReportModal();if(res.error&&res.error.code==='23505'){showToast('Already reported','info');return;}showToast('Report submitted. Our team will review it.','success');});}
 function loadChatNotifications(){if(!ST.user)return;db.from('diski_notifications').select('id',{count:'exact',head:true}).eq('user_id',ST.user.id).eq('is_read',false).then(function(res){var cnt=document.getElementById('notif-count');if(!cnt)return;if(res.count>0){cnt.style.display='flex';cnt.textContent=res.count>9?'9+':res.count;}else cnt.style.display='none';});}
-function openNotifications(){
-  if(!ST.user)return;var modal=document.getElementById('notif-modal'),list=document.getElementById('notif-list');if(!modal)return;modal.style.display='flex';if(list)list.innerHTML='<div class="loading-players" style="padding:1rem">Loading...</div>';
-  db.from('diski_notifications').select('*').eq('user_id',ST.user.id).order('created_at',{ascending:false}).limit(30).then(function(res){
-    var notifs=res.data||[];if(!list)return;if(!notifs.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No notifications yet</div>';return;}
-    var icons={like:DSVG.like,dislike:DSVG.dislike,star:DSVG.star,repost:DSVG.repost,reply:DSVG.reply};
-    list.innerHTML=notifs.map(function(n){return'<div style="display:flex;gap:.7rem;align-items:flex-start;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04);opacity:'+(n.is_read?'.5':'1')+'"><div style="flex-shrink:0;color:rgba(255,255,255,.6)">'+(icons[n.type]||DSVG.reply)+'</div><div style="flex:1"><div style="font-size:.84rem;color:#fff">'+esc(n.message)+'</div><div style="font-size:.68rem;color:rgba(255,255,255,.3);margin-top:.2rem">'+chatTimeAgo(n.created_at)+'</div></div></div>';}).join('');
-    db.from('diski_notifications').update({is_read:true}).eq('user_id',ST.user.id).eq('is_read',false).then(function(){var cnt=document.getElementById('notif-count');if(cnt)cnt.style.display='none';});
-  });
-}
+function openNotifications(){if(!ST.user)return;var modal=document.getElementById('notif-modal'),list=document.getElementById('notif-list');if(!modal)return;modal.style.display='flex';if(list)list.innerHTML='<div class="loading-players" style="padding:1rem">Loading...</div>';db.from('diski_notifications').select('*').eq('user_id',ST.user.id).order('created_at',{ascending:false}).limit(30).then(function(res){var notifs=res.data||[];if(!list)return;if(!notifs.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No notifications yet</div>';return;}var icons={like:DSVG.like,dislike:DSVG.dislike,star:DSVG.star,repost:DSVG.repost,reply:DSVG.reply};list.innerHTML=notifs.map(function(n){return'<div style="display:flex;gap:.7rem;align-items:flex-start;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04);opacity:'+(n.is_read?'.5':'1')+'"><div style="flex-shrink:0;color:rgba(255,255,255,.6)">'+(icons[n.type]||DSVG.reply)+'</div><div style="flex:1"><div style="font-size:.84rem;color:#fff">'+esc(n.message)+'</div><div style="font-size:.68rem;color:rgba(255,255,255,.3);margin-top:.2rem">'+chatTimeAgo(n.created_at)+'</div></div></div>';}).join('');db.from('diski_notifications').update({is_read:true}).eq('user_id',ST.user.id).eq('is_read',false).then(function(){var cnt=document.getElementById('notif-count');if(cnt)cnt.style.display='none';});});}
 function closeNotifications(){var m=document.getElementById('notif-modal');if(m)m.style.display='none';}
 function esc(str){return(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function chatTimeAgo(ts){if(!ts)return'';var d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
 </script>
-
-</body>
-</html>
