@@ -302,12 +302,13 @@ body {
 }
 .hero-stat:last-child { border-right:none; }
 .hero-stat-num {
-  font-family:var(--font-display); font-size:clamp(.85rem,2.2vw,1.3rem); font-weight:900;
+  font-family:var(--font-display); font-size:clamp(.82rem,2.5vw,1.4rem); font-weight:900;
   color:var(--stat-highlight); line-height:1; white-space:nowrap;
 }
 .hero-stat-label {
-  font-family:var(--font-ui); font-size:clamp(.48rem,.9vw,.6rem); font-weight:600;
-  letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-top:3px;
+  font-family:var(--font-ui); font-size:clamp(.46rem,.85vw,.6rem); font-weight:600;
+  letter-spacing:1.2px; text-transform:uppercase; color:var(--text-muted); margin-top:3px;
+  white-space:nowrap;
 }
 
 /* =====================================================
@@ -1138,9 +1139,10 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
 html, body {
   margin:0; padding:0; min-height:100%;
   background:var(--bg-page); color:var(--text-primary);
-  overflow-x:clip; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
-*,*::before,*::after{-webkit-tap-highlight-color:transparent;}
+*,*::before,*::after { -webkit-tap-highlight-color:transparent; }
 
 /* =====================================================
    RESPONSIVE — Tablet / Mobile
@@ -1231,15 +1233,36 @@ html, body {
    DESKTOP: hide bottom nav (top nav used instead)
    ===================================================== */
 @media(min-width:901px) {
+  /* Show top nav, hide mobile bottom nav */
   .nav { display:flex !important; }
   .bottom-nav { display:none !important; }
   body { padding-top:60px !important; padding-bottom:0 !important; }
-  .nav-links { display:flex !important; align-items:center; gap:1.5rem; list-style:none; flex:1; margin-left:1.5rem; }
-  .nav-links a { font-size:.78rem; letter-spacing:.8px; }
-  .nav-right { display:flex; align-items:center; gap:.5rem; }
-  .page-section, .page-wrap { padding-left:2rem; padding-right:2rem; }
-  .player-panel { position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; }
-}
 
-/* ── Night mode only — theme toggle hidden ── */
-.theme-toggle { display:none !important; }
+  /* Nav layout */
+  .nav { height:60px; padding:0 2rem; justify-content:space-between; }
+  .nav-links { display:flex !important; align-items:center; gap:1.6rem; list-style:none; flex:1; margin-left:2rem; }
+  .nav-links a { font-size:.8rem; letter-spacing:.8px; }
+  .nav-right { display:flex; align-items:center; gap:.5rem; }
+
+  /* Hide theme toggle — night mode only */
+  .theme-toggle { display:none !important; }
+
+  /* Page layout */
+  .page-section, .page-wrap { padding-left:2.5rem; padding-right:2.5rem; }
+
+  /* Squad: pitch left, player list right — both full height */
+  .squad-body-grid { grid-template-columns:1fr 360px; align-items:start; }
+  .player-panel {
+    position:sticky; top:80px;
+    max-height:calc(100vh - 96px);
+    overflow-y:auto;
+    min-width:0;
+  }
+  #player-list { max-height:none; }
+
+  /* Diski Chat max width on desktop */
+  #page-chat .page-section { max-width:760px; }
+
+  /* Profile page */
+  #page-profile .page-section { max-width:760px; }
+}
