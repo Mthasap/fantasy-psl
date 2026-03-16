@@ -32,7 +32,7 @@
   <style>
     /* ── Auth modal ── */
     .auth-modal { display:none!important; }
-    .auth-modal.open { display:flex!important; }
+    .auth-modal.open { display:block!important; }
     /* ── Player modal ── */
     .player-modal { display:none!important; }
     .player-modal.open { display:flex!important; }
@@ -98,6 +98,11 @@
     position:absolute; top:1rem; right:1rem; background:transparent;
     border:none; color:rgba(255,255,255,.5); font-size:1.2rem; cursor:pointer; padding:.2rem .5rem;
   }
+  
+  
+  /* ── Guest Ad Banner ─────────────────────────────────────────────────── */
+  #guest-ad-banner { transition: opacity .3s, transform .3s; }
+  #guest-ad-banner.hide { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
 
   /* ── Footer disclaimer ───────────────────────────────────────────────── */
   .foot-disclaimer {
@@ -110,6 +115,62 @@
   
   
   /* ── Ad Banner ────────────────────────────────────────────────────── */
+  #ad-banner {
+    position: fixed;
+    bottom: 64px;           /* above bottom nav */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 420px;
+    background: rgba(10,10,18,.96);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 10px 12px 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 8000;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    backdrop-filter: blur(10px);
+    transition: opacity .3s, transform .3s;
+  }
+  #ad-banner.hide {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+  }
+  #ad-banner ins.adsbygoogle {
+    display: block;
+    flex: 1;
+    min-height: 50px;
+    background: transparent;
+  }
+  .ad-label {
+    font-family: var(--font-ui);
+    font-size: .52rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ad-close {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    color: rgba(255,255,255,.5);
+    font-size: .8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+  }
+  .ad-close:hover { background: rgba(255,255,255,.1); color: #fff; }
   
   
   /* ══════════════════════════════════════════════════
@@ -210,6 +271,7 @@
   }
 
   /* Ad banner spacing from bottom nav */
+  #ad-banner { bottom: 70px; }
   
   /* ══════════════════════════════════════════════════
      DAY / NIGHT THEME
@@ -323,7 +385,7 @@
   body.light-mode footer { background: #e8eaed !important; }
   body.light-mode .foot-copy,
   body.light-mode .foot-disclaimer { color: rgba(0,0,0,.4) !important; }
-  body.light-mode
+  body.light-mode #ad-banner { background: #fff !important; border-color: rgba(0,0,0,.12) !important; }
   body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#1e5c2a) !important; }
   body.light-mode .bench-tag { color: rgba(0,0,0,.5) !important; }
   body.light-mode .fix-row { border-color: rgba(0,0,0,.05) !important; background: #fff !important; }
@@ -407,6 +469,15 @@
   50%      { opacity:.4; transform:scale(1.3); }
 }
 </style>
+
+  <!-- ══════════════════════════════════════════════════════════════
+    GOOGLE ADSENSE — Replace ca-pub-XXXXXXXXXXXXXXXX with your
+    Publisher ID from adsense.google.com once your site is approved.
+    Remove the HTML comment markers to activate.
+  ═══════════════════════════════════════════════════════════════ -->
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+  -->
 </head>
 <body>
 
@@ -456,128 +527,114 @@
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="auth-modal" onclick="if(event.target===this)closeAuth()">
   <div class="auth-box" style="position:relative">
-    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <button class="auth-close" onclick="closeAuth()" aria-label="Close">✕</button>
+
+    <!-- LOGIN PANEL -->
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
       <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
         <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
+        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
         <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#B91C3A;cursor:pointer" checked>
-        <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me on this device</label>
+        <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me</label>
       </div>
       <div class="auth-error" id="l-err"></div>
       <button class="auth-submit" id="l-btn" onclick="doLogin()">Login</button>
       <div class="auth-switch">No account? <a onclick="openAuth('register')">Register free →</a></div>
     </div>
+
+    <!-- REGISTER PANEL -->
     <div id="auth-reg-panel" style="display:none">
       <div class="auth-box-title">Create Account</div>
-      <div class="auth-field"><label>Email</label><input id="r-email" type="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="e.g. BafanaMgr"></div>
-      <div class="auth-field"><label>Team Name</label><input id="r-team" type="text" placeholder="e.g. Soweto Stars FC"></div>
-        <!-- removed duplicate panel -->
 
-  <div class="auth-field">
-    <label>Email</label>
-    <input id="r-email" type="email">
-  </div>
+      <div class="auth-field">
+        <label>Email *</label>
+        <input id="r-email" type="email" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="auth-field">
+        <label>Username *</label>
+        <input id="r-user" type="text" autocomplete="username" placeholder="e.g. BafanaMgr">
+      </div>
+      <div class="auth-field">
+        <label>Team Name *</label>
+        <input id="r-team" type="text" placeholder="e.g. Soweto Stars FC">
+      </div>
+      <div class="auth-row">
+        <div class="auth-field">
+          <label>First Name</label>
+          <input id="signup-firstname" type="text" autocomplete="given-name">
+        </div>
+        <div class="auth-field">
+          <label>Last Name</label>
+          <input id="signup-lastname" type="text" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="auth-row">
+        <div class="auth-field">
+          <label>Age</label>
+          <input id="signup-age" type="number" min="13" max="99" placeholder="e.g. 24">
+        </div>
+        <div class="auth-field">
+          <label>City</label>
+          <input id="signup-city" type="text" autocomplete="address-level2" placeholder="e.g. Soweto">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label>Country</label>
+        <input id="signup-country" type="text" value="South Africa" autocomplete="country-name">
+      </div>
+      <div class="auth-field">
+        <label>PSL Team You Support</label>
+        <select id="signup-team">
+          <option value="">Select your team</option>
+          <option>Mamelodi Sundowns</option>
+          <option>Orlando Pirates</option>
+          <option>Kaizer Chiefs</option>
+          <option>AmaZulu FC</option>
+          <option>Stellenbosch FC</option>
+          <option>Sekhukhune United</option>
+          <option>Durban City</option>
+          <option>Golden Arrows</option>
+          <option>Polokwane City</option>
+          <option>TS Galaxy</option>
+          <option>Richards Bay</option>
+          <option>Chippa United</option>
+          <option>Marumo Gallants</option>
+          <option>Siwelele FC</option>
+          <option>Orbit College FC</option>
+          <option>Magesi FC</option>
+        </select>
+      </div>
+      <div class="auth-field">
+        <label>How did you hear about Fantasy PSL?</label>
+        <select id="signup-discovery">
+          <option value="">Select...</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Twitter/X">Twitter / X</option>
+          <option value="TikTok">TikTok</option>
+          <option value="YouTube">YouTube</option>
+          <option value="Friend">Friend / Word of mouth</option>
+          <option value="Football Website">Football website</option>
+          <option value="Google">Google search</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="auth-field">
+        <label>Referral Code <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input id="signup-referral" type="text" placeholder="e.g. FPSL-ABC123" style="text-transform:uppercase">
+      </div>
+      <div class="auth-field">
+        <label>Password * <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">(min 6 characters)</span></label>
+        <input id="r-pass" type="password" autocomplete="new-password" placeholder="••••••••">
+      </div>
 
-  <div class="auth-field">
-    <label>Username</label>
-    <input id="r-user" type="text">
-  </div>
-
-  <div class="auth-field">
-    <label>Team Name</label>
-    <input id="r-team" type="text">
-  </div>
-
-
-  <!-- ADD NEW FIELDS HERE -->
-
-
-  <div class="auth-field">
-    <label>First Name</label>
-    <input id="signup-firstname" type="text">
-  </div>
-
-  <div class="auth-field">
-    <label>Last Name</label>
-    <input id="signup-lastname" type="text">
-  </div>
-
-  <div class="auth-field">
-    <label>Age</label>
-    <input id="signup-age" type="number">
-  </div>
-
-  <div class="auth-field">
-    <label>City</label>
-    <input id="signup-city" type="text">
-  </div>
-
-  <div class="auth-field">
-    <label>Country</label>
-    <input id="signup-country" type="text" value="South Africa">
-  </div>
-
-  <div class="auth-field">
-    <label>PSL Team You Support</label>
-    <select id="signup-team">
-      <option value="">Select Team</option>
-      <option>Kaizer Chiefs</option>
-      <option>Orlando Pirates</option>
-      <option>Mamelodi Sundowns</option>
-      <option>SuperSport United</option>
-      <option>Stellenbosch FC</option>
-      <option>AmaZulu FC</option>
-      <option>Golden Arrows</option>
-      <option>Chippa United</option>
-      <option>Sekhukhune United</option>
-      <option>Polokwane City</option>
-      <option>TS Galaxy</option>
-      <option>Richards Bay</option>
-      <option>Magesi FC</option>
-    </select>
-  </div>
-
-  <div class="auth-field">
-    <label>How did you hear about FantasyPSL?</label>
-    <select id="signup-discovery">
-      <option>Instagram</option>
-      <option>Twitter/X</option>
-      <option>TikTok</option>
-      <option>YouTube</option>
-      <option>Friend</option>
-      <option>Football Website</option>
-      <option>Other</option>
-    </select>
-  </div>
-
-  <div class="auth-field">
-    <label>Referral Code (optional)</label>
-    <input id="signup-referral" type="text">
-  </div>
-
-
-  <!-- EXISTING PASSWORD FIELD -->
-
-
-  <div class="auth-field">
-    <label>Password</label>
-    <input id="r-pass" type="password">
-  </div>
-
-  <div class="auth-error" id="r-err"></div>
-
-  <button class="auth-submit" id="r-btn" onclick="doRegister()">
-    Create Account — Free
-  </button>
-
-</div>
+      <div class="auth-error" id="r-err"></div>
+      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account — Free</button>
+      <div class="auth-switch">Already have an account? <a onclick="openAuth('login')">Login →</a></div>
     </div>
   </div>
 </div>
@@ -671,9 +728,9 @@
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     <span class="bnav-label">Fixtures</span>
   </button>
-  <button class="bnav-btn" id="bn-chat" onclick="goPage('chat')">
-    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span class="bnav-label">Diski</span>
+  <button class="bnav-btn" id="bn-news" onclick="goPage('news')">
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    <span class="bnav-label">News</span>
   </button>
   <button class="bnav-btn" id="bn-stats" onclick="goPage('stats')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -1048,112 +1105,6 @@
 </div>
 
 <!-- FOOTER -->
-<!-- ══ DISKI CHAT ══ -->
-<div id="page-chat" class="page">
-  <div class="page-section" style="max-width:680px;padding-bottom:100px">
-
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem">
-      <div>
-        <span class="eyebrow">Community</span>
-        <h1 class="section-title" style="margin:0">Diski Chat</h1>
-      </div>
-      <div style="display:flex;align-items:center;gap:.6rem">
-        <div id="chat-notif-btn" style="display:none;position:relative;cursor:pointer" onclick="openNotifications()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span id="notif-count" style="display:none;position:absolute;top:-4px;right:-4px;background:#B91C3A;color:#fff;font-size:.5rem;font-weight:900;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- New Post Box -->
-    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;margin-bottom:1.2rem">
-      <div style="display:flex;gap:.75rem;align-items:flex-start">
-        <div id="chat-avatar" style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">?</div>
-        <div style="flex:1">
-          <textarea id="chat-input" placeholder="What's on your mind? ⚽" maxlength="280"
-            style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.5;resize:none;min-height:72px;max-height:160px"
-            oninput="chatInputChange(this)"></textarea>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
-            <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
-            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer;transition:opacity .2s;letter-spacing:.5px">Post</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Login prompt for guests -->
-    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1.2rem 1rem;margin-bottom:1.2rem;text-align:center">
-      <div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem">Join the conversation</div>
-      <div style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.8rem">Create a free account to post and react</div>
-      <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.2rem;cursor:pointer">Register Free</button>
-    </div>
-
-    <!-- Feed filter tabs -->
-    <div style="display:flex;gap:.4rem;margin-bottom:1rem">
-      <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">Latest</button>
-      <button class="ftab" id="ctab-top"    onclick="setChatTab('top',this)">Top</button>
-    </div>
-
-    <!-- Ad slot (between posts — non-intrusive) -->
-    <!-- AdSense slot: replace data-ad-slot with your slot ID when approved -->
-    <!-- <ins class="adsbygoogle" style="display:block;margin:1rem 0" data-ad-format="fluid" data-ad-layout-key="-6t+ed+2i-1n-4w" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"></ins> -->
-
-    <!-- Posts feed -->
-    <div id="chat-feed">
-      <div class="loading-players">Loading Diski Chat…</div>
-    </div>
-
-    <!-- Load more -->
-    <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
-      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more posts</button>
-    </div>
-  </div>
-</div>
-
-<!-- NOTIFICATIONS MODAL -->
-<div id="notif-modal" onclick="if(event.target===this)closeNotifications()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:4000;align-items:flex-end;justify-content:center">
-  <div style="width:100%;max-width:480px;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.2rem 1rem 2rem;max-height:70vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff">Notifications</div>
-      <button onclick="closeNotifications()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer;font-size:.9rem">✕</button>
-    </div>
-    <div id="notif-list"></div>
-  </div>
-</div>
-
-<!-- REPORT MODAL -->
-<div id="report-modal" onclick="if(event.target===this)closeReportModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:4000;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:380px;padding:1.4rem;position:relative">
-    <button onclick="closeReportModal()" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer">✕</button>
-    <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1rem">Report Content</div>
-    <div id="report-options" style="display:flex;flex-direction:column;gap:.5rem"></div>
-    <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-top:.8rem">Reports are reviewed by moderators. Repeated false reports may result in a ban.</div>
-  </div>
-</div>
-
-<!-- REPLIES MODAL -->
-<div id="replies-modal" onclick="if(event.target===this)closeReplies()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:4000;align-items:flex-end;justify-content:center">
-  <div style="width:100%;max-width:680px;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.2rem 1rem 0;max-height:80vh;display:flex;flex-direction:column">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;flex-shrink:0">
-      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff">Replies</div>
-      <button onclick="closeReplies()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.5);cursor:pointer">✕</button>
-    </div>
-    <div id="replies-list" style="overflow-y:auto;flex:1;padding-bottom:.5rem"></div>
-    <div id="reply-compose" style="display:none;padding:.8rem 0 calc(.8rem + env(safe-area-inset-bottom));flex-shrink:0;border-top:1px solid rgba(255,255,255,.06)">
-      <div style="display:flex;gap:.6rem;align-items:flex-end">
-        <textarea id="reply-input" placeholder="Write a reply…" maxlength="280"
-          style="flex:1;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem .8rem;color:#fff;font-family:var(--font-body);font-size:.85rem;resize:none;min-height:44px;max-height:120px;outline:none"
-          oninput="replyInputChange(this)"></textarea>
-        <button onclick="submitReply()" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.55rem .9rem;cursor:pointer;flex-shrink:0">Reply</button>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:.3rem">
-        <span id="reply-charcount" style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3)">280</span>
-      </div>
-    </div>
-  </div>
-</div>
-
 <footer>
   <div class="foot-inner">
     <div class="foot-logo"><img id="footer-logo" alt="Fantasy PSL" style="height:28px;opacity:.4;filter:grayscale(1)"></div>
@@ -1306,6 +1257,7 @@ function cacheValid(key) {
 db.auth.onAuthStateChange(function(event, session) {
   ST.user = session ? session.user : null;
   syncNav();
+  // Show/hide ad banner based on login state
   if (ST.user) {
     loadGW(function() { loadMySquad(); });
   } else {
@@ -1316,6 +1268,7 @@ db.auth.onAuthStateChange(function(event, session) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Init ad visibility
   // Set logo src
   var imgs = document.querySelectorAll('#nav-logo-img, #footer-logo');
   imgs.forEach(function(img) { img.src = LOGO_PATH; });
@@ -1333,8 +1286,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ════════════════════════════════════════════════════
 //  NAVIGATION
 // ════════════════════════════════════════════════════
-var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-chat','bn-stats','bn-leagues'];
-var BN_MAP = { home:0, squad:1, fixtures:2, chat:3, news:3, stats:4, leagues:5 };
+var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-news','bn-stats','bn-leagues'];
+var BN_MAP = { home:0, squad:1, fixtures:2, news:3, stats:4, leagues:5 };
 
 function goPage(id) {
   var guarded = ['squad','leagues','profile'];
@@ -1355,7 +1308,6 @@ function goPage(id) {
 
   if (id === 'fixtures') { loadFixtures(); loadTable(); }
   if (id === 'news')     { loadNews(); loadInjuries(); }
-  if (id === 'chat')     { loadDiskiChat(); }
   if (id === 'stats')    loadStats();
   if (id === 'leagues')  loadLeagues();
   if (id === 'profile')  loadProfile();
@@ -1377,6 +1329,7 @@ function syncNav() {
     if (su) su.style.display = '';
     if (um) { um.style.display = 'none'; um.classList.remove('visible'); }
   }
+  // Show ad for guests, hide for logged-in users
 }
 
 // ════════════════════════════════════════════════════
@@ -1435,22 +1388,101 @@ function doLogin() {
   });
 }
 
-function doRegister() {
+async function doRegister() {
   var btn   = document.getElementById('r-btn');
-  var email = document.getElementById('r-email').value.trim();
-  var pass  = document.getElementById('r-pass').value;
-  var user  = document.getElementById('r-user').value.trim();
-  var team  = document.getElementById('r-team').value.trim();
-  if (!email || !pass || !user || !team) { document.getElementById('r-err').textContent = 'All fields required'; return; }
-  if (pass.length < 6) { document.getElementById('r-err').textContent = 'Password must be 6+ characters'; return; }
-  btn.textContent = 'Creating…'; btn.disabled = true;
-  db.auth.signUp({ email: email, password: pass, options: { data: { username: user, team_name: team } } }).then(function(res) {
-    btn.textContent = 'Create Account — Free'; btn.disabled = false;
-    if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
+  var errEl = document.getElementById('r-err');
+  var email = (document.getElementById('r-email').value || '').trim();
+  var pass  = (document.getElementById('r-pass').value  || '');
+  var user  = (document.getElementById('r-user').value  || '').trim();
+  var team  = (document.getElementById('r-team').value  || '').trim();
+
+  // Clear previous error
+  if (errEl) errEl.textContent = '';
+
+  // Validation
+  if (!email) { if (errEl) errEl.textContent = 'Email is required'; return; }
+  if (!user)  { if (errEl) errEl.textContent = 'Username is required'; return; }
+  if (!team)  { if (errEl) errEl.textContent = 'Team name is required'; return; }
+  if (!pass)  { if (errEl) errEl.textContent = 'Password is required'; return; }
+  if (pass.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters'; return; }
+
+  if (btn) { btn.textContent = 'Creating…'; btn.disabled = true; }
+
+  var firstName    = (document.getElementById('signup-firstname') || {}).value || null;
+  var lastName     = (document.getElementById('signup-lastname')  || {}).value || null;
+  var age          = (document.getElementById('signup-age')       || {}).value || null;
+  var city         = (document.getElementById('signup-city')      || {}).value || null;
+  var country      = (document.getElementById('signup-country')   || {}).value || 'South Africa';
+  var supportedTeam= (document.getElementById('signup-team')      || {}).value || null;
+  var discovery    = (document.getElementById('signup-discovery') || {}).value || null;
+  var referralUsed = ((document.getElementById('signup-referral') || {}).value || '').trim().toUpperCase() || null;
+  var referralCode = generateReferralCode();
+
+  try {
+    // 1. Sign up with Supabase Auth
+    var res = await db.auth.signUp({
+      email: email,
+      password: pass,
+      options: { data: { username: user, team_name: team } }
+    });
+
+    if (res.error) throw new Error(res.error.message);
+
+    var userId = res.data.user && res.data.user.id;
+    if (!userId) throw new Error('Sign-up succeeded but no user ID returned. Check your email to confirm.');
+
+    // 2. Insert profile row
+    var profileInsert = await db.from('profiles').insert({
+      id:               userId,
+      username:         user,
+      team_name:        team,
+      first_name:       firstName ? firstName.trim() : null,
+      last_name:        lastName  ? lastName.trim()  : null,
+      age:              age ? parseInt(age) : null,
+      city:             city ? city.trim() : null,
+      country:          country || 'South Africa',
+      supported_team:   supportedTeam  || null,
+      discovery_source: discovery      || null,
+      referral_code:    referralCode,
+      referred_by:      referralUsed   || null,
+      referral_count:   0
+    });
+
+    // Profile insert error is non-fatal (RLS may require email confirmation first)
+    if (profileInsert.error) {
+      console.warn('[register] Profile insert deferred:', profileInsert.error.message);
+    }
+
+    // 3. Increment referrer count if a code was used
+    if (referralUsed) {
+      var refRes = await db.from('profiles').select('id,referral_count').eq('referral_code', referralUsed).single();
+      if (refRes.data) {
+        await db.from('profiles').update({ referral_count: (refRes.data.referral_count || 0) + 1 }).eq('id', refRes.data.id);
+      }
+    }
+
+    // 4. Success
+    if (btn) { btn.textContent = 'Create Account — Free'; btn.disabled = false; }
     closeAuth();
-    showToast('Account created! Check your email to confirm.', 'success');
-  });
+    showToast('Account created! 🎉 Check your email to confirm, then log in.', 'success');
+
+  } catch(err) {
+    if (btn) { btn.textContent = 'Create Account — Free'; btn.disabled = false; }
+    var msg = err.message || 'Registration failed. Please try again.';
+    if (msg.includes('already registered') || msg.includes('already been registered')) {
+      msg = 'This email is already registered. Try logging in instead.';
+    }
+    if (errEl) errEl.textContent = msg;
+  }
 }
+
+function generateReferralCode() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var code  = 'FPSL-';
+  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 
 function doLogout() {
   db.auth.signOut().then(function() {
@@ -4697,10 +4729,6 @@ function closeClubProfile() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-//  MISSING FUNCTIONS — all injected safely here
-// ═══════════════════════════════════════════════════════════════
-
 // ── Game Week display ────────────────────────────────────────
 function updateGWDisplay(gwNumber) {
   if (!gwNumber) return;
@@ -4980,23 +5008,6 @@ function castPOTMVote(matchKey, playerId) {
   </div>
 </div>
 
-<script>
-
-    function generateReferralCode(){
-
- const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code = "FPSL-";
-
- for(let i=0;i<6;i++){
-   code += chars[Math.floor(Math.random()*chars.length)];
- }
-
- return code;
-
-}
-
-  </script>
-</div>
 
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
   <div id="action-sheet" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
@@ -5054,661 +5065,6 @@ function castPOTMVote(matchKey, playerId) {
     </div>
   </div>
 
-
-<script>
-function generateReferralCode(){
- const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
- let code="FPSL-";
- for(let i=0;i<6;i++){
-   code+=chars[Math.floor(Math.random()*chars.length)];
- }
- return code;
-}
-
-async function doRegister(){
-
- const email=document.getElementById("r-email").value;
- const password=document.getElementById("r-pass").value;
- const username=document.getElementById("r-user").value;
- const teamName=document.getElementById("r-team").value;
-
- const firstName=document.getElementById("signup-firstname")?.value||null;
- const lastName=document.getElementById("signup-lastname")?.value||null;
- const age=document.getElementById("signup-age")?.value||null;
- const city=document.getElementById("signup-city")?.value||null;
- const country=document.getElementById("signup-country")?.value||"South Africa";
- const supportedTeam=document.getElementById("signup-team")?.value||null;
- const discovery=document.getElementById("signup-discovery")?.value||null;
- const referralUsed=document.getElementById("signup-referral")?.value||null;
-
- const referralCode=generateReferralCode();
-
- const supabaseUrl = window.SUPABASE_URL || "";
- const supabaseKey = window.SUPABASE_ANON_KEY || "";
-
- const sb = supabase.createClient(supabaseUrl, supabaseKey);
-
- const { data, error } = await sb.auth.signUp({
-  email: email,
-  password: password
- });
-
- if(error){
-   document.getElementById("r-err").innerText=error.message;
-   return;
- }
-
- const userId=data.user.id;
-
- await sb.from("profiles").insert({
-   id:userId,
-   username:username,
-   team_name:teamName,
-   first_name:firstName,
-   last_name:lastName,
-   age:age,
-   city:city,
-   country:country,
-   supported_team:supportedTeam,
-   discovery_source:discovery,
-   referral_code:referralCode,
-   referred_by:referralUsed
- });
-
- alert("Account created successfully!");
- location.reload();
-}
-</script>
-
-<script>
-// ═══════════════════════════════════════════════════════════════════════
-//  DISKI CHAT — Community Forum
-//  Tables: diski_posts, diski_replies, diski_reactions, diski_reports,
-//          diski_notifications
-// ═══════════════════════════════════════════════════════════════════════
-
-var CHAT = {
-  posts:        [],
-  tab:          'latest',   // 'latest' | 'top'
-  page:         0,
-  PAGE_SIZE:    15,
-  hasMore:      false,
-  replyPostId:  null,       // post being replied to
-  reportTarget: null,       // { id, type }
-  myReactions:  {}          // targetId -> Set of reaction types
-};
-
-// ── Profanity / content filter ──────────────────────────────────────
-// Expanded list — blocks hate speech, slurs, explicit content, spam patterns
-var BLOCKED = [
-  // Explicit / sexual
-  'fuck','shit','cunt','bitch','asshole','dick','cock','pussy','nigger','nigga',
-  'faggot','fag','slut','whore','bastard','wanker','prick','twat','arse',
-  // Hate speech indicators
-  'kaffir','boer','terrorist','jihad',
-  // Spam / scam patterns
-  'click here','buy now','free money','make money fast','bitcoin giveaway',
-  'onlyfans','porn','xxx','nude','naked','sex tape',
-  // Violence
-  'kill yourself','kys','go die','i will kill'
-];
-
-var BLOCKED_URL_PATTERN = /https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.(com|co\.za|net|org|io|xyz|cc|tk|ml)[\/\s]?/gi;
-
-function filterContent(text) {
-  if (!text || !text.trim()) return { ok: false, reason: 'Post cannot be empty' };
-  var t = text.trim();
-  if (t.length > 280) return { ok: false, reason: 'Post exceeds 280 characters' };
-
-  // Block any URLs
-  if (BLOCKED_URL_PATTERN.test(t)) {
-    BLOCKED_URL_PATTERN.lastIndex = 0;
-    return { ok: false, reason: 'Links are not allowed in Diski Chat' };
-  }
-  BLOCKED_URL_PATTERN.lastIndex = 0;
-
-  // Block profanity / hate speech
-  var lower = t.toLowerCase();
-  for (var i = 0; i < BLOCKED.length; i++) {
-    if (lower.includes(BLOCKED[i])) {
-      return { ok: false, reason: 'Your post contains language that is not allowed on Diski Chat' };
-    }
-  }
-
-  // Block excessive caps (shouting / spam)
-  var caps = (t.match(/[A-Z]/g) || []).length;
-  if (t.length > 20 && caps / t.length > 0.7) {
-    return { ok: false, reason: 'Too many capital letters — please write normally' };
-  }
-
-  return { ok: true };
-}
-
-// ── Navigation / init ────────────────────────────────────────────────
-function loadDiskiChat() {
-  // Show/hide compose vs login prompt
-  var compose = document.getElementById('chat-compose');
-  var prompt  = document.getElementById('chat-login-prompt');
-  var notifBtn = document.getElementById('chat-notif-btn');
-  if (ST.user) {
-    if (compose) compose.style.display = 'block';
-    if (prompt)  prompt.style.display  = 'none';
-    if (notifBtn) notifBtn.style.display = 'block';
-    // Set avatar initials
-    var av = document.getElementById('chat-avatar');
-    if (av) {
-      var meta = ST.user.user_metadata || {};
-      av.textContent = ((meta.username || meta.team_name || ST.user.email || '?')[0]).toUpperCase();
-    }
-    loadChatNotifications();
-  } else {
-    if (compose) compose.style.display = 'none';
-    if (prompt)  prompt.style.display  = 'block';
-    if (notifBtn) notifBtn.style.display = 'none';
-  }
-  fetchPosts(true);
-}
-
-function setChatTab(tab, el) {
-  CHAT.tab = tab;
-  document.querySelectorAll('#ctab-latest,#ctab-top').forEach(function(b) { b.classList.remove('active'); });
-  if (el) el.classList.add('active');
-  fetchPosts(true);
-}
-
-// ── Fetch posts ──────────────────────────────────────────────────────
-function fetchPosts(reset) {
-  if (reset) { CHAT.posts = []; CHAT.page = 0; }
-  var feed = document.getElementById('chat-feed');
-  if (!feed) return;
-  if (reset) feed.innerHTML = '<div class="loading-players">Loading…</div>';
-
-  var order = CHAT.tab === 'top' ? 'likes' : 'created_at';
-  var from  = CHAT.page * CHAT.PAGE_SIZE;
-
-  db.from('diski_posts')
-    .select('*')
-    .eq('is_removed', false)
-    .order(order, { ascending: false })
-    .range(from, from + CHAT.PAGE_SIZE)
-    .then(function(res) {
-      var posts = res.data || [];
-      CHAT.hasMore = posts.length > CHAT.PAGE_SIZE;
-      if (CHAT.hasMore) posts = posts.slice(0, CHAT.PAGE_SIZE);
-
-      if (reset) {
-        CHAT.posts = posts;
-      } else {
-        CHAT.posts = CHAT.posts.concat(posts);
-      }
-
-      // Load user's reactions if logged in
-      if (ST.user && CHAT.posts.length) {
-        var ids = CHAT.posts.map(function(p) { return "'" + p.id + "'"; }).join(',');
-        db.from('diski_reactions')
-          .select('target_id,reaction')
-          .eq('user_id', ST.user.id)
-          .in('target_id', CHAT.posts.map(function(p){ return p.id; }))
-          .then(function(rRes) {
-            (rRes.data || []).forEach(function(r) {
-              if (!CHAT.myReactions[r.target_id]) CHAT.myReactions[r.target_id] = {};
-              CHAT.myReactions[r.target_id][r.reaction] = true;
-            });
-            renderFeed();
-          });
-      } else {
-        renderFeed();
-      }
-
-      var lm = document.getElementById('chat-load-more');
-      if (lm) lm.style.display = CHAT.hasMore ? 'block' : 'none';
-    })
-    .catch(function(e) {
-      if (feed) feed.innerHTML = '<div class="loading-players">Could not load posts. Please try again.</div>';
-    });
-}
-
-function loadMorePosts() {
-  CHAT.page++;
-  fetchPosts(false);
-}
-
-// ── Render feed ──────────────────────────────────────────────────────
-function renderFeed() {
-  var feed = document.getElementById('chat-feed');
-  if (!feed) return;
-  if (!CHAT.posts.length) {
-    feed.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3)">' +
-      '<div style="font-size:2rem;margin-bottom:.5rem">⚽</div>' +
-      '<div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet — be the first!</div>' +
-    '</div>';
-    return;
-  }
-
-  feed.innerHTML = CHAT.posts.map(function(p, idx) {
-    return renderPostCard(p, idx);
-  }).join('');
-}
-
-function renderPostCard(p, idx) {
-  var myR   = CHAT.myReactions[p.id] || {};
-  var ago   = timeAgo(p.created_at);
-  var init  = (p.username || '?')[0].toUpperCase();
-  var isOwn = ST.user && ST.user.id === p.user_id;
-
-  // Insert an ad placeholder every 8 posts (non-intrusive)
-  var adSlot = (idx > 0 && idx % 8 === 0)
-    ? '<div style="text-align:center;padding:.6rem;margin:.5rem 0;background:rgba(255,255,255,.02);border-radius:8px;border:1px dashed rgba(255,255,255,.06)">' +
-      '<span style="font-size:.6rem;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase">Sponsored</span>' +
-      '<!-- AdSense: replace with <ins class="adsbygoogle"> once approved -->' +
-      '</div>'
-    : '';
-
-  return adSlot +
-    '<div class="diski-post" id="post-' + p.id + '" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.75rem">' +
-      '<div style="display:flex;gap:.7rem;align-items:flex-start">' +
-        '<div style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">' + init + '</div>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
-            '<span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">' + escapeHtml(p.username || 'Manager') + '</span>' +
-            (p.team_name ? '<span style="font-size:.7rem;color:rgba(255,255,255,.35)">' + escapeHtml(p.team_name) + '</span>' : '') +
-            '<span style="font-size:.68rem;color:rgba(255,255,255,.25);margin-left:auto">' + ago + '</span>' +
-          '</div>' +
-          '<div style="font-size:.88rem;color:rgba(255,255,255,.85);line-height:1.55;margin:.35rem 0 .75rem;word-break:break-word">' + escapeHtml(p.content) + '</div>' +
-          '<div style="display:flex;align-items:center;gap:.2rem;flex-wrap:wrap">' +
-            reactionBtn('like',    '👍', p.likes,    p.id, myR.like)    +
-            reactionBtn('dislike', '👎', p.dislikes, p.id, myR.dislike) +
-            reactionBtn('star',    '⭐', p.stars,    p.id, myR.star)    +
-            reactionBtn('repost',  '🔁', p.reposts,  p.id, myR.repost)  +
-            '<button onclick="openReplies(\'' + p.id + '\')" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:.75rem;cursor:pointer;padding:.3rem .5rem;display:flex;align-items:center;gap:.3rem;border-radius:6px">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:14px;height:14px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-              '<span>' + (p.reply_count || 0) + '</span>' +
-            '</button>' +
-            '<button onclick="openReport(\'' + p.id + '\',\'post\')" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:.68rem;cursor:pointer;padding:.3rem .5rem;border-radius:6px;margin-left:auto" title="Report post">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>' +
-            '</button>' +
-            (isOwn ? '<button onclick="deletePost(\'' + p.id + '\')" style="background:none;border:none;color:rgba(212,39,79,.4);font-size:.68rem;cursor:pointer;padding:.3rem .5rem;border-radius:6px" title="Delete">✕</button>' : '') +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-}
-
-function reactionBtn(type, emoji, count, postId, active) {
-  var bg  = active ? 'background:rgba(185,28,58,.15);color:#D4274F;' : 'color:rgba(255,255,255,.45);';
-  return '<button onclick="react(\'' + postId + '\',\'post\',\'' + type + '\')" style="background:none;border:none;' + bg + 'font-size:.75rem;cursor:pointer;padding:.3rem .5rem;border-radius:6px;display:flex;align-items:center;gap:.3rem">' +
-    emoji + '<span style="font-family:var(--font-ui);font-size:.7rem">' + (count || 0) + '</span>' +
-  '</button>';
-}
-
-// ── Submit post ──────────────────────────────────────────────────────
-function chatInputChange(el) {
-  var len = el.value.length;
-  var cc  = document.getElementById('chat-charcount');
-  if (cc) {
-    cc.textContent  = 280 - len;
-    cc.style.color  = len > 260 ? '#D4274F' : len > 230 ? '#DBA94A' : 'rgba(255,255,255,.3)';
-  }
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-}
-
-function submitPost() {
-  if (!ST.user) { openAuth('login'); return; }
-  var input = document.getElementById('chat-input');
-  var text  = input ? input.value : '';
-  var check = filterContent(text);
-  if (!check.ok) { showToast(check.reason, 'warning'); return; }
-
-  var btn = document.getElementById('chat-submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
-
-  var meta = ST.user.user_metadata || {};
-  db.from('diski_posts').insert({
-    user_id:   ST.user.id,
-    username:  meta.username || ST.user.email.split('@')[0],
-    team_name: meta.team_name || null,
-    content:   text.trim()
-  }).select().single().then(function(res) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
-    if (res.error) { showToast('Could not post — please try again', 'error'); return; }
-    if (input) { input.value = ''; chatInputChange(input); }
-    showToast('Posted! ⚽', 'success');
-    // Prepend new post to feed
-    CHAT.posts.unshift(res.data);
-    renderFeed();
-  });
-}
-
-// ── Reactions ────────────────────────────────────────────────────────
-function react(targetId, targetType, reaction) {
-  if (!ST.user) { openAuth('login'); return; }
-
-  var myR = CHAT.myReactions[targetId] || {};
-  var alreadyDone = !!myR[reaction];
-
-  if (alreadyDone) {
-    // Remove reaction
-    db.from('diski_reactions')
-      .delete()
-      .match({ user_id: ST.user.id, target_id: targetId, reaction: reaction })
-      .then(function() {
-        if (!CHAT.myReactions[targetId]) return;
-        delete CHAT.myReactions[targetId][reaction];
-        // Decrement locally
-        var post = CHAT.posts.find(function(p) { return p.id === targetId; });
-        if (post && post[reaction + 's'] !== undefined) post[reaction + 's'] = Math.max(0, post[reaction + 's'] - 1);
-        renderFeed();
-      });
-  } else {
-    // Add reaction
-    db.from('diski_reactions')
-      .upsert({ user_id: ST.user.id, target_id: targetId, target_type: targetType, reaction: reaction }, { onConflict: 'user_id,target_id,reaction' })
-      .then(function(res) {
-        if (res.error) return;
-        if (!CHAT.myReactions[targetId]) CHAT.myReactions[targetId] = {};
-        CHAT.myReactions[targetId][reaction] = true;
-        // Increment locally
-        var post = CHAT.posts.find(function(p) { return p.id === targetId; });
-        if (post && post[reaction + 's'] !== undefined) post[reaction + 's']++;
-        renderFeed();
-        // Create notification for post owner
-        sendReactionNotification(targetId, targetType, reaction);
-      });
-  }
-}
-
-function sendReactionNotification(targetId, targetType, reaction) {
-  var meta = ST.user.user_metadata || {};
-  var fromUser = meta.username || ST.user.email.split('@')[0];
-  var labels = { like:'liked', dislike:'disliked', star:'starred', repost:'reposted' };
-  var label = labels[reaction] || reaction;
-
-  // Find post owner
-  var post = CHAT.posts.find(function(p) { return p.id === targetId; });
-  if (!post || post.user_id === ST.user.id) return; // Don't notify yourself
-
-  db.from('diski_notifications').insert({
-    user_id:       post.user_id,
-    from_username: fromUser,
-    post_id:       targetId,
-    type:          reaction,
-    message:       fromUser + ' ' + label + ' your post'
-  }).then(function() {});
-}
-
-// ── Replies ──────────────────────────────────────────────────────────
-function openReplies(postId) {
-  CHAT.replyPostId = postId;
-  var modal = document.getElementById('replies-modal');
-  var list  = document.getElementById('replies-list');
-  var comp  = document.getElementById('reply-compose');
-  if (!modal) return;
-
-  if (ST.user) {
-    if (comp) comp.style.display = 'block';
-  } else {
-    if (comp) comp.style.display = 'none';
-  }
-
-  if (list) list.innerHTML = '<div class="loading-players" style="padding:1rem">Loading replies…</div>';
-  modal.style.display = 'flex';
-
-  db.from('diski_replies')
-    .select('*')
-    .eq('post_id', postId)
-    .eq('is_removed', false)
-    .order('created_at', { ascending: true })
-    .then(function(res) {
-      var replies = res.data || [];
-      if (!list) return;
-      if (!replies.length) {
-        list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No replies yet — be the first!</div>';
-        return;
-      }
-      list.innerHTML = replies.map(function(r) {
-        var init  = (r.username || '?')[0].toUpperCase();
-        var ago   = timeAgo(r.created_at);
-        var isOwn = ST.user && ST.user.id === r.user_id;
-        return '<div style="display:flex;gap:.6rem;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
-          '<div style="width:30px;height:30px;border-radius:50%;background:#1A6B42;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;color:#fff;flex-shrink:0">' + init + '</div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="display:flex;gap:.4rem;align-items:baseline;flex-wrap:wrap">' +
-              '<span style="font-size:.82rem;font-weight:700;color:#fff">' + escapeHtml(r.username) + '</span>' +
-              '<span style="font-size:.65rem;color:rgba(255,255,255,.25)">' + ago + '</span>' +
-            '</div>' +
-            '<div style="font-size:.84rem;color:rgba(255,255,255,.8);line-height:1.5;margin-top:.2rem;word-break:break-word">' + escapeHtml(r.content) + '</div>' +
-          '</div>' +
-          (isOwn ? '<button onclick="deleteReply(\'' + r.id + '\')" style="background:none;border:none;color:rgba(212,39,79,.4);cursor:pointer;font-size:.7rem;flex-shrink:0;padding:.2rem">✕</button>' : '') +
-        '</div>';
-      }).join('');
-    });
-}
-
-function closeReplies() {
-  var modal = document.getElementById('replies-modal');
-  if (modal) modal.style.display = 'none';
-  CHAT.replyPostId = null;
-  var inp = document.getElementById('reply-input');
-  if (inp) inp.value = '';
-}
-
-function replyInputChange(el) {
-  var len = el.value.length;
-  var cc  = document.getElementById('reply-charcount');
-  if (cc) { cc.textContent = 280 - len; cc.style.color = len > 260 ? '#D4274F' : 'rgba(255,255,255,.3)'; }
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-function submitReply() {
-  if (!ST.user) { openAuth('login'); return; }
-  if (!CHAT.replyPostId) return;
-  var input = document.getElementById('reply-input');
-  var text  = input ? input.value : '';
-  var check = filterContent(text);
-  if (!check.ok) { showToast(check.reason, 'warning'); return; }
-
-  var meta = ST.user.user_metadata || {};
-  db.from('diski_replies').insert({
-    post_id:   CHAT.replyPostId,
-    user_id:   ST.user.id,
-    username:  meta.username || ST.user.email.split('@')[0],
-    team_name: meta.team_name || null,
-    content:   text.trim()
-  }).then(function(res) {
-    if (res.error) { showToast('Could not post reply', 'error'); return; }
-    if (input) { input.value = ''; replyInputChange(input); }
-    showToast('Reply posted ✓', 'success');
-    // Notify post owner
-    var post = CHAT.posts.find(function(p) { return p.id === CHAT.replyPostId; });
-    if (post && post.user_id !== ST.user.id) {
-      var fromUser = meta.username || ST.user.email.split('@')[0];
-      db.from('diski_notifications').insert({
-        user_id:       post.user_id,
-        from_username: fromUser,
-        post_id:       CHAT.replyPostId,
-        type:          'reply',
-        message:       fromUser + ' replied to your post'
-      });
-      // Update local reply count
-      post.reply_count = (post.reply_count || 0) + 1;
-      renderFeed();
-    }
-    // Refresh replies list
-    openReplies(CHAT.replyPostId);
-  });
-}
-
-// ── Delete ───────────────────────────────────────────────────────────
-function deletePost(postId) {
-  if (!ST.user) return;
-  if (!confirm('Delete this post?')) return;
-  db.from('diski_posts').delete().match({ id: postId, user_id: ST.user.id }).then(function() {
-    CHAT.posts = CHAT.posts.filter(function(p) { return p.id !== postId; });
-    renderFeed();
-    showToast('Post deleted', 'info');
-  });
-}
-
-function deleteReply(replyId) {
-  if (!ST.user) return;
-  if (!confirm('Delete this reply?')) return;
-  db.from('diski_replies').delete().match({ id: replyId, user_id: ST.user.id }).then(function() {
-    showToast('Reply deleted', 'info');
-    if (CHAT.replyPostId) openReplies(CHAT.replyPostId);
-  });
-}
-
-// ── Report ───────────────────────────────────────────────────────────
-var REPORT_REASONS = [
-  { key: 'hate_speech',    label: '🚫 Hate speech or slurs' },
-  { key: 'harassment',     label: '😠 Harassment or threats' },
-  { key: 'inappropriate',  label: '⚠️ Inappropriate content' },
-  { key: 'spam',           label: '📢 Spam or repetitive posts' },
-  { key: 'misinformation', label: '❌ Misinformation' },
-  { key: 'other',          label: '🏳️ Other' }
-];
-
-function openReport(targetId, targetType) {
-  if (!ST.user) { openAuth('login'); return; }
-  CHAT.reportTarget = { id: targetId, type: targetType };
-  var modal = document.getElementById('report-modal');
-  var opts  = document.getElementById('report-options');
-  if (!modal || !opts) return;
-  opts.innerHTML = REPORT_REASONS.map(function(r) {
-    return '<button onclick="submitReport(\'' + r.key + '\')" style="' +
-      'display:block;width:100%;text-align:left;background:rgba(255,255,255,.04);' +
-      'border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.75);' +
-      'font-family:var(--font-ui);font-size:.82rem;font-weight:600;padding:.65rem .9rem;' +
-      'cursor:pointer;margin-bottom:.3rem;transition:background .15s">' +
-      r.label + '</button>';
-  }).join('');
-  modal.style.display = 'flex';
-}
-
-function closeReportModal() {
-  var modal = document.getElementById('report-modal');
-  if (modal) modal.style.display = 'none';
-  CHAT.reportTarget = null;
-}
-
-function submitReport(reason) {
-  if (!ST.user || !CHAT.reportTarget) return;
-  db.from('diski_reports').insert({
-    reporter_id: ST.user.id,
-    target_id:   CHAT.reportTarget.id,
-    target_type: CHAT.reportTarget.type,
-    reason:      reason
-  }).then(function(res) {
-    closeReportModal();
-    if (res.error && res.error.code === '23505') {
-      showToast('You\'ve already reported this content', 'info');
-    } else {
-      showToast('Report submitted — our team will review it ✓', 'success');
-      // Auto-flag post if it gets 5+ reports
-      checkAutoFlag(CHAT.reportTarget.id, CHAT.reportTarget.type);
-    }
-  });
-}
-
-function checkAutoFlag(targetId, targetType) {
-  db.from('diski_reports')
-    .select('id', { count: 'exact', head: true })
-    .eq('target_id', targetId)
-    .eq('resolved', false)
-    .then(function(res) {
-      if (res.count >= 5) {
-        var table = targetType === 'post' ? 'diski_posts' : 'diski_replies';
-        db.from(table).update({ is_flagged: true }).eq('id', targetId);
-      }
-    });
-}
-
-// ── Notifications ────────────────────────────────────────────────────
-function loadChatNotifications() {
-  if (!ST.user) return;
-  db.from('diski_notifications')
-    .select('*')
-    .eq('user_id', ST.user.id)
-    .eq('is_read', false)
-    .order('created_at', { ascending: false })
-    .limit(20)
-    .then(function(res) {
-      var notifs = res.data || [];
-      var cnt = document.getElementById('notif-count');
-      if (cnt) {
-        if (notifs.length > 0) {
-          cnt.style.display = 'flex';
-          cnt.textContent = notifs.length > 9 ? '9+' : notifs.length;
-        } else {
-          cnt.style.display = 'none';
-        }
-      }
-    });
-}
-
-function openNotifications() {
-  if (!ST.user) return;
-  var modal = document.getElementById('notif-modal');
-  var list  = document.getElementById('notif-list');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  if (list) list.innerHTML = '<div class="loading-players" style="padding:1rem">Loading…</div>';
-
-  db.from('diski_notifications')
-    .select('*')
-    .eq('user_id', ST.user.id)
-    .order('created_at', { ascending: false })
-    .limit(30)
-    .then(function(res) {
-      var notifs = res.data || [];
-      if (!list) return;
-      if (!notifs.length) {
-        list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.3);font-size:.85rem">No notifications yet</div>';
-        return;
-      }
-      var icons = { like:'👍', dislike:'👎', star:'⭐', repost:'🔁', reply:'💬', report_resolved:'✅' };
-      list.innerHTML = notifs.map(function(n) {
-        return '<div style="display:flex;gap:.7rem;align-items:flex-start;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.04);opacity:' + (n.is_read ? '.5' : '1') + '">' +
-          '<div style="font-size:1.1rem;flex-shrink:0">' + (icons[n.type] || '🔔') + '</div>' +
-          '<div style="flex:1">' +
-            '<div style="font-size:.84rem;color:#fff">' + escapeHtml(n.message) + '</div>' +
-            '<div style="font-size:.68rem;color:rgba(255,255,255,.3);margin-top:.2rem">' + timeAgo(n.created_at) + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-      // Mark all as read
-      db.from('diski_notifications')
-        .update({ is_read: true })
-        .eq('user_id', ST.user.id)
-        .eq('is_read', false)
-        .then(function() {
-          var cnt = document.getElementById('notif-count');
-          if (cnt) cnt.style.display = 'none';
-        });
-    });
-}
-
-function closeNotifications() {
-  var modal = document.getElementById('notif-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────
-function escapeHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function timeAgo(ts) {
-  if (!ts) return '';
-  var diff = (Date.now() - new Date(ts).getTime()) / 1000;
-  if (diff < 60)    return 'just now';
-  if (diff < 3600)  return Math.floor(diff/60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-  return Math.floor(diff/86400) + 'd ago';
-}
-</script>
 
 </body>
 </html>
