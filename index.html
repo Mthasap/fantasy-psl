@@ -5073,10 +5073,8 @@ async function doRegister(){
 
  const referralCode=generateReferralCode();
 
- const supabaseUrl = window.SUPABASE_URL || "";
- const supabaseKey = window.SUPABASE_ANON_KEY || "";
-
- const sb = supabase.createClient(supabaseUrl, supabaseKey);
+ // Use the globally defined Supabase client (already initialised at top of file)
+ const sb = db;
 
  const { data, error } = await sb.auth.signUp({
   email: email,
