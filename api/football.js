@@ -100,9 +100,10 @@ async function getSeasonId() {
 async function getLive() {
   if (isFresh(CACHE.live)) return CACHE.live.data;
 
+  // Live scores filtered by league ID (livescores endpoint supports leagueId filter)
   const d = await smGet(
-    '/livescores/inplay?filters=leagueId:' + PSL_ID +
-    '&include=participants;scores;state'
+    '/livescores/inplay?include=participants;scores;state' +
+    '&filters=fixtureLeagues:' + PSL_ID
   );
 
   const matches = (d.data || []).map(formatFixture);
@@ -116,10 +117,10 @@ async function getFixtures() {
   if (isFresh(CACHE.fixtures)) return CACHE.fixtures.data;
 
   const sid = await getSeasonId();
+  // Upcoming fixtures scoped to PSL season — no leagueId filter needed
   const d   = await smGet(
     '/fixtures/upcoming/season/' + sid +
-    '?filters=leagueId:' + PSL_ID +
-    '&include=participants;round&per_page=30'
+    '?include=participants;round&per_page=30'
   );
 
   const fixtures = (d.data || []).map(formatFixture);
@@ -133,10 +134,10 @@ async function getResults() {
   if (isFresh(CACHE.results)) return CACHE.results.data;
 
   const sid = await getSeasonId();
+  // Past fixtures scoped to PSL season — no leagueId filter needed
   const d   = await smGet(
     '/fixtures/past/season/' + sid +
-    '?filters=leagueId:' + PSL_ID +
-    '&include=participants;scores;round&per_page=20'
+    '?include=participants;scores;round&per_page=20'
   );
 
   const results = (d.data || []).map(formatFixture);
@@ -150,10 +151,11 @@ async function getStandings() {
   if (isFresh(CACHE.standings)) return CACHE.standings.data;
 
   const sid = await getSeasonId();
+  // Standings endpoint: /standings/seasons/{season_id}
+  // No leagueId filter needed — season_id already scopes to PSL
   const d   = await smGet(
-    '/standings/season/' + sid +
-    '?filters=leagueId:' + PSL_ID +
-    '&include=participant;details'
+    '/standings/seasons/' + sid +
+    '?include=participant;details'
   );
 
   // Sportmonks detail type_ids for standings:
@@ -187,10 +189,10 @@ async function getTopScorers() {
   if (isFresh(CACHE.topscorers)) return CACHE.topscorers.data;
 
   const sid = await getSeasonId();
+  // Top scorers scoped to PSL season — no leagueId filter needed
   const d   = await smGet(
     '/topscorers/season/' + sid +
-    '?filters=leagueId:' + PSL_ID +
-    '&include=participant;player&per_page=20'
+    '?include=participant;player&per_page=20'
   );
 
   const topScorers = (d.data || []).map(function(row, i) {
