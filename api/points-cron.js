@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
           for (const user of users) {
             let squad; try { squad=user.squad_data?JSON.parse(user.squad_data):[]; } catch(e){continue;}
             if (!squad||!squad.length) continue;
-            const {gwPts,playerBreakdown} = scoreUserForFixture(squad,statsByName);
+            const {gwPts,playerBreakdown} = scoreUserForFixture(squad,statsByName,user.active_chip||null);
             if (gwPts===0&&!playerBreakdown.length) continue;
             gwScoreRows.push({user_id:user.id,gameweek:currentGW,points:gwPts,breakdown:{fixture_id:f.id,home,away},player_scores:playerBreakdown});
           }
@@ -305,20 +305,27 @@ function extractPlayerStats(fix) {
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────
-function scoreUserForFixture(squad, statsByName) {
+function scoreUserForFixture(squad, statsByName, activeChip) {
   let gwPts=0; const playerBreakdown=[];
+  const isBB = activeChip === 'bb'; // Bench Boost: all 15 score
+  const isTC = activeChip === 'tc'; // Triple Captain: captain scores 3x
   const captain=squad.find(p=>p.isCaptain);
   const capKey=captain?normaliseName(captain.name||captain.display_name||''):'';
   const capStats=capKey?(statsByName[capKey]||null):null;
   const capPlayed=capStats&&capStats.minutes>0;
   squad.forEach(sp=>{
-    if (sp.onBench) return;
+    // Bench Boost: score everyone; normally skip bench
+    if (sp.onBench && !isBB) return;
     const key=normaliseName(sp.name||sp.display_name||'');
     const stats=statsByName[key]; if (!stats) return;
     let pts=stats.fantasy_points||0;
-    if (sp.isCaptain) pts*=2; else if (sp.isVC&&!capPlayed) pts*=2;
+    if (sp.isCaptain) {
+      pts = isTC ? pts*3 : pts*2; // Triple Captain = 3x, normal = 2x
+    } else if (sp.isVC&&!capPlayed) {
+      pts = isTC ? pts*3 : pts*2; // VC inherits chip if captain DNP
+    }
     gwPts+=pts;
-    playerBreakdown.push({name:sp.name||sp.display_name,position:sp.position,minutes:stats.minutes,goals:stats.goals,assists:stats.assists,base_pts:stats.fantasy_points,final_pts:pts,is_captain:sp.isCaptain||false,is_vc:sp.isVC||false,breakdown:stats.points_breakdown});
+    playerBreakdown.push({name:sp.name||sp.display_name,position:sp.position,minutes:stats.minutes,goals:stats.goals,assists:stats.assists,base_pts:stats.fantasy_points,final_pts:pts,is_captain:sp.isCaptain||false,is_vc:sp.isVC||false,chip_active:activeChip||null,breakdown:stats.points_breakdown});
   });
   return {gwPts,playerBreakdown};
 }
@@ -334,7 +341,7 @@ async function getProcessedFixtureIds(db) {
   const ids=new Set(); (data||[]).forEach(r=>ids.add(r.fixture_id)); return ids;
 }
 async function getAllUsersWithSquads(db) {
-  const {data,error}=await db.from('profiles').select('id,squad_data,total_points,gw_points').not('squad_data','is',null);
+  const {data,error}=await db.from('profiles').select('id,squad_data,total_points,gw_points,active_chip').not('squad_data','is',null);
   if (error) throw new Error('Could not load squads: '+error.message); return data||[];
 }
 async function storePlayerStats(db,playerStats,fixture,gameweek) {
