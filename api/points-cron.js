@@ -1,925 +1,363 @@
 // ══════════════════════════════════════════════════════════════════════════
-// api/points-cron.js  —  Fantasy PSL  —  FULLY AUTOMATED SYSTEM
+// api/points-cron.js  —  Fantasy PSL  —  Sportmonks Edition
 // ══════════════════════════════════════════════════════════════════════════
 //
-// Runs once daily at 23:00 UTC (01:00 SAST). Handles EVERYTHING:
+// All API-Football references removed. Data source: Sportmonks only.
 //
-//  STEP 1 — SYNC FIXTURES    : Fetch upcoming PSL fixtures → Supabase
-//  STEP 2 — SYNC RESULTS     : Fetch completed match scores → update fixtures
-//  STEP 3 — CALC POINTS      : Calculate fantasy points for every user
-//  STEP 4 — MANAGE GAMEWEEKS : Auto-close/open GW, set deadline, roll transfers
-//  STEP 5 — UPDATE PRICES    : Adjust player prices based on form (±0.1M)
-//
-// DATA SOURCE: Sportmonks API v3 (league ID 806 = Betway Premiership)
-//
-// Can also be triggered manually from the admin panel by sending:
-//   POST /api/points-cron  with header  x-admin-key: <ADMIN_SECRET>
-//
-// ENVIRONMENT VARIABLES (set in Vercel Dashboard → Settings → Env Vars):
+// ENVIRONMENT VARIABLES (Vercel Dashboard → Settings → Env Vars):
 //   SPORTMONKS_TOKEN      — your Sportmonks API token
 //   SUPABASE_URL          — your Supabase project URL
 //   SUPABASE_SERVICE_KEY  — your Supabase service role key
-//   ADMIN_SECRET          — secret key for admin panel to trigger manually
+//   ADMIN_SECRET          — for manual admin panel trigger
+//   CRON_SECRET           — Vercel cron auth (optional)
 //
+// PSL League ID on Sportmonks: 806
 // ══════════════════════════════════════════════════════════════════════════
 
 const { createClient } = require('@supabase/supabase-js');
 const { calculateFantasyPoints, normalisePosition } = require('./football.js');
 
-const SPORTMONKS_TOKEN = process.env.SPORTMONKS_TOKEN  || '';
-const SUPABASE_URL     = process.env.SUPABASE_URL       || '';
-const SUPABASE_SVC_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const PSL_LEAGUE       = 806;       // Sportmonks league ID for Betway Premiership
-const PSL_SEASON       = 23723;     // Sportmonks 2025/26 season ID — update if needed
-const SM_BASE          = 'https://api.sportmonks.com/v3/football';
+const TOKEN        = process.env.SPORTMONKS_TOKEN    || '';
+const SUPABASE_URL = process.env.SUPABASE_URL         || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const PSL_ID       = 806;
+const BASE_URL     = 'https://api.sportmonks.com/v3/football';
 
-// ── Team name mapping: API-Football names → our DB names ─────────────────
-// API-Football uses slightly different names for some clubs.
-// Add more mappings here if a team's name ever doesn't match.
+let PSL_SEASON_ID = null;
+
 const TEAM_MAP = {
-  'Mamelodi Sundowns':         'Mamelodi Sundowns',
-  'Orlando Pirates':           'Orlando Pirates',
-  'Kaizer Chiefs':             'Kaizer Chiefs',
-  'Stellenbosch':              'Stellenbosch FC',
-  'Stellenbosch FC':           'Stellenbosch FC',
-  'AmaZulu':                   'AmaZulu FC',
-  'AmaZulu FC':                'AmaZulu FC',
-  'Chippa United':             'Chippa United',
-  'Golden Arrows':             'Golden Arrows',
-  'Lamontville Golden Arrows': 'Golden Arrows',
-  'Sekhukhune United':         'Sekhukhune United',
-  'TS Galaxy':                 'TS Galaxy',
-  'Polokwane City':            'Polokwane City',
-  'Marumo Gallants':           'Marumo Gallants',
-  'Richards Bay':              'Richards Bay',
-  'Richards Bay FC':           'Richards Bay',
-  'Magesi':                    'Magesi FC',
-  'Magesi FC':                 'Magesi FC',
-  'Durban City':               'Durban City',
-  'Durban City FC':            'Durban City',
-  'Orbit College':             'Orbit College FC',
-  'Orbit College FC':          'Orbit College FC',
-  'Siwelele':                  'Siwelele',
-  'Siwelele FC':               'Siwelele',
-  'Cape Town City':            'Cape Town City',
-  'SuperSport United':         'SuperSport United',
-  'Moroka Swallows':           'Moroka Swallows',
+  'Mamelodi Sundowns':'Mamelodi Sundowns','Orlando Pirates':'Orlando Pirates',
+  'Kaizer Chiefs':'Kaizer Chiefs','Stellenbosch':'Stellenbosch FC',
+  'Stellenbosch FC':'Stellenbosch FC','AmaZulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC',
+  'Chippa United':'Chippa United','Golden Arrows':'Golden Arrows',
+  'Lamontville Golden Arrows':'Golden Arrows','Sekhukhune United':'Sekhukhune United',
+  'TS Galaxy':'TS Galaxy','Polokwane City':'Polokwane City','Marumo Gallants':'Marumo Gallants',
+  'Richards Bay':'Richards Bay','Richards Bay FC':'Richards Bay',
+  'Magesi':'Magesi FC','Magesi FC':'Magesi FC',
+  'Durban City':'Durban City','Durban City FC':'Durban City',
+  'Orbit College':'Orbit College FC','Orbit College FC':'Orbit College FC',
+  'Siwelele':'Siwelele FC','Siwelele FC':'Siwelele FC',
 };
+function mapTeam(n) { return TEAM_MAP[n] || n; }
 
-function mapTeamName(apiName) {
-  return TEAM_MAP[apiName] || apiName;
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// MAIN HANDLER — called by Vercel cron schedule or admin panel
-// ══════════════════════════════════════════════════════════════════════════
+// ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
-  // ── Security: accept either Vercel cron secret OR admin panel key ────────
   const authHeader = req.headers['authorization'] || '';
   const cronSecret = process.env.CRON_SECRET      || '';
   const adminKey   = req.headers['x-admin-key']   || req.query.admin_key || '';
   const isAdmin    = adminKey && adminKey === (process.env.ADMIN_SECRET || '');
   const isCron     = cronSecret && authHeader === 'Bearer ' + cronSecret;
 
-  if (!isAdmin && !isCron && cronSecret) {
-    console.warn('[points-cron] Unauthorized request rejected');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!isAdmin && !isCron && cronSecret) return res.status(401).json({ error: 'Unauthorized' });
+  if (!TOKEN)        return res.status(500).json({ error: 'SPORTMONKS_TOKEN not set' });
+  if (!SUPABASE_URL) return res.status(500).json({ error: 'SUPABASE_URL not set' });
+  if (!SUPABASE_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY not set' });
 
-  if (!SPORTMONKS_TOKEN) return res.status(500).json({ error: 'SPORTMONKS_TOKEN not set in Vercel env vars' });
-  if (!SUPABASE_URL)     return res.status(500).json({ error: 'SUPABASE_URL not set in Vercel env vars' });
-  if (!SUPABASE_SVC_KEY) return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY not set in Vercel env vars' });
-
-  const db  = createClient(SUPABASE_URL, SUPABASE_SVC_KEY);
+  const db  = createClient(SUPABASE_URL, SUPABASE_KEY);
   const log = [];
-
   const report = {
-    started_at:       new Date().toISOString(),
-    triggered_by:     isAdmin ? 'admin_panel' : 'cron_schedule',
-    steps_completed:  [],
-    fixtures_synced:  0,
-    results_updated:  0,
-    fixtures_scored:  0,
-    users_updated:    0,
-    gw_action:        null,
-    prices_updated:   0,
-    api_calls_used:   0,
-    errors:           [],
-    log
+    started_at:'', triggered_by: isAdmin ? 'admin_panel' : 'cron',
+    provider:'Sportmonks', steps_completed:[],
+    fixtures_synced:0, results_updated:0, fixtures_scored:0,
+    users_updated:0, gw_action:null, prices_updated:0, api_calls_used:0,
+    errors:[], log
   };
+  report.started_at = new Date().toISOString();
 
   try {
 
-    // ════════════════════════════════════════════════════════════════════
-    // STEP 1: SYNC UPCOMING FIXTURES
-    //
-    // Fetches the next 30 scheduled PSL matches from API-Football
-    // and upserts them into our fixtures table.
-    //
-    // WHY: The PSL releases fixtures a few weeks at a time. Each time
-    // new games are announced, they appear on API-Football within 24hrs.
-    // This step means they automatically appear in our app too — no
-    // manual SQL needed.
-    //
-    // API cost: 1 call
-    // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 1: Syncing upcoming fixtures from Sportmonks ━━');
+    // ─── STEP 1: Sync upcoming fixtures ──────────────────────────────
+    log.push('━━ STEP 1: Sync upcoming fixtures ━━');
     try {
-      // Fetch upcoming fixtures for PSL from Sportmonks
-      // includes=participants gives us home/away team names
-      // includes=state gives us the match status
-      const upcomingRes = await smGet('/fixtures/upcoming/leagues/' + PSL_LEAGUE + '?include=participants;state;round');
+      const sid = await getSeasonId();
+      const d   = await smGet('/fixtures/upcoming/season/'+sid+'?filters=leagueId:'+PSL_ID+'&include=participants;round&per_page=40');
       report.api_calls_used++;
-
       const currentGW = await getCurrentGameweek(db);
-      const toUpsert  = [];
-
-      for (const f of (upcomingRes.data || [])) {
-        const participants = f.participants || [];
-        const home = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
-        const away = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
-
-        if (!home || !away || !f.starting_at) continue;
-
-        const homeName = mapTeamName(home.name || '');
-        const awayName = mapTeamName(away.name || '');
-        if (!homeName || !awayName) continue;
-
-        // Extract GW number from round name e.g. "23" or "Round 23"
+      const rows = [];
+      for (const f of (d.data||[])) {
+        const parts = f.participants||[];
+        const home  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='home')||parts[0]||{}).name)||'');
+        const away  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='away')||parts[1]||{}).name)||'');
+        if (!home||!away||!f.starting_at) continue;
         let gw = currentGW;
-        if (f.round && f.round.name) {
-          const match = (f.round.name + '').match(/(\d+)/);
-          if (match) gw = parseInt(match[1]);
-        }
-
-        toUpsert.push({
-          gameweek:       gw,
-          home_team:      homeName,
-          away_team:      awayName,
-          status:         'NS',
-          kickoff_at:     f.starting_at,
-          api_fixture_id: f.id || null
-        });
+        if (f.round&&f.round.name) { const m=(f.round.name+'').match(/(\d+)/); if(m) gw=parseInt(m[1]); }
+        rows.push({ gameweek:gw, home_team:home, away_team:away, status:'NS', kickoff_at:f.starting_at, api_fixture_id:f.id||null });
       }
-
-      log.push('  Found ' + toUpsert.length + ' upcoming fixtures from Sportmonks');
-
-      for (const row of toUpsert) {
-        const { error } = await db.from('fixtures').upsert(row, {
-          onConflict:       'gameweek,home_team,away_team',
-          ignoreDuplicates: true
-        });
+      log.push('  Found '+rows.length+' upcoming fixtures');
+      for (const row of rows) {
+        const {error} = await db.from('fixtures').upsert(row,{onConflict:'gameweek,home_team,away_team',ignoreDuplicates:true});
         if (!error) report.fixtures_synced++;
       }
-
-      log.push('  Upserted ' + report.fixtures_synced + ' fixtures');
+      log.push('  Upserted '+report.fixtures_synced);
       report.steps_completed.push('sync_fixtures ✓');
+    } catch(e) { log.push('  WARN: '+e.message); report.errors.push('sync_fixtures: '+e.message); report.steps_completed.push('sync_fixtures ✗'); }
 
-    } catch (e) {
-      const msg = 'sync_fixtures: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('sync_fixtures ✗');
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════
-    // STEP 2: SYNC MATCH RESULTS
-    //
-    // Fetches the last 15 completed PSL matches from API-Football
-    // and updates their scorelines + status in our fixtures table.
-    //
-    // WHY: After a game ends, API-Football marks it FT and records the
-    // score. This step copies that into our DB so the Results section
-    // of the app updates automatically — no manual SQL needed.
-    //
-    // API cost: 1 call
-    // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 2: Syncing completed match results ━━');
+    // ─── STEP 2: Sync completed results ──────────────────────────────
+    log.push('━━ STEP 2: Sync results ━━');
+    let recentFixtures = [];
     try {
-      // Fetch recently finished PSL fixtures from Sportmonks
-      // includes=participants (team names) + scores (scorelines) + state (FT/NS etc.)
-      const completedRes = await smGet('/fixtures/last/20/leagues/' + PSL_LEAGUE + '?include=participants;scores;state');
+      const sid = await getSeasonId();
+      const d   = await smGet('/fixtures/past/season/'+sid+'?filters=leagueId:'+PSL_ID+'&include=participants;scores&per_page=15');
       report.api_calls_used++;
-
-      const completed = completedRes.data || [];
-      log.push('  Found ' + completed.length + ' recently completed matches');
-
-      for (const f of completed) {
-        // Only process finished matches
-        const state = f.state && (f.state.developer_name || f.state.name || '');
-        const isFT  = state === 'FT' || state === 'FINISHED' || state === 'AET' || state === 'PEN';
-        if (!isFT) continue;
-
-        const participants = f.participants || [];
-        const homeP = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
-        const awayP = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
-        if (!homeP || !awayP) continue;
-
-        const homeName = mapTeamName(homeP.name || '');
-        const awayName = mapTeamName(awayP.name || '');
-
-        // Extract CURRENT score from scores array
-        const scores = f.scores || [];
-        const homeScore = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'home'; });
-        const awayScore = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'away'; });
-
-        const hg = homeScore ? homeScore.score.goals : null;
-        const ag = awayScore ? awayScore.score.goals : null;
-
-        if (hg === null || ag === null) continue;
-
-        // Update in our DB only if not already FT
-        const { data: existing } = await db.from('fixtures')
-          .select('id, status')
-          .eq('home_team', homeName)
-          .eq('away_team', awayName)
-          .neq('status', 'FT')
-          .limit(1);
-
-        if (existing && existing.length > 0) {
-          const { error } = await db.from('fixtures')
-            .update({
-              home_score:     hg,
-              away_score:     ag,
-              status:         'FT',
-              api_fixture_id: f.id || null
-            })
-            .eq('id', existing[0].id);
-
-          if (!error) {
-            report.results_updated++;
-            log.push('  ✓ ' + homeName + ' ' + hg + '-' + ag + ' ' + awayName);
+      recentFixtures = d.data||[];
+      log.push('  Found '+recentFixtures.length+' completed matches');
+      for (const f of recentFixtures) {
+        const parts = f.participants||[];
+        const home  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='home')||parts[0]||{}).name)||'');
+        const away  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='away')||parts[1]||{}).name)||'');
+        if (!home||!away) continue;
+        let hg=null, ag=null;
+        (f.scores||[]).forEach(s=>{
+          if (!s.score) return;
+          const desc=(s.description||'').toUpperCase();
+          if (desc==='FT'||desc==='CURRENT'||desc==='FULLTIME') {
+            if (s.score.participant==='home') hg=s.score.goals;
+            if (s.score.participant==='away') ag=s.score.goals;
           }
+        });
+        if (hg===null||ag===null) continue;
+        const {data:ex} = await db.from('fixtures').select('id,status').eq('home_team',home).eq('away_team',away).neq('status','FT').limit(1);
+        if (ex&&ex.length>0) {
+          const {error} = await db.from('fixtures').update({home_score:hg,away_score:ag,status:'FT',api_fixture_id:f.id||null}).eq('id',ex[0].id);
+          if (!error) { report.results_updated++; log.push('  ✓ '+home+' '+hg+'-'+ag+' '+away); }
         }
       }
-
-      log.push('  Updated ' + report.results_updated + ' match results');
+      log.push('  Updated '+report.results_updated+' results');
       report.steps_completed.push('sync_results ✓');
+    } catch(e) { log.push('  WARN: '+e.message); report.errors.push('sync_results: '+e.message); report.steps_completed.push('sync_results ✗'); }
 
-    } catch (e) {
-      const msg = 'sync_results: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('sync_results ✗');
-    }    } catch (e) {
-      const msg = 'sync_results: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('sync_results ✗');
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════
-    // STEP 3: CALCULATE FANTASY POINTS
-    //
-    // For each completed match that hasn't been processed yet:
-    //   - Fetch player-level stats from API-Football
-    //   - Calculate each player's fantasy points
-    //   - Store stats in player_gw_stats table
-    //   - Loop through all user squads and add points for their players
-    //   - Write results to gw_scores and update profiles.total_points
-    //   - Mark fixture as processed (so it's never double-counted)
-    //
-    // API cost: 1 call per unprocessed match (typically 1–2 per night)
-    // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 3: Calculating fantasy points ━━');
+    // ─── STEP 3: Calculate fantasy points ────────────────────────────
+    log.push('━━ STEP 3: Calculate points ━━');
     try {
       const alreadyProcessed = await getProcessedFixtureIds(db);
       const currentGW        = await getCurrentGameweek(db);
-
-      // Fetch recently finished PSL fixtures with full player stats
-      const recentRes = await smGet('/fixtures/last/20/leagues/' + PSL_LEAGUE + '?include=participants;scores;state');
-      report.api_calls_used++;
-
-      const toProcess = (recentRes.data || []).filter(function(f) {
-        const state = f.state && (f.state.developer_name || f.state.name || '');
-        const isFT  = state === 'FT' || state === 'FINISHED' || state === 'AET' || state === 'PEN';
-        return isFT && f.id && !alreadyProcessed.has(f.id);
-      });
-
-      log.push('  ' + alreadyProcessed.size + ' already processed, ' + toProcess.length + ' new to score');
+      const toProcess        = recentFixtures.filter(f=>f.id&&!alreadyProcessed.has(f.id));
+      log.push('  '+alreadyProcessed.size+' done, '+toProcess.length+' new');
 
       for (const f of toProcess) {
-        const participants = f.participants || [];
-        const homeP = participants.find(function(p){ return p.meta && p.meta.location === 'home'; });
-        const awayP = participants.find(function(p){ return p.meta && p.meta.location === 'away'; });
-        if (!homeP || !awayP) continue;
-
-        const scores   = f.scores || [];
-        const homeScoreObj = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'home'; });
-        const awayScoreObj = scores.find(function(s){ return s.description === 'CURRENT' && s.score && s.score.participant === 'away'; });
-
-        const fixtureObj = {
-          fixture_id: f.id,
-          date:       f.starting_at,
-          home:       mapTeamName(homeP.name || ''),
-          away:       mapTeamName(awayP.name || ''),
-          hg:         homeScoreObj ? homeScoreObj.score.goals : 0,
-          ag:         awayScoreObj ? awayScoreObj.score.goals : 0
-        };
-
-        log.push('  Processing: ' + fixtureObj.home + ' ' + fixtureObj.hg + '-' + fixtureObj.ag + ' ' + fixtureObj.away);
-
-        try {
-          // Fetch detailed player stats for this specific fixture from Sportmonks
-          // include=players.statistics.details gives goals, assists, cards, minutes
-          const statsRes = await smGet('/fixtures/' + f.id + '?include=players.statistics.details;players.player');
-          report.api_calls_used++;
-
-          const playerStats = extractPlayerStatsFromSportmonks(statsRes.data || {});
-          log.push('  Got stats for ' + playerStats.length + ' players');
-
-          if (!playerStats.length) {
-            log.push('  No player stats yet — skipping (will retry tomorrow)');
-            continue;
+        const parts = f.participants||[];
+        const home  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='home')||parts[0]||{}).name)||'');
+        const away  = mapTeam(((parts.find(p=>p.meta&&p.meta.location==='away')||parts[1]||{}).name)||'');
+        let hg=null,ag=null;
+        (f.scores||[]).forEach(s=>{
+          if (!s.score) return;
+          const desc=(s.description||'').toUpperCase();
+          if (desc==='FT'||desc==='CURRENT'||desc==='FULLTIME') {
+            if (s.score.participant==='home') hg=s.score.goals;
+            if (s.score.participant==='away') ag=s.score.goals;
           }
-
-          await storePlayerStats(db, playerStats, fixtureObj, currentGW);
-
-          const statsByName = {};
-          playerStats.forEach(function(p) {
-            statsByName[normaliseName(p.player_name)] = p;
-          });
-
-          const users       = await getAllUsersWithSquads(db);
-          const gwScoreRows = [];
-
-          for (const user of users) {
-            let squad;
-            try { squad = user.squad_data ? JSON.parse(user.squad_data) : []; }
-            catch (e) { continue; }
-            if (!squad || !squad.length) continue;
-
-            const { gwPts, playerBreakdown } = scoreUserForFixture(squad, statsByName);
-            if (gwPts === 0 && !playerBreakdown.length) continue;
-
-            gwScoreRows.push({
-              user_id:       user.id,
-              gameweek:      currentGW,
-              points:        gwPts,
-              breakdown:     { fixture_id: f.id, home: fixtureObj.home, away: fixtureObj.away },
-              player_scores: playerBreakdown
-            });
-          }
-
-          if (gwScoreRows.length) {
-            await writeGWScores(db, gwScoreRows);
-            await incrementTotalPoints(db, gwScoreRows);
-            report.users_updated += gwScoreRows.length;
-            log.push('  Scored ' + gwScoreRows.length + ' users');
-          } else {
-            log.push('  No users had players in this match');
-          }
-
-          await markFixtureProcessed(db, fixtureObj, currentGW, gwScoreRows.length, report.api_calls_used);
-          report.fixtures_scored++;
-          log.push('  ✓ Fixture processed');
-
-        } catch (e) {
-          const msg = 'fixture_' + f.id + ': ' + e.message;
-          log.push('  ERROR: ' + msg);
-          report.errors.push(msg);
-        }
-      }
-
-      report.steps_completed.push('calc_points ✓');
-
-    } catch (e) {
-      const msg = 'calc_points: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('calc_points ✗');
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════
-    // STEP 4: GAMEWEEK MANAGEMENT
-    //
-    // Checks if ALL matches in the current GW have finished.
-    // If yes:
-    //   1. Closes the current GW (is_current = false, is_finished = true)
-    //   2. Opens the next GW (is_current = true)
-    //   3. Creates the next GW row if it doesn't exist yet
-    //   4. Rolls over unused free transfers (unused FTs carry over, max 5)
-    //
-    // WHY: This removes the need to manually run SQL to switch GWs.
-    // The app automatically moves to the next GW when all games are done.
-    //
-    // API cost: 0 (uses Supabase only)
-    // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 4: Managing gameweeks ━━');
-    try {
-      const currentGW = await getCurrentGameweek(db);
-
-      const { data: gwFixtures } = await db
-        .from('fixtures')
-        .select('status')
-        .eq('gameweek', currentGW);
-
-      const total    = (gwFixtures || []).length;
-      const finished = (gwFixtures || []).filter(f =>
-        f.status === 'FT' || f.status === 'AET' || f.status === 'PEN'
-      ).length;
-
-      log.push('  GW' + currentGW + ': ' + finished + '/' + total + ' matches finished');
-
-      if (total > 0 && finished === total) {
-        // All done — close this GW
-        log.push('  All matches done! Closing GW' + currentGW + ' and opening GW' + (currentGW + 1));
-
-        await db.from('gameweeks')
-          .update({ is_current: false, is_finished: true })
-          .eq('number', currentGW);
-
-        const nextGW = currentGW + 1;
-
-        // Deadline = 1 hour before first fixture of next GW
-        // Look up the earliest fixture in next GW to set deadline automatically
-        const { data: nextFixtures } = await db
-          .from('fixtures')
-          .select('kickoff_at')
-          .eq('gameweek', nextGW)
-          .order('kickoff_at', { ascending: true })
-          .limit(1);
-
-        let deadlineAt = null;
-        if (nextFixtures && nextFixtures[0] && nextFixtures[0].kickoff_at) {
-          const firstKickoff = new Date(nextFixtures[0].kickoff_at);
-          firstKickoff.setHours(firstKickoff.getHours() - 1); // 1 hour before first match
-          deadlineAt = firstKickoff.toISOString();
-          log.push('  Setting GW' + nextGW + ' deadline: ' + deadlineAt);
-        } else {
-          log.push('  WARN: No fixtures found for GW' + nextGW + ' — deadline not set yet');
-        }
-
-        // Check if next GW already exists in DB
-        const { data: nextExists } = await db
-          .from('gameweeks')
-          .select('number')
-          .eq('number', nextGW)
-          .maybeSingle();
-
-        if (nextExists) {
-          await db.from('gameweeks')
-            .update({
-              is_current:  true,
-              is_finished: false,
-              ...(deadlineAt ? { deadline_at: deadlineAt } : {})
-            })
-            .eq('number', nextGW);
-        } else {
-          // Create next GW row automatically
-          await db.from('gameweeks').insert({
-            number:      nextGW,
-            name:        'Gameweek ' + nextGW,
-            is_current:  true,
-            is_finished: false,
-            ...(deadlineAt ? { deadline_at: deadlineAt } : {})
-          });
-          log.push('  Created new GW' + nextGW + ' row in database');
-        }
-
-        // Roll over free transfers
-        // Rule: 1 new FT each GW + unused FTs carry over, max 5 total
-        const { data: allUsers } = await db
-          .from('profiles')
-          .select('id, free_transfers, transfers_this_gw');
-
-        let transfersRolled = 0;
-        for (const user of (allUsers || [])) {
-          const used    = user.transfers_this_gw || 0;
-          const banked  = user.free_transfers    || 1;
-          const unused  = Math.max(0, banked - used);
-          const newFree = Math.min(5, 1 + unused); // 1 new + rollover, cap at 5
-          await db.from('profiles')
-            .update({ free_transfers: newFree, transfers_this_gw: 0 })
-            .eq('id', user.id);
-          transfersRolled++;
-        }
-
-        report.gw_action = 'Closed GW' + currentGW + ' → Opened GW' + nextGW + ' | Rolled transfers for ' + transfersRolled + ' users';
-        log.push('  ✓ ' + report.gw_action);
-
-      } else if (total === 0) {
-        log.push('  No fixtures found for GW' + currentGW + ' — check fixtures table');
-        report.gw_action = 'No fixtures for GW' + currentGW;
-      } else {
-        log.push('  GW' + currentGW + ' still in progress (' + (total - finished) + ' matches remaining)');
-        report.gw_action = 'GW' + currentGW + ' in progress: ' + finished + '/' + total + ' done';
-      }
-
-      report.steps_completed.push('manage_gameweeks ✓');
-
-    } catch (e) {
-      const msg = 'manage_gameweeks: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('manage_gameweeks ✗');
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════
-    // STEP 5: UPDATE PLAYER PRICES
-    //
-    // Reviews each player's fantasy points over the last 3 gameweeks.
-    // Players performing well above their position benchmark → +0.1M
-    // Players performing well below their position benchmark → -0.1M
-    // Prices are capped: min 4.0M, max 15.0M
-    //
-    // WHY: Just like real FPL, prices should fluctuate based on form.
-    // This makes team selection more strategic over time.
-    //
-    // API cost: 0 (uses Supabase only)
-    // ════════════════════════════════════════════════════════════════════
-    log.push('━━ STEP 5: Updating player prices based on form ━━');
-    try {
-      const currentGW = await getCurrentGameweek(db);
-
-      // Get player stats for last 3 GWs
-      const { data: recentStats } = await db
-        .from('player_gw_stats')
-        .select('player_id, fantasy_points, gameweek')
-        .gte('gameweek', currentGW - 3)
-        .not('player_id', 'is', null);
-
-      if (!recentStats || recentStats.length < 10) {
-        log.push('  Not enough stat history yet for price updates (need at least 10 records)');
-        report.steps_completed.push('update_prices — skipped (insufficient data)');
-      } else {
-        // Group fantasy_points by player_id
-        const playerPoints = {};
-        recentStats.forEach(s => {
-          if (!playerPoints[s.player_id]) playerPoints[s.player_id] = [];
-          playerPoints[s.player_id].push(s.fantasy_points || 0);
         });
-
-        const { data: players } = await db.from('players').select('id, price, position');
-
-        // Position average benchmarks — points above/below these trigger price changes
-        const benchmarks = { GK: 4, DEF: 5, MID: 6, FWD: 6 };
-
-        for (const player of (players || [])) {
-          const pts = playerPoints[player.id];
-          if (!pts || pts.length < 2) continue; // need 2+ GWs of data
-
-          const avgPts  = pts.reduce((a, b) => a + b, 0) / pts.length;
-          const bench   = benchmarks[player.position] || 5;
-          let newPrice  = player.price;
-
-          if (avgPts >= bench * 1.5) {
-            // Strong form → price up
-            newPrice = Math.min(15.0, +(player.price + 0.1).toFixed(1));
-          } else if (avgPts <= bench * 0.4) {
-            // Poor form → price down
-            newPrice = Math.max(4.0, +(player.price - 0.1).toFixed(1));
+        const fixtureObj = {fixture_id:f.id,date:f.starting_at,home,away,hg,ag};
+        log.push('  Processing: '+home+' '+hg+'-'+ag+' '+away+' (ID:'+f.id+')');
+        try {
+          const statsData = await smGet('/fixtures/'+f.id+'?include=participants;scores;events.type;lineups.player;lineups.position;statistics.type');
+          report.api_calls_used++;
+          const playerStats = extractPlayerStats(statsData.data||{});
+          log.push('  '+playerStats.length+' players');
+          if (!playerStats.length) { log.push('  No stats yet — retry tomorrow'); continue; }
+          await storePlayerStats(db, playerStats, fixtureObj, currentGW);
+          const statsByName = {};
+          playerStats.forEach(p=>{ statsByName[normaliseName(p.player_name)]=p; });
+          const users = await getAllUsersWithSquads(db);
+          const gwScoreRows = [];
+          for (const user of users) {
+            let squad; try { squad=user.squad_data?JSON.parse(user.squad_data):[]; } catch(e){continue;}
+            if (!squad||!squad.length) continue;
+            const {gwPts,playerBreakdown} = scoreUserForFixture(squad,statsByName);
+            if (gwPts===0&&!playerBreakdown.length) continue;
+            gwScoreRows.push({user_id:user.id,gameweek:currentGW,points:gwPts,breakdown:{fixture_id:f.id,home,away},player_scores:playerBreakdown});
           }
+          if (gwScoreRows.length) { await writeGWScores(db,gwScoreRows); await incrementTotalPoints(db,gwScoreRows); report.users_updated+=gwScoreRows.length; log.push('  Scored '+gwScoreRows.length+' users'); }
+          await markFixtureProcessed(db,fixtureObj,currentGW,gwScoreRows.length,report.api_calls_used);
+          report.fixtures_scored++;
+          log.push('  ✓ Marked processed');
+        } catch(e) { log.push('  ERROR fixture_'+f.id+': '+e.message); report.errors.push('fixture_'+f.id+': '+e.message); }
+      }
+      report.steps_completed.push('calc_points ✓');
+    } catch(e) { log.push('  WARN: '+e.message); report.errors.push('calc_points: '+e.message); report.steps_completed.push('calc_points ✗'); }
 
-          if (newPrice !== player.price) {
-            const { error } = await db.from('players')
-              .update({ price: newPrice, price_updated_at: new Date().toISOString() })
-              .eq('id', player.id);
-            if (!error) report.prices_updated++;
-          }
+    // ─── STEP 4: Gameweek management ─────────────────────────────────
+    log.push('━━ STEP 4: Gameweek management ━━');
+    try {
+      const currentGW = await getCurrentGameweek(db);
+      const {data:gwFix} = await db.from('fixtures').select('status').eq('gameweek',currentGW);
+      const total    = (gwFix||[]).length;
+      const finished = (gwFix||[]).filter(f=>f.status==='FT'||f.status==='AET').length;
+      log.push('  GW'+currentGW+': '+finished+'/'+total+' done');
+      if (total>0&&finished===total) {
+        await db.from('gameweeks').update({is_current:false,is_finished:true}).eq('number',currentGW);
+        const nextGW = currentGW+1;
+        const {data:nextExists} = await db.from('gameweeks').select('number').eq('number',nextGW).maybeSingle();
+        if (nextExists) { await db.from('gameweeks').update({is_current:true}).eq('number',nextGW); }
+        else { await db.from('gameweeks').insert({number:nextGW,name:'Gameweek '+nextGW,is_current:true,is_finished:false}); log.push('  Created GW'+nextGW); }
+        const {data:allUsers} = await db.from('profiles').select('id,free_transfers,transfers_this_gw');
+        let rolled=0;
+        for (const u of (allUsers||[])) {
+          const unused=Math.max(0,(u.free_transfers||1)-(u.transfers_this_gw||0));
+          await db.from('profiles').update({free_transfers:Math.min(5,1+unused),transfers_this_gw:0}).eq('id',u.id);
+          rolled++;
         }
+        report.gw_action='Closed GW'+currentGW+' → Opened GW'+nextGW+' | Rolled transfers for '+rolled+' users';
+        log.push('  ✓ '+report.gw_action);
+      } else { report.gw_action='GW'+currentGW+' in progress: '+finished+'/'+total; log.push('  '+report.gw_action); }
+      report.steps_completed.push('manage_gameweeks ✓');
+    } catch(e) { log.push('  WARN: '+e.message); report.errors.push('manage_gameweeks: '+e.message); report.steps_completed.push('manage_gameweeks ✗'); }
 
-        log.push('  ✓ Updated prices for ' + report.prices_updated + ' players');
+    // ─── STEP 5: Update player prices ────────────────────────────────
+    log.push('━━ STEP 5: Update prices ━━');
+    try {
+      const currentGW = await getCurrentGameweek(db);
+      const {data:recentStats} = await db.from('player_gw_stats').select('player_id,fantasy_points,gameweek').gte('gameweek',currentGW-3).not('player_id','is',null);
+      if (!recentStats||recentStats.length<10) { log.push('  Not enough data'); report.steps_completed.push('update_prices — skipped'); }
+      else {
+        const pp={};
+        recentStats.forEach(s=>{ if (!pp[s.player_id]) pp[s.player_id]=[]; pp[s.player_id].push(s.fantasy_points||0); });
+        const {data:players} = await db.from('players').select('id,price,position');
+        const bench={GK:4,DEF:5,MID:6,FWD:6};
+        for (const p of (players||[])) {
+          const pts=pp[p.id]; if (!pts||pts.length<2) continue;
+          const avg=pts.reduce((a,b)=>a+b,0)/pts.length;
+          const b=bench[p.position]||5;
+          let np=p.price;
+          if (avg>=b*1.5) np=Math.min(15.0,+(p.price+0.1).toFixed(1));
+          else if (avg<=b*0.4) np=Math.max(4.0,+(p.price-0.1).toFixed(1));
+          if (np!==p.price) { const {error}=await db.from('players').update({price:np,price_updated_at:new Date().toISOString()}).eq('id',p.id); if (!error) report.prices_updated++; }
+        }
+        log.push('  Updated '+report.prices_updated+' player prices');
         report.steps_completed.push('update_prices ✓');
       }
+    } catch(e) { log.push('  WARN: '+e.message); report.errors.push('update_prices: '+e.message); report.steps_completed.push('update_prices ✗'); }
 
-    } catch (e) {
-      const msg = 'update_prices: ' + e.message;
-      log.push('  WARN: ' + msg);
-      report.errors.push(msg);
-      report.steps_completed.push('update_prices ✗');
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════
-    // DONE
-    // ════════════════════════════════════════════════════════════════════
     report.finished_at = new Date().toISOString();
-    report.duration_ms = new Date(report.finished_at) - new Date(report.started_at);
-
-    log.push('');
-    log.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    log.push('COMPLETE in ' + report.duration_ms + 'ms | API calls used: ' + report.api_calls_used);
-    log.push('Fixtures synced: ' + report.fixtures_synced);
-    log.push('Results updated: ' + report.results_updated);
-    log.push('Fixtures scored: ' + report.fixtures_scored);
-    log.push('Users updated:   ' + report.users_updated);
-    log.push('GW action:       ' + (report.gw_action || 'none'));
-    log.push('Prices updated:  ' + report.prices_updated);
-    if (report.errors.length) {
-      log.push('Errors:          ' + report.errors.join(', '));
-    }
-    log.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
+    report.duration_ms = new Date(report.finished_at)-new Date(report.started_at);
+    log.push('COMPLETE in '+report.duration_ms+'ms | API calls: '+report.api_calls_used);
     return res.json(report);
 
-  } catch (err) {
-    report.fatal_error = err.message;
-    report.finished_at = new Date().toISOString();
-    console.error('[points-cron] Fatal error:', err);
+  } catch(err) {
+    report.fatal_error=err.message; report.finished_at=new Date().toISOString();
+    console.error('[points-cron] Fatal:',err);
     return res.status(500).json(report);
   }
 };
 
+// ── Sportmonks HTTP client ────────────────────────────────────────────────
+async function getSeasonId() {
+  if (PSL_SEASON_ID) return PSL_SEASON_ID;
+  try {
+    const d=await smGet('/leagues/'+PSL_ID+'?include=currentSeason');
+    const s=(d.data&&d.data.currentSeason)||(d.data&&d.data.current_season);
+    if (s&&s.id) { PSL_SEASON_ID=s.id; return PSL_SEASON_ID; }
+  } catch(_) {}
+  const d=await smGet('/seasons?filters=leagueId:'+PSL_ID);
+  const list=(d.data||[]).sort((a,b)=>b.id-a.id);
+  if (list.length) { PSL_SEASON_ID=list[0].id; return PSL_SEASON_ID; }
+  throw new Error('Could not determine PSL season ID');
+}
 
-// ══════════════════════════════════════════════════════════════════════════
-// SPORTMONKS API HELPER
-// ══════════════════════════════════════════════════════════════════════════
 async function smGet(path) {
-  const sep = path.includes('?') ? '&' : '?';
-  const url = SM_BASE + path + sep + 'api_token=' + SPORTMONKS_TOKEN;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Sportmonks HTTP ' + response.status + ' → ' + path);
-  const json = await response.json();
-  if (json.message) throw new Error('Sportmonks error: ' + json.message);
+  const sep=path.includes('?')?'&':'?';
+  const url=BASE_URL+path+sep+'api_token='+TOKEN;
+  const r=await fetch(url,{method:'GET',headers:{Accept:'application/json'}});
+  if (!r.ok) { const b=await r.text().catch(()=>''); throw new Error('Sportmonks HTTP '+r.status+': '+b.substring(0,200)); }
+  const json=await r.json();
+  if (json.errors) throw new Error('Sportmonks error: '+JSON.stringify(json.errors).substring(0,300));
   return json;
 }
 
-
-// ══════════════════════════════════════════════════════════════════════════
-// SPORTMONKS PLAYER STATS EXTRACTOR
-// Converts Sportmonks fixture/players response into our internal format
-// ══════════════════════════════════════════════════════════════════════════
-function extractPlayerStatsFromSportmonks(fixtureData) {
-  const allPlayers = [];
-  const lineups    = fixtureData.players || [];
-
-  lineups.forEach(function(entry) {
-    const player = entry.player || {};
-    const stats  = (entry.statistics || []);
-
-    // Build a flat map of stat type_id → value for easy lookup
-    // Sportmonks uses type_ids: goals=52, assists=79, yellowcards=84,
-    // redcards=83, minutes=119, saves=57, penaltysaved=58, penaltymissed=59
-    const statMap = {};
-    stats.forEach(function(s) {
-      if (s.details) {
-        s.details.forEach(function(d) {
-          statMap[d.type_id] = d.value && d.value.total !== undefined ? d.value.total : (d.value || 0);
-        });
-      }
-    });
-
-    const minutesPlayed = statMap[119] || statMap['minutes_played'] || 0;
-    if (!minutesPlayed) return; // Skip if player didn't play
-
-    allPlayers.push({
-      player_name:     player.common_name || player.display_name || player.name || 'Unknown',
-      team:            entry.team_name || '',
-      position:        entry.position || 'MID',
-      minutes_played:  minutesPlayed,
-      goals:           statMap[52]  || 0,  // goals scored
-      assists:         statMap[79]  || 0,  // assists
-      yellow_cards:    statMap[84]  || 0,  // yellow cards
-      red_cards:       statMap[83]  || 0,  // red cards
-      saves:           statMap[57]  || 0,  // goalkeeper saves
-      penalty_saved:   statMap[58]  || 0,  // penalty saved
-      penalty_missed:  statMap[59]  || 0,  // penalty missed
-      goals_conceded:  statMap[88]  || 0,  // goals conceded (for GK/DEF clean sheet)
-    });
+// ── Player stats extraction ───────────────────────────────────────────────
+function extractPlayerStats(fix) {
+  const participants=fix.participants||[], events=fix.events||[], lineups=fix.lineups||[];
+  const statistics=fix.statistics||[], scores=fix.scores||[];
+  const finalScore={};
+  scores.forEach(s=>{
+    if (!s.score) return;
+    const desc=(s.description||'').toUpperCase();
+    if (desc==='FT'||desc==='CURRENT'||desc==='FULLTIME') finalScore[s.participant_id]=s.score.goals||0;
   });
-
-  return allPlayers;
+  const ev={};
+  function getEv(pid) { if (!ev[pid]) ev[pid]={goals:0,assists:0,yellowCards:0,redCards:0,penSaved:0,penMissed:0}; return ev[pid]; }
+  events.forEach(e=>{
+    const pid=e.player_id; if (!pid) return;
+    const type=e.type?(e.type.developer_name||e.type.name||'').toUpperCase():String(e.type_id||'');
+    if (type.includes('GOAL')&&!type.includes('ASSIST')&&!type.includes('OWN')&&!type.includes('MISS')&&!type.includes('SAVE')) getEv(pid).goals++;
+    if (type.includes('OWN_GOAL')||type==='17') getEv(pid).goals=Math.max(0,getEv(pid).goals-1);
+    if (type.includes('ASSIST')||type==='19') getEv(pid).assists++;
+    if (type.includes('YELLOWCARD')||type==='83') getEv(pid).yellowCards++;
+    if (type.includes('REDCARD')||type==='84') getEv(pid).redCards++;
+    if (type.includes('MISSED_PENALTY')||type==='50') getEv(pid).penMissed++;
+    if (type.includes('SAVED_PENALTY')||type==='51') getEv(pid).penSaved++;
+  });
+  const saves={};
+  statistics.forEach(s=>{ const tn=s.type&&(s.type.developer_name||s.type.name)||''; if (tn.toUpperCase().includes('SAVE')&&s.player_id) saves[s.player_id]=parseInt(s.data&&s.data.value,10)||0; });
+  return lineups.map(entry=>{
+    const player=entry.player||{}, posObj=entry.position||{}, pid=player.id;
+    const teamId=entry.team_id||entry.participant_id;
+    let myConceded=0;
+    Object.keys(finalScore).forEach(tid=>{ if (String(tid)!==String(teamId)) myConceded=finalScore[tid]||0; });
+    const pos=normalisePosition(posObj.name||posObj.developer_name||'');
+    const minutes=entry.minutes_played||0, pev=ev[pid]||{};
+    const team=participants.find(p=>String(p.id)===String(teamId));
+    const pts=calculateFantasyPoints({pos,minutes,goals:pev.goals||0,assists:pev.assists||0,saves:saves[pid]||0,goalsConceded:myConceded,yellowCards:pev.yellowCards||0,redCards:pev.redCards||0,penSaved:pev.penSaved||0,penMissed:pev.penMissed||0});
+    return { api_player_id:pid||null, player_name:player.display_name||player.name||'Unknown', team:mapTeam(team?(team.name||''):''), position:pos, minutes, goals:pev.goals||0, assists:pev.assists||0, yellow_cards:pev.yellowCards||0, red_cards:pev.redCards||0, saves:saves[pid]||0, goals_conceded:myConceded, penalties_saved:pev.penSaved||0, penalties_missed:pev.penMissed||0, fantasy_points:pts.total, points_breakdown:pts.breakdown };
+  });
 }
 
-
-// ══════════════════════════════════════════════════════════════════════════
-// PLAYER STATS EXTRACTION
-// Takes raw API-Football /fixtures/players response and returns clean array
-// ══════════════════════════════════════════════════════════════════════════
-function extractPlayerStats(teamsArray) {
-  const allPlayers = [];
-
-  teamsArray.forEach(function(teamData) {
-    const teamName = mapTeamName((teamData.team && teamData.team.name) || 'Unknown');
-
-    (teamData.players || []).forEach(function(entry) {
-      const player = entry.player || {};
-      const stats  = (entry.statistics && entry.statistics[0]) || {};
-
-      const pos           = normalisePosition((stats.games && stats.games.position) || '');
-      const minutes       = (stats.games && stats.games.minutes)          || 0;
-      const goals         = (stats.goals && stats.goals.total)            || 0;
-      const assists       = (stats.goals && stats.goals.assists)          || 0;
-      const saves         = (stats.goals && stats.goals.saves)            || 0;
-      const goalsConceded = (stats.goals && stats.goals.conceded)         || 0;
-      const yellowCards   = (stats.cards && stats.cards.yellow)           || 0;
-      const redCards      = (stats.cards && stats.cards.red)              || 0;
-      const penSaved      = (stats.penalty && stats.penalty.saved)        || 0;
-      const penMissed     = (stats.penalty && stats.penalty.missed)       || 0;
-
-      const pts = calculateFantasyPoints({
-        pos, minutes, goals, assists, saves,
-        goalsConceded, yellowCards, redCards, penSaved, penMissed
-      });
-
-      allPlayers.push({
-        api_player_id:    player.id   || null,
-        player_name:      player.name || 'Unknown',
-        team:             teamName,
-        position:         pos,
-        minutes,
-        goals,
-        assists,
-        yellow_cards:     yellowCards,
-        red_cards:        redCards,
-        saves,
-        goals_conceded:   goalsConceded,
-        penalties_saved:  penSaved,
-        penalties_missed: penMissed,
-        fantasy_points:   pts.total,
-        points_breakdown: pts.breakdown
-      });
-    });
-  });
-
-  return allPlayers;
-}
-
-
-// ══════════════════════════════════════════════════════════════════════════
-// SCORE ONE USER FOR ONE FIXTURE
-// Given a user's squad and a name→stats lookup, returns their GW points.
-// ══════════════════════════════════════════════════════════════════════════
+// ── Scoring ───────────────────────────────────────────────────────────────
 function scoreUserForFixture(squad, statsByName) {
-  let gwPts = 0;
-  const playerBreakdown = [];
-
-  const captain   = squad.find(p => p.isCaptain);
-  const capKey    = captain ? normaliseName(captain.name || captain.display_name || '') : '';
-  const capStats  = capKey ? (statsByName[capKey] || null) : null;
-  const capPlayed = capStats && capStats.minutes > 0;
-
-  squad.forEach(function(sp) {
-    if (sp.onBench) return; // bench players don't score
-
-    const key   = normaliseName(sp.name || sp.display_name || '');
-    const stats = statsByName[key];
-    if (!stats) return; // player not in this match
-
-    let pts = stats.fantasy_points || 0;
-
-    if (sp.isCaptain) {
-      pts = pts * 2;                              // captain always doubles
-    } else if (sp.isVC && !capPlayed) {
-      pts = pts * 2;                              // vice-cap doubles if captain DNP
-    }
-
-    gwPts += pts;
-
-    playerBreakdown.push({
-      name:       sp.name || sp.display_name,
-      position:   sp.position,
-      minutes:    stats.minutes,
-      goals:      stats.goals,
-      assists:    stats.assists,
-      base_pts:   stats.fantasy_points,
-      final_pts:  pts,
-      is_captain: sp.isCaptain || false,
-      is_vc:      sp.isVC      || false,
-      breakdown:  stats.points_breakdown
-    });
+  let gwPts=0; const playerBreakdown=[];
+  const captain=squad.find(p=>p.isCaptain);
+  const capKey=captain?normaliseName(captain.name||captain.display_name||''):'';
+  const capStats=capKey?(statsByName[capKey]||null):null;
+  const capPlayed=capStats&&capStats.minutes>0;
+  squad.forEach(sp=>{
+    if (sp.onBench) return;
+    const key=normaliseName(sp.name||sp.display_name||'');
+    const stats=statsByName[key]; if (!stats) return;
+    let pts=stats.fantasy_points||0;
+    if (sp.isCaptain) pts*=2; else if (sp.isVC&&!capPlayed) pts*=2;
+    gwPts+=pts;
+    playerBreakdown.push({name:sp.name||sp.display_name,position:sp.position,minutes:stats.minutes,goals:stats.goals,assists:stats.assists,base_pts:stats.fantasy_points,final_pts:pts,is_captain:sp.isCaptain||false,is_vc:sp.isVC||false,breakdown:stats.points_breakdown});
   });
-
-  return { gwPts, playerBreakdown };
+  return {gwPts,playerBreakdown};
 }
 
-
-// ══════════════════════════════════════════════════════════════════════════
-// DATABASE HELPERS
-// ══════════════════════════════════════════════════════════════════════════
-
+// ── DB helpers ────────────────────────────────────────────────────────────
 async function getCurrentGameweek(db) {
-  const { data, error } = await db
-    .from('gameweeks')
-    .select('number')
-    .eq('is_current', true)
-    .single();
-  if (error || !data) {
-    console.warn('[points-cron] Could not get current GW, defaulting to 23');
-    return 23;
-  }
+  const {data,error}=await db.from('gameweeks').select('number').eq('is_current',true).single();
+  if (error||!data) { console.warn('[cron] defaulting GW to 1'); return 1; }
   return data.number;
 }
-
 async function getProcessedFixtureIds(db) {
-  const { data } = await db.from('processed_fixtures').select('fixture_id');
-  const ids = new Set();
-  (data || []).forEach(r => ids.add(r.fixture_id));
-  return ids;
+  const {data}=await db.from('processed_fixtures').select('fixture_id');
+  const ids=new Set(); (data||[]).forEach(r=>ids.add(r.fixture_id)); return ids;
 }
-
 async function getAllUsersWithSquads(db) {
-  const { data, error } = await db
-    .from('profiles')
-    .select('id, squad_data, total_points, gw_points')
-    .not('squad_data', 'is', null);
-  if (error) throw new Error('Could not load user squads: ' + error.message);
-  return data || [];
+  const {data,error}=await db.from('profiles').select('id,squad_data,total_points,gw_points').not('squad_data','is',null);
+  if (error) throw new Error('Could not load squads: '+error.message); return data||[];
 }
-
-async function storePlayerStats(db, playerStats, fixture, gameweek) {
-  const rows = playerStats.map(p => ({
-    api_player_id:    p.api_player_id,
-    player_name:      p.player_name,
-    team:             p.team,
-    fixture_id:       fixture.fixture_id,
-    gameweek,
-    minutes:          p.minutes,
-    goals:            p.goals,
-    assists:          p.assists,
-    yellow_cards:     p.yellow_cards,
-    red_cards:        p.red_cards,
-    saves:            p.saves,
-    goals_conceded:   p.goals_conceded,
-    penalties_saved:  p.penalties_saved,
-    penalties_missed: p.penalties_missed,
-    fantasy_points:   p.fantasy_points,
-    points_breakdown: p.points_breakdown
-  }));
-
-  const { error } = await db
-    .from('player_gw_stats')
-    .upsert(rows, { onConflict: 'api_player_id,fixture_id', ignoreDuplicates: false });
-
-  if (error) throw new Error('Could not store player stats: ' + error.message);
+async function storePlayerStats(db,playerStats,fixture,gameweek) {
+  const rows=playerStats.map(p=>({api_player_id:p.api_player_id,player_name:p.player_name,team:p.team,fixture_id:fixture.fixture_id,gameweek,minutes:p.minutes,goals:p.goals,assists:p.assists,yellow_cards:p.yellow_cards,red_cards:p.red_cards,saves:p.saves,goals_conceded:p.goals_conceded,penalties_saved:p.penalties_saved,penalties_missed:p.penalties_missed,fantasy_points:p.fantasy_points,points_breakdown:p.points_breakdown}));
+  const {error}=await db.from('player_gw_stats').upsert(rows,{onConflict:'api_player_id,fixture_id',ignoreDuplicates:false});
+  if (error) throw new Error('storePlayerStats: '+error.message);
 }
-
-async function writeGWScores(db, gwScoreRows) {
-  for (const row of gwScoreRows) {
-    const { data: existing, error: fetchErr } = await db
-      .from('gw_scores')
-      .select('id, points, player_scores')
-      .eq('user_id', row.user_id)
-      .eq('gameweek', row.gameweek)
-      .maybeSingle();
-
-    if (existing) {
-      // Accumulate — a GW has multiple matches
-      await db.from('gw_scores').update({
-        points:        (existing.points || 0) + row.points,
-        player_scores: (existing.player_scores || []).concat(row.player_scores || []),
-        calculated_at: new Date().toISOString()
-      }).eq('id', existing.id);
-    } else {
-      await db.from('gw_scores').insert({
-        user_id:       row.user_id,
-        gameweek:      row.gameweek,
-        points:        row.points,
-        breakdown:     row.breakdown,
-        player_scores: row.player_scores
-      });
-    }
+async function writeGWScores(db,rows) {
+  for (const row of rows) {
+    const {data:ex}=await db.from('gw_scores').select('id,points,player_scores').eq('user_id',row.user_id).eq('gameweek',row.gameweek).maybeSingle();
+    if (ex) { await db.from('gw_scores').update({points:(ex.points||0)+row.points,player_scores:(ex.player_scores||[]).concat(row.player_scores||[]),calculated_at:new Date().toISOString()}).eq('id',ex.id); }
+    else    { await db.from('gw_scores').insert({user_id:row.user_id,gameweek:row.gameweek,points:row.points,breakdown:row.breakdown,player_scores:row.player_scores}); }
   }
 }
-
-async function incrementTotalPoints(db, gwScoreRows) {
-  for (const row of gwScoreRows) {
-    const { data: profile } = await db
-      .from('profiles')
-      .select('total_points')
-      .eq('id', row.user_id)
-      .maybeSingle();
-
-    const currentTotal = (profile && profile.total_points) || 0;
-
-    await db.from('profiles').update({
-      gw_points:      row.points,
-      total_points:   currentTotal + row.points,
-      last_gw_scored: row.gameweek,
-      updated_at:     new Date().toISOString()
-    }).eq('id', row.user_id);
+async function incrementTotalPoints(db,rows) {
+  for (const row of rows) {
+    const {data:p}=await db.from('profiles').select('total_points').eq('id',row.user_id).maybeSingle();
+    const cur=(p&&p.total_points)||0;
+    await db.from('profiles').update({gw_points:row.points,total_points:cur+row.points,last_gw_scored:row.gameweek,updated_at:new Date().toISOString()}).eq('id',row.user_id);
   }
 }
-
-async function markFixtureProcessed(db, fixture, gameweek, usersScored, apiCallsUsed) {
-  const { error } = await db.from('processed_fixtures').upsert({
-    fixture_id:     fixture.fixture_id,
-    gameweek,
-    home_team:      fixture.home,
-    away_team:      fixture.away,
-    home_score:     fixture.hg,
-    away_score:     fixture.ag,
-    match_date:     fixture.date,
-    processed_at:   new Date().toISOString(),
-    users_scored:   usersScored,
-    api_calls_used: apiCallsUsed
-  }, { onConflict: 'fixture_id' });
-
-  if (error) throw new Error('Could not mark fixture processed: ' + error.message);
+async function markFixtureProcessed(db,fixture,gameweek,usersScored,apiCallsUsed) {
+  const {error}=await db.from('processed_fixtures').upsert({fixture_id:fixture.fixture_id,gameweek,home_team:fixture.home,away_team:fixture.away,home_score:fixture.hg,away_score:fixture.ag,match_date:fixture.date,processed_at:new Date().toISOString(),users_scored:usersScored,api_calls_used:apiCallsUsed},{onConflict:'fixture_id'});
+  if (error) throw new Error('markFixtureProcessed: '+error.message);
 }
-
-function normaliseName(name) {
-  if (!name) return '';
-  return name
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+function normaliseName(n) { if (!n) return ''; return n.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
