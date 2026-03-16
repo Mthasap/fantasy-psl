@@ -302,12 +302,12 @@ body {
 }
 .hero-stat:last-child { border-right:none; }
 .hero-stat-num {
-  font-family:var(--font-display); font-size:clamp(.82rem,2.2vw,1.35rem); font-weight:900;
+  font-family:var(--font-display); font-size:clamp(1.1rem,3vw,1.6rem); font-weight:900;
   color:var(--stat-highlight); line-height:1; white-space:nowrap;
 }
 .hero-stat-label {
-  font-family:var(--font-ui); font-size:clamp(.45rem,.82vw,.6rem); font-weight:600;
-  letter-spacing:1.2px; text-transform:uppercase; color:var(--text-muted); margin-top:3px; white-space:nowrap;
+  font-family:var(--font-ui); font-size:.65rem; font-weight:600;
+  letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); margin-top:4px;
 }
 
 /* =====================================================
@@ -1119,83 +1119,8 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
 /* =====================================================
    PLAYER MODAL
    ===================================================== */
-/* ══════════════════════════════════════════════════════════
-   PLAYER MODAL — EPL-style player card
-   ════════════════════════════════════════════════════════ */
-.player-modal {
-  position: fixed; inset: 0; z-index: 3500;
-  background: rgba(0,0,0,.72);
-  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-.player-modal.open { display: flex; }
-.player-modal-box {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 16px;
-  width: 100%; max-width: 420px;
-  max-height: 90vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  animation: fadeUp .22s ease both;
-  position: relative;
-  margin: auto;
-}
-.pm-header {
-  display: flex; align-items: center; gap: .85rem;
-  padding: 1rem 1rem .8rem;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  position: relative;
-}
-.pm-shirt {
-  width: 52px; height: 52px;
-  border-radius: 10px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-weight: 900;
-}
-.pm-name {
-  font-family: var(--font-display); font-size: 1.05rem;
-  font-weight: 900; color: var(--text-primary); line-height: 1.2;
-}
-.pm-close {
-  position: absolute; top: .75rem; right: .75rem;
-  background: rgba(255,255,255,.1); border: none; border-radius: 50%;
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,.6); font-size: .9rem;
-  cursor: pointer; transition: background .2s;
-  -webkit-tap-highlight-color: transparent;
-}
-.pm-close:hover { background: rgba(255,255,255,.2); color: #fff; }
-.pm-stat-grid {
-  display: grid; grid-template-columns: repeat(3,1fr); gap: .4rem;
-  padding: .9rem 1rem .6rem;
-}
-.pm-stat-cell {
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 8px; padding: .55rem .3rem; text-align: center;
-}
-.pm-stat-val {
-  font-family: var(--font-display); font-size: 1.2rem;
-  font-weight: 900; line-height: 1; color: #fff;
-}
-.pm-stat-lbl {
-  font-family: var(--font-ui); font-size: .55rem; font-weight: 700;
-  letter-spacing: 1px; text-transform: uppercase;
-  color: rgba(255,255,255,.38); margin-top: 3px;
-}
-.pm-wiki {
-  padding: 0 1rem .6rem;
-  font-size: .78rem; color: rgba(255,255,255,.55); line-height: 1.55;
-}
-.pm-body { padding: 0 1rem .9rem; }
+.player-modal { display:none !important; }
+.player-modal.open { display:flex !important; }
 
 /* =====================================================
    GLOBAL — no horizontal scroll
@@ -1295,15 +1220,7 @@ html, body {
    DESKTOP: hide bottom nav (top nav used instead)
    ===================================================== */
 @media(min-width:901px) {
-  .nav { display:flex !important; }
-  .bottom-nav { display:none !important; }
-  body { padding-top:60px !important; padding-bottom:0 !important; }
-  .nav { height:60px; padding:0 2rem; justify-content:space-between; }
-  .nav-links { display:flex !important; align-items:center; gap:1.5rem; list-style:none; flex:1; margin-left:1.5rem; }
-  .nav-links a { font-size:.8rem; letter-spacing:.8px; }
-  .nav-right { display:flex; align-items:center; gap:.5rem; }
-  .theme-toggle { display:none !important; }
-  .page-section,.page-wrap { padding-left:2rem; padding-right:2rem; }
-  .squad-body-grid { grid-template-columns:1fr 420px; align-items:start; }
-  .player-panel { position:sticky; top:80px; max-height:calc(100vh - 96px); overflow-y:auto; }
+  .nav { display:none !important; }
+  body { padding-top:0 !important; }
+  .bottom-nav { display:flex !important; bottom:1.5rem; min-width:520px; width:auto; }
 }
