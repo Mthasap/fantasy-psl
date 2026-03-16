@@ -1,305 +1,434 @@
 // ══════════════════════════════════════════════════════════════════════════
 // api/football.js  —  Fantasy PSL  —  Sportmonks Proxy
 // ══════════════════════════════════════════════════════════════════════════
-// Serves live scores, fixtures and results to the frontend.
-// All data comes from Sportmonks API v3.
-// Cached in memory so thousands of users share one API call.
 //
-// ENDPOINTS:
-//   GET /api/football?type=live       → live scores right now
-//   GET /api/football?type=fixtures   → upcoming PSL fixtures
-//   GET /api/football?type=results    → recent PSL results
-//   GET /api/football?type=status     → API health check
+// All API-Football references removed. This file now exclusively calls
+// Sportmonks (api.sportmonks.com/v3/football).
 //
-// ENV VARS:
-//   SPORTMONKS_TOKEN — your Sportmonks API token
+// ENDPOINTS exposed to the frontend:
+//   GET /api/football?type=live            → live scores (cached 55s)
+//   GET /api/football?type=fixtures        → upcoming fixtures (cached 10min)
+//   GET /api/football?type=results         → recent results (cached 10min)
+//   GET /api/football?type=standings       → league table (cached 30min)
+//   GET /api/football?type=topscorers      → top scorers (cached 1hr)
+//   GET /api/football?type=player_stats&fixture_id=XXX  (cached 30min)
+//   GET /api/football?type=status          → health check
+//
+// ENVIRONMENT VARIABLES (set in Vercel dashboard):
+//   SPORTMONKS_TOKEN  — your Sportmonks API token
+//
+// PSL League ID on Sportmonks: 806
 // ══════════════════════════════════════════════════════════════════════════
 
 const TOKEN    = process.env.SPORTMONKS_TOKEN || '';
-const PSL_ID   = 806;   // Sportmonks league ID for Betway Premiership
-const SM_BASE  = 'https://api.sportmonks.com/v3/football';
+const PSL_ID   = 806;
+const BASE_URL = 'https://api.sportmonks.com/v3/football';
 
-// Current season ID — discovered dynamically on first standings request
-let PSL_SEASON = null;
+// Season ID is fetched once per process lifetime
+let PSL_SEASON_ID = null;
 
-// In-memory cache shared across requests
+// In-memory response cache (all Vercel instances within a region share this)
 const CACHE = {
-  live:     { data: null, ts: 0, ttl: 60  * 1000 },        // 1 min
-  fixtures: { data: null, ts: 0, ttl: 10  * 60 * 1000 },   // 10 min
-  results:   { data: null, ts: 0, ttl: 10  * 60 * 1000 },   // 10 min
-  standings: { data: null, ts: 0, ttl: 15  * 60 * 1000 },   // 15 min
+  live:         { data: null, ts: 0, ttl: 55  * 1000 },
+  fixtures:     { data: null, ts: 0, ttl: 10  * 60 * 1000 },
+  results:      { data: null, ts: 0, ttl: 10  * 60 * 1000 },
+  standings:    { data: null, ts: 0, ttl: 30  * 60 * 1000 },
+  topscorers:   { data: null, ts: 0, ttl: 60  * 60 * 1000 },
+  player_stats: {}
 };
 
+// ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  const type = (req.query && req.query.type) || 'live';
+  if (!TOKEN) {
+    return res.status(500).json({
+      error: 'SPORTMONKS_TOKEN is not set in Vercel environment variables.',
+      fix:   'Vercel Dashboard → Your Project → Settings → Environment Variables → Add SPORTMONKS_TOKEN'
+    });
+  }
 
-  if (!TOKEN) return res.status(500).json({ error: 'SPORTMONKS_TOKEN not configured' });
+  const type      = (req.query && req.query.type) || 'live';
+  const fixtureId = req.query && req.query.fixture_id;
 
   try {
     switch (type) {
-      case 'live':      return res.json(await getLive());
-      case 'fixtures':  return res.json(await getFixtures());
-      case 'results':   return res.json(await getResults());
+      case 'live':        return res.json(await getLive());
+      case 'fixtures':    return res.json(await getFixtures());
+      case 'results':     return res.json(await getResults());
       case 'standings':   return res.json(await getStandings());
       case 'topscorers':  return res.json(await getTopScorers());
-      case 'status':   return res.json({ ok: true, token_set: !!TOKEN });
-      default:         return res.status(400).json({ error: 'Unknown type: ' + type });
+      case 'player_stats':
+        if (!fixtureId) return res.status(400).json({ error: 'fixture_id required for player_stats' });
+        return res.json(await getPlayerStats(fixtureId));
+      case 'status':
+        return res.json({ ok: true, provider: 'Sportmonks', token_set: !!TOKEN, psl_league_id: PSL_ID });
+      default:
+        return res.status(400).json({ error: 'Unknown type: ' + type });
     }
   } catch (err) {
-    console.error('[football.js]', err.message);
-    return res.status(500).json({ error: err.message });
+    console.error('[football.js]', type, err.message);
+    const stale = CACHE[type] && CACHE[type].data;
+    if (stale) return res.json(Object.assign({}, stale, { stale: true, error: err.message }));
+    return res.status(500).json({ error: err.message, type });
   }
 };
 
-// ── Sportmonks fetch helper ───────────────────────────────────────────────
+// ── Season discovery ──────────────────────────────────────────────────────
+async function getSeasonId() {
+  if (PSL_SEASON_ID) return PSL_SEASON_ID;
+
+  // Try to get current season from league endpoint
+  try {
+    const d = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
+    const s = (d.data && d.data.currentSeason) || (d.data && d.data.current_season);
+    if (s && s.id) { PSL_SEASON_ID = s.id; return PSL_SEASON_ID; }
+  } catch (_) {}
+
+  // Fallback: list all seasons for PSL, take most recent
+  const d = await smGet('/seasons?filters=leagueId:' + PSL_ID);
+  const list = (d.data || []).sort(function(a, b) { return b.id - a.id; });
+  if (list.length) { PSL_SEASON_ID = list[0].id; return PSL_SEASON_ID; }
+
+  throw new Error('Could not determine PSL season ID. Check SPORTMONKS_TOKEN and league ID 806.');
+}
+
+// ── Live scores ───────────────────────────────────────────────────────────
+async function getLive() {
+  if (isFresh(CACHE.live)) return CACHE.live.data;
+
+  const d = await smGet(
+    '/livescores/inplay?filters=leagueId:' + PSL_ID +
+    '&include=participants;scores;state'
+  );
+
+  const matches = (d.data || []).map(formatFixture);
+  const result  = { type: 'live', isLive: matches.length > 0, matches, fetched_at: new Date().toISOString() };
+  CACHE.live = { data: result, ts: Date.now(), ttl: 55 * 1000 };
+  return result;
+}
+
+// ── Upcoming fixtures ─────────────────────────────────────────────────────
+async function getFixtures() {
+  if (isFresh(CACHE.fixtures)) return CACHE.fixtures.data;
+
+  const sid = await getSeasonId();
+  const d   = await smGet(
+    '/fixtures/upcoming/season/' + sid +
+    '?filters=leagueId:' + PSL_ID +
+    '&include=participants;round&per_page=30'
+  );
+
+  const fixtures = (d.data || []).map(formatFixture);
+  const result   = { type: 'fixtures', fixtures, fetched_at: new Date().toISOString() };
+  CACHE.fixtures = { data: result, ts: Date.now(), ttl: 10 * 60 * 1000 };
+  return result;
+}
+
+// ── Recent results ────────────────────────────────────────────────────────
+async function getResults() {
+  if (isFresh(CACHE.results)) return CACHE.results.data;
+
+  const sid = await getSeasonId();
+  const d   = await smGet(
+    '/fixtures/past/season/' + sid +
+    '?filters=leagueId:' + PSL_ID +
+    '&include=participants;scores;round&per_page=20'
+  );
+
+  const results = (d.data || []).map(formatFixture);
+  const result  = { type: 'results', results, fetched_at: new Date().toISOString() };
+  CACHE.results = { data: result, ts: Date.now(), ttl: 10 * 60 * 1000 };
+  return result;
+}
+
+// ── League table ──────────────────────────────────────────────────────────
+async function getStandings() {
+  if (isFresh(CACHE.standings)) return CACHE.standings.data;
+
+  const sid = await getSeasonId();
+  const d   = await smGet(
+    '/standings/season/' + sid +
+    '?filters=leagueId:' + PSL_ID +
+    '&include=participant;details'
+  );
+
+  // Sportmonks detail type_ids for standings:
+  // 129=MP 130=W 131=D 132=L 133=GF 134=GA
+  function detail(row, typeId) {
+    const item = (row.details || []).find(function(x) { return x.type_id === typeId; });
+    return item ? (item.value || 0) : 0;
+  }
+
+  const standings = (d.data || []).map(function(row) {
+    const team = row.participant || {};
+    const p = detail(row,129), w = detail(row,130), dr = detail(row,131);
+    const l = detail(row,132), gf= detail(row,133), ga= detail(row,134);
+    return {
+      pos:  row.position || 0,
+      team: team.name    || '',
+      p, w, d: dr, l, gf, ga,
+      gd:  gf - ga,
+      pts: row.points || 0,
+      form: row.form ? row.form.split(',').slice(-5).map(function(r){ return r.trim().toUpperCase(); }) : []
+    };
+  }).sort(function(a,b){ return a.pos - b.pos; });
+
+  const result = { type: 'standings', standings, fetched_at: new Date().toISOString() };
+  CACHE.standings = { data: result, ts: Date.now(), ttl: 30 * 60 * 1000 };
+  return result;
+}
+
+// ── Top scorers ───────────────────────────────────────────────────────────
+async function getTopScorers() {
+  if (isFresh(CACHE.topscorers)) return CACHE.topscorers.data;
+
+  const sid = await getSeasonId();
+  const d   = await smGet(
+    '/topscorers/season/' + sid +
+    '?filters=leagueId:' + PSL_ID +
+    '&include=participant;player&per_page=20'
+  );
+
+  const topScorers = (d.data || []).map(function(row, i) {
+    const player = row.player       || {};
+    const team   = row.participant  || {};
+    return {
+      rank:  i + 1,
+      name:  player.display_name || player.name || 'Unknown',
+      club:  team.name           || '',
+      goals: row.total           || 0,
+      apps:  row.appearances     || 0
+    };
+  });
+
+  const result = { type: 'topscorers', topScorers, fetched_at: new Date().toISOString() };
+  CACHE.topscorers = { data: result, ts: Date.now(), ttl: 60 * 60 * 1000 };
+  return result;
+}
+
+// ── Player stats for a specific fixture (powers points engine) ────────────
+async function getPlayerStats(fixtureId) {
+  const cacheKey = String(fixtureId);
+  if (CACHE.player_stats[cacheKey] && isFresh(CACHE.player_stats[cacheKey])) {
+    return CACHE.player_stats[cacheKey].data;
+  }
+
+  const d   = await smGet(
+    '/fixtures/' + fixtureId +
+    '?include=participants;scores;events.type;lineups.player;lineups.position;statistics.type'
+  );
+  const fix = d.data || {};
+
+  const participants = fix.participants  || [];
+  const events       = fix.events       || [];
+  const lineups      = fix.lineups      || [];
+  const statistics   = fix.statistics   || [];
+  const scores       = fix.scores       || [];
+
+  // Final scores per participant_id
+  const finalScore = {};
+  scores.forEach(function(s) {
+    if (!s.score) return;
+    var desc = (s.description||'').toUpperCase();
+    if (desc === 'FT' || desc === 'CURRENT' || desc === 'FULLTIME') {
+      finalScore[s.participant_id] = s.score.goals || 0;
+    }
+  });
+
+  // Events per player
+  const ev = {};
+  function getEv(pid) {
+    if (!ev[pid]) ev[pid] = {goals:0,assists:0,yellowCards:0,redCards:0,penSaved:0,penMissed:0};
+    return ev[pid];
+  }
+  events.forEach(function(e) {
+    var pid  = e.player_id;
+    if (!pid) return;
+    var type = '';
+    if (e.type) type = (e.type.developer_name || e.type.name || '').toUpperCase();
+    else        type = String(e.type_id || '');
+
+    if (type.includes('GOAL') && !type.includes('ASSIST') && !type.includes('OWN') && !type.includes('MISS') && !type.includes('SAVE')) getEv(pid).goals++;
+    if (type.includes('OWN_GOAL') || type === '17') { getEv(pid).goals = Math.max(0, getEv(pid).goals - 1); }
+    if (type.includes('ASSIST') || type === '19')   getEv(pid).assists++;
+    if (type.includes('YELLOWCARD') || type === '83') getEv(pid).yellowCards++;
+    if (type.includes('REDCARD')    || type === '84') getEv(pid).redCards++;
+    if (type.includes('MISSED_PENALTY') || type === '50') getEv(pid).penMissed++;
+    if (type.includes('SAVED_PENALTY')  || type === '51') getEv(pid).penSaved++;
+  });
+
+  // Saves per player from statistics
+  const saves = {};
+  statistics.forEach(function(s) {
+    var typeName = s.type && (s.type.developer_name || s.type.name) || '';
+    if (typeName.toUpperCase().includes('SAVE') && s.player_id) {
+      saves[s.player_id] = parseInt(s.data && s.data.value, 10) || 0;
+    }
+  });
+
+  // Build players from lineups
+  const allPlayers = lineups.map(function(entry) {
+    var player  = entry.player   || {};
+    var posObj  = entry.position || {};
+    var pid     = player.id;
+    var teamId  = entry.team_id || entry.participant_id;
+
+    // Goals the player's team conceded = the other team's score
+    var myConceded = 0;
+    Object.keys(finalScore).forEach(function(tid) {
+      if (String(tid) !== String(teamId)) myConceded = finalScore[tid] || 0;
+    });
+
+    var pos     = normalisePosition(posObj.name || posObj.developer_name || '');
+    var minutes = entry.minutes_played || 0;
+    var pev     = ev[pid] || {};
+
+    var pts = calculateFantasyPoints({
+      pos,
+      minutes,
+      goals:        pev.goals        || 0,
+      assists:      pev.assists      || 0,
+      saves:        saves[pid]       || 0,
+      goalsConceded:myConceded,
+      yellowCards:  pev.yellowCards  || 0,
+      redCards:     pev.redCards     || 0,
+      penSaved:     pev.penSaved     || 0,
+      penMissed:    pev.penMissed    || 0
+    });
+
+    var team = participants.find(function(p){ return String(p.id)===String(teamId); });
+
+    return {
+      player_name:      player.display_name || player.name || 'Unknown',
+      team:             team ? (team.name||'') : '',
+      position:         pos,
+      minutes,
+      goals:            pev.goals        || 0,
+      assists:          pev.assists      || 0,
+      yellow_cards:     pev.yellowCards  || 0,
+      red_cards:        pev.redCards     || 0,
+      saves:            saves[pid]       || 0,
+      goals_conceded:   myConceded,
+      penalties_saved:  pev.penSaved     || 0,
+      penalties_missed: pev.penMissed    || 0,
+      fantasy_points:   pts.total,
+      points_breakdown: pts.breakdown
+    };
+  });
+
+  var result = {
+    type:       'player_stats',
+    fixture_id: parseInt(fixtureId, 10),
+    players:    allPlayers,
+    fetched_at: new Date().toISOString()
+  };
+
+  CACHE.player_stats[cacheKey] = { data: result, ts: Date.now(), ttl: 30 * 60 * 1000 };
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// FANTASY POINTS ENGINE (single source of truth — also used by points-cron.js)
+// ══════════════════════════════════════════════════════════════════════════
+function calculateFantasyPoints(s) {
+  var breakdown = {}, total = 0;
+  function add(key, val) { if (val !== 0) { breakdown[key] = val; total += val; } }
+
+  if (s.minutes === 0) return { total: 0, breakdown: { appearance: 0 } };
+
+  add('appearance', s.minutes >= 60 ? 2 : 1);
+
+  if (s.goals > 0) {
+    add('goals', (s.pos==='GK'||s.pos==='DEF') ? s.goals*6 : s.pos==='MID' ? s.goals*5 : s.goals*4);
+  }
+  if (s.assists      > 0) add('assists',        s.assists      *  3);
+  if (s.minutes >= 60 && s.goalsConceded === 0) {
+    if (s.pos==='GK'||s.pos==='DEF') add('clean_sheet', 4);
+    else if (s.pos==='MID')          add('clean_sheet', 1);
+  }
+  if ((s.pos==='GK'||s.pos==='DEF') && s.goalsConceded >= 2)
+    add('goals_conceded', -Math.floor(s.goalsConceded / 2));
+  if (s.pos==='GK' && s.saves >= 3)
+    add('saves_bonus', Math.floor(s.saves / 3));
+  if (s.penSaved  > 0) add('penalty_saved',  s.penSaved  *  5);
+  if (s.penMissed > 0) add('penalty_missed', s.penMissed * -2);
+  if (s.yellowCards > 0) add('yellow_card', s.yellowCards * -1);
+  if (s.redCards    > 0) add('red_card',    s.redCards    * -3);
+
+  return { total, breakdown };
+}
+
+function normalisePosition(raw) {
+  if (!raw) return 'MID';
+  var r = raw.toUpperCase().trim();
+  if (r.includes('GOAL') || r==='GK' || r==='G' || r==='24' || r==='GOALKEEPER') return 'GK';
+  if (r.includes('DEF')  || r==='D'  || r==='25' || r==='DEFENDER')  return 'DEF';
+  if (r.includes('MID')  || r==='M'  || r==='26' || r==='MIDFIELDER') return 'MID';
+  if (r.includes('ATT')  || r.includes('FOR') || r==='FWD' || r==='F' || r==='27' || r==='ATTACKER') return 'FWD';
+  return 'MID';
+}
+
+function formatFixture(f) {
+  var parts  = f.participants || [];
+  var home   = parts.find(function(p){return p.meta&&p.meta.location==='home';})||parts[0]||{};
+  var away   = parts.find(function(p){return p.meta&&p.meta.location==='away';})||parts[1]||{};
+  var scores = f.scores || [];
+  var hg=null, ag=null;
+
+  scores.forEach(function(s) {
+    if (!s.score) return;
+    var desc=(s.description||'').toUpperCase();
+    if (desc==='FT'||desc==='CURRENT'||desc==='FULLTIME') {
+      if (s.score.participant==='home') hg=s.score.goals;
+      if (s.score.participant==='away') ag=s.score.goals;
+    }
+  });
+
+  var state  = f.state || {};
+  var status = (state.short_name || state.state || 'NS').toUpperCase();
+  var liveS  = ['1H','HT','2H','ET','BT','P','INT','LIVE','INPLAY'];
+  var isLive = liveS.some(function(s){return status.includes(s);});
+
+  return {
+    fixture_id:  f.id,
+    status:      status==='FT'?'FT':status==='NS'?'NS':isLive?status:'NS',
+    status_long: state.name || status,
+    elapsed:     f.minute || null,
+    is_live:     isLive,
+    date:        f.starting_at || null,
+    home:        home.name       || '',
+    away:        away.name       || '',
+    home_logo:   home.image_path || '',
+    away_logo:   away.image_path || '',
+    hg,
+    ag
+  };
+}
+
 async function smGet(path) {
-  const sep = path.includes('?') ? '&' : '?';
-  const url = SM_BASE + path + sep + 'api_token=' + TOKEN;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('Sportmonks HTTP ' + r.status);
-  const json = await r.json();
-  if (json.message) throw new Error('Sportmonks: ' + json.message);
+  var sep = path.includes('?') ? '&' : '?';
+  var url = BASE_URL + path + sep + 'api_token=' + TOKEN;
+  console.log('[Sportmonks] GET', BASE_URL + path.split('?')[0]);
+
+  var response = await fetch(url, { method:'GET', headers:{ Accept:'application/json' } });
+  if (!response.ok) {
+    var body = await response.text().catch(function(){return '';});
+    throw new Error('Sportmonks HTTP ' + response.status + ': ' + body.substring(0,200));
+  }
+  var json = await response.json();
+  if (json.errors) throw new Error('Sportmonks error: ' + JSON.stringify(json.errors).substring(0,300));
   return json;
 }
 
-// ── Cache helper ─────────────────────────────────────────────────────────
-function fromCache(key) {
-  const c = CACHE[key];
-  return (c && c.data && (Date.now() - c.ts) < c.ttl) ? c.data : null;
-}
-function toCache(key, data) {
-  CACHE[key] = { ...CACHE[key], data, ts: Date.now() };
-  return data;
+function isFresh(entry) {
+  if (!entry||!entry.data||!entry.ts||!entry.ttl) return false;
+  return (Date.now() - entry.ts) < entry.ttl;
 }
 
-// ── Participant helpers ───────────────────────────────────────────────────
-function getHome(participants) {
-  return (participants || []).find(function(p) { return p.meta && p.meta.location === 'home'; }) || {};
-}
-function getAway(participants) {
-  return (participants || []).find(function(p) { return p.meta && p.meta.location === 'away'; }) || {};
-}
-function getCurrentScore(scores, side) {
-  const s = (scores || []).find(function(s) {
-    return s.description === 'CURRENT' && s.score && s.score.participant === side;
-  });
-  return s ? s.score.goals : null;
-}
-function isFinished(state) {
-  if (!state) return false;
-  const n = (state.developer_name || state.name || '').toUpperCase();
-  return n === 'FT' || n === 'FINISHED' || n === 'AET' || n === 'PEN';
-}
-function isLive(state) {
-  if (!state) return false;
-  const n = (state.developer_name || state.name || '').toUpperCase();
-  return n === 'INPLAY' || n === 'HT' || n === 'LIVE' || n === '1ST' || n === '2ND';
-}
-
-// ── LIVE SCORES ───────────────────────────────────────────────────────────
-async function getLive() {
-  const cached = fromCache('live');
-  if (cached) return cached;
-
-  // Filter livescores by PSL league
-  const json = await smGet('/livescores/inplay?include=participants;scores;state;periods&filters=fixtureLeagues:' + PSL_ID);
-  const live = (json.data || []).map(function(f) {
-    const home = getHome(f.participants);
-    const away = getAway(f.participants);
-    const min  = f.periods ? (f.periods[f.periods.length - 1] || {}).minutes || '' : '';
-    return {
-      id:        f.id,
-      home:      home.name || '',
-      away:      away.name || '',
-      hg:        getCurrentScore(f.scores, 'home'),
-      ag:        getCurrentScore(f.scores, 'away'),
-      status:    'LIVE',
-      minute:    min,
-      state:     (f.state && f.state.name) || 'LIVE'
-    };
-  });
-
-  return toCache('live', { live: live, ts: Date.now() });
-}
-
-// ── UPCOMING FIXTURES ─────────────────────────────────────────────────────
-async function getFixtures() {
-  const cached = fromCache('fixtures');
-  if (cached) return cached;
-
-  const json = await smGet('/fixtures/upcoming/leagues/' + PSL_ID + '?include=participants;round&per_page=50');
-  const fixtures = (json.data || []).map(function(f) {
-    const home = getHome(f.participants);
-    const away = getAway(f.participants);
-    // Extract GW number from round name
-    let gw = null;
-    if (f.round && f.round.name) {
-      const m = (f.round.name + '').match(/(\d+)/);
-      if (m) gw = parseInt(m[1]);
-    }
-    return {
-      id:         f.id,
-      home:       home.name || '',
-      away:       away.name || '',
-      kickoff_at: f.starting_at,
-      status:     'NS',
-      gw:         gw
-    };
-  });
-
-  return toCache('fixtures', { NS: fixtures, ts: Date.now() });
-}
-
-// ── RECENT RESULTS ────────────────────────────────────────────────────────
-async function getResults() {
-  const cached = fromCache('results');
-  if (cached) return cached;
-
-  const json = await smGet('/fixtures/last/30/leagues/' + PSL_ID + '?include=participants;scores;state;round');
-  const results = (json.data || [])
-    .filter(function(f) { return isFinished(f.state); })
-    .map(function(f) {
-      const home = getHome(f.participants);
-      const away = getAway(f.participants);
-      let gw = null;
-      if (f.round && f.round.name) {
-        const m = (f.round.name + '').match(/(\d+)/);
-        if (m) gw = parseInt(m[1]);
-      }
-      return {
-        id:         f.id,
-        home:       home.name || '',
-        away:       away.name || '',
-        hg:         getCurrentScore(f.scores, 'home'),
-        ag:         getCurrentScore(f.scores, 'away'),
-        kickoff_at: f.starting_at,
-        status:     'FT',
-        gw:         gw
-      };
-    });
-
-  return toCache('results', { FT: results, ts: Date.now() });
-}
-
-// ── LEAGUE STANDINGS ─────────────────────────────────────────────────────
-async function getStandings() {
-  const cached = fromCache('standings');
-  if (cached) return cached;
-
-  // Step 1: discover current season ID if not known
-  if (!PSL_SEASON) {
-    try {
-      const lgJson = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
-      const cs = lgJson.data && lgJson.data.current_season;
-      if (cs && cs.id) {
-        PSL_SEASON = cs.id;
-        console.log('[football.js] PSL season ID discovered:', PSL_SEASON);
-      }
-    } catch(e) {
-      console.warn('[football.js] Could not discover season ID:', e.message);
-    }
-  }
-
-  if (!PSL_SEASON) throw new Error('PSL season ID unknown — check Sportmonks subscription covers league 806');
-
-  // Step 2: fetch standings for discovered season
-  const json = await smGet('/standings/seasons/' + PSL_SEASON + '?include=participant;details');
-
-  // Sportmonks returns standings array directly in data
-  const raw = Array.isArray(json.data) ? json.data : [];
-
-  const standings = raw.map(function(s) {
-    const team = (s.participant && s.participant.name) || '';
-    const details = s.details || [];
-
-    // Sportmonks standing detail type_ids (may vary by subscription):
-    // 78=played, 79=won, 80=draw, 81=lost, 82=goals_for, 83=goals_against, 85=points
-    function det(typeId) {
-      const d = details.find(function(x) { return x.type_id === typeId; });
-      if (!d) return 0;
-      return typeof d.value === 'object' ? (d.value.all || d.value.total || 0) : (d.value || 0);
-    }
-
-    const p   = det(78) || s.games_played  || 0;
-    const w   = det(79) || s.won           || 0;
-    const d   = det(80) || s.draw          || 0;
-    const l   = det(81) || s.lost          || 0;
-    const gf  = det(82) || s.goals_for     || 0;
-    const ga  = det(83) || s.goals_against || 0;
-    const pts = det(85) || s.points        || 0;
-    const gd  = gf - ga;
-
-    let form = [];
-    if (s.form) {
-      form = (s.form + '').toUpperCase().split('').filter(function(c) {
-        return c === 'W' || c === 'D' || c === 'L';
-      }).slice(-5);
-    }
-
-    return {
-      pos:  s.position || 0,
-      team: team,
-      p: p, w: w, d: d, l: l,
-      gf: gf, ga: ga, gd: gd, pts: pts,
-      form: form
-    };
-  })
-  .filter(function(s) { return s.team && s.pos > 0; })
-  .sort(function(a, b) { return a.pos - b.pos || b.pts - a.pts || b.gd - a.gd; });
-
-  if (!standings.length) throw new Error('Standings empty — check Sportmonks covers league 806 standings');
-
-  const result = { standings: standings, ts: Date.now() };
-  CACHE.standings = { data: result, ts: Date.now(), ttl: 15 * 60 * 1000 };
-  return result;
-}
-
-// ── TOP SCORERS / PLAYER STATS ────────────────────────────────────────────
-async function getTopScorers() {
-  const cached = fromCache('topscorers');
-  if (cached) return cached;
-
-  // Discover season if needed
-  if (!PSL_SEASON) {
-    try {
-      const lgJson = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
-      const cs = lgJson.data && lgJson.data.current_season;
-      if (cs && cs.id) PSL_SEASON = cs.id;
-    } catch(e) { console.warn('[football.js] season discovery failed:', e.message); }
-  }
-  if (!PSL_SEASON) throw new Error('PSL season ID unknown');
-
-  // Fetch topscorers for season
-  const json = await smGet('/topscorers/seasons/' + PSL_SEASON + '?include=player;participant&limit=20');
-  const data = json.data || [];
-
-  const topScorers = data
-    .filter(function(s) { return s.participant && s.player; })
-    .map(function(s) {
-      return {
-        id:       s.player_id,
-        name:     s.player.common_name || s.player.display_name || s.player.name || '',
-        club:     s.participant.name || '',
-        goals:    s.total || s.goals || 0,
-        position: s.player.position_id ? posName(s.player.position_id) : 'FWD'
-      };
-    });
-
-  const result = { topScorers: topScorers, ts: Date.now() };
-  CACHE.topscorers = { data: result, ts: Date.now(), ttl: 30 * 60 * 1000 };
-  return result;
-}
-
-function posName(posId) {
-  // Sportmonks position IDs: 24=GK 25=DEF 26=MID 27=ATT
-  if (posId === 24) return 'GK';
-  if (posId === 25) return 'DEF';
-  if (posId === 26) return 'MID';
-  if (posId === 27) return 'FWD';
-  return 'MID';
-}
+// Export for points-cron.js
+module.exports.calculateFantasyPoints = calculateFantasyPoints;
+module.exports.normalisePosition      = normalisePosition;
