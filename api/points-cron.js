@@ -68,8 +68,17 @@ module.exports = async (req, res) => {
 
     // ── STEP 4: Sync standings ────────────────────────────────────────
     log.push('Step 4: Syncing standings...');
-    const standingsCount = await syncStandings(db, seasonId);
-    report.steps.standings = standingsCount + ' rows';
+    // Sync standings if > 2 hours old (allows 2-hourly updates, not just nightly)
+    const { data: stCache } = await db.from('api_cache').select('updated_at').eq('key','standings_last_sync').single();
+    const stAge = stCache && stCache.updated_at ? Date.now() - new Date(stCache.updated_at).getTime() : Infinity;
+    let standingsCount = 0;
+    if (stAge > 2 * 60 * 60 * 1000) { // older than 2 hours
+      standingsCount = await syncStandings(db, seasonId);
+      await db.from('api_cache').upsert({key:'standings_last_sync',value:'done',updated_at:new Date().toISOString()},{onConflict:'key'});
+    } else {
+      standingsCount = -1; // skipped
+    }
+    report.steps.standings = standingsCount === -1 ? 'skipped (< 2h)' : standingsCount + ' rows';
     log.push('  Standings rows: ' + standingsCount);
 
     // ── STEP 5: Score completed matches ───────────────────────────────
@@ -495,67 +504,86 @@ async function maybeSyncTopScorers(db, seasonId) {
   const { data: cache } = await db.from('api_cache').select('value,updated_at').eq('key', 'topscorers_last_sync').single();
   if (cache && cache.updated_at) {
     const age = Date.now() - new Date(cache.updated_at).getTime();
-    if (age < 7 * 24 * 60 * 60 * 1000) return false; // Skip if synced < 7 days ago
+    if (age < 7 * 24 * 60 * 60 * 1000) return false; // Skip if < 7 days
   }
 
-  // ONE call — no type filter = returns goals (208), assists (209), cards (84) all at once
-  // include=type tells us which category each row is
-  const d = await smGet(
-    '/topscorers/seasons/' + seasonId +
-    '?include=participant;player;type&per_page=100'
-  );
+  // Sportmonks PSL returns different types in separate calls:
+  // No filter = only cards. Must filter explicitly for goals (208) and assists (209).
+  // Cost: 2 API calls per week.
 
-  if (!d.data || !d.data.length) return false;
+  const base = '/topscorers/seasons/' + seasonId + '?include=participant;player;type&per_page=50';
 
-  // Bucket by player name + club, accumulate all stat types
+  const [dGoals, dAssists] = await Promise.all([
+    smGet(base + '&filters=seasontopscorerTypes:208'),
+    smGet(base + '&filters=seasontopscorerTypes:209')
+  ]);
+
+  // Also fetch cards (no filter needed — it already returns them)
+  const dCards = await smGet(base);
+
+  // Bucket all data by player key
   const byPlayer = {};
-  d.data.forEach(function(row) {
-    const player  = row.player      || {};
-    const team    = row.participant || {};
-    const typeObj = row.type        || {};
-    const name    = player.display_name || player.name || 'Unknown';
-    const club    = team.name || '';
-    const typeId  = typeObj.id || row.type_id || 0;
-    const key     = name + '|' + club;
+
+  function getPlayer(player, team) {
+    const name = player.display_name || player.name || 'Unknown';
+    const club = team.name || '';
+    const key  = name + '|' + club;
     if (!byPlayer[key]) {
       byPlayer[key] = {
         name, club,
         image_path:   player.image_path || null,
-        position_id:  player.position_id || null,
         goals:        0,
         assists:      0,
         yellow_cards: 0,
         red_cards:    0,
-        apps:         row.appearances || 0,
+        apps:         0
       };
     }
-    const val = row.total || 0;
-    // Type IDs: 208=goals, 209=assists, 84=yellow cards, 83=red cards
-    if (typeId === 208 || String(typeObj.developer_name || '').toUpperCase().includes('GOAL'))   byPlayer[key].goals        = val;
-    else if (typeId === 209 || String(typeObj.developer_name || '').toUpperCase().includes('ASSIST')) byPlayer[key].assists   = val;
-    else if (typeId === 84  || String(typeObj.developer_name || '').toUpperCase().includes('YELLOW')) byPlayer[key].yellow_cards = val;
-    else if (typeId === 83  || String(typeObj.developer_name || '').toUpperCase().includes('RED'))    byPlayer[key].red_cards    = val;
+    return byPlayer[key];
+  }
+
+  // Goals
+  (dGoals.data || []).forEach(function(row) {
+    const p = getPlayer(row.player || {}, row.participant || {});
+    p.goals = row.total || 0;
+    p.apps  = Math.max(p.apps, row.appearances || 0);
+  });
+
+  // Assists
+  (dAssists.data || []).forEach(function(row) {
+    const p = getPlayer(row.player || {}, row.participant || {});
+    p.assists = row.total || 0;
+    p.apps    = Math.max(p.apps, row.appearances || 0);
+  });
+
+  // Cards (type 84=yellow, 83=red)
+  (dCards.data || []).forEach(function(row) {
+    const typeObj = row.type || {};
+    const typeId  = typeObj.id || row.type_id;
+    const p = getPlayer(row.player || {}, row.participant || {});
+    if (typeId === 84 || String(typeObj.developer_name || '').includes('YELLOW')) p.yellow_cards = row.total || 0;
+    if (typeId === 83 || String(typeObj.developer_name || '').includes('RED'))    p.red_cards    = row.total || 0;
   });
 
   const players = Object.values(byPlayer);
+  if (!players.length) return false;
 
-  // Update players table — match by last name + club for fuzzy match
+  // Update players table — match by last name + club
   let updated = 0;
   for (const p of players) {
     const lastName = p.name.split(' ').pop();
     const { data: found } = await db.from('players')
-      .select('id,name')
+      .select('id')
       .ilike('name', '%' + lastName + '%')
       .eq('club', p.club)
       .limit(1);
-
     if (found && found.length) {
       await db.from('players').update({
         goals:        p.goals,
         assists:      p.assists,
         yellow_cards: p.yellow_cards,
         red_cards:    p.red_cards,
-        apps:         p.apps,
+        apps:         p.apps || undefined,
         photo:        p.image_path || undefined,
         updated_at:   new Date().toISOString()
       }).eq('id', found[0].id);
@@ -563,7 +591,7 @@ async function maybeSyncTopScorers(db, seasonId) {
     }
   }
 
-  // Also upsert into player_season_stats table for leaderboard display
+  // Upsert into player_season_stats leaderboard table
   const statsRows = players.map(function(p) {
     return {
       season_id:    seasonId,
@@ -578,67 +606,13 @@ async function maybeSyncTopScorers(db, seasonId) {
       updated_at:   new Date().toISOString()
     };
   });
-  if (statsRows.length) {
-    await db.from('player_season_stats')
-      .upsert(statsRows, { onConflict: 'season_id,player_name' });
-  }
+  await db.from('player_season_stats').upsert(statsRows, { onConflict: 'season_id,player_name' });
 
   await db.from('api_cache').upsert({
-    key: 'topscorers_last_sync', value: String(updated) + ' players updated',
+    key: 'topscorers_last_sync',
+    value: updated + ' players updated',
     updated_at: new Date().toISOString()
   }, { onConflict: 'key' });
 
   return true;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════════════════
-function scoreUserForFixture(squad, statsByName, activeChip) {
-  const isBB = activeChip === 'bb';
-  const isTC = activeChip === 'tc';
-  let gwPts = 0;
-  const playerBreakdown = [];
-  const captain = squad.find(function(p) { return p.isCaptain; });
-  const capKey  = captain ? normaliseName(captain.name || captain.display_name || '') : '';
-  const capStats = capKey ? (statsByName[capKey] || null) : null;
-  const capPlayed = capStats && capStats.minutes > 0;
-
-  squad.forEach(function(sp) {
-    if (sp.onBench && !isBB) return;
-    const key   = normaliseName(sp.name || sp.display_name || '');
-    const stats = statsByName[key]; if (!stats) return;
-    let pts = stats.fantasy_points || 0;
-    if (sp.isCaptain)             pts = isTC ? pts * 3 : pts * 2;
-    else if (sp.isVC && !capPlayed) pts = isTC ? pts * 3 : pts * 2;
-    gwPts += pts;
-    playerBreakdown.push({
-      name:       sp.name || sp.display_name,
-      position:   sp.position,
-      minutes:    stats.minutes,
-      base_pts:   stats.fantasy_points,
-      final_pts:  pts,
-      is_captain: sp.isCaptain || false,
-      is_vc:      sp.isVC      || false
-    });
-  });
-  return { gwPts, playerBreakdown };
-}
-
-function normaliseName(name) {
-  return (name || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-}
-
-async function smGet(path) {
-  const sep = path.includes('?') ? '&' : '?';
-  const url = BASE_URL + path + sep + 'api_token=' + TOKEN;
-  console.log('[SM] GET', BASE_URL + path.split('?')[0]);
-  const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
-  if (!response.ok) {
-    const body = await response.text().catch(function() { return ''; });
-    throw new Error('Sportmonks HTTP ' + response.status + ': ' + body.substring(0, 300));
-  }
-  const json = await response.json();
-  if (json.errors) throw new Error('Sportmonks error: ' + JSON.stringify(json.errors).substring(0, 300));
-  return json;
 }
