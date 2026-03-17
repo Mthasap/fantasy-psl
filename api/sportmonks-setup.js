@@ -115,6 +115,28 @@ module.exports = async (req, res) => {
         ? '✅ All endpoints working! Your cron job should run correctly.'
         : '⚠️ ' + report.errors.length + ' issue(s) found. Check results above.';
 
+    } else if (action === 'topscorer_types') {
+      // ── Discover what type IDs Sportmonks uses for this season ──
+      const sid = req.query.season_id || 26173;
+      const d = await smGet('/topscorers/seasons/' + sid + '?include=participant;player;type&per_page=50');
+      const rows = (d.data || []).slice(0, 30);
+      // Show unique type IDs and names
+      const types = {};
+      rows.forEach(r => {
+        const t = r.type || {};
+        const tid = t.id || r.type_id || '?';
+        types[tid] = { id: tid, name: t.name || t.developer_name || '?', developer_name: t.developer_name || '?' };
+      });
+      // Show sample rows
+      const samples = rows.slice(0, 10).map(r => ({
+        player: (r.player || {}).name || '?',
+        club: (r.participant || {}).name || '?',
+        total: r.total,
+        type_id: (r.type || {}).id || r.type_id,
+        type_name: (r.type || {}).developer_name || (r.type || {}).name || '?'
+      }));
+      report.results.topscorer_types = { unique_types: Object.values(types), sample_rows: samples };
+
     } else if (action === 'fixtures') {
       // ── List upcoming + recent fixtures ───────────────────────────────
       const sid = req.query.season_id || await autoGetSeasonId();
