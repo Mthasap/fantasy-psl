@@ -300,9 +300,10 @@ body {
   border-right:1px solid var(--border); text-align:center;
   flex:1; min-width:0; overflow:hidden;
 }
+.hero-stat-num { overflow:hidden; text-overflow:ellipsis; max-width:100%; display:block; }
 .hero-stat:last-child { border-right:none; }
 .hero-stat-num {
-  font-family:var(--font-display); font-size:clamp(1.1rem,3vw,1.6rem); font-weight:900;
+  font-family:var(--font-display); font-size:clamp(.85rem,3vw,1.6rem); font-weight:900;
   color:var(--stat-highlight); line-height:1; white-space:nowrap;
 }
 .hero-stat-label {
@@ -1153,6 +1154,8 @@ html, body {
   }
   .nav-links { display:none; }
   .nav-right { gap:.35rem; flex-shrink:0; overflow:visible; }
+  .nav-logo { gap:8px; }
+  .nav-logo img { height:32px; }
   .btn-login { padding:.35rem .6rem; font-size:.7rem; letter-spacing:.5px; }
   .btn-signup { padding:.35rem .7rem; font-size:.7rem; letter-spacing:.5px; }
   .how-grid { grid-template-columns:1fr 1fr; }
@@ -1165,6 +1168,18 @@ html, body {
   .foot-inner { flex-direction:column; text-align:center; }
   .hero-stats { flex-wrap:wrap; }
   .player-panel { position:static; max-height:none; overflow-y:visible; }
+}
+
+/* ── Very small phones (≤400px) ── */
+@media(max-width:400px){
+  .hero-stat { padding:.5rem .2rem; }
+  .hero-stat-num { font-size:.82rem; }
+  .hero-stat-label { font-size:.48rem; letter-spacing:.5px; }
+  .nav-word-top { display:none; }
+  .nav-word-mid { font-size:.7rem; letter-spacing:.5px; }
+  .nav-word-bot { font-size:.75rem; }
+  .btn-login { padding:.3rem .5rem; font-size:.65rem; letter-spacing:.3px; }
+  .btn-signup { padding:.3rem .55rem; font-size:.65rem; letter-spacing:.3px; }
 }
 @media(max-width:580px){
   .how-grid { grid-template-columns:1fr; }
