@@ -4416,7 +4416,8 @@ function renderStatCards(c, live) {
 function loadTable() {
   var c = document.getElementById('table-body');
   if (!c) return;
-  renderRealTable(c); // show cached data immediately
+  if (!TABLE_VIEW) TABLE_VIEW = 'short'; // ensure view is set
+  renderRealTable(c); // show REAL_TABLE immediately (instant, no network)
   // Always fetch fresh standings from Supabase (no API call — just DB read)
   fetch('/api/football?type=standings')
     .then(function(r){ return r.json(); })
@@ -4436,17 +4437,26 @@ function loadTable() {
 // -- Also override renderTableFromData to respect view --
 // (the function is defined above, replacing the old one)
 function renderRealTable(c) {
-  var tblData = (window.LIVE_STATS && LIVE_STATS.table && LIVE_STATS.table.length >= 8)
-    ? LIVE_STATS.table.map(function(t) {
-        // Use logo from API if available, else fall back to LOGOS dict
-        return Object.assign({}, t, {
-          logo: t.logo || getTeamLogo(t.club || t.team),
-          team: t.club || t.team
-        });
-      })
-    : REAL_TABLE.map(function(t, i) {
-        return Object.assign({}, t, { pos: i+1, logo: getTeamLogo(t.team) });
+  // Always ensure TABLE_VIEW is set
+  if (!TABLE_VIEW) TABLE_VIEW = 'short';
+  // Use LIVE_STATS if available and populated, else fall back to REAL_TABLE
+  var tblData;
+  if (window.LIVE_STATS && LIVE_STATS.table && LIVE_STATS.table.length >= 8) {
+    tblData = LIVE_STATS.table.map(function(t) {
+      return Object.assign({}, t, {
+        logo: t.logo || getTeamLogo(t.club || t.team),
+        team: t.club || t.team
       });
+    });
+  } else if (REAL_TABLE && REAL_TABLE.length) {
+    tblData = REAL_TABLE.map(function(t, i) {
+      return Object.assign({}, t, { pos: t.pos || i+1, logo: getTeamLogo(t.team) });
+    });
+  } else {
+    // Absolute fallback: show loading message
+    if (c) c.innerHTML = '<div style="padding:2rem;text-align:center;color:rgba(255,255,255,.4);font-family:var(--font-ui)">Loading standings...</div>';
+    return;
+  }
   renderTableFromData(c, tblData);
 }
 
