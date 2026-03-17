@@ -65,7 +65,24 @@
     .auth-modal.open { display:flex!important; }
     /* -- Player modal -- */
     .player-modal { display:none!important; }
-    .player-modal.open { display:flex!important; }
+    .player-modal.open {
+      display:flex!important;
+      position:fixed; inset:0; z-index:9000;
+      background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+      padding:1rem; overflow-y:auto;
+    }
+    .player-modal-box {
+      background:var(--bg-card);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:16px;
+      width:100%; max-width:420px;
+      max-height:88vh;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      position:relative;
+      margin:auto;
+    }
     /* -- User menu -- */
     .user-menu { display:none; align-items:center; gap:.6rem; }
     .user-menu.visible { display:flex!important; }
@@ -2239,9 +2256,11 @@ function pitchPlayerTap(id) {
   if (p.isVC)       actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
   // Transfers & removals only allowed before deadline
   if (!ST.deadlinePassed) {
+    actions.push({ label: 'Sub Out -- move to bench', fn: 'subOutPlayer(' + id + ')', accent: '#6eaadd' });
     actions.push({ label: 'Transfer Out -- pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
     if (!ST.squadRegistered) actions.push({ label: 'Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
   }
+  actions.push({ label: 'Player Bio', fn: 'openPlayerBio(' + id + ')', accent: '#aaa' });
 
   var sheet = document.getElementById('action-sheet');
   var sheetTitle = document.getElementById('action-sheet-title');
@@ -2361,11 +2380,12 @@ function benchPlayerTap(id) {
   if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
   // Moves and transfers only before deadline
   if (!ST.deadlinePassed) {
-    if (canStart) actions.push({ label: 'Move to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#4CAF50' });
+    if (canStart) actions.push({ label: 'Sub In -- move to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#22895A' });
     actions.push({ label: 'Transfer Out -- pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
     if (!ST.squadRegistered) actions.push({ label: 'Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
   }
 
+    actions.push({ label: 'Player Bio -- Wikipedia page', fn: 'openPlayerBio(' + id + ')', accent: '#aaaaaa' });
   sheetBtns.innerHTML = actions.map(function(a) {
     var col = a.accent || '#fff';
     return '<button onclick="closeActionSheet();' + a.fn + '" style="' +
@@ -2380,6 +2400,38 @@ function benchPlayerTap(id) {
 }
 
 // Move a bench player into the starting XI (swap with first available starter)
+
+// -- Sub player out to bench --
+function subOutPlayer(id) {
+  var p = ST.squad.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var benchCount = ST.squad.filter(function(x) { return x.onBench; }).length;
+  if (benchCount >= 4) { showToast('Bench is full (4 players max)', 'warning'); closeActionSheet(); return; }
+  p.onBench = true;
+  // Assign bench order
+  var maxBench = ST.squad.filter(function(x) { return x.onBench; })
+    .reduce(function(m, x) { return Math.max(m, x.benchOrder||0); }, 0);
+  p.benchOrder = maxBench + 1;
+  closeActionSheet();
+  renderPitch();
+  renderBudget();
+  markUnsaved();
+  showToast(playerName(p) + ' moved to bench', 'info');
+}
+
+// -- Open player bio --
+function openPlayerBio(id) {
+  var p = ST.allPlayers ? ST.allPlayers.find(function(x) { return x.id === id; }) : null;
+  if (!p) p = ST.squad.find(function(x) { return x.id === id; });
+  if (!p) return;
+  closeActionSheet();
+  var name = playerName(p);
+  // Build Wikipedia search URL from player name
+  var wikiUrl = 'https://en.wikipedia.org/wiki/Special:Search?search=' + encodeURIComponent(name + ' footballer');
+  // Try to open in new tab
+  window.open(wikiUrl, '_blank', 'noopener,noreferrer');
+}
+
 function moveToStarting(id) {
   var p       = ST.squad.find(function(x) { return x.id === id; });
   if (!p || !p.onBench) return;
@@ -2679,675 +2731,23 @@ function fdrColor(fdr) {
 }
 
 var REAL_TABLE = [
-  // Source: SuperSport -- GW20/21 standings -- 11 March 2026
-  { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5, l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','W','W','W'] },
-  { pos:2,  team:'Orlando Pirates',    p:20, w:14, d:3, l:3,  gf:31, ga:8,  gd:23,  pts:45, form:['W','L','W','W','D'] },
-  { pos:3,  team:'Sekhukhune United',  p:20, w:9,  d:6, l:5,  gf:21, ga:14, gd:7,   pts:33, form:['D','L','W','W','L'] },
-  { pos:4,  team:'Durban City',        p:20, w:9,  d:5, l:6,  gf:19, ga:14, gd:5,   pts:32, form:['D','W','W','L','W'] },
-  { pos:5,  team:'AmaZulu FC',         p:20, w:9,  d:4, l:7,  gf:19, ga:18, gd:1,   pts:31, form:['D','L','L','L','W'] },
-  { pos:6,  team:'Kaizer Chiefs',      p:18, w:8,  d:6, l:4,  gf:16, ga:12, gd:4,   pts:30, form:['L','L','L','W','L'] },
-  { pos:7,  team:'Polokwane City',     p:19, w:7,  d:7, l:5,  gf:16, ga:13, gd:3,   pts:28, form:['L','W','D','D','D'] },
-  { pos:8,  team:'TS Galaxy',          p:20, w:7,  d:3, l:10, gf:23, ga:22, gd:1,   pts:24, form:['L','L','L','L','L'] },
-  { pos:9,  team:'Richards Bay',       p:20, w:5,  d:9, l:6,  gf:15, ga:19, gd:-4,  pts:24, form:['W','D','L','D','D'] },
-  { pos:10, team:'Stellenbosch FC',    p:19, w:6,  d:5, l:8,  gf:15, ga:20, gd:-5,  pts:23, form:['D','W','W','D','D'] },
-  { pos:11, team:'Siwelele FC',        p:19, w:5,  d:7, l:7,  gf:10, ga:14, gd:-4,  pts:22, form:['D','W','D','D','D'] },
-  { pos:12, team:'Golden Arrows',      p:19, w:6,  d:3, l:10, gf:24, ga:24, gd:0,   pts:21, form:['L','D','W','D','L'] },
-  { pos:13, team:'Chippa United',      p:20, w:4,  d:7, l:9,  gf:14, ga:24, gd:-10, pts:19, form:['L','D','W','W','W'] },
-  { pos:14, team:'Marumo Gallants',    p:20, w:4,  d:6, l:10, gf:15, ga:26, gd:-11, pts:18, form:['W','L','D','L','L'] },
-  { pos:15, team:'Orbit College FC',   p:21, w:5,  d:3, l:13, gf:13, ga:32, gd:-19, pts:18, form:['W','L','L','L','L'] },
-  { pos:16, team:'Magesi FC',          p:19, w:2,  d:7, l:10, gf:10, ga:25, gd:-15, pts:13, form:['D','D','L','L','L'] }
-]
-var REAL_FIXTURES = {
-  // GW22 results -- verified SuperSport
-  FT: [
-    { date:'2026-03-04', home:'Polokwane City',    away:'Orlando Pirates',   hg:1, ag:2, status:'FT', gw:22 },
-    { date:'2026-03-04', home:'Mamelodi Sundowns', away:'Golden Arrows',     hg:2, ag:1, status:'FT', gw:22 },
-    { date:'2026-03-04', home:'Durban City',       away:'Sekhukhune United', hg:1, ag:1, status:'FT', gw:22 },
-    { date:'2026-03-04', home:'Chippa United',     away:'Marumo Gallants',   hg:1, ag:3, status:'FT', gw:22 },
-    { date:'2026-03-04', home:'AmaZulu FC',        away:'Magesi FC',         hg:0, ag:0, status:'FT', gw:22 },
-    { date:'2026-03-03', home:'TS Galaxy',         away:'Orbit College FC',  hg:1, ag:2, status:'FT', gw:22 },
-    { date:'2026-03-03', home:'Siwelele',          away:'Stellenbosch FC',   hg:0, ag:0, status:'FT', gw:22 },
-    { date:'2026-03-03', home:'Richards Bay',      away:'Kaizer Chiefs',     hg:1, ag:0, status:'FT', gw:22 }
-  ],
-  // GW23 upcoming -- verified SuperSport 10 March 2026
-  NS: [
-    { date:'2026-03-10', home:'Orbit College FC',  away:'Mamelodi Sundowns', hg:null
-     , ag:null, status:'NS', time:'17:30', gw:23 },
-    { date:'2026-03-11', home:'Orlando Pirates',   away:'Richards Bay',      hg:2, ag:0, status:'NS', time:'17:30', gw:23 },
-    { date:'2026-03-13', home:'Stellenbosch FC',   away:'TS Galaxy',         hg:null, ag:null, status:'NS', time:'17:30', gw:23 },
-    { date:'2026-03-14', home:'Magesi FC',         away:'Chippa United',     hg:null, ag:null, status:'NS', time:'13:30', gw:23 },
-    { date:'2026-03-14', home:'Orlando Pirates',   away:'Siwelele',          hg:null, ag:null, status:'NS', time:'13:30', gw:23 },
-    { date:'2026-03-14', home:'Marumo Gallants',   away:'Golden Arrows',     hg:null, ag:null, status:'NS', time:'13:30', gw:23 },
-    { date:'2026-03-14', home:'AmaZulu FC',        away:'Richards Bay',      hg:null, ag:null, status:'NS', time:'16:00', gw:23 },
-    { date:'2026-03-14', home:'Sekhukhune United', away:'Polokwane City',    hg:null, ag:null, status:'NS', time:'16:00', gw:23 },
-    { date:'2026-03-15', home:'Kaizer Chiefs',     away:'Durban City',       hg:null, ag:null, status:'NS', time:'13:30', gw:23 },
-    // GW24
-    { date:'2026-03-18', home:'Golden Arrows',     away:'Stellenbosch FC',   hg:null, ag:null, status:'NS', time:'17:30', gw:24 },
-    { date:'2026-03-21', home:'Polokwane City',    away:'AmaZulu FC',        hg:null, ag:null, status:'NS', time:'13:30', gw:24 },
-    { date:'2026-03-21', home:'Stellenbosch FC',   away:'Chippa United',     hg:null, ag:null, status:'NS', time:'13:30', gw:24 },
-    { date:'2026-03-21', home:'Kaizer Chiefs',     away:'Magesi FC',         hg:null, ag:null, status:'NS', time:'16:00', gw:24 },
-    { date:'2026-03-21', home:'Mamelodi Sundowns', away:'Marumo Gallants',   hg:null, ag:null, status:'NS', time:'18:00', gw:24 },
-    { date:'2026-03-22', home:'Siwelele',          away:'Orbit College FC',  hg:null, ag:null, status:'NS', time:'13:30', gw:24 },
-    { date:'2026-03-22', home:'Golden Arrows',     away:'Sekhukhune United', hg:null, ag:null, status:'NS', time:'13:30', gw:24 },
-    { date:'2026-03-22', home:'TS Galaxy',         away:'Orlando Pirates',   hg:null, ag:null, status:'NS', time:'13:30', gw:24 },
-    { date:'2026-03-22', home:'Durban City',       away:'Richards Bay',      hg:null, ag:null, status:'NS', time:'15:30', gw:24 },
-    // GW25
-    { date:'2026-04-06', home:'AmaZulu FC',        away:'Sekhukhune United', hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Chippa United',     away:'Siwelele',          hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Durban City',       away:'Mamelodi Sundowns', hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Magesi FC',         away:'Marumo Gallants',   hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Orbit College FC',  away:'Kaizer Chiefs',     hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Orlando Pirates',   away:'Golden Arrows',     hg:null, ag:null, status:'NS', time:'17:30', gw:25 },
-    { date:'2026-04-07', home:'Richards Bay',      away:'Stellenbosch FC',   hg:null, ag:null, status:'NS', time:'17:30', gw:25 }
-  ],
-  live: []
-}
-var REAL_NEWS = [
-  { source:'Goal.com', date:'2026-03-08',
-    title:"Ex-Downs midfielder: Adams deserves World Cup spot",
-    img:'https://assets.goal.com/images/v3/blt33ca2c12652a4f02/Jayden%20Adams,%20Mamelodi%20Sundowns,%20February%202026.jpg?auto=webp&format=pjpg&width=800&quality=60',
-    url:'https://www.goal.com/en-za/lists/ex-mamelodi-sundowns-midfielder-roger-feutmba-explains-why-jayden-adams-is-proving-he-belongs-on-the-plane-to-the-2026-fifa-world-cup-hugo-broos-will-rely-on-players-who-are-in-form/blte40a41be84898dd3' },
-  { source:'Goal.com', date:'2026-03-07',
-    title:"No excuse for Cardoso -- Sundowns legend on workload debate",
-    img:'https://assets.goal.com/images/v3/blt9724ce438d557b65/crop/MM5DIMBRGQ5DEMRVHA5G433XMU5DAORQ/B25KTMN0120.jpg?auto=webp&format=pjpg&width=800&quality=60',
-    url:'https://www.goal.com/en-za/lists/no-excuse-for-miguel-cardoso-as-mamelodi-sundowns-legend-insists-it-s-not-unique-if-psl-chairman-khoza-decides-not-to-grant-us-a-rest/bltb381fcd0da29e86e' },
-  { source:'Goal.com', date:'2026-03-06',
-    title:"Don't apologise! Kaizer Chiefs' coaches warned over results",
-    img:'https://assets.goal.com/images/v3/blt6a90d93b3e237d98/crop/MM5DGOBXG45DEMJYGE5G433XMU5DAORQ/B25JERW0722.jpg?auto=webp&format=pjpg&width=800&quality=60',
-    url:'https://www.goal.com/en-za/lists/cedric-kaze-and-khalil-ben-youssef-warned-apologising-is-not-a-good-option-as-kaizer-chiefs-fans-call-for-their-sacking/bltbc0c82ff38bbabb8' },
-  { source:'Soccer Laduma', date:'2026-03-04',
-    title:'Ten-Man Sundowns edge Golden Arrows 2-1 in GW16 thriller',
-    img:null, url:'https://www.soccerladuma.co.za' },
-  { source:'Soccer Laduma', date:'2026-03-04',
-    title:'Mofokeng magic: Pirates down Polokwane City 1-0',
-    img:null, url:'https://www.soccerladuma.co.za' },
-  { source:'Soccer Laduma', date:'2026-03-04',
-    title:'Gallants stun Chippa 3-1 in GW16 upset',
-    img:null, url:'https://www.soccerladuma.co.za' },
-  { source:'Soccer Laduma', date:'2026-03-03',
-    title:'Richards Bay shock Kaizer Chiefs 1-0',
-    img:null, url:'https://www.soccerladuma.co.za' },
-  { source:'Goal.com', date:'2026-03-01',
-    title:'J. Dion leads golden boot with 10 goals for Golden Arrows',
-    img:null, url:'https://www.goal.com/en-za/premier-soccer-league/top-players/yv73ms6v1995b5wny16jcfi3' },
-  { source:'Goal.com', date:'2026-02-28',
-    title:'Pirates and Sundowns level on 44pts -- title race heats up',
-    img:null, url:'https://www.goal.com/en-za/psl/table/yv73ms6v1995b5wny16jcfi3' },
-  { source:'PSL Official', date:'2026-03-01',
-    title:'GW17 fixtures: Orbit host Sundowns, Chiefs face Durban City',
-    img:null, url:'https://www.psl.co.za' }
-]
-var PSL_CACHE      = null;    // last successful API response
-var PSL_POLL_TIMER = null;    // live polling interval
-var PSL_LAST_FETCH = 0;       // timestamp of last fetch
-
-// -- Fetch fresh data from our serverless function ------------
-function fetchPSLData(cb, forceFresh) {
-  var now    = Date.now();
-  var age    = now - PSL_LAST_FETCH;
-  // 60s cache when live, 5min when not
-  var maxAge = (PSL_CACHE && PSL_CACHE.isLive) ? 60000 : 300000;
-
-  if (!forceFresh && PSL_CACHE && age < maxAge) {
-    cb(PSL_CACHE);
-    return;
-  }
-
-  // Always fetch both in parallel -- /api/football gives live data,
-  // /api/psl-data gives static fixtures, table, stats, news
-  Promise.allSettled([
-    fetch('/api/football?type=live').then(function(r) { return r.json(); }),
-    fetch('/api/psl-data?t=' + now).then(function(r)  { return r.json(); })
-  ]).then(function(results) {
-    var liveResult   = results[0].status === 'fulfilled' ? results[0].value : null;
-    var staticResult = results[1].status === 'fulfilled' ? results[1].value : null;
-
-    if (!PSL_CACHE) PSL_CACHE = {};
-
-    // Merge live data from /api/football
-    if (liveResult && liveResult.type === 'live') {
-      PSL_CACHE.isLive = liveResult.isLive;
-      PSL_CACHE.live   = (liveResult.matches || []).map(function(m) {
-        return {
-          home:       m.home,
-          away:       m.away,
-          hg:         m.hg,
-          ag:         m.ag,
-          elapsed:    m.elapsed,
-          status:     m.status,
-          fixture_id: m.fixture_id,
-          is_live:    m.is_live,
-          homeAbbr:   sn(m.home),
-          awayAbbr:   sn(m.away),
-          isLive:     true
-        };
-      });
-    } else {
-      PSL_CACHE.isLive = false;
-      if (!PSL_CACHE.live) PSL_CACHE.live = [];
-    }
-
-    // Merge static data from /api/psl-data
-    if (staticResult) {
-      PSL_CACHE.NS         = staticResult.NS         || staticResult.fixtures || [];
-      PSL_CACHE.FT         = staticResult.FT         || staticResult.results  || [];
-      PSL_CACHE.table      = staticResult.table      || PSL_CACHE.table      || [];
-      PSL_CACHE.topScorers = staticResult.topScorers || PSL_CACHE.topScorers || [];
-      PSL_CACHE.topAssists = staticResult.topAssists || PSL_CACHE.topAssists || [];
-      PSL_CACHE.topYellow  = staticResult.topYellow  || PSL_CACHE.topYellow  || [];
-      PSL_CACHE.topRed     = staticResult.topRed     || PSL_CACHE.topRed     || [];
-      PSL_CACHE.news       = staticResult.news       || PSL_CACHE.news       || [];
-      PSL_CACHE.currentGW  = staticResult.currentGW  || PSL_CACHE.currentGW;
-    }
-
-    PSL_LAST_FETCH = Date.now();
-    if (PSL_CACHE.currentGW) updateGWDisplay(PSL_CACHE.currentGW);
-    cb(PSL_CACHE);
-    scheduleLivePoll(PSL_CACHE.isLive);
-  }).catch(function(err) {
-    console.warn('[fetchPSLData] Error:', err);
-    cb(PSL_CACHE);
-  });
-}
-
-function scheduleLivePoll(isLive) {
-  if (PSL_POLL_TIMER) clearInterval(PSL_POLL_TIMER);
-
-  if (isLive) {
-    // Poll every 60 seconds while matches are live
-    PSL_POLL_TIMER = setInterval(function() {
-      fetchPSLData(function(data) {
-        if (data) {
-          loadFixturesFromData(data);
-          loadTableFromData(data);
-          updateTickerFromData(data);
-          showLiveBanner(data.live);
-          // Refresh stats page if it is active
-          if (document.getElementById('page-stats') &&
-              document.getElementById('page-stats').style.display !== 'none') {
-            renderStats();
-          }
-        }
-        if (!data || !data.isLive) {
-          clearInterval(PSL_POLL_TIMER);
-          PSL_POLL_TIMER = null;
-          hideLiveBanner();
-        }
-      }, true);
-    }, 60000);
-  }
-}
-
-// -- Live banner indicator -------------------------------------
-function showLiveBanner(liveMatches) {
-  var el = document.getElementById('live-banner');
-  if (!el || !liveMatches || !liveMatches.length) return;
-  var html = liveMatches.map(function(m) {
-    return '<span class="live-match">' +
-      m.homeAbbr + ' <strong>' + (m.hg !== null ? m.hg : '-') +
-      '</strong> - <strong>' + (m.ag !== null ? m.ag : '-') +
-      '</strong> ' + m.awayAbbr +
-      (m.elapsed ? ' <em>' + m.elapsed + '\'</em>' : '') +
-    '</span>';
-  }).join('  *  ');
-  el.innerHTML = '🔴 LIVE:  ' + html;
-  el.style.display = 'block';
-}
-
-function hideLiveBanner() {
-  var el = document.getElementById('live-banner');
-  if (el) el.style.display = 'none';
-}
-
-function loadFixturesFromData(data) {
-  var c = document.getElementById('fix-list');
-  if (!c || !data) return;
-  var tab = ST.fixTab;
-
-  // -- Build the list of matches to display ------------------------
-  var matches;
-  if (tab === 'LIVE') {
-    // Live tab: only show currently live matches
-    matches = data.live || [];
-  } else if (tab === 'NS') {
-    // Upcoming: use REAL_FIXTURES times (always correct SAST)
-    // If any matches are currently live, show them at top of upcoming
-    matches = (REAL_FIXTURES.NS || []).slice();
-    if (data.live && data.live.length) {
-      // Remove from upcoming list if they are now live
-      var liveNames = data.live.map(function(m) { return m.home + '_' + m.away; });
-      matches = matches.filter(function(m) {
-        return liveNames.indexOf(m.home + '_' + m.away) === -1;
-      });
-    }
-  } else if (tab === 'FT') {
-    // Results: prefer live-fetched results, fall back to hardcoded
-    matches = (data.FT && data.FT.length) ? data.FT : (REAL_FIXTURES.FT || []);
-  } else {
-    matches = [];
-  }
-
-  // -- Update live tab badge ----------------------------------------
-  var liveTab = document.getElementById('ftab-live');
-  if (liveTab) {
-    if (data.live && data.live.length) {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
-        'background:#D4274F;margin-right:5px;vertical-align:middle;' +
-        'animation:livePulse 1.2s ease-in-out infinite"></span>' +
-        'LIVE (' + data.live.length + ')';
-    } else {
-      liveTab.innerHTML =
-        '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
-        'background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live';
-    }
-  }
-
-  // -- Update GW display --------------------------------------------
-  if (data.currentGW) updateGWDisplay(data.currentGW);
-
-  // -- Empty state --------------------------------------------------
-  if (!matches || !matches.length) {
-    if (tab === 'LIVE') {
-      c.innerHTML =
-        '<div style="text-align:center;padding:3rem 1rem">' +
-          '<div style="margin-bottom:.6rem;opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div>' +
-          '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;' +
-          'color:rgba(255,255,255,.4)">No live matches right now</div>' +
-          '<div style="font-size:.75rem;color:rgba(255,255,255,.2);margin-top:.4rem">' +
-          'This tab updates automatically when matches kick off</div>' +
-        '</div>';
-    } else {
-      c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);' +
-        'padding:2rem">No fixtures to display</div>';
-    }
-    return;
-  }
-
-  // -- Group by date ------------------------------------------------
-  var grouped = {};
-  var groupOrder = [];
-  matches.forEach(function(f) {
-    var label;
-    if (f.is_live || f.isLive) {
-      label = '🔴 LIVE NOW';
-    } else if (f.date) {
-      label = formatMatchDate(f.date);
-    } else {
-      label = 'Upcoming';
-    }
-    if (!grouped[label]) { grouped[label] = []; groupOrder.push(label); }
-    grouped[label].push(f);
-  });
-
-  var html_out = '';
-  groupOrder.forEach(function(dateLabel) {
-    html_out +=
-      '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;' +
-      'font-weight:700;letter-spacing:1.5px;text-transform:uppercase;' +
-      'padding:.5rem .8rem .2rem">' + dateLabel + '</div>';
-    grouped[dateLabel].forEach(function(f) {
-      var isLive = f.is_live || f.isLive ||
-        ['1H','HT','2H','ET','P','BT'].indexOf(f.status) !== -1;
-      html_out += renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date,
-        isLive, f.elapsed, f.time);
-    });
-  });
-  c.innerHTML = html_out;
-}
-
-
-function loadTableFromData(data) {
-  var c = document.getElementById('table-body'); if (!c || !data || !data.table) return;
-  if (data.table.length >= 8) {
-    // Store in LIVE_STATS for club profiles + stat pages
-    if (!window.LIVE_STATS) window.LIVE_STATS = {};
-    LIVE_STATS.table      = data.table;
-    LIVE_STATS.topScorers = data.topScorers || LIVE_STATS.topScorers || [];
-    LIVE_STATS.topAssists = data.topAssists || LIVE_STATS.topAssists || [];
-    LIVE_STATS.topYellow  = data.topYellow  || LIVE_STATS.topYellow  || [];
-    LIVE_STATS.topRed     = data.topRed     || LIVE_STATS.topRed     || [];
-    renderTableFromData(c, data.table);
-  }
-}
-
-// -- Render a single fixture row ------------------------------
-function renderFixtureRow(home, away, hg, ag, date, isLive, elapsed, kickoffTime) {
-  var homeLogo = getTeamLogo(home);
-  var awayLogo = getTeamLogo(away);
-  var homeShort = sn(home);
-  var awayShort = sn(away);
-  var scoreOrTime;
-  if (isLive) {
-    scoreOrTime = '<span style="color:#D4274F;font-weight:900">' + (hg !== null ? hg : '-') + ' - ' + (ag !== null ? ag : '-') + '</span>' +
-      (elapsed ? '<div style="font-size:.55rem;color:#D4274F;letter-spacing:1px">' + elapsed + '\''  + '</div>' : '');
-  } else if (hg !== null && ag !== null) {
-    scoreOrTime = '<span style="color:#fff;font-weight:900">' + hg + ' - ' + ag + '</span>';
-  } else {
-    var d = date ? new Date(date) : null;
-    // Use fixture's hardcoded time field first; fallback to date parsing in SAST (UTC+2)
-    var timeStr = 'TBC';
-    if (kickoffTime) {
-      timeStr = kickoffTime; // SAST time from REAL_FIXTURES
-    } else if (d && !isNaN(d)) {
-      timeStr = d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'});
-    }
-    scoreOrTime = '<span style="font-size:.72rem;color:rgba(255,255,255,.5)">' + timeStr + '</span>';
-  }
-  var liveDot = isLive ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#D4274F;margin-right:3px;vertical-align:middle"></span>' : '';
-  return '<div class="fix-row" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)">' +
-    '<div class="fix-team" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">' +
-      '<span class="fix-team-name" style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;text-align:right">' + homeShort + '</span>' +
-      (homeLogo ? '<img src="' + homeLogo + '" style="width:24px;height:24px;object-fit:contain" onerror="this.hidden=true">' : '') +
-    '</div>' +
-    '<div class="fix-score" style="text-align:center;font-family:var(--font-display);font-size:1rem;min-width:52px">' + liveDot + scoreOrTime + '</div>' +
-    '<div class="fix-team" style="display:flex;align-items:center;gap:6px">' +
-      (awayLogo ? '<img src="' + awayLogo + '" style="width:24px;height:24px;object-fit:contain" onerror="this.hidden=true">' : '') +
-      '<span class="fix-team-name" style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff">' + awayShort + '</span>' +
-    '</div>' +
-  '</div>';
-}
-
-function loadFixtures() {
-  var c = document.getElementById('fix-list'); if (!c) return;
-
-  // Show hardcoded data instantly while DB loads
-  renderFixturesFromLocal();
-  updateTickerFromReal();
-
-  // Load from Supabase -- this is the live source of truth
-  db.from('fixtures')
-    .select('*')
-    .order('kickoff_at', { ascending: true })
-    .limit(100)
-    .then(function(res) {
-      if (res.error || !res.data || !res.data.length) return;
-      renderFixturesFromDB(res.data);
-    });
-
-  // Also check for live data from API
-  fetchPSLData(function(data) {
-    if (!data) return;
-    if (data.live && data.live.length) {
-      updateTickerFromData(data);
-      showLiveBanner(data.live);
-      if (ST.fixTab === 'LIVE') loadFixturesFromData(data);
-    }
-  });
-}
-
-function renderFixturesFromDB(rows) {
-  var c = document.getElementById('fix-list'); if (!c) return;
-  var tab = ST.fixTab;
-
-  // Filter by tab
-  var list = rows.filter(function(f) {
-    if (tab === 'NS')   return f.status === 'NS' || f.status === '1H' || f.status === 'HT' || f.status === '2H';
-    if (tab === 'FT')   return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN';
-    if (tab === 'LIVE') return f.status === '1H' || f.status === 'HT' || f.status === '2H';
-    return true;
-  });
-
-  if (!list.length) {
-    c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' +
-      (tab === 'LIVE' ? 'No live matches right now' : 'No fixtures to display') + '</div>';
-    return;
-  }
-
-  // Sort results newest first, upcoming oldest first
-  if (tab === 'FT') list = list.reverse();
-
-  // Group by date
-  var grouped = {};
-  list.forEach(function(f) {
-    var d = new Date(f.kickoff_at);
-    var label = formatMatchDate(d.toISOString().slice(0,10));
-    if (!grouped[label]) grouped[label] = [];
-    grouped[label].push(f);
-  });
-
-  var html = '';
-  Object.keys(grouped).forEach(function(label) {
-    html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
-    grouped[label].forEach(function(f) {
-      var d = new Date(f.kickoff_at);
-      var timeStr = d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', timeZone:'Africa/Johannesburg' });
-      html += renderFixtureRow(f.home_team, f.away_team, f.home_score, f.away_score, d.toISOString().slice(0,10), false, null, timeStr);
-    });
-  });
-  c.innerHTML = html;
-}
-
-// Render fixtures purely from REAL_FIXTURES hardcoded data
-function renderFixturesFromLocal() {
-  var c = document.getElementById('fix-list'); if (!c) return;
-  var tab = ST.fixTab;
-  var list = tab === 'NS'   ? REAL_FIXTURES.NS :
-             tab === 'FT'   ? REAL_FIXTURES.FT :
-             tab === 'LIVE' ? REAL_FIXTURES.live || [] : [];
-
-  if (!list.length) {
-    c.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.35);padding:2rem">' +
-      (tab === 'LIVE' ? 'No live matches right now' : 'No fixtures to display') + '</div>';
-    return;
-  }
-
-  // Group by date
-  var grouped = {};
-  list.forEach(function(f) {
-    var label = f.date ? formatMatchDate(f.date) : 'Upcoming';
-    if (!grouped[label]) grouped[label] = [];
-    grouped[label].push(f);
-  });
-
-  var html = '';
-  Object.keys(grouped).forEach(function(label) {
-    html += '<div class="fix-date-label" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.5rem .8rem .2rem">' + label + '</div>';
-    grouped[label].forEach(function(f) {
-      html += renderFixtureRow(f.home, f.away, f.hg, f.ag, f.date, false, null, f.time);
-    });
-  });
-  c.innerHTML = html;
-}
-function loadTable() {
-  var c = document.getElementById('table-body'); if (!c) return;
-  renderRealTable(c); // show immediately
-  fetchPSLData(function(data) {
-    if (!data) return;
-    loadTableFromData(data);
-    if (data.isLive) showLiveBanner(data.live);
-  });
-}
-
-
-// ====================================================
-//  TICKER -- current GW only: live > results > upcoming
-// ====================================================
-function loadTickerData() {
-  // Show hardcoded GW data instantly while DB loads
-  updateTickerFromReal();
-
-  // Then load live DB data for the current gameweek only
-  db.from('gameweeks')
-    .select('number')
-    .eq('is_current', true)
-    .limit(1)
-    .then(function(gwRes) {
-      var gw = (gwRes.data && gwRes.data[0]) ? gwRes.data[0].number : null;
-      if (!gw) return;
-
-      db.from('fixtures')
-        .select('*')
-        .eq('gameweek', gw)
-        .order('kickoff_at', { ascending: true })
-        .then(function(fixRes) {
-          if (fixRes.error || !fixRes.data || !fixRes.data.length) return;
-          renderTickerFromRows(fixRes.data);
-        });
-    });
-}
-
-function renderTickerFromRows(rows) {
-  var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = [];
-
-  // Separate into live, finished, and upcoming
-  var live     = rows.filter(function(f) { return f.status === '1H' || f.status === 'HT' || f.status === '2H'; });
-  var finished = rows.filter(function(f) { return f.status === 'FT' || f.status === 'AET' || f.status === 'PEN'; });
-  var upcoming = rows.filter(function(f) { return f.status === 'NS'; });
-
-  if (live.length) {
-    // If any game is live, show those first (red dot)
-    live.forEach(function(f) {
-      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'r' });
-    });
-    // Then append any already-finished games from this GW
-    finished.forEach(function(f) {
-      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'g' });
-    });
-  } else if (finished.length) {
-    // No live games -- show all results from this GW (green dot)
-    finished.forEach(function(f) {
-      items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: f.home_score + '-' + f.away_score, dot: 'g' });
-    });
-  }
-
-  // Always append remaining upcoming fixtures from this GW (orange dot)
-  upcoming.forEach(function(f) {
-    var d  = new Date(f.kickoff_at);
-    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
-    items.push({ label: sn(f.home_team) + ' v ' + sn(f.away_team), score: ds, dot: 'o' });
-  });
-
-  if (!items.length) { updateTickerFromReal(); return; }
-
-  // Double items so the scroll looks seamless
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(f) {
-    return '<div class="ti">' +
-      '<div class="ti-dot ' + f.dot + '"></div>' +
-      '<span class="ti-label">' + f.label + '</span>' +
-      '<span class="ti-score">' + f.score + '</span>' +
-    '</div>';
-  }).join('');
-}
-
-function updateTickerFromData(data) {
-  // Called by live API feed -- only update if there are live games
-  if (!data || !data.live || !data.live.length) return;
-  var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = data.live.map(function(f) {
-    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'r' };
-  });
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(f) {
-    return '<div class="ti">' +
-      '<div class="ti-dot ' + f.dot + '"></div>' +
-      '<span class="ti-label">' + f.label + '</span>' +
-      '<span class="ti-score">' + f.score + '</span>' +
-    '</div>';
-  }).join('');
-}
-
-function updateTickerFromReal() {
-  // Instant fallback using hardcoded REAL_FIXTURES -- filters to current GW content
-  var track = document.getElementById('ticker-track'); if (!track) return;
-  var items = REAL_FIXTURES.FT.map(function(f) {
-    return { label: sn(f.home) + ' v ' + sn(f.away), score: f.hg + '-' + f.ag, dot: 'g' };
-  });
-  REAL_FIXTURES.NS.forEach(function(f) {
-    var d  = new Date(f.date);
-    var ds = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', timeZone: 'Africa/Johannesburg' }).toUpperCase();
-    items.push({ label: sn(f.home) + ' v ' + sn(f.away), score: ds, dot: 'o' });
-  });
-  if (!items.length) return;
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(f) {
-    return '<div class="ti">' +
-      '<div class="ti-dot ' + f.dot + '"></div>' +
-      '<span class="ti-label">' + f.label + '</span>' +
-      '<span class="ti-score">' + f.score + '</span>' +
-    '</div>';
-  }).join('');
-}
-
-function updateTicker(fixtures) { updateTickerFromReal(); } // legacy shim
-
-// ====================================================
-//  NEWS & INJURIES
-// ====================================================
-function renderNewsCard(source, title, url, date, img) {
-  var d = new Date(date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
-  return '<a href="' + url + '" target="_blank" rel="noopener" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;text-decoration:none;display:block">' +
-    (img ? '<img src="' + img + '" style="width:100%;height:110px;object-fit:contain;display:block;background:rgba(255,255,255,.04);padding:.5rem;box-sizing:border-box" loading="lazy" onerror="this.hidden=true">' : '<div style="height:6px;background:linear-gradient(90deg,#B91C3A,#DBA94A)"></div>') +
-    '<div style="padding:.85rem">' +
-      '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#D4274F;margin-bottom:.3rem">' + source + '</div>' +
-      '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff;line-height:1.4;margin-bottom:.3rem">' + title + '</div>' +
-      '<div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + d + '</div>' +
-    '</div>' +
-  '</a>';
-}
-
-function loadNews() {
-  var c = document.getElementById('news-grid'); if (!c) return;
-
-  // Show hardcoded news immediately while API loads
-  c.innerHTML = REAL_NEWS.map(function(n) {
-    return renderNewsCard(n.source, n.title, n.url, n.date, n.img);
-  }).join('');
-
-  // Try Goal.com news from our API endpoint
-  fetch('/api/psl-data?t=' + Date.now())
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data && data.news && data.news.length >= 3) {
-        c.innerHTML = data.news.map(function(n) {
-          return renderNewsCard(n.source, n.title, n.url, n.date, n.img);
-        }).join('');
-        return;
-      }
-      // Fallback: try NewsAPI via proxy
-      tryLiveNews(c);
-    })
-    .catch(function() { tryLiveNews(c); });
-}
-
-
-function tryLiveNews(c) {
-  var url = 'https://newsapi.org/v2/everything?q=Betway+Premiership+PSL+South+Africa&language=en&sortBy=publishedAt&pageSize=12&apiKey=' + NEWS_KEY;
-  var proxies = [
-    'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
-    'https://corsproxy.io/?' + encodeURIComponent(url),
-    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
-  ];
-  var tried = 0;
-  function tryNext() {
-    if (tried >= proxies.length) return;
-    fetch(proxies[tried++])
-    .then(function(r) { return r.json(); })
-    .then(function(j) {
-      var raw = j.contents || j;
-      var data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      var articles = data.articles || [];
-      if (!articles.length) { tryNext(); return; }
-      c.innerHTML = articles.slice(0,12).map(function(a) {
-        return renderNewsCard(a.source.name, a.title, a.url, a.publishedAt, a.urlToImage);
-      }).join('');
-    })
-    .catch(tryNext);
-  }
-  tryNext();
-}
-
-var REAL_INJURIES = [
-  { name:'Aubrey Modiba',       team:'Mamelodi Sundowns', type:'Muscle',   reason:'Hamstring strain',      severe:false },
-  { name:'Peter Shalulile',     team:'Mamelodi Sundowns', type:'Knee',     reason:'Knee ligament',         severe:true  },
-  { name:'Monnapule Saleng',    team:'Mamelodi Sundowns', type:'Muscle',   reason:'Thigh strain',          severe:false },
-  { name:'Deon Hotto',          team:'Orlando Pirates',   type:'Ankle',    reason:'Ankle sprain',          severe:false },
-  { name:'Thabiso Monyane',     team:'Orlando Pirates',   type:'Muscle',   reason:'Calf strain',           severe:false },
-  { name:'Fawaaz Basadien',     team:'Stellenbosch FC',   type:'Knee',     reason:'ACL -- season over',     severe:true  },
-  { name:'Mory Cheick Keita',   team:'TS Galaxy',         type:'Muscle',   reason:'Groin strain',          severe:false },
-  { name:'Mondli Mbanjwa',      team:'AmaZulu FC',        type:'Illness',  reason:'Illness -- day to day',  severe:false }
+  // Source: Betway PSL official — GW24 standings — 17 March 2026
+  { pos:1,  team:'Mamelodi Sundowns',  p:20, w:14, d:5,  l:1,  gf:34, ga:10, gd:24,  pts:47, form:['W','W','D','W','W'] },
+  { pos:2,  team:'Orlando Pirates',    p:20, w:14, d:3,  l:3,  gf:31, ga:8,  gd:23,  pts:45, form:['W','W','L','W','W'] },
+  { pos:3,  team:'Sekhukhune United',  p:20, w:9,  d:6,  l:5,  gf:21, ga:14, gd:7,   pts:33, form:['W','D','L','W','D'] },
+  { pos:4,  team:'Durban City',        p:20, w:9,  d:5,  l:6,  gf:19, ga:14, gd:5,   pts:32, form:['W','L','W','D','L'] },
+  { pos:5,  team:'AmaZulu FC',         p:20, w:9,  d:4,  l:7,  gf:19, ga:18, gd:1,   pts:31, form:['L','W','W','D','L'] },
+  { pos:6,  team:'Kaizer Chiefs',      p:18, w:8,  d:6,  l:4,  gf:16, ga:12, gd:4,   pts:30, form:['W','D','W','L','D'] },
+  { pos:7,  team:'Polokwane City',     p:19, w:7,  d:7,  l:5,  gf:16, ga:13, gd:3,   pts:28, form:['D','W','D','L','W'] },
+  { pos:8,  team:'TS Galaxy',          p:20, w:7,  d:3,  l:10, gf:23, ga:22, gd:1,   pts:24, form:['L','W','L','L','W'] },
+  { pos:9,  team:'Richards Bay',       p:20, w:5,  d:9,  l:6,  gf:15, ga:19, gd:-4,  pts:24, form:['D','D','L','D','W'] },
+  { pos:10, team:'Stellenbosch FC',    p:19, w:6,  d:5,  l:8,  gf:15, ga:20, gd:-5,  pts:23, form:['L','L','W','D','L'] },
+  { pos:11, team:'Siwelele FC',        p:19, w:5,  d:7,  l:7,  gf:10, ga:14, gd:-4,  pts:22, form:['D','L','D','W','L'] },
+  { pos:12, team:'Golden Arrows',      p:19, w:6,  d:3,  l:10, gf:24, ga:24, gd:0,   pts:21, form:['L','W','L','D','L'] },
+  { pos:13, team:'Chippa United',      p:20, w:4,  d:7,  l:9,  gf:14, ga:24, gd:-10, pts:19, form:['D','L','D','L','L'] },
+  { pos:14, team:'Cape Town Spurs',    p:20, w:4,  d:6,  l:10, gf:14, ga:24, gd:-10, pts:18, form:['L','D','L','L','D'] },
+  { pos:15, team:'Magesi FC',          p:20, w:3,  d:4,  l:13, gf:15, ga:30, gd:-15, pts:13, form:['L','L','L','W','L'] },
+  { pos:16, team:'Orbit College FC',   p:20, w:2,  d:4,  l:14, gf:12, ga:32, gd:-20, pts:10, form:['L','L','L','D','L'] }
 ];
 
 function loadInjuries() {
@@ -4621,6 +4021,27 @@ function renderStatCards(c, live) {
                 statSection('Red Cards', SVG.card, redRows);
 }
 
+// -- loadTable: try live API, fallback to REAL_TABLE --
+function loadTable() {
+  var c = document.getElementById('table-body');
+  if (!c) return;
+  renderRealTable(c); // show hardcoded data immediately
+  // Try live from Sportmonks
+  fetch('/api/football?type=standings')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data && data.standings && data.standings.length >= 10) {
+        REAL_TABLE = data.standings.map(function(s, i){
+          return { pos:s.pos||i+1, team:s.team||s.club, p:s.p||0, w:s.w||0,
+                   d:s.d||0, l:s.l||0, gf:s.gf||0, ga:s.ga||0,
+                   gd:s.gd||0, pts:s.pts||0, form:s.form||[] };
+        });
+        renderRealTable(c);
+      }
+    })
+    .catch(function(){}); // silently use hardcoded on error
+}
+
 // -- Also override renderTableFromData to respect view --
 // (the function is defined above, replacing the old one)
 function renderRealTable(c) {
@@ -5290,6 +4711,7 @@ function renderFeed(){
           +'<div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.75rem;word-break:break-word">'+esc(p.content)+'</div>'
           +'<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">'+likeBtn+dislikeBtn+repostBtn+replyBtn+reportBtn+deleteBtn+'</div>'
           +'<div id="reply-box-'+pid+'" style="display:none;margin-top:.7rem">'
+          +'<div id="reply-thread-'+pid+'" style="margin-bottom:.6rem"></div>'
             +'<div style="display:flex;gap:.5rem">'
               +'<textarea placeholder="Write a reply..." maxlength="280" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-body);font-size:.82rem;padding:.5rem .7rem;resize:none;outline:none;min-height:56px;" id="reply-input-'+pid+'"></textarea>'
               +'<button onclick="submitReply(this)" data-pid="'+pid+'" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.72rem;font-weight:700;padding:.5rem .8rem;cursor:pointer;align-self:flex-end">Reply</button>'
@@ -5378,7 +4800,47 @@ function openReplyBox(btn){
   var box=document.getElementById('reply-box-'+pid);if(!box)return;
   var isOpen=box.style.display!=='none';
   box.style.display=isOpen?'none':'block';
-  if(!isOpen){var ta=document.getElementById('reply-input-'+pid);if(ta)ta.focus();}
+  if(!isOpen){
+    var ta=document.getElementById('reply-input-'+pid);if(ta)ta.focus();
+    loadReplies(pid);
+  }
+}
+
+function loadReplies(pid){
+  var container=document.getElementById('reply-thread-'+pid);
+  if(!container)return;
+  container.innerHTML='<div style="color:rgba(255,255,255,.35);font-size:.75rem;padding:.4rem 0">Loading replies...</div>';
+  db.from('diski_posts').select('*').eq('parent_id',pid).eq('is_removed',false).order('created_at',{ascending:true}).then(function(res){
+    var replies=res.data||[];
+    if(!replies.length){container.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.72rem;padding:.3rem 0;font-style:italic">No replies yet — be the first!</div>';return;}
+    container.innerHTML=replies.map(function(r){
+      var ago=formatAgo(r.created_at);
+      var uname=r.username||'fan';
+      var initials=uname.charAt(0).toUpperCase();
+      return '<div style="display:flex;gap:.6rem;padding:.55rem 0;border-top:1px solid rgba(255,255,255,.05)">'+
+        '<div style="width:26px;height:26px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#fff;flex-shrink:0">'+initials+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;gap:.4rem;align-items:baseline;flex-wrap:wrap">'+
+            '<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:#fff">'+esc(uname)+'</span>'+
+            (r.team_name?'<span style="font-size:.65rem;color:rgba(255,255,255,.35)">'+esc(r.team_name)+'</span>':'')+
+            '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:auto">'+ago+'</span>'+
+          '</div>'+
+          '<div style="font-size:.8rem;color:rgba(255,255,255,.75);margin-top:.2rem;word-break:break-word">'+esc(r.content.replace(/^↪\s*/,''))+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  });
+}
+
+function formatAgo(ts){
+  if(!ts)return'';
+  var diff=Date.now()-new Date(ts).getTime();
+  var m=Math.floor(diff/60000);
+  if(m<1)return'just now';
+  if(m<60)return m+'m ago';
+  var h=Math.floor(m/60);
+  if(h<24)return h+'h ago';
+  return Math.floor(h/24)+'d ago';
 }
 function submitReply(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
