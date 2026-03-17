@@ -391,6 +391,36 @@ async function scoreOneFixture(db, fixtureId) {
 
   // Mark as processed
   await db.from('processed_fixtures').insert({ fixture_id: fixtureId });
+
+  // Aggregate player_match_stats into players table (running totals)
+  await aggregatePlayerTotals(db, playerRows);
+}
+
+async function aggregatePlayerTotals(db, matchRows) {
+  // For each player in this match, add their stats to running season totals
+  for (const row of matchRows) {
+    if (!row.player_name || row.minutes === 0) continue;
+    // Get current totals from players table
+    const lastName = row.player_name.split(' ').pop();
+    const { data: existing } = await db.from('players')
+      .select('id,goals,assists,yellow_cards,red_cards,apps,clean_sheets,total_points')
+      .ilike('name', '%' + lastName + '%')
+      .eq('club', row.team)
+      .limit(1);
+    if (!existing || !existing.length) continue;
+    const p = existing[0];
+    const isCleanSheet = (row.goals_conceded === 0 && row.minutes >= 60) ? 1 : 0;
+    await db.from('players').update({
+      goals:         (p.goals         || 0) + (row.goals        || 0),
+      assists:       (p.assists        || 0) + (row.assists      || 0),
+      yellow_cards:  (p.yellow_cards   || 0) + (row.yellow_cards || 0),
+      red_cards:     (p.red_cards      || 0) + (row.red_cards    || 0),
+      apps:          (p.apps           || 0) + (row.minutes > 0 ? 1 : 0),
+      clean_sheets:  (p.clean_sheets   || 0) + isCleanSheet,
+      total_points:  (p.total_points   || 0) + (row.fantasy_points || 0),
+      updated_at:    new Date().toISOString()
+    }).eq('id', p.id);
+  }
 }
 
 async function updateUserPoints(db, fixtureId, playerRows) {
@@ -441,6 +471,20 @@ async function updateUserPoints(db, fixtureId, playerRows) {
     for (const u of updates) {
       await db.from('profiles').update({ gw_points: u.gw_points, total_points: u.total_points, updated_at: u.updated_at }).eq('id', u.id);
     }
+    // Recalculate overall rankings after points update
+    await recalculateRankings(db);
+  }
+}
+
+async function recalculateRankings(db) {
+  // Get all users sorted by total_points desc, update their overall_rank
+  const { data: users } = await db.from('profiles')
+    .select('id,total_points')
+    .not('total_points', 'is', null)
+    .order('total_points', { ascending: false });
+  if (!users || !users.length) return;
+  for (let i = 0; i < users.length; i++) {
+    await db.from('profiles').update({ overall_rank: i + 1 }).eq('id', users[i].id);
   }
 }
 
@@ -451,39 +495,99 @@ async function maybeSyncTopScorers(db, seasonId) {
   const { data: cache } = await db.from('api_cache').select('value,updated_at').eq('key', 'topscorers_last_sync').single();
   if (cache && cache.updated_at) {
     const age = Date.now() - new Date(cache.updated_at).getTime();
-    if (age < 7 * 24 * 60 * 60 * 1000) return false; // Skip if < 7 days old
+    if (age < 7 * 24 * 60 * 60 * 1000) return false; // Skip if synced < 7 days ago
   }
 
+  // ONE call — no type filter = returns goals (208), assists (209), cards (84) all at once
+  // include=type tells us which category each row is
   const d = await smGet(
     '/topscorers/seasons/' + seasonId +
-    '?include=participant;player&per_page=30'
+    '?include=participant;player;type&per_page=100'
   );
 
-  const rows = (d.data || []).map(function(row, i) {
-    const player = row.player      || {};
-    const team   = row.participant || {};
-    return {
-      name:         player.display_name || player.name || 'Unknown',
-      club:         team.name           || '',
-      position:     normalisePosition(player.position_id ? String(player.position_id) : ''),
-      goals:        row.total       || 0,
-      apps:         row.appearances || 0,
-      season_id:    seasonId
-    };
+  if (!d.data || !d.data.length) return false;
+
+  // Bucket by player name + club, accumulate all stat types
+  const byPlayer = {};
+  d.data.forEach(function(row) {
+    const player  = row.player      || {};
+    const team    = row.participant || {};
+    const typeObj = row.type        || {};
+    const name    = player.display_name || player.name || 'Unknown';
+    const club    = team.name || '';
+    const typeId  = typeObj.id || row.type_id || 0;
+    const key     = name + '|' + club;
+    if (!byPlayer[key]) {
+      byPlayer[key] = {
+        name, club,
+        image_path:   player.image_path || null,
+        position_id:  player.position_id || null,
+        goals:        0,
+        assists:      0,
+        yellow_cards: 0,
+        red_cards:    0,
+        apps:         row.appearances || 0,
+      };
+    }
+    const val = row.total || 0;
+    // Type IDs: 208=goals, 209=assists, 84=yellow cards, 83=red cards
+    if (typeId === 208 || String(typeObj.developer_name || '').toUpperCase().includes('GOAL'))   byPlayer[key].goals        = val;
+    else if (typeId === 209 || String(typeObj.developer_name || '').toUpperCase().includes('ASSIST')) byPlayer[key].assists   = val;
+    else if (typeId === 84  || String(typeObj.developer_name || '').toUpperCase().includes('YELLOW')) byPlayer[key].yellow_cards = val;
+    else if (typeId === 83  || String(typeObj.developer_name || '').toUpperCase().includes('RED'))    byPlayer[key].red_cards    = val;
   });
 
-  if (rows.length) {
-    // Update players table with goal counts
-    for (const r of rows) {
-      await db.from('players').update({ goals: r.goals, apps: r.apps })
-        .ilike('name', '%' + r.name.split(' ').pop() + '%')
-        .eq('club', r.club);
-    }
+  const players = Object.values(byPlayer);
 
-    await db.from('api_cache').upsert({
-      key: 'topscorers_last_sync', value: 'done', updated_at: new Date().toISOString()
-    }, { onConflict: 'key' });
+  // Update players table — match by last name + club for fuzzy match
+  let updated = 0;
+  for (const p of players) {
+    const lastName = p.name.split(' ').pop();
+    const { data: found } = await db.from('players')
+      .select('id,name')
+      .ilike('name', '%' + lastName + '%')
+      .eq('club', p.club)
+      .limit(1);
+
+    if (found && found.length) {
+      await db.from('players').update({
+        goals:        p.goals,
+        assists:      p.assists,
+        yellow_cards: p.yellow_cards,
+        red_cards:    p.red_cards,
+        apps:         p.apps,
+        photo:        p.image_path || undefined,
+        updated_at:   new Date().toISOString()
+      }).eq('id', found[0].id);
+      updated++;
+    }
   }
+
+  // Also upsert into player_season_stats table for leaderboard display
+  const statsRows = players.map(function(p) {
+    return {
+      season_id:    seasonId,
+      player_name:  p.name,
+      club:         p.club,
+      image_path:   p.image_path,
+      goals:        p.goals,
+      assists:      p.assists,
+      yellow_cards: p.yellow_cards,
+      red_cards:    p.red_cards,
+      apps:         p.apps,
+      updated_at:   new Date().toISOString()
+    };
+  });
+  if (statsRows.length) {
+    await db.from('player_season_stats')
+      .upsert(statsRows, { onConflict: 'season_id,player_name' });
+  }
+
+  await db.from('api_cache').upsert({
+    key: 'topscorers_last_sync', value: String(updated) + ' players updated',
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'key' });
+
   return true;
 }
 
