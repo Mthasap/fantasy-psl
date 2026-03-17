@@ -151,8 +151,8 @@ async function getOrCacheSeasonId(db) {
 // ═══════════════════════════════════════════════════════════════════════
 async function syncFixtures(db, seasonId) {
   const d = await smGet(
-    '/fixtures/upcoming/season/' + seasonId +
-    '?include=participants;round&per_page=30&sort=starting_at&order=asc'
+    '/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:1' +
+    '&include=participants;round&per_page=30&sortBy=starting_at&order=asc'
   );
 
   const fixtures = (d.data || []).map(function(f) {
@@ -183,8 +183,8 @@ async function syncFixtures(db, seasonId) {
 // ═══════════════════════════════════════════════════════════════════════
 async function syncResults(db, seasonId) {
   const d = await smGet(
-    '/fixtures/past/season/' + seasonId +
-    '?include=participants;scores;round&per_page=20&sort=starting_at&order=desc'
+    '/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:5' +
+    '&include=participants;scores;round&per_page=20&sortBy=starting_at&order=desc'
   );
 
   const results = (d.data || []).map(function(f) {
@@ -455,7 +455,7 @@ async function maybeSyncTopScorers(db, seasonId) {
   }
 
   const d = await smGet(
-    '/topscorers/season/' + seasonId +
+    '/topscorers/seasons/' + seasonId +
     '?include=participant;player&per_page=30'
   );
 
