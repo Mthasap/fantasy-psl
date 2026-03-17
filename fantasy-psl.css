@@ -360,7 +360,12 @@ body {
 .p-box-top { top:0; border-top:none; }
 .p-box-bot { bottom:0; border-bottom:none; }
 
-.prow { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:.5rem 1rem; position:relative; z-index:1; padding:.3rem .4rem; min-height:72px; }
+.prow { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:.3rem .5rem; position:relative; z-index:1; padding:.2rem .3rem; min-height:68px; }
+@media(max-width:400px) {
+  .prow { gap:.2rem .3rem; }
+  .pc { min-width:52px; }
+  .pc-shirt { width:46px; height:46px; }
+}
 .pc { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; transition:transform .15s; min-width:62px; }
 .pc:hover { transform:translateY(-4px); }
 .pc-shirt {
@@ -735,15 +740,31 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
   display:flex; justify-content:space-between; align-items:flex-end;
   margin-bottom:2rem; flex-wrap:wrap; gap:1rem;
 }
-.squad-body-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start; }
+.squad-body-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1.5rem;
+  align-items:start;
+}
+/* On mobile: stack pitch above player list */
+@media(max-width:767px) {
+  .squad-body-grid {
+    grid-template-columns:1fr;
+    gap:1rem;
+  }
+  .player-panel {
+    position:static;
+    max-height:none;
+  }
+}
 .squad-pitch-wrap {
   background:linear-gradient(180deg,#0d4a23 0%,#0e5226 25%,#0c4720 50%,#0e5226 75%,#0d4a23 100%);
   border-radius:var(--radius-lg); overflow:visible;
-  padding:1.2rem .6rem 1rem; position:relative; min-height:520px;
+  padding:1.2rem .6rem 1rem; position:relative; min-height:480px;
   display:flex; flex-direction:column; gap:.2rem;
-  /* Push players into own half: big top padding, smaller bottom */
   justify-content:flex-end;
-  padding-top:48%;
+  /* Own half: fixed pixel top padding so players sit in bottom ~55% */
+  padding-top:220px;
 }
 .squad-pitch-line {
   position:absolute; top:50%; left:6%; right:6%;
