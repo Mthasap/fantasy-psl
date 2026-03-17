@@ -296,14 +296,15 @@ body {
   width:100%;
 }
 .hero-stat {
-  padding:.75rem .5rem; background:var(--bg-card);
+  padding:.6rem .3rem; background:var(--bg-card);
   border-right:1px solid var(--border); text-align:center;
   flex:1; min-width:0; overflow:hidden;
 }
 .hero-stat:last-child { border-right:none; }
 .hero-stat-num {
-  font-family:var(--font-display); font-size:clamp(1.1rem,3vw,1.6rem); font-weight:900;
+  font-family:var(--font-display); font-size:clamp(.72rem,2.4vw,1.3rem); font-weight:900;
   color:var(--stat-highlight); line-height:1; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; display:block; max-width:100%;
 }
 .hero-stat-label {
   font-family:var(--font-ui); font-size:.65rem; font-weight:600;
