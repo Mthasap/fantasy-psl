@@ -466,7 +466,8 @@
       <div id="pm-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
       <div id="pm-fitness" style="padding:.6rem 1rem;border-radius:6px;margin-bottom:.6rem;font-family:var(--font-ui);font-size:.82rem;font-weight:700"></div>
       <div id="pm-fdr"></div>
-      <button id="pm-addbtn" class="auth-submit" style="margin-top:0" onclick="addFromModal()">+ Add to Squad</button>
+      <div id="pm-live-tag" style="padding:.35rem 0 .5rem;min-height:1.4rem;font-family:var(--font-ui)"></div>
+      <button id="pm-add-btn" class="auth-submit" style="margin-top:0" onclick="addFromModal()">+ Add to Squad</button>
     </div>
   </div>
 </div>
@@ -770,37 +771,27 @@
     <div class="squad-body-grid">
       <div>
         <div class="squad-pitch-wrap" style="min-height:540px;position:relative">
-          <!-- Pitch markings SVG overlay -->
-          <svg viewBox="0 0 300 480" preserveAspectRatio="none"
+          <!-- Pitch markings SVG overlay — shows own half only -->
+          <svg viewBox="0 0 300 260" preserveAspectRatio="none"
                style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
             <!-- Outer border -->
-            <rect x="10" y="8" width="280" height="464" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2.5"/>
-            <!-- Halfway line -->
-            <line x1="10" y1="240" x2="290" y2="240" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
-            <!-- Centre circle -->
-            <circle cx="150" cy="240" r="38" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+            <rect x="8" y="4" width="284" height="252" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+            <!-- Halfway line (top edge — opponent territory above) -->
+            <line x1="8" y1="4" x2="292" y2="4" stroke="rgba(255,255,255,.4)" stroke-width="2.5"/>
+            <!-- Centre circle arc (only bottom half visible) -->
+            <path d="M 110 4 A 42 42 0 0 0 190 4" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
             <!-- Centre spot -->
-            <circle cx="150" cy="240" r="3" fill="rgba(255,255,255,.5)"/>
-            <!-- Top 18-yard box -->
-            <rect x="72" y="8" width="156" height="72" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
-            <!-- Top 6-yard box -->
-            <rect x="108" y="8" width="84" height="30" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
-            <!-- Top goalpost -->
-            <rect x="120" y="4" width="60" height="8" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3" rx="1"/>
-            <!-- Top penalty spot -->
-            <circle cx="150" cy="62" r="2.5" fill="rgba(255,255,255,.5)"/>
-            <!-- Top penalty arc -->
-            <path d="M 108 80 A 42 42 0 0 1 192 80" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
-            <!-- Bottom 18-yard box -->
-            <rect x="72" y="400" width="156" height="72" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
-            <!-- Bottom 6-yard box -->
-            <rect x="108" y="442" width="84" height="30" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
-            <!-- Bottom goalpost -->
-            <rect x="120" y="468" width="60" height="8" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3" rx="1"/>
-            <!-- Bottom penalty spot -->
-            <circle cx="150" cy="418" r="2.5" fill="rgba(255,255,255,.5)"/>
-            <!-- Bottom penalty arc -->
-            <path d="M 108 400 A 42 42 0 0 0 192 400" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <circle cx="150" cy="4" r="3" fill="rgba(255,255,255,.4)"/>
+            <!-- 18-yard box -->
+            <rect x="68" y="178" width="164" height="78" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+            <!-- 6-yard box -->
+            <rect x="106" y="220" width="88" height="36" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>
+            <!-- Goalpost -->
+            <rect x="118" y="252" width="64" height="9" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="3" rx="1"/>
+            <!-- Penalty spot -->
+            <circle cx="150" cy="200" r="2.5" fill="rgba(255,255,255,.5)"/>
+            <!-- Penalty arc -->
+            <path d="M 80 178 A 50 50 0 0 1 220 178" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
           </svg>
           <div class="squad-pitch-line" style="display:none"></div>
           <div class="squad-pitch-circle" style="display:none"></div>
@@ -1591,12 +1582,54 @@ function applyFilter(term) {
 //  PLAYER MODAL
 // ====================================================
 function openPmodal(id) {
-  var p = ST.allPlayers.find(function(x) { return x.id === id; });
-  if (!p) return;
+  var p = ST.allPlayers ? ST.allPlayers.find(function(x) { return x.id === id; }) : null;
+  if (!p) { showToast('Player not found', 'warning'); return; }
   ST.activeId = id;
 
+  // Move modal to body so it escapes overflow:hidden on player-panel
+  var modal = document.getElementById('pmodal');
+  if (modal && modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  // Render immediately from cached PSL_ROSTER data
+  _renderPmodal(p);
+  document.getElementById('pmodal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Then fetch live stats from Supabase and refresh silently
+  var lastName = (p.display_name || p.name || '').split(' ').pop();
+  var club     = p.clubs ? p.clubs.name : (p.club || '');
+  if (db && lastName) {
+    db.from('players')
+      .select('goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points,photo,updated_at')
+      .ilike('name', '%' + lastName + '%')
+      .eq('club', club)
+      .limit(1)
+      .then(function(res) {
+        if (res.data && res.data.length && ST.activeId === id) {
+          var live = res.data[0];
+          var merged = Object.assign({}, p, {
+            goals:        (live.goals        !== null && live.goals        > 0) ? live.goals        : p.goals,
+            assists:      (live.assists       !== null && live.assists      > 0) ? live.assists      : p.assists,
+            yellow_cards: (live.yellow_cards  !== null && live.yellow_cards > 0) ? live.yellow_cards : p.yellow_cards,
+            red_cards:    (live.red_cards     !== null && live.red_cards    > 0) ? live.red_cards    : p.red_cards,
+            clean_sheets: (live.clean_sheets  !== null && live.clean_sheets > 0) ? live.clean_sheets : p.clean_sheets,
+            apps:         (live.apps          !== null && live.apps         > 0) ? live.apps         : p.apps,
+            total_points: (live.total_points  !== null && live.total_points > 0) ? live.total_points : p.total_points,
+            photo:        live.photo || p.photo,
+            _live_updated: live.updated_at ? new Date(live.updated_at).toLocaleDateString('en-ZA') : null
+          });
+          _renderPmodal(merged);
+        }
+      }).catch(function() {});
+  }
+}
+
+function _renderPmodal(p) {
+  var id   = p.id;
   var name = playerName(p);
-  var club = p.clubs ? p.clubs.name : 'Unknown Club';
+  var club = p.clubs ? p.clubs.name : (p.club || 'Unknown Club');
   var icon = posIcon(p.position);
 
   var shirtEl = document.getElementById('pm-shirt');
@@ -1645,7 +1678,7 @@ function openPmodal(id) {
   fit.textContent      = avail ? '✅ Fit and Available' : ' Currently Unavailable';
 
   var inSquad = ST.squad.some(function(x) { return x.id === id; });
-  var btn = document.getElementById('pm-addbtn');
+  var btn = document.getElementById('pm-add-btn');
   btn.textContent       = inSquad ? '✓ Already in Your Squad' : '+ Add to Squad . R' + (p.price||0) + 'M';
   btn.style.background  = inSquad ? '#1A6B42' : '';
   btn.disabled          = inSquad;
@@ -1674,8 +1707,18 @@ function openPmodal(id) {
     var fdrEl = document.getElementById('pm-fdr');
     if (fdrEl) fdrEl.innerHTML = '';
   }
-  document.getElementById('pmodal').classList.add('open');
-  document.body.style.overflow = 'hidden'; // prevent background scroll
+
+  // Live data indicator
+  var liveTagEl = document.getElementById('pm-live-tag');
+  if (liveTagEl) {
+    if (p._live_updated) {
+      liveTagEl.innerHTML = '<span style="font-size:.6rem;color:#22895A;font-weight:700;font-family:var(--font-ui)">● LIVE</span>' +
+        '<span style="font-size:.58rem;color:rgba(255,255,255,.3);margin-left:.4rem;font-family:var(--font-ui)">Updated ' + p._live_updated + '</span>';
+    } else {
+      liveTagEl.innerHTML = '<span style="font-size:.58rem;color:rgba(255,255,255,.2);font-family:var(--font-ui)">Stats updated nightly via Sportmonks</span>';
+    }
+  }
+  // Modal opened by openPmodal wrapper above
 }
 
 function closePmodal() {
@@ -2418,12 +2461,16 @@ function benchPlayerTap(id) {
   if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
   // Moves and transfers only before deadline
   if (!ST.deadlinePassed) {
-    if (canStart) actions.push({ label: 'Sub In -- move to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#22895A' });
+    if (canStart) {
+      actions.push({ label: 'Sub In -- move to Starting XI', fn: 'moveToStarting(' + id + ')', accent: '#22895A' });
+    } else {
+      // Starting XI is full — offer swap: pick a starter to bench
+      actions.push({ label: 'Swap with a starter (Sub In)', fn: 'openSubSwapPicker(' + id + ')', accent: '#22895A' });
+    }
     actions.push({ label: 'Transfer Out -- pick replacement', fn: 'startTransferOut(' + id + ')', accent: '#D4274F' });
     if (!ST.squadRegistered) actions.push({ label: 'Remove from Squad', fn: 'removePlayer(' + id + ')', accent: '#D4274F' });
   }
-
-    actions.push({ label: 'Player Bio -- Wikipedia page', fn: 'openPlayerBio(' + id + ')', accent: '#aaaaaa' });
+  actions.push({ label: 'Player Bio -- Wikipedia page', fn: 'openPlayerBio(' + id + ')', accent: '#aaaaaa' });
   sheetBtns.innerHTML = actions.map(function(a) {
     var col = a.accent || '#fff';
     return '<button onclick="closeActionSheet();' + a.fn + '" style="' +
@@ -2435,6 +2482,48 @@ function benchPlayerTap(id) {
       a.label + '</button>';
   }).join('');
   sheet.style.display = 'flex';
+}
+
+// Open sub swap picker: user picks which starter to move to bench
+function openSubSwapPicker(benchId) {
+  var benchP = ST.squad.find(function(x) { return x.id === benchId; });
+  if (!benchP) return;
+  var starters = ST.squad.filter(function(x) { return !x.onBench; });
+  var sheet = document.getElementById('action-sheet');
+  var sheetTitle = document.getElementById('action-sheet-title');
+  var sheetBtns  = document.getElementById('action-sheet-btns');
+  if (!sheet) return;
+  sheetTitle.textContent = 'Who do you want to bench?';
+  sheetBtns.innerHTML = starters.map(function(s) {
+    var col = '#ccc';
+    return '<button onclick="closeActionSheet();swapBenchStarter(' + benchId + ',' + s.id + ')" style="' +
+      'display:block;width:100%;padding:.75rem 1.1rem;margin:.3rem 0;' +
+      'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);' +
+      'border-radius:10px;color:' + col + ';font-family:var(--font-ui);font-size:.82rem;' +
+      'font-weight:700;cursor:pointer;text-align:left">' +
+      playerName(s) + ' <span style="opacity:.4;font-size:.72rem">(' + s.position + ')</span>' +
+    '</button>';
+  }).join('') +
+  '<button onclick="closeActionSheet()" style="display:block;width:100%;padding:.7rem;margin-top:.4rem;' +
+  'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;' +
+  'color:rgba(255,255,255,.4);font-family:var(--font-ui);font-size:.82rem;cursor:pointer">Cancel</button>';
+  sheet.style.display = 'flex';
+}
+
+function swapBenchStarter(benchId, starterId) {
+  var benchP   = ST.squad.find(function(x) { return x.id === benchId; });
+  var starterP = ST.squad.find(function(x) { return x.id === starterId; });
+  if (!benchP || !starterP) return;
+  // Swap bench status
+  benchP.onBench   = false;
+  starterP.onBench = true;
+  // Give starterP the bench order of benchP
+  starterP.benchOrder = benchP.benchOrder || 1;
+  benchP.benchOrder   = null;
+  renderPitch();
+  renderBudget();
+  markUnsaved();
+  showToast(playerName(benchP) + ' subbed in for ' + playerName(starterP), 'success');
 }
 
 // Move a bench player into the starting XI (swap with first available starter)
@@ -3718,22 +3807,25 @@ var PSL_ROSTER = [
 function loadFixtures() {
   var c = document.getElementById('fix-list');
   if (!c) return;
-  var tab = ST.fixTab || 'upcoming';
+  var tab = ST.fixTab || 'NS';
 
-  // Try live API first
-  var apiType = tab === 'results' ? 'results' : tab === 'live' ? 'live' : 'fixtures';
+  // Map tab value to API type (buttons send 'NS','FT','LIVE')
+  var apiType = (tab === 'FT' || tab === 'results') ? 'results'
+              : (tab === 'LIVE' || tab === 'live')  ? 'live'
+              : 'fixtures';
+
   fetch('/api/football?type=' + apiType)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var matches = [];
-      if (apiType === 'live')     matches = data.matches || [];
+      if (apiType === 'live')     matches = data.matches  || data.fixtures || [];
       if (apiType === 'fixtures') matches = data.fixtures || [];
       if (apiType === 'results')  matches = data.results  || [];
       if (matches.length) {
         renderFixtureList(c, matches);
         return;
       }
-      // fallback to hardcoded
+      // fallback to hardcoded REAL_FIXTURES
       renderFixturesFallback(c, tab);
     })
     .catch(function() { renderFixturesFallback(c, tab); });
@@ -3742,9 +3834,9 @@ function loadFixtures() {
 function renderFixturesFallback(c, tab) {
   var rf = window.REAL_FIXTURES || {};
   var matches = [];
-  if (tab === 'results')  matches = rf.FT  || [];
-  else if (tab === 'live') matches = rf.LIVE || [];
-  else                     matches = rf.NS  || [];
+  if (tab === 'FT' || tab === 'results')    matches = rf.FT   || [];
+  else if (tab === 'LIVE' || tab === 'live') matches = rf.LIVE || [];
+  else                                       matches = rf.NS   || [];
   if (!matches.length) {
     c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No ' + tab + ' fixtures available</div>';
     return;
