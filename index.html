@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0C0F14">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1049,23 +1049,29 @@ var SEASON       = 2025;
 
 // -- Club logos ---------------------------------------
 var LOGOS = {
-  // Images served via wsrv.nl CDN proxy -- global caching, 3-10x faster
-  'Mamelodi Sundowns':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8b/Mamelodi_Sundowns_FC_logo.svg&w=72&output=webp&we',
-  'Orlando Pirates':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Orlando_Pirates_Logo.svg&w=72&output=webp&we',
-  'Kaizer Chiefs':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/a/a1/Kaizer_Chiefs_logo.svg&w=72&output=webp&we',
-  'Stellenbosch FC':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png&w=72&output=webp&we',
-  'AmaZulu FC':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png&w=72&output=webp&we',
-  'Chippa United':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/09/Chippa_United_logo.png&w=72&output=webp&we',
-  'Golden Arrows':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/5/5b/Golden_Arrows_FC_logo.png&w=72&output=webp&we',
-  'Sekhukhune United':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d0/Sekhukhune_United_FC.png&w=72&output=webp&we',
-  'TS Galaxy':          'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/87/TS_Galaxy_FC_logo.png&w=72&output=webp&we',
-  'Polokwane City':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png&w=72&output=webp&we',
-  'Richards Bay':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f3/Richards_Bay_FC_logo.png&w=72&output=webp&we',
-  'Durban City':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/c/c2/Maritzburg_United_logo.png&w=72&output=webp&we',
-  'Siwelele FC':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/02/SuperSport_United_FC_logo.png&w=72&output=webp&we',
-  'Marumo Gallants':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=72&output=webp&we',
-  'Orbit College FC':   'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png&w=72&output=webp&we',
-  'Magesi FC':          'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png&w=72&output=webp&we'
+  // Images via wsrv.nl CDN proxy — fast global caching
+  'Mamelodi Sundowns':   'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8b/Mamelodi_Sundowns_FC_logo.svg&w=80&output=webp&we',
+  'Orlando Pirates':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Orlando_Pirates_Logo.svg&w=80&output=webp&we',
+  'Kaizer Chiefs':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/a/a1/Kaizer_Chiefs_logo.svg&w=80&output=webp&we',
+  'Stellenbosch FC':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png&w=80&output=webp&we',
+  'Stellenbosch':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png&w=80&output=webp&we',
+  'AmaZulu FC':          'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png&w=80&output=webp&we',
+  'AmaZulu':             'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png&w=80&output=webp&we',
+  'Chippa United':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/09/Chippa_United_logo.png&w=80&output=webp&we',
+  'Golden Arrows':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/5/5b/Golden_Arrows_FC_logo.png&w=80&output=webp&we',
+  'Sekhukhune United':   'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d0/Sekhukhune_United_FC.png&w=80&output=webp&we',
+  'TS Galaxy':           'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/87/TS_Galaxy_FC_logo.png&w=80&output=webp&we',
+  'Polokwane City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png&w=80&output=webp&we',
+  'Richards Bay':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f3/Richards_Bay_FC_logo.png&w=80&output=webp&we',
+  'Durban City':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/c/cf/Durban_City_FC.png&w=80&output=webp&we',
+  'Siwelele FC':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/3/3e/Siwelele_FC_logo.png&w=80&output=webp&we',
+  'Marumo Gallants':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
+  'Marumo Gallants FC':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
+  'Orbit College FC':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/00/Orbit_College_FC_logo.png&w=80&output=webp&we',
+  'Magesi FC':           'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
+  'Magesi':              'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
+  'Cape Town Spurs':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d2/Cape_Town_Spurs_FC.png&w=80&output=webp&we',
+  'Cape Town City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Cape_Town_City_FC_logo.png&w=80&output=webp&we'
 };
 
 // -- Logo path (served from same folder) -------------
@@ -3822,7 +3828,7 @@ function loadFixtures() {
       if (apiType === 'fixtures') matches = data.fixtures || [];
       if (apiType === 'results')  matches = data.results  || [];
       if (matches.length) {
-        renderFixtureList(c, matches);
+        LAST_MATCHES = matches; renderFixtureList(c, matches);
         return;
       }
       // fallback to hardcoded REAL_FIXTURES
@@ -3841,7 +3847,7 @@ function renderFixturesFallback(c, tab) {
     c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No ' + tab + ' fixtures available</div>';
     return;
   }
-  renderFixtureList(c, matches);
+  LAST_MATCHES = matches; renderFixtureList(c, matches);
 }
 
 function renderFixtureList(c, matches) {
@@ -3849,43 +3855,130 @@ function renderFixtureList(c, matches) {
     c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No fixtures to show</div>';
     return;
   }
-  c.innerHTML = matches.map(function(f) {
-    var isLive = f.is_live || f.isLive || f.status === 'LIVE' || f.status === '1H' || f.status === '2H';
+  c.innerHTML = matches.map(function(f, idx) {
+    var fid    = f.fixture_id || f.sportmonks_id || ('f'+idx);
+    var isLive = f.is_live || f.status === 'LIVE' || f.status === '1H' || f.status === '2H' || f.status === 'HT';
     var isFT   = f.status === 'FT';
-    var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : (isFT ? '-' : '');
-    var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : (isFT ? '-' : '');
-    var scoreStr = (isLive || isFT) ? hg + ' - ' + ag : 'vs';
+    var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : '';
+    var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : '';
+    var scoreStr   = (isLive || isFT) ? (hg + ' - ' + ag) : 'vs';
     var scoreColor = isLive ? '#D4274F' : isFT ? '#DBA94A' : 'rgba(255,255,255,.4)';
-    var homeLogo = f.home_logo ? '<img src="'+f.home_logo+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display=\'none\'">' : getTeamLogo(f.home) ? '<img src="'+getTeamLogo(f.home)+'" style="width:20px;height:20px;object-fit:contain">' : '';
-    var awayLogo = f.away_logo ? '<img src="'+f.away_logo+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display=\'none\'">' : getTeamLogo(f.away) ? '<img src="'+getTeamLogo(f.away)+'" style="width:20px;height:20px;object-fit:contain">' : '';
-    var dateStr = f.date ? new Date(f.date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-    var liveBadge = isLive ? '<span style="background:#D4274F;color:#fff;font-size:.55rem;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:1px;margin-left:4px">LIVE ' + (f.elapsed ? f.elapsed+"'" : '') + '</span>' : '';
-    return '<div class="fix-row" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.75rem 1rem;border-bottom:1px solid rgba(255,255,255,.05)">' +
-      '<div style="display:flex;align-items:center;gap:.5rem;justify-content:flex-end">' +
-        homeLogo + '<span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;text-align:right">' + (f.home||'') + '</span>' +
-      '</div>' +
-      '<div style="text-align:center;padding:0 .75rem;min-width:70px">' +
-        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:' + scoreColor + '">' + scoreStr + liveBadge + '</div>' +
-        '<div style="font-size:.6rem;color:rgba(255,255,255,.35);margin-top:2px">' + dateStr + '</div>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:.5rem">' +
-        '<span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">' + (f.away||'') + '</span>' + awayLogo +
-      '</div>' +
+    var hl = f.home_logo || getTeamLogo(f.home) || '';
+    var al = f.away_logo || getTeamLogo(f.away) || '';
+    var imgS = 'width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0;';
+    var hImg = hl ? '<img src="'+hl+'" style="'+imgS+'" onerror="this.style.display=\'none\'">' : '';
+    var aImg = al ? '<img src="'+al+'" style="'+imgS+'" onerror="this.style.display=\'none\'">' : '';
+    var dateStr = f.date ? new Date(f.date).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    var stateLabel = isLive ? (f.status==='HT'?'HT':f.elapsed ? f.elapsed+"'" : 'LIVE') : '';
+    var liveBadge = isLive
+      ? '<span style="display:block;background:#D4274F;color:#fff;font-size:.5rem;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:1px;margin-top:2px;width:fit-content;margin:2px auto 0">'+stateLabel+'</span>'
+      : (isFT ? '<span style="display:block;font-size:.5rem;color:#DBA94A;font-weight:700;margin-top:2px;text-align:center">FT</span>' : '');
+    var fidStr = String(fid);
+    return '<div style="border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<div onclick="toggleFix(\''+fidStr+'\')" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.85rem 1rem;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent" onmouseenter="this.style.background=\'rgba(255,255,255,.03)\'" onmouseleave="this.style.background=\'\'">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;justify-content:flex-end">' +
+          hImg+'<span style="font-family:var(--font-ui);font-size:.84rem;font-weight:700;color:#fff;text-align:right">'+(f.home||'')+'</span>'+
+        '</div>'+
+        '<div style="text-align:center;padding:0 .6rem;min-width:68px">'+
+          '<div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:'+scoreColor+'">'+scoreStr+'</div>'+
+          liveBadge+
+          '<div style="font-size:.58rem;color:rgba(255,255,255,.28);margin-top:2px">'+dateStr+'</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:.5rem">'+
+          '<span style="font-family:var(--font-ui);font-size:.84rem;font-weight:700;color:#fff">'+(f.away||'')+'</span>'+aImg+
+        '</div>'+
+      '</div>'+
+      '<div id="fd-'+fidStr+'" style="max-height:0;overflow:hidden;transition:max-height .3s ease"></div>'+
     '</div>';
   }).join('');
 }
 
-// ====================================================
-//  LEAGUE TABLE -- 3 views: Short / Full / Form
-// ====================================================
-var TABLE_VIEW = 'short'; // current view
-
-function setTableView(view, el) {
-  TABLE_VIEW = view;
-  document.querySelectorAll('#ttab-short,#ttab-full,#ttab-form').forEach(function(b) { b.classList.remove('active'); });
-  el.classList.add('active');
-  loadTable();
+var FIX_EXPANDED = {};
+function toggleFix(fid) {
+  FIX_EXPANDED[fid] = !FIX_EXPANDED[fid];
+  var el = document.getElementById('fd-'+fid);
+  if (!el) return;
+  if (FIX_EXPANDED[fid]) {
+    // Build detail content
+    var f = LAST_MATCHES ? LAST_MATCHES.find(function(x){ return String(x.fixture_id||x.sportmonks_id||x.id)===String(fid); }) : null;
+    el.innerHTML = buildFixDetail(f);
+    el.style.maxHeight = '500px';
+  } else {
+    el.style.maxHeight = '0';
+    setTimeout(function(){ if(!FIX_EXPANDED[fid]) el.innerHTML=''; }, 310);
+  }
 }
+
+// Store last rendered matches for expand lookup
+var LAST_MATCHES = [];
+var _origRFL = renderFixtureList;
+
+function buildFixDetail(f) {
+  var base = 'font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.8);';
+  var out = '<div style="background:rgba(255,255,255,.025);border-top:1px solid rgba(255,255,255,.06);padding:.5rem 0 .75rem">';
+
+  if (!f) {
+    return out+'<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.35);text-align:center">Tap to load match details</div></div>';
+  }
+
+  var isLive = f.is_live || f.status==='LIVE'||f.status==='1H'||f.status==='2H'||f.status==='HT';
+  var isFT   = f.status==='FT';
+
+  // Period label
+  if (isLive || isFT) {
+    var periodMap = {'1H':'First Half','HT':'Half Time','2H':'Second Half','FT':'Full Time','LIVE':'Live'};
+    var period = periodMap[f.status] || f.status || '';
+    if (period) {
+      out += '<div style="text-align:center;padding:.3rem 1rem;'+base+'color:'+(isLive?'#D4274F':'#DBA94A')+';font-weight:700;font-size:.7rem;letter-spacing:1px;text-transform:uppercase">'+period+'</div>';
+    }
+  }
+
+  // Goals
+  var goals = f.goals || f.events || [];
+  if (goals.length) {
+    out += '<div style="padding:.5rem 1rem .2rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.3);text-transform:uppercase">Goal scorers</div>';
+    goals.forEach(function(g) {
+      var isHome = g.team===f.home||g.side==='home';
+      out += '<div style="display:flex;justify-content:'+(isHome?'flex-start':'flex-end')+';padding:.2rem 1.2rem">';
+      out += '<span style="'+base+'font-weight:700">⚽ '+esc(g.player_name||g.name||'')+'</span>';
+      out += '<span style="'+base+'color:rgba(255,255,255,.35);margin-left:.35rem">'+(g.minute||g.min||'')+"'</span>";
+      out += '</div>';
+    });
+  }
+
+  // Stats
+  var stats = f.stats || f.statistics || [];
+  if (stats.length) {
+    out += '<div style="padding:.6rem 1rem .2rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.3);text-transform:uppercase">Match stats</div>';
+    var want  = {'BALL_POSSESSION':'Possession','SHOTS_ON_TARGET':'Shots on target','CORNERS':'Corners','YELLOWCARDS':'Yellow cards','FOULS':'Fouls'};
+    stats.filter(function(s){ return want[s.type_name||s.type]; }).forEach(function(s) {
+      var lbl = want[s.type_name||s.type];
+      var hv  = s.home_value !== undefined ? s.home_value : (s.value !== undefined ? s.value : '-');
+      var av  = s.away_value !== undefined ? s.away_value : '';
+      var isPct = (s.type_name||'').includes('POSS');
+      var pct = (typeof hv==='number' && typeof av==='number') ? (hv/(hv+av||1)*100) : null;
+      out += '<div style="padding:.3rem 1.2rem">';
+      out += '<div style="display:flex;justify-content:space-between;align-items:center;'+base+'margin-bottom:3px">';
+      out += '<span style="font-weight:700;min-width:24px">'+hv+(isPct?'%':'')+'</span>';
+      out += '<span style="color:rgba(255,255,255,.4);font-size:.68rem">'+lbl+'</span>';
+      out += '<span style="font-weight:700;min-width:24px;text-align:right">'+av+(isPct?'%':'')+'</span>';
+      out += '</div>';
+      if (pct!==null) {
+        out += '<div style="height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden">';
+        out += '<div style="height:100%;width:'+pct.toFixed(0)+'%;background:#D4274F;border-radius:2px"></div></div>';
+      }
+      out += '</div>';
+    });
+  }
+
+  if (!goals.length && !stats.length) {
+    out += '<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.3);text-align:center">'+(isFT||isLive?'No detailed stats available':'Match stats will appear here when the game starts')+'</div>';
+  }
+
+  return out + '</div>';
+}
+
+
 
 function renderTableFromData(c, table) {
   if (TABLE_VIEW === 'form') { renderTableForm(c, table); return; }
@@ -4027,7 +4120,7 @@ function fetchPSLData(cb) {
     if (standings && standings.standings && standings.standings.length >= 8) {
       LIVE_STATS.table = standings.standings.map(function(s,i) {
         return { pos:s.pos||i+1, team:s.team, p:s.p||0, w:s.w||0, d:s.d||0,
-                 l:s.l||0, gf:s.gf||0, ga:s.ga||0, gd:s.gd||0, pts:s.pts||0, form:s.form||[] };
+                 l:s.l||0, gf:s.gf||0, ga:s.ga||0, gd:s.gd||0, pts:s.pts||0, form:s.form||'NNNNN' };
       });
     }
     // Live top scorers from Sportmonks
@@ -4323,8 +4416,8 @@ function renderStatCards(c, live) {
 function loadTable() {
   var c = document.getElementById('table-body');
   if (!c) return;
-  renderRealTable(c); // show hardcoded data immediately
-  // Try live from Sportmonks
+  renderRealTable(c); // show cached data immediately
+  // Always fetch fresh standings from Supabase (no API call — just DB read)
   fetch('/api/football?type=standings')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -4332,7 +4425,7 @@ function loadTable() {
         REAL_TABLE = data.standings.map(function(s, i){
           return { pos:s.pos||i+1, team:s.team||s.club, p:s.p||0, w:s.w||0,
                    d:s.d||0, l:s.l||0, gf:s.gf||0, ga:s.ga||0,
-                   gd:s.gd||0, pts:s.pts||0, form:s.form||[] };
+                   gd:s.gd||0, pts:s.pts||0, form:s.form||'NNNNN' };
         });
         renderRealTable(c);
       }
@@ -4973,6 +5066,7 @@ function filterContent(t){
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function chatTimeAgo(ts){if(!ts)return'';var d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
+var DISKI_REFRESH_TIMER = null;
 function loadDiskiChat(){
   var compose=document.getElementById('chat-compose'),prompt=document.getElementById('chat-login-prompt');
   if(ST.user){
@@ -4985,6 +5079,30 @@ function loadDiskiChat(){
     if(prompt)prompt.style.display='block';
   }
   fetchPosts(true);
+  // Refresh reaction counts from DB every 30s while Diski is open
+  if(DISKI_REFRESH_TIMER) clearInterval(DISKI_REFRESH_TIMER);
+  DISKI_REFRESH_TIMER = setInterval(function(){
+    var page = document.getElementById('page-chat');
+    if(!page || page.style.display==='none' || page.classList.contains('hidden')) {
+      clearInterval(DISKI_REFRESH_TIMER); return;
+    }
+    // Re-fetch just the counts (not full posts) to update like/dislike/repost numbers
+    if(!CHAT.posts.length) return;
+    var ids = CHAT.posts.slice(0,CHAT.PAGE_SIZE).map(function(p){return p.id;});
+    db.from('diski_posts').select('id,likes,dislikes,reposts,reply_count').in('id',ids).then(function(res){
+      if(!res.data) return;
+      var updated = false;
+      res.data.forEach(function(fresh){
+        var cached = CHAT.posts.find(function(p){return p.id===fresh.id;});
+        if(cached && (cached.likes!==fresh.likes||cached.dislikes!==fresh.dislikes||cached.reposts!==fresh.reposts)){
+          cached.likes=fresh.likes||0; cached.dislikes=fresh.dislikes||0;
+          cached.reposts=fresh.reposts||0; cached.reply_count=fresh.reply_count||0;
+          updated=true;
+        }
+      });
+      if(updated) renderFeed();
+    }).catch(function(){});
+  }, 30000);
 }
 function setChatTab(tab,el){
   CHAT.tab=tab;
