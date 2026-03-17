@@ -118,24 +118,50 @@ module.exports = async (req, res) => {
     } else if (action === 'topscorer_types') {
       // ── Discover what type IDs Sportmonks uses for this season ──
       const sid = req.query.season_id || 26173;
-      const d = await smGet('/topscorers/seasons/' + sid + '?include=participant;player;type&per_page=50');
-      const rows = (d.data || []).slice(0, 30);
-      // Show unique type IDs and names
-      const types = {};
-      rows.forEach(r => {
+
+      // Try 1: default endpoint (no filter)
+      const d1 = await smGet('/topscorers/seasons/' + sid + '?include=participant;player;type&per_page=100');
+      const types1 = {};
+      (d1.data || []).forEach(r => {
         const t = r.type || {};
         const tid = t.id || r.type_id || '?';
-        types[tid] = { id: tid, name: t.name || t.developer_name || '?', developer_name: t.developer_name || '?' };
+        types1[tid] = { id: tid, developer_name: t.developer_name || t.name || '?' };
       });
-      // Show sample rows
-      const samples = rows.slice(0, 10).map(r => ({
-        player: (r.player || {}).name || '?',
-        club: (r.participant || {}).name || '?',
-        total: r.total,
-        type_id: (r.type || {}).id || r.type_id,
-        type_name: (r.type || {}).developer_name || (r.type || {}).name || '?'
-      }));
-      report.results.topscorer_types = { unique_types: Object.values(types), sample_rows: samples };
+
+      // Try 2: explicit goals filter type 208
+      let goals208 = null;
+      try {
+        const d2 = await smGet('/topscorers/seasons/' + sid + '?include=participant;player;type&filters=seasontopscorerTypes:208&per_page=5');
+        goals208 = { count: (d2.data||[]).length, sample: (d2.data||[]).slice(0,3).map(r=>({player:(r.player||{}).name,total:r.total,type_id:(r.type||{}).id})) };
+      } catch(e) { goals208 = { error: e.message }; }
+
+      // Try 3: season statistics include (alternative way to get player stats)
+      let seasonStats = null;
+      try {
+        const d3 = await smGet('/seasons/' + sid + '?include=players.statistics.type&per_page=5');
+        seasonStats = { keys: Object.keys(d3.data || {}).slice(0,10) };
+      } catch(e) { seasonStats = { error: e.message }; }
+
+      // Try 4: fixture player statistics for a recent result
+      const { data: recentFix } = await smGet('/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5&per_page=1&sortBy=starting_at&order=desc');
+      let fixStats = null;
+      if (recentFix && recentFix.length) {
+        const fid = recentFix[0].id;
+        try {
+          const d4 = await smGet('/fixtures/' + fid + '?include=statistics.type&per_page=3');
+          const stats = (d4.data && d4.data.statistics || []).slice(0,5);
+          fixStats = { fixture_id: fid, fixture_name: recentFix[0].name, stat_types: stats.map(s=>({ type_id:(s.type||{}).id, type_name:(s.type||{}).developer_name, player_id:s.player_id, value:s.data })) };
+        } catch(e) { fixStats = { error: e.message }; }
+      }
+
+      report.results.topscorer_types = {
+        unique_types_returned: Object.values(types1),
+        total_rows: (d1.data||[]).length,
+        goals_type_208_test: goals208,
+        season_stats_test: seasonStats,
+        fixture_stats_sample: fixStats,
+        conclusion: Object.keys(types1).length <= 2 ? 'ONLY CARDS AVAILABLE — goals/assists not in topscorers for PSL. Use fixture statistics instead.' : 'Multiple types found'
+      };
 
     } else if (action === 'fixtures') {
       // ── List upcoming + recent fixtures ───────────────────────────────
