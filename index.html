@@ -999,7 +999,7 @@
       <strong>Data sources:</strong> Goal.com . ESPN . Soccer Laduma . PSL Official
     </div>
     <div style="font-size:.58rem;color:rgba(255,255,255,.18);text-align:center;margin-top:.6rem;padding:0 1rem">
-      Headway Projects (PTY) LTD . Registered in South Africa . fantasy-psl.vercel.app
+      Headway Projects (PTY) LTD . Registered in South Africa . www.fantasypsl.co.za
     </div>
   </div>
 </footer>
@@ -1161,7 +1161,7 @@ db.auth.onAuthStateChange(function(event, session) {
   // Show/hide ad banner based on login state
   updateAdVisibility();
   if (ST.user) {
-    loadGW(function() { loadMySquad(); });
+    loadGW(function() { loadMySquad(); }); loadReactions();
   } else {
     ST.squad = [];
     renderPitch();
@@ -1638,6 +1638,7 @@ function openPmodal(id) {
     if (fdrEl) fdrEl.innerHTML = '';
   }
   document.getElementById('pmodal').classList.add('open');
+  document.body.style.overflow = 'hidden'; // prevent background scroll
 }
 
 function closePmodal() {
@@ -2037,7 +2038,7 @@ function shareSquad() {
   lines.push('');
   if (captain) lines.push('⭐ Captain: ' + playerName(captain));
   lines.push('💰 Value: R' + ST.squad.reduce(function(s,p){return s+(p.price||0);},0).toFixed(1) + 'M');
-  lines.push('🔗 fantasy-psl.vercel.app');
+  lines.push('🔗 www.fantasypsl.co.za');
   var text = lines.join('\n');
   if (navigator.share) {
     navigator.share({ title: 'My Fantasy PSL Squad', text: text })
@@ -3009,6 +3010,36 @@ function loadGWHistory() {
     });
 }
 
+
+function uploadAvatar(input) {
+  if (!ST.user || !input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2MB', 'warning'); return; }
+  showToast('Uploading photo...', 'info');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    // Store as base64 in profiles (small images only)
+    db.from('profiles').update({ avatar_url: dataUrl }).eq('id', ST.user.id).then(function(res) {
+      if (res.error) { showToast('Upload failed: ' + res.error.message, 'error'); return; }
+      if (CACHE._profile) CACHE._profile.avatar_url = dataUrl;
+      loadProfile();
+      showToast('Profile photo updated!', 'success');
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function getAvatarHtml(username, avatarUrl, size) {
+  size = size || 32;
+  var initials = (username||'?').charAt(0).toUpperCase();
+  var halfSize = Math.round(size * 0.4);
+  if (avatarUrl) {
+    return '<img src="' + avatarUrl + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)" onerror="this.outerHTML=\'<div style=\\"width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:' + halfSize + 'px;font-weight:700;color:#fff\\">' + initials + '</div>\'">';
+  }
+  return '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:' + halfSize + 'px;font-weight:700;color:#fff">' + initials + '</div>';
+}
+
 function loadProfile() {
   var c = document.getElementById('profile-wrap'); if (!c) return;
   if (!ST.user) { c.innerHTML = '<div class="loading-players">Please log in to view your profile</div>'; return; }
@@ -3029,7 +3060,17 @@ function loadProfile() {
     var initials = (p.team_name || '?').substring(0, 2).toUpperCase();
     c.innerHTML =
       '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
-        '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;flex-shrink:0;border:2px solid rgba(185,28,58,.5)">' + initials + '</div>' +
+        '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload\').click()" title="Tap to change photo">' +
+        (p.avatar_url
+          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
+            '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+          : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+        ) +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
+        '</div>' +
+        '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
+      '</div>' +
         '<div>' +
           '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">' + p.team_name + '</div>' +
           '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + p.username + '</div>' +
@@ -3613,6 +3654,78 @@ var PSL_ROSTER = [
     renderPlayerList();
   };
 })();
+
+// ====================================================
+//  FIXTURES & RESULTS
+// ====================================================
+
+function loadFixtures() {
+  var c = document.getElementById('fix-list');
+  if (!c) return;
+  var tab = ST.fixTab || 'upcoming';
+
+  // Try live API first
+  var apiType = tab === 'results' ? 'results' : tab === 'live' ? 'live' : 'fixtures';
+  fetch('/api/football?type=' + apiType)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var matches = [];
+      if (apiType === 'live')     matches = data.matches || [];
+      if (apiType === 'fixtures') matches = data.fixtures || [];
+      if (apiType === 'results')  matches = data.results  || [];
+      if (matches.length) {
+        renderFixtureList(c, matches);
+        return;
+      }
+      // fallback to hardcoded
+      renderFixturesFallback(c, tab);
+    })
+    .catch(function() { renderFixturesFallback(c, tab); });
+}
+
+function renderFixturesFallback(c, tab) {
+  var rf = window.REAL_FIXTURES || {};
+  var matches = [];
+  if (tab === 'results')  matches = rf.FT  || [];
+  else if (tab === 'live') matches = rf.LIVE || [];
+  else                     matches = rf.NS  || [];
+  if (!matches.length) {
+    c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No ' + tab + ' fixtures available</div>';
+    return;
+  }
+  renderFixtureList(c, matches);
+}
+
+function renderFixtureList(c, matches) {
+  if (!matches.length) {
+    c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No fixtures to show</div>';
+    return;
+  }
+  c.innerHTML = matches.map(function(f) {
+    var isLive = f.is_live || f.isLive || f.status === 'LIVE' || f.status === '1H' || f.status === '2H';
+    var isFT   = f.status === 'FT';
+    var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : (isFT ? '-' : '');
+    var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : (isFT ? '-' : '');
+    var scoreStr = (isLive || isFT) ? hg + ' - ' + ag : 'vs';
+    var scoreColor = isLive ? '#D4274F' : isFT ? '#DBA94A' : 'rgba(255,255,255,.4)';
+    var homeLogo = f.home_logo ? '<img src="'+f.home_logo+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display=\'none\'">' : getTeamLogo(f.home) ? '<img src="'+getTeamLogo(f.home)+'" style="width:20px;height:20px;object-fit:contain">' : '';
+    var awayLogo = f.away_logo ? '<img src="'+f.away_logo+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display=\'none\'">' : getTeamLogo(f.away) ? '<img src="'+getTeamLogo(f.away)+'" style="width:20px;height:20px;object-fit:contain">' : '';
+    var dateStr = f.date ? new Date(f.date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    var liveBadge = isLive ? '<span style="background:#D4274F;color:#fff;font-size:.55rem;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:1px;margin-left:4px">LIVE ' + (f.elapsed ? f.elapsed+"'" : '') + '</span>' : '';
+    return '<div class="fix-row" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.75rem 1rem;border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<div style="display:flex;align-items:center;gap:.5rem;justify-content:flex-end">' +
+        homeLogo + '<span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;text-align:right">' + (f.home||'') + '</span>' +
+      '</div>' +
+      '<div style="text-align:center;padding:0 .75rem;min-width:70px">' +
+        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:' + scoreColor + '">' + scoreStr + liveBadge + '</div>' +
+        '<div style="font-size:.6rem;color:rgba(255,255,255,.35);margin-top:2px">' + dateStr + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:.5rem">' +
+        '<span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">' + (f.away||'') + '</span>' + awayLogo +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
 
 // ====================================================
 //  LEAGUE TABLE -- 3 views: Short / Full / Form
@@ -4285,7 +4398,17 @@ function renderProfileData(c, p) {
   var initials = (p.team_name || '?').substring(0,2).toUpperCase();
   c.innerHTML =
     '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
-      '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;flex-shrink:0;border:2px solid rgba(185,28,58,.5)">' + initials + '</div>' +
+      '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload\').click()" title="Tap to change photo">' +
+        (p.avatar_url
+          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
+            '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+          : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+        ) +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
+        '</div>' +
+        '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
+      '</div>' +
       '<div>' +
         '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff">' + (p.team_name||'--') + '</div>' +
         '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + (p.username||'--') + '</div>' +
@@ -4542,14 +4665,7 @@ function castPOTMVote(matchKey, playerId) {
   </div>
   <!-- Effective Gate CPM Ad -->
   <div id="ad-slot-container" style="min-height:60px;display:flex;align-items:center;justify-content:center"></div>
-  <script charset="utf-8">
-    (function() {
-      var s = document.createElement('script');
-      s.src = 'https://pl28874855.effectivegatecpm.com/94/06/8a/94068a6f352ec9e1e35b78d4187efb09.js';
-      s.async = true;
-      document.getElementById('ad-slot-container').appendChild(s);
-    })();
-  </script>
+  <!-- ad slot removed -->
 </div>
 
   <!-- -- Action sheet: captain/VC/transfer/bench options -- -->
@@ -4624,6 +4740,42 @@ var DSVG={
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
 };
 var CHAT={posts:[],tab:'latest',page:0,PAGE_SIZE:15,hasMore:false,myReactions:{},myReposts:{}};
+
+function saveReaction(pid, reaction) {
+  if (!ST.user) return;
+  try {
+    var key = 'fpsl_reactions_' + ST.user.id;
+    var stored = JSON.parse(localStorage.getItem(key) || '{}');
+    stored[pid] = reaction;
+    localStorage.setItem(key, JSON.stringify(stored));
+  } catch(e) {}
+  // Also save to DB for persistence across devices
+  db.from('diski_reactions').upsert({
+    user_id: ST.user.id, post_id: pid, reaction: reaction
+  }, { onConflict: 'user_id,post_id' }).then(function(){}).catch(function(){});
+}
+
+function loadReactions() {
+  if (!ST.user) return;
+  // Load from localStorage first (fast)
+  try {
+    var key = 'fpsl_reactions_' + ST.user.id;
+    var stored = JSON.parse(localStorage.getItem(key) || '{}');
+    Object.assign(CHAT.myReactions, stored);
+  } catch(e) {}
+  // Then sync from DB (accurate across devices)
+  db.from('diski_reactions').select('post_id,reaction').eq('user_id', ST.user.id).then(function(res) {
+    if (res.data) {
+      res.data.forEach(function(r) { CHAT.myReactions[r.post_id] = r.reaction; });
+    }
+  }).catch(function(){});
+  // Load reposts
+  db.from('diski_posts').select('repost_of').eq('user_id', ST.user.id).not('repost_of', 'is', null).then(function(res) {
+    if (res.data) {
+      res.data.forEach(function(r) { if (r.repost_of) CHAT.myReposts[r.repost_of] = true; });
+    }
+  }).catch(function(){});
+}
 var BW=['fuck','shit','cunt','bitch','asshole','pussy','nigger','nigga','faggot','slut','kaffir'];
 var URL_RE=/https?:\/\/[^\s]+|www\.[^\s]+/gi;
 function filterContent(t){
@@ -4701,7 +4853,7 @@ function renderFeed(){
     return '<div id="post-'+pid+'" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem">'
       +repostBanner
       +'<div style="display:flex;gap:.7rem">'
-        +'<div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div>'
+        +(p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,.12)">' : '<div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div>')
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">'
             +'<span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'
@@ -4736,7 +4888,7 @@ function submitPost(){
   var btn=document.getElementById('chat-submit-btn');
   if(btn){btn.disabled=true;btn.textContent='Posting...';}
   var m=ST.user.user_metadata||{};
-  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim(),likes:0}).select().single()
+  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim(),likes:0,avatar_url:CACHE._profile&&CACHE._profile.avatar_url||null}).select().single()
     .then(function(res){
       if(btn){btn.disabled=false;btn.textContent='Post';}
       if(res.error){showToast('Could not post. Please try again.','error');return;}
@@ -4747,14 +4899,13 @@ function submitPost(){
 function likePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user){showToast('Log in to like posts','warning');return;}
-  var alreadyLiked=CHAT.myReactions[pid]==='like';
+  if(CHAT.myReactions[pid]==='like'){showToast('You already liked this post','info');return;}
+  if(CHAT.myReactions[pid]==='dislike'){showToast('You already disliked this post -- reactions are final','info');return;}
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
-  if(alreadyLiked){CHAT.myReactions[pid]=null;post.likes=Math.max(0,(post.likes||0)-1);}
-  else{
-    if(CHAT.myReactions[pid]==='dislike'){post.dislikes=Math.max(0,(post.dislikes||0)-1);}
-    CHAT.myReactions[pid]='like';post.likes=(post.likes||0)+1;
-  }
+  CHAT.myReactions[pid]='like';
+  post.likes=(post.likes||0)+1;
+  saveReaction(pid,'like');
   db.from('diski_posts').update({likes:post.likes,dislikes:post.dislikes||0}).eq('id',pid);
   renderFeed();
 }
