@@ -67,14 +67,15 @@
     .player-modal { display:none!important; }
     .player-modal.open {
       display:flex!important;
-      position:fixed; inset:0; z-index:9000;
-      background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+      position:fixed; inset:0; z-index:99999;
+      background:rgba(0,0,0,.82); backdrop-filter:blur(8px);
       align-items:center; justify-content:center;
       padding:1rem; overflow-y:auto;
+      isolation:isolate;
     }
     .player-modal-box {
       background:var(--bg-card);
-      border:1px solid rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.12);
       border-radius:16px;
       width:100%; max-width:420px;
       max-height:88vh;
@@ -82,6 +83,7 @@
       -webkit-overflow-scrolling:touch;
       position:relative;
       margin:auto;
+      z-index:100000;
     }
     /* -- User menu -- */
     .user-menu { display:none; align-items:center; gap:.6rem; }
@@ -297,6 +299,9 @@
   /* Hero section scaling */
   .hero-section { padding: 1.2rem 1rem; }
   .hero-title { font-size: clamp(1.4rem, 6vw, 2rem); }
+  .hero-stat-num { font-size: clamp(.68rem, 2.2vw, 1.3rem) !important; }
+  .hero-stat { padding: .55rem .25rem !important; }
+  .hero-stat-label { font-size: clamp(.42rem, 1.5vw, .68rem) !important; }
 
   /* GW badge in nav */
   #gw-nav-badge {
@@ -764,13 +769,45 @@
 
     <div class="squad-body-grid">
       <div>
-        <div class="squad-pitch-wrap" style="min-height:540px">
-          <div class="squad-pitch-line"></div>
-          <div class="squad-pitch-circle"></div>
-          <div id="p-fwd" class="prow"></div>
-          <div id="p-mid" class="prow"></div>
-          <div id="p-def" class="prow"></div>
-          <div id="p-gk"  class="prow" style="border-top:1px solid rgba(255,255,255,.06);padding-top:.5rem;margin-top:.2rem"></div>
+        <div class="squad-pitch-wrap" style="min-height:540px;position:relative">
+          <!-- Pitch markings SVG overlay -->
+          <svg viewBox="0 0 300 480" preserveAspectRatio="none"
+               style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
+            <!-- Outer border -->
+            <rect x="10" y="8" width="280" height="464" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2.5"/>
+            <!-- Halfway line -->
+            <line x1="10" y1="240" x2="290" y2="240" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+            <!-- Centre circle -->
+            <circle cx="150" cy="240" r="38" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+            <!-- Centre spot -->
+            <circle cx="150" cy="240" r="3" fill="rgba(255,255,255,.5)"/>
+            <!-- Top 18-yard box -->
+            <rect x="72" y="8" width="156" height="72" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+            <!-- Top 6-yard box -->
+            <rect x="108" y="8" width="84" height="30" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+            <!-- Top goalpost -->
+            <rect x="120" y="4" width="60" height="8" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3" rx="1"/>
+            <!-- Top penalty spot -->
+            <circle cx="150" cy="62" r="2.5" fill="rgba(255,255,255,.5)"/>
+            <!-- Top penalty arc -->
+            <path d="M 108 80 A 42 42 0 0 1 192 80" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <!-- Bottom 18-yard box -->
+            <rect x="72" y="400" width="156" height="72" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+            <!-- Bottom 6-yard box -->
+            <rect x="108" y="442" width="84" height="30" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+            <!-- Bottom goalpost -->
+            <rect x="120" y="468" width="60" height="8" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3" rx="1"/>
+            <!-- Bottom penalty spot -->
+            <circle cx="150" cy="418" r="2.5" fill="rgba(255,255,255,.5)"/>
+            <!-- Bottom penalty arc -->
+            <path d="M 108 400 A 42 42 0 0 0 192 400" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+          </svg>
+          <div class="squad-pitch-line" style="display:none"></div>
+          <div class="squad-pitch-circle" style="display:none"></div>
+          <div id="p-fwd" class="prow" style="position:relative;z-index:1"></div>
+          <div id="p-mid" class="prow" style="position:relative;z-index:1"></div>
+          <div id="p-def" class="prow" style="position:relative;z-index:1"></div>
+          <div id="p-gk"  class="prow" style="border-top:1px solid rgba(255,255,255,.08);padding-top:.5rem;margin-top:.2rem;position:relative;z-index:1"></div>
         </div>
         <!-- Active Chip Display -->
         <div id="chip-bar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"></div>
@@ -3014,18 +3051,37 @@ function loadGWHistory() {
 function uploadAvatar(input) {
   if (!ST.user || !input.files || !input.files[0]) return;
   var file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2MB', 'warning'); return; }
+  if (file.size > 1.5 * 1024 * 1024) { showToast('Image must be under 1.5MB', 'warning'); return; }
   showToast('Uploading photo...', 'info');
   var reader = new FileReader();
   reader.onload = function(e) {
     var dataUrl = e.target.result;
-    // Store as base64 in profiles (small images only)
-    db.from('profiles').update({ avatar_url: dataUrl }).eq('id', ST.user.id).then(function(res) {
-      if (res.error) { showToast('Upload failed: ' + res.error.message, 'error'); return; }
-      if (CACHE._profile) CACHE._profile.avatar_url = dataUrl;
-      loadProfile();
-      showToast('Profile photo updated!', 'success');
-    });
+    // Resize image to max 200x200 to keep DB size small
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var size = Math.min(img.width, img.height, 200);
+      canvas.width = size; canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      var sx = (img.width - size) / 2;
+      var sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+      var resized = canvas.toDataURL('image/jpeg', 0.75);
+      // Use upsert to handle missing column gracefully
+      db.from('profiles').upsert({ id: ST.user.id, avatar_url: resized }, { onConflict: 'id' })
+        .then(function(res) {
+          if (res.error) {
+            // Column might not exist - show SQL migration message
+            showToast('Run the Supabase migration SQL to enable profile photos', 'warning');
+            console.warn('[avatar]', res.error.message);
+            return;
+          }
+          if (CACHE._profile) CACHE._profile.avatar_url = resized;
+          showToast('Profile photo updated!', 'success');
+          loadProfile();
+        });
+    };
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
 }
@@ -3858,6 +3914,46 @@ var LIVE_STATS         = null;
 var STATS_LAST_FETCH   = 0;
 var STATS_FETCH_TTL    = 3600000; // 1 hour
 
+// fetchPSLData: pulls live standings + top scorers from Sportmonks via our API
+function fetchPSLData(cb) {
+  var now = Date.now();
+  if (LIVE_STATS && LIVE_STATS._ts && (now - LIVE_STATS._ts) < STATS_FETCH_TTL) {
+    if (cb) cb(LIVE_STATS); return;
+  }
+  // Parallel fetch: standings + top scorers
+  Promise.all([
+    fetch('/api/football?type=standings').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    fetch('/api/football?type=topscorers').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    fetch('/api/psl-data?t=' + now).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+  ]).then(function(results) {
+    var standings  = results[0];
+    var scorers    = results[1];
+    var bundle     = results[2];
+    if (!LIVE_STATS) LIVE_STATS = {};
+    LIVE_STATS._ts = Date.now();
+    // Live standings from Sportmonks
+    if (standings && standings.standings && standings.standings.length >= 8) {
+      LIVE_STATS.table = standings.standings.map(function(s,i) {
+        return { pos:s.pos||i+1, team:s.team, p:s.p||0, w:s.w||0, d:s.d||0,
+                 l:s.l||0, gf:s.gf||0, ga:s.ga||0, gd:s.gd||0, pts:s.pts||0, form:s.form||[] };
+      });
+    }
+    // Live top scorers from Sportmonks
+    if (scorers && scorers.topScorers && scorers.topScorers.length) {
+      LIVE_STATS.topScorers = scorers.topScorers.map(function(s) {
+        return { name:s.name, club:s.club, goals:s.goals, apps:s.apps||0 };
+      });
+    }
+    // Bundle data from Supabase (fixtures, GW etc)
+    if (bundle) {
+      if (bundle.currentGW) LIVE_STATS.currentGW = bundle.currentGW;
+      if (bundle.NS && bundle.NS.length)   LIVE_STATS.upcoming = bundle.NS;
+      if (bundle.FT && bundle.FT.length)   LIVE_STATS.results  = bundle.FT;
+    }
+    if (cb) cb(LIVE_STATS);
+  });
+}
+
 // Fetch player stats separately (expensive endpoint, cache 1h)
 function fetchPlayerStats(cb) {
   var now = Date.now();
@@ -3867,15 +3963,12 @@ function fetchPlayerStats(cb) {
     if (cb) cb(LIVE_STATS);
     return;
   }
-  fetch('/api/psl-data?type=players&t=' + now)
+  fetch('/api/football?type=topscorers')
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(d) {
-      if (d && !d.error && d.topScorers) {
+      if (d && d.topScorers) {
         if (!LIVE_STATS) LIVE_STATS = {};
         LIVE_STATS.topScorers = d.topScorers;
-        LIVE_STATS.topAssists = d.topAssists;
-        LIVE_STATS.topYellow  = d.topYellow;
-        LIVE_STATS.topRed     = d.topRed;
         STATS_LAST_FETCH = Date.now();
       }
       if (cb) cb(LIVE_STATS);
@@ -4899,13 +4992,19 @@ function submitPost(){
 function likePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user){showToast('Log in to like posts','warning');return;}
-  if(CHAT.myReactions[pid]==='like'){showToast('You already liked this post','info');return;}
-  if(CHAT.myReactions[pid]==='dislike'){showToast('You already disliked this post -- reactions are final','info');return;}
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
-  CHAT.myReactions[pid]='like';
-  post.likes=(post.likes||0)+1;
-  saveReaction(pid,'like');
+  if(CHAT.myReactions[pid]==='like'){
+    // Undo like
+    CHAT.myReactions[pid]=null;
+    post.likes=Math.max(0,(post.likes||0)-1);
+    saveReaction(pid,'none');
+  } else {
+    if(CHAT.myReactions[pid]==='dislike'){post.dislikes=Math.max(0,(post.dislikes||0)-1);}
+    CHAT.myReactions[pid]='like';
+    post.likes=(post.likes||0)+1;
+    saveReaction(pid,'like');
+  }
   db.from('diski_posts').update({likes:post.likes,dislikes:post.dislikes||0}).eq('id',pid);
   renderFeed();
 }
@@ -4915,10 +5014,15 @@ function dislikePost(btn){
   var alreadyDisliked=CHAT.myReactions[pid]==='dislike';
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
-  if(alreadyDisliked){CHAT.myReactions[pid]=null;post.dislikes=Math.max(0,(post.dislikes||0)-1);}
-  else{
+  if(alreadyDisliked){
+    CHAT.myReactions[pid]=null;
+    post.dislikes=Math.max(0,(post.dislikes||0)-1);
+    saveReaction(pid,'none');
+  } else {
     if(CHAT.myReactions[pid]==='like'){post.likes=Math.max(0,(post.likes||0)-1);}
-    CHAT.myReactions[pid]='dislike';post.dislikes=(post.dislikes||0)+1;
+    CHAT.myReactions[pid]='dislike';
+    post.dislikes=(post.dislikes||0)+1;
+    saveReaction(pid,'dislike');
   }
   db.from('diski_posts').update({likes:post.likes||0,dislikes:post.dislikes||0}).eq('id',pid);
   renderFeed();
