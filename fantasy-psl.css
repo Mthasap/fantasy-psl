@@ -750,27 +750,43 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
 @media(max-width:900px) {
   .squad-body-grid {
     grid-template-columns:1fr;
-    gap:1rem;
+    gap:.8rem;
   }
   .player-panel {
     position:static !important;
     max-height:none !important;
     overflow:visible !important;
   }
+  /* Pitch: shorter on mobile so it fits without heavy scrolling */
+  .squad-pitch-wrap {
+    min-height:340px !important;
+    padding-top:80px !important;
+  }
+  /* Player list: scrollable at fixed height on mobile */
   #player-list {
-    max-height:60vh;
-    overflow-y:auto;
+    max-height:55vh !important;
+    overflow-y:auto !important;
     -webkit-overflow-scrolling:touch;
   }
+}
+@media(max-width:420px) {
+  .squad-pitch-wrap {
+    min-height:300px !important;
+    padding-top:60px !important;
+  }
+  .pc-shirt { width:44px !important; height:44px !important; }
+  .pc { min-width:50px !important; }
+  .pc-name { font-size:.56rem !important; max-width:52px !important; }
+  .pc-pts  { font-size:.6rem !important; }
 }
 .squad-pitch-wrap {
   background:linear-gradient(180deg,#0d4a23 0%,#0e5226 25%,#0c4720 50%,#0e5226 75%,#0d4a23 100%);
   border-radius:var(--radius-lg); overflow:visible;
-  padding:1.2rem .6rem 1rem; position:relative; min-height:480px;
-  display:flex; flex-direction:column; gap:.2rem;
+  padding:.8rem .5rem .8rem; position:relative;
+  min-height:500px;
+  display:flex; flex-direction:column; gap:.15rem;
   justify-content:flex-end;
-  /* Own half: fixed pixel top padding so players sit in bottom ~55% */
-  padding-top:130px;
+  padding-top:140px; /* own half: players in bottom 60% */
 }
 .squad-pitch-line {
   position:absolute; top:50%; left:6%; right:6%;
