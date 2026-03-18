@@ -3162,17 +3162,17 @@ function uploadAvatar(input) {
       var sy = (img.height - size) / 2;
       ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
       var resized = canvas.toDataURL('image/jpeg', 0.75);
-      // Use upsert to handle missing column gracefully
-      db.from('profiles').upsert({ id: ST.user.id, avatar_url: resized }, { onConflict: 'id' })
+      // Use UPDATE (not upsert) — RLS allows users to update their own row
+      db.from('profiles').update({ avatar_url: resized }).eq('id', ST.user.id)
         .then(function(res) {
           if (res.error) {
-            // Column might not exist - show SQL migration message
-            showToast('Run the Supabase migration SQL to enable profile photos', 'warning');
+            // Try adding the column first via a different approach
             console.warn('[avatar]', res.error.message);
+            showToast('Photo save failed: ' + res.error.message, 'error');
             return;
           }
           if (CACHE._profile) CACHE._profile.avatar_url = resized;
-          showToast('Profile photo updated!', 'success');
+          showToast('Profile photo updated! ✓', 'success');
           loadProfile();
         });
     };
@@ -3805,6 +3805,21 @@ var PSL_ROSTER = [
     renderPlayerList();
   };
 })();
+
+// ====================================================
+//  LEAGUE TABLE — TABLE_VIEW state + setTableView
+// ====================================================
+var TABLE_VIEW = 'short'; // 'short' | 'full' | 'form'
+
+function setTableView(view, el) {
+  TABLE_VIEW = view;
+  document.querySelectorAll('#ttab-short,#ttab-full,#ttab-form').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  if (el) el.classList.add('active');
+  var c = document.getElementById('table-body');
+  if (c) renderRealTable(c);
+}
 
 // ====================================================
 //  FIXTURES & RESULTS
@@ -5092,14 +5107,15 @@ function loadDiskiChat(){
   // Refresh reaction counts from DB every 30s while Diski is open
   if(DISKI_REFRESH_TIMER) clearInterval(DISKI_REFRESH_TIMER);
   DISKI_REFRESH_TIMER = setInterval(function(){
-    var page = document.getElementById('page-chat');
-    if(!page || page.style.display==='none' || page.classList.contains('hidden')) {
-      clearInterval(DISKI_REFRESH_TIMER); return;
-    }
+    // Check if Diski page is currently active
+    var activePage = document.querySelector('.page.active') || document.querySelector('.page[style*="block"]');
+    var chatPage = document.getElementById('page-chat');
+    var chatVisible = chatPage && (chatPage.style.display !== 'none') && (chatPage.offsetParent !== null);
+    if(!chatVisible) { clearInterval(DISKI_REFRESH_TIMER); DISKI_REFRESH_TIMER=null; return; }
     // Re-fetch just the counts (not full posts) to update like/dislike/repost numbers
     if(!CHAT.posts.length) return;
     var ids = CHAT.posts.slice(0,CHAT.PAGE_SIZE).map(function(p){return p.id;});
-    db.from('diski_posts').select('id,likes,dislikes,reposts,reply_count').in('id',ids).then(function(res){
+    db.from('diski_posts').select('id,likes,dislikes,reposts,reply_count').in('id',ids).limit(CHAT.PAGE_SIZE).then(function(res){
       if(!res.data) return;
       var updated = false;
       res.data.forEach(function(fresh){
