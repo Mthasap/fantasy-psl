@@ -747,14 +747,20 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
   align-items:start;
 }
 /* On mobile: stack pitch above player list */
-@media(max-width:767px) {
+@media(max-width:900px) {
   .squad-body-grid {
     grid-template-columns:1fr;
     gap:1rem;
   }
   .player-panel {
-    position:static;
-    max-height:none;
+    position:static !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  #player-list {
+    max-height:60vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
 }
 .squad-pitch-wrap {
@@ -764,7 +770,7 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
   display:flex; flex-direction:column; gap:.2rem;
   justify-content:flex-end;
   /* Own half: fixed pixel top padding so players sit in bottom ~55% */
-  padding-top:220px;
+  padding-top:130px;
 }
 .squad-pitch-line {
   position:absolute; top:50%; left:6%; right:6%;
