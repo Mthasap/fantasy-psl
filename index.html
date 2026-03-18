@@ -770,29 +770,24 @@
 
     <div class="squad-body-grid">
       <div>
-        <div class="squad-pitch-wrap" style="min-height:540px;position:relative">
-          <!-- Pitch markings SVG overlay — shows own half only -->
-          <svg viewBox="0 0 300 260" preserveAspectRatio="none"
-               style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
-            <!-- Outer border -->
-            <rect x="8" y="4" width="284" height="252" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
-            <!-- Halfway line (top edge — opponent territory above) -->
-            <line x1="8" y1="4" x2="292" y2="4" stroke="rgba(255,255,255,.4)" stroke-width="2.5"/>
-            <!-- Centre circle arc (only bottom half visible) -->
-            <path d="M 110 4 A 42 42 0 0 0 190 4" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
-            <!-- Centre spot -->
-            <circle cx="150" cy="4" r="3" fill="rgba(255,255,255,.4)"/>
-            <!-- 18-yard box -->
-            <rect x="68" y="178" width="164" height="78" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
-            <!-- 6-yard box -->
-            <rect x="106" y="220" width="88" height="36" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>
-            <!-- Goalpost -->
-            <rect x="118" y="252" width="64" height="9" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="3" rx="1"/>
-            <!-- Penalty spot -->
-            <circle cx="150" cy="200" r="2.5" fill="rgba(255,255,255,.5)"/>
-            <!-- Penalty arc -->
-            <path d="M 80 178 A 50 50 0 0 1 220 178" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
-          </svg>
+        <div class="squad-pitch-wrap" id="squad-pitch" style="position:relative">
+          <!-- CSS pitch markings — scale correctly with content height -->
+          <!-- Halfway line at top of player area -->
+          <div style="position:absolute;top:0;left:5%;right:5%;height:2px;background:rgba(255,255,255,.3);z-index:0"></div>
+          <!-- Centre circle arc at top -->
+          <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:80px;height:60px;border:2px solid rgba(255,255,255,.2);border-bottom-left-radius:40px;border-bottom-right-radius:40px;border-top:none;z-index:0"></div>
+          <!-- Outer border -->
+          <div style="position:absolute;inset:0;border:2px solid rgba(255,255,255,.25);border-radius:var(--radius-lg);pointer-events:none;z-index:0"></div>
+          <!-- 18-yard box at bottom -->
+          <div style="position:absolute;bottom:36px;left:22%;right:22%;height:90px;border:2px solid rgba(255,255,255,.3);border-bottom:none;z-index:0"></div>
+          <!-- 6-yard box at bottom -->
+          <div style="position:absolute;bottom:36px;left:35%;right:35%;height:38px;border:2px solid rgba(255,255,255,.22);border-bottom:none;z-index:0"></div>
+          <!-- Goal at bottom -->
+          <div style="position:absolute;bottom:10px;left:38%;right:38%;height:28px;border:3px solid rgba(255,255,255,.65);border-bottom:none;border-radius:2px 2px 0 0;z-index:0"></div>
+          <!-- Penalty spot -->
+          <div style="position:absolute;bottom:105px;left:50%;transform:translateX(-50%);width:5px;height:5px;background:rgba(255,255,255,.5);border-radius:50%;z-index:0"></div>
+          <!-- Penalty arc -->
+          <div style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);width:90px;height:45px;border:2px solid rgba(255,255,255,.18);border-bottom:none;border-radius:45px 45px 0 0;z-index:0"></div>
           <div class="squad-pitch-line" style="display:none"></div>
           <div class="squad-pitch-circle" style="display:none"></div>
           <div id="p-fwd" class="prow" style="position:relative;z-index:1"></div>
@@ -830,7 +825,7 @@
         <div class="panel-search">
           <input id="player-search" type="text" placeholder="Search player or club..." oninput="filterSearch(this.value)">
         </div>
-        <div id="player-list" style="overflow-y:auto;flex:1;min-height:200px;max-height:none">
+        <div id="player-list" style="overflow-y:auto;flex:1;min-height:200px">
           <div class="loading-players">Loading players...</div>
         </div>
       </div>
@@ -4069,13 +4064,23 @@ function renderTableForm(c, table) {
     var pclr = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
     var bg   = pos <= 2 ? 'background:rgba(34,137,90,.06);' : pos >= 15 ? 'background:rgba(212,39,79,.05);' : ';';
     var logo = t.logo || getTeamLogo(t.team);
-    // form can be array ['W','D','L'] or string 'WDL' -- normalise to array
-    var formArr = Array.isArray(t.form)
-      ? t.form.slice(-5)
-      : (t.form || 'NNNNN').slice(-5).split('');
+    // form can be array ['W','D','L'], comma string 'W,L,D', or plain 'WDL'
+    var formArr;
+    if (Array.isArray(t.form) && t.form.length) {
+      formArr = t.form.slice(-5);
+    } else if (typeof t.form === 'string' && t.form.indexOf(',') !== -1) {
+      formArr = t.form.split(',').map(function(x){ return x.trim().charAt(0).toUpperCase(); }).slice(-5);
+    } else if (typeof t.form === 'string' && t.form.length > 0 && t.form !== 'NNNNN') {
+      formArr = t.form.slice(-5).split('');
+    } else {
+      formArr = ['N','N','N','N','N'];
+    }
+    while (formArr.length < 5) formArr.unshift('N');
     var dots = formArr.map(function(r) {
-      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#DBA94A' : 'rgba(255,255,255,.2)';
-      return '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + col + ';font-family:var(--font-ui);font-size:.58rem;font-weight:800;color:#fff;margin-right:2px">' + (r === 'N' ? '?' : r) + '</span>';
+      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#DBA94A' : 'rgba(255,255,255,.1)';
+      var lbl = r === 'W' ? 'W' : r === 'L' ? 'L' : r === 'D' ? 'D' : '–';
+      var txtCol = (r === 'N' || r === '') ? 'rgba(255,255,255,.3)' : '#fff';
+      return '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:' + col + ';font-family:var(--font-ui);font-size:.62rem;font-weight:800;color:' + txtCol + ';margin-right:2px;border:1px solid rgba(255,255,255,.08)">' + lbl + '</span>';
     }).join('');
     return '<div class="lt-row" style="grid-template-columns:32px 1fr auto 42px;' + bg + 'cursor:pointer" onclick="openClubProfile(\'' + t.team + '\')">  ' +
       '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
@@ -4438,10 +4443,15 @@ function loadTable() {
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (data && data.standings && data.standings.length >= 10) {
-        REAL_TABLE = data.standings.map(function(s, i){
+        REAL_TABLE = data.standings.map(function(s, i) {
+          // Preserve form from existing REAL_TABLE entry if Supabase has no form
+          var existingEntry = REAL_TABLE.find(function(r) { return r.team === (s.team||s.club); });
+          var form = (s.form && s.form !== '' && s.form !== 'NNNNN')
+            ? s.form
+            : (existingEntry && existingEntry.form ? existingEntry.form : 'NNNNN');
           return { pos:s.pos||i+1, team:s.team||s.club, p:s.p||0, w:s.w||0,
                    d:s.d||0, l:s.l||0, gf:s.gf||0, ga:s.ga||0,
-                   gd:s.gd||0, pts:s.pts||0, form:s.form||'NNNNN' };
+                   gd:s.gd||0, pts:s.pts||0, form:form };
         });
         renderRealTable(c);
       }
