@@ -770,30 +770,11 @@
 
     <div class="squad-body-grid">
       <div>
-        <div class="squad-pitch-wrap" id="squad-pitch" style="position:relative">
-          <!-- CSS pitch markings — scale correctly with content height -->
-          <!-- Halfway line at top of player area -->
-          <div style="position:absolute;top:0;left:5%;right:5%;height:2px;background:rgba(255,255,255,.3);z-index:0"></div>
-          <!-- Centre circle arc at top -->
-          <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:80px;height:60px;border:2px solid rgba(255,255,255,.2);border-bottom-left-radius:40px;border-bottom-right-radius:40px;border-top:none;z-index:0"></div>
-          <!-- Outer border -->
-          <div style="position:absolute;inset:0;border:2px solid rgba(255,255,255,.25);border-radius:var(--radius-lg);pointer-events:none;z-index:0"></div>
-          <!-- 18-yard box at bottom -->
-          <div style="position:absolute;bottom:36px;left:22%;right:22%;height:90px;border:2px solid rgba(255,255,255,.3);border-bottom:none;z-index:0"></div>
-          <!-- 6-yard box at bottom -->
-          <div style="position:absolute;bottom:36px;left:35%;right:35%;height:38px;border:2px solid rgba(255,255,255,.22);border-bottom:none;z-index:0"></div>
-          <!-- Goal at bottom -->
-          <div style="position:absolute;bottom:10px;left:38%;right:38%;height:28px;border:3px solid rgba(255,255,255,.65);border-bottom:none;border-radius:2px 2px 0 0;z-index:0"></div>
-          <!-- Penalty spot -->
-          <div style="position:absolute;bottom:105px;left:50%;transform:translateX(-50%);width:5px;height:5px;background:rgba(255,255,255,.5);border-radius:50%;z-index:0"></div>
-          <!-- Penalty arc -->
-          <div style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);width:90px;height:45px;border:2px solid rgba(255,255,255,.18);border-bottom:none;border-radius:45px 45px 0 0;z-index:0"></div>
-          <div class="squad-pitch-line" style="display:none"></div>
-          <div class="squad-pitch-circle" style="display:none"></div>
-          <div id="p-fwd" class="prow" style="position:relative;z-index:1"></div>
-          <div id="p-mid" class="prow" style="position:relative;z-index:1"></div>
-          <div id="p-def" class="prow" style="position:relative;z-index:1"></div>
-          <div id="p-gk"  class="prow" style="border-top:1px solid rgba(255,255,255,.08);padding-top:.5rem;margin-top:.2rem;position:relative;z-index:1"></div>
+        <div class="squad-pitch-wrap" id="squad-pitch">
+          <div id="p-fwd" class="prow"></div>
+          <div id="p-mid" class="prow"></div>
+          <div id="p-def" class="prow"></div>
+          <div id="p-gk"  class="prow"></div>
         </div>
         <!-- Active Chip Display -->
         <div id="chip-bar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"></div>
