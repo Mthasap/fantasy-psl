@@ -450,6 +450,10 @@ body.light-mode .squad-pitch-wrap { background: linear-gradient(180deg,#2d7a3a,#
     <div id="nav-user" class="user-menu" style="display:none">
       <span id="nav-uname" class="user-menu-label" onclick="goPage('profile')" style="cursor:pointer"></span>
       <button class="btn-logout" onclick="doLogout()">Logout</button>
+        <button id="admin-nav-item" onclick="goPage('admin')" class="nav-btn" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:20px;height:20px;margin:0 auto;display:block"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
+          <span>ADMIN</span>
+        </button>
     </div>
   </div>
 </nav>
@@ -5029,6 +5033,60 @@ function castPOTMVote(matchKey, playerId) {
 </div>
 
 
+<!-- ════ ADMIN PANEL PAGE ════ -->
+<div id="page-admin" class="page" style="display:none">
+  <div class="page-section" style="max-width:640px">
+    <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem;padding-top:.5rem">
+      <div style="width:40px;height:40px;border-radius:10px;background:#D4274F;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff">Admin Panel</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.4);font-family:var(--font-ui)">Fantasy PSL · Headway Projects</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.9rem">Data Sync</div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <button onclick="adminRunCron()" class="auth-submit" style="margin:0">▶ Run Full Cron (Fixtures + Standings + Scores)</button>
+        <button onclick="adminSyncStandings()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.7rem;cursor:pointer">⟳ Force Sync Standings</button>
+        <button onclick="adminForceScorers()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.7rem;cursor:pointer">⟳ Force Sync Player Stats</button>
+      </div>
+      <div id="admin-cron-result" style="margin-top:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.5);white-space:pre-wrap;max-height:220px;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:.6rem;display:none"></div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.9rem">Gameweek Control</div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <input id="admin-gw-num" type="number" min="1" max="38" placeholder="GW number (e.g. 24)" style="flex:1;min-width:120px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;padding:.65rem .9rem;font-family:var(--font-ui);font-size:.82rem;outline:none">
+        <button onclick="adminSetGW()" style="background:#22895A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.7rem 1.1rem;cursor:pointer">Set Active GW</button>
+      </div>
+      <div id="admin-gw-result" style="margin-top:.5rem;font-size:.72rem;color:rgba(255,255,255,.4);font-family:var(--font-ui)"></div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.9rem">API Cache</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <button onclick="adminClearCache('topscorers_last_sync')" style="background:rgba(219,169,74,.1);border:1px solid rgba(219,169,74,.25);border-radius:8px;color:#DBA94A;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.6rem .9rem;cursor:pointer;text-align:left">Clear Topscorers Cache → force weekly re-sync</button>
+        <button onclick="adminClearCache('standings_last_sync')" style="background:rgba(219,169,74,.1);border:1px solid rgba(219,169,74,.25);border-radius:8px;color:#DBA94A;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.6rem .9rem;cursor:pointer;text-align:left">Clear Standings Cache → force 2h re-sync</button>
+        <button onclick="adminViewCache()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.6rem;cursor:pointer">View All Cache Entries</button>
+      </div>
+      <div id="admin-cache-result" style="margin-top:.7rem;font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.4);white-space:pre-wrap;background:rgba(0,0,0,.25);border-radius:6px;padding:.5rem;display:none"></div>
+    </div>
+
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.2rem;margin-bottom:2rem">
+      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.9rem">Users & Rankings</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <button onclick="adminUserCount()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.6rem;cursor:pointer">View Top 10 Users</button>
+        <button onclick="adminRecalcRankings()" style="background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.28);border-radius:8px;color:#22895A;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.6rem;cursor:pointer">Recalculate All Rankings</button>
+      </div>
+      <div id="admin-users-result" style="margin-top:.7rem;font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.4);white-space:pre-wrap;background:rgba(0,0,0,.25);border-radius:6px;padding:.5rem;display:none"></div>
+    </div>
+  </div>
+</div>
+
+
   <!-- ── Action sheet: captain/VC/transfer/bench options ── -->
   <div id="action-sheet" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
     <div style="position:absolute;bottom:0;left:0;right:0;background:#1A1D24;border-radius:16px 16px 0 0;padding:1.5rem 1.2rem 2rem;max-width:480px;margin:0 auto">
@@ -5323,6 +5381,106 @@ function closeNotifications(){var m=document.getElementById('notif-modal');if(m)
 
 function escapeHtml(str){return(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function chatTimeAgo(ts){if(!ts)return'';var d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
+
+
+// ═══════════════════════════════════════════════
+// ADMIN FUNCTIONS
+// ═══════════════════════════════════════════════
+var ADMIN_KEY = 'fpsl-admin-2026';
+
+function adminRunCron() {
+  var el = document.getElementById('admin-cron-result');
+  if (el) el.textContent = 'Running cron...';
+  fetch('/api/points-cron?admin_key=' + ADMIN_KEY)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (el) el.textContent = JSON.stringify(d.steps, null, 2) + '\n\nCompleted: ' + (d.completed_at||'error');
+      showToast(d.ok ? 'Cron completed ✓' : 'Cron error: ' + d.error, d.ok ? 'success' : 'error');
+    }).catch(function(e) { if(el) el.textContent = 'Error: ' + e.message; });
+}
+
+function adminSyncStandings() {
+  var el = document.getElementById('admin-cron-result');
+  // Clear standings cache then run cron
+  if (!db) return;
+  db.from('api_cache').delete().eq('key','standings_last_sync').then(function() {
+    if (el) el.textContent = 'Standings cache cleared. Running sync...';
+    adminRunCron();
+  });
+}
+
+function adminForceScorers() {
+  var el = document.getElementById('admin-cron-result');
+  if (!db) return;
+  db.from('api_cache').delete().eq('key','topscorers_last_sync').then(function() {
+    if (el) el.textContent = 'Scorers cache cleared. Running sync...';
+    adminRunCron();
+  });
+}
+
+function adminSetGW() {
+  var num = parseInt(document.getElementById('admin-gw-num').value, 10);
+  if (!num || num < 1) { showToast('Enter a valid GW number', 'warning'); return; }
+  if (!db) return;
+  db.from('gameweeks').update({ is_current: false }).then(function() {
+    db.from('gameweeks').upsert({ number: num, is_current: true }, { onConflict: 'number' }).then(function(res) {
+      var el = document.getElementById('admin-gw-result');
+      if (el) el.textContent = res.error ? 'Error: ' + res.error.message : 'GW' + num + ' set as active ✓';
+      showToast(res.error ? 'Error' : 'GW' + num + ' is now active', res.error ? 'error' : 'success');
+    });
+  });
+}
+
+function adminClearCache(key) {
+  if (!db) return;
+  db.from('api_cache').delete().eq('key', key).then(function(res) {
+    showToast(res.error ? 'Error clearing cache' : key + ' cleared ✓', res.error ? 'error' : 'success');
+    adminViewCache();
+  });
+}
+
+function adminViewCache() {
+  if (!db) return;
+  var el = document.getElementById('admin-cache-result');
+  db.from('api_cache').select('key,value,updated_at').order('updated_at', { ascending: false }).then(function(res) {
+    if (!res.data) { if(el) el.textContent = 'Error'; return; }
+    if (el) el.textContent = res.data.map(function(r) {
+      return r.key + ': ' + r.value + '\n  updated: ' + (r.updated_at || 'never');
+    }).join('\n\n');
+  });
+}
+
+function adminUserCount() {
+  if (!db) return;
+  var el = document.getElementById('admin-users-result');
+  db.from('profiles').select('id,team_name,total_points,overall_rank').order('total_points', { ascending: false }).limit(10).then(function(res) {
+    if (!res.data) { if(el) el.textContent = 'Error'; return; }
+    if (el) el.textContent = 'Top 10 users:\n' + res.data.map(function(u, i) {
+      return (i+1) + '. ' + (u.team_name||'Unknown') + ' — ' + (u.total_points||0) + ' pts (rank ' + (u.overall_rank||'?') + ')';
+    }).join('\n');
+  });
+}
+
+function adminRecalcRankings() {
+  var el = document.getElementById('admin-users-result');
+  if (el) el.textContent = 'Recalculating...';
+  fetch('/api/points-cron?admin_key=' + ADMIN_KEY + '&action=rankings')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { if(el) el.textContent = JSON.stringify(d, null, 2); })
+    .catch(function(e) { if(el) el.textContent = 'Error: ' + e.message; });
+}
+
+// Show admin panel for logged-in admin users
+function maybeShowAdmin() {
+  if (!ST.user) return;
+  var email = ST.user.email || '';
+  // Show admin nav item for admin emails
+  var adminEmails = ['mthasap', 'headway', 'admin'];
+  var isAdmin = adminEmails.some(function(a) { return email.toLowerCase().includes(a); });
+  var adminNav = document.getElementById('admin-nav-item');
+  if (adminNav && isAdmin) adminNav.style.display = 'flex';
+}
+
 </script>
 
 </body>
