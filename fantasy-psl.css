@@ -757,10 +757,9 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
     max-height:none !important;
     overflow:visible !important;
   }
-  /* Pitch: shorter on mobile so it fits without heavy scrolling */
+  /* Pitch: less empty space on mobile — only 60px top padding */
   .squad-pitch-wrap {
-    min-height:340px !important;
-    padding-top:80px !important;
+    padding-top:60px !important;
   }
   /* Player list: scrollable at fixed height on mobile */
   #player-list {
@@ -771,8 +770,7 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
 }
 @media(max-width:420px) {
   .squad-pitch-wrap {
-    min-height:300px !important;
-    padding-top:60px !important;
+    padding-top:40px !important;
   }
   .pc-shirt { width:44px !important; height:44px !important; }
   .pc { min-width:50px !important; }
@@ -782,11 +780,10 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
 .squad-pitch-wrap {
   background:linear-gradient(180deg,#0d4a23 0%,#0e5226 25%,#0c4720 50%,#0e5226 75%,#0d4a23 100%);
   border-radius:var(--radius-lg); overflow:visible;
-  padding:.8rem .5rem .8rem; position:relative;
-  min-height:500px;
-  display:flex; flex-direction:column; gap:.15rem;
+  padding:.8rem .5rem 1rem; position:relative;
+  padding-top:100px;
+  display:flex; flex-direction:column; gap:.2rem;
   justify-content:flex-end;
-  padding-top:140px; /* own half: players in bottom 60% */
 }
 .squad-pitch-line {
   position:absolute; top:50%; left:6%; right:6%;
@@ -802,8 +799,8 @@ footer { background:var(--bg-base); border-top:1px solid var(--border); padding:
   background:var(--bg-card); border:1px solid var(--border);
   border-radius:var(--radius-lg); overflow:visible;
   display:flex; flex-direction:column;
-  position:sticky; top:72px;
-  max-height:calc(100vh - 88px);
+  position:static;
+  max-height:none;
 }
 /* Clip scroll area inside panel WITHOUT affecting fixed modals */
 .player-list-scroll {
