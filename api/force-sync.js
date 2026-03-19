@@ -8,7 +8,6 @@ const SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
 const ADMIN    = process.env.ADMIN_SECRET || 'fpsl-admin-2026';
 
 const BASE = 'https://api.sportmonks.com/v3/football';
-const PSL  = 806;
 
 module.exports = async (req, res) => {
 
@@ -26,13 +25,12 @@ module.exports = async (req, res) => {
 
   try {
 
-    const url = `${BASE}/fixtures/leagues/${PSL}?include=participants;scores&api_token=${TOKEN}`;
+    const url = `${BASE}/fixtures?filters=league_id:806&include=participants;scores&api_token=${TOKEN}`;
 
     const response = await fetch(url);
     const fixturesData = await response.json();
 
-    // 🔍 DEBUG RETURN (VERY IMPORTANT)
-    if (!fixturesData || !fixturesData.data) {
+    if (!fixturesData || !Array.isArray(fixturesData.data)) {
       return res.status(500).json({
         error: "Invalid response from Sportmonks",
         received: fixturesData
