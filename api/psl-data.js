@@ -17,7 +17,8 @@
 const SUPABASE_URL = process.env.SUPABASE_URL        || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 
-const CACHE = { bundle: { data: null, ts: 0, ttl: 5 * 60 * 1000 } }; // 5 min
+// Cache is commented out / bypassed for debugging
+// const CACHE = { bundle: { data: null, ts: 0, ttl: 5 * 60 * 1000 } }; // 5 min
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,11 +27,15 @@ module.exports = async (req, res) => {
   if (!SUPABASE_URL) return res.status(500).json({ error: 'SUPABASE_URL not set' });
 
   try {
+    // ── Cache bypass: always fetch fresh data from Supabase ───────────────
+    // (commented out the original cache check to force real-time data during debugging)
+    /*
     const cached = CACHE.bundle;
     if (cached.data && (Date.now() - cached.ts) < cached.ttl) {
       res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
       return res.json(cached.data);
     }
+    */
 
     // Fetch everything in parallel from Supabase
     const [gwRes, fixturesRes, standingsRes] = await Promise.all([
@@ -55,8 +60,14 @@ module.exports = async (req, res) => {
       ts:        Date.now()
     };
 
-    CACHE.bundle = { data: bundle, ts: Date.now(), ttl: CACHE.bundle.ttl };
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+    // Optional: still update the in-memory cache (but browser/Vercel won't use it due to no-cache below)
+    // CACHE.bundle = { data: bundle, ts: Date.now(), ttl: 5 * 60 * 1000 };
+
+    // Force no caching at edge/browser level during debugging
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     return res.json(bundle);
 
   } catch (err) {
