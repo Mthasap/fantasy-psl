@@ -4939,6 +4939,32 @@ function castPOTMVote(matchKey, playerId) {
   loadFixtures();
 }
 
+// ====================================================
+// 🔥 LIVE DATA AUTO-REFRESH (FINAL)
+// ====================================================
+
+async function refreshLiveData() {
+  try {
+    console.log("🔄 Refreshing PSL data...");
+
+    // 1. Force backend sync
+    const res = await fetch('/api/force-sync?admin_key=fpsl-admin-2026');
+    const result = await res.json();
+
+    console.log("✅ Sync result:", result);
+
+    // 2. Reload frontend data AFTER sync
+    if (typeof loadFixtures === 'function') loadFixtures();
+    if (typeof loadTable === 'function') loadTable();
+    if (typeof loadStats === 'function') loadStats();
+
+  } catch (err) {
+    console.error("❌ Refresh error:", err);
+  }
+}
+
+// Auto refresh every 60 seconds
+setInterval(refreshLiveData, 60000);
 </script>
 
 <!-- -- POTM Vote Modal ---------------------------------------------- -->
