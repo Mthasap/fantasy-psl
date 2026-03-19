@@ -26,42 +26,41 @@ module.exports = async (req, res) => {
 
   try {
 
-    // 🔥 STEP 1: GET CURRENT SEASON
-    const seasonRes = await fetch(
+    // 🔥 STEP 1: GET SEASON
+    const leagueRes = await fetch(
       `${BASE}/leagues/${PSL}?include=seasons&api_token=${TOKEN}`
+    );
+
+    const leagueData = await leagueRes.json();
+
+    const seasonId = leagueData.data?.seasons?.[0]?.id;
+
+    if (!seasonId) {
+      return res.status(500).json({
+        error: "No season found",
+        received: leagueData
+      });
+    }
+
+    // 🔥 STEP 2: GET FIXTURES FROM SEASON
+    const seasonRes = await fetch(
+      `${BASE}/seasons/${seasonId}?include=fixtures.participants;fixtures.scores&api_token=${TOKEN}`
     );
 
     const seasonData = await seasonRes.json();
 
-    const seasons = seasonData.data?.seasons;
+    const fixtures = seasonData.data?.fixtures;
 
-    if (!seasons || seasons.length === 0) {
-      return res.status(500).json({
-        error: "No seasons found",
-        received: seasonData
-      });
-    }
-
-    // 👉 get latest season
-    const seasonId = seasons[0].id;
-
-    // 🔥 STEP 2: GET FIXTURES USING SEASON
-    const fixturesRes = await fetch(
-      `${BASE}/fixtures?filters=season_id:${seasonId}&include=participants;scores&api_token=${TOKEN}`
-    );
-
-    const fixturesData = await fixturesRes.json();
-
-    if (!fixturesData || !Array.isArray(fixturesData.data)) {
+    if (!Array.isArray(fixtures)) {
       return res.status(500).json({
         error: "Invalid fixtures response",
-        received: fixturesData
+        received: seasonData
       });
     }
 
     let updated = 0;
 
-    for (const f of fixturesData.data) {
+    for (const f of fixtures) {
 
       const home = f.participants?.find(p => p.meta?.location === "home");
       const away = f.participants?.find(p => p.meta?.location === "away");
