@@ -8,6 +8,7 @@ const SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
 const ADMIN    = process.env.ADMIN_SECRET || 'fpsl-admin-2026';
 
 const BASE = 'https://api.sportmonks.com/v3/football';
+const PSL  = 806;
 
 module.exports = async (req, res) => {
 
@@ -25,14 +26,35 @@ module.exports = async (req, res) => {
 
   try {
 
-    const url = `${BASE}/fixtures?filters=league_id:806&include=participants;scores&api_token=${TOKEN}`;
+    // 🔥 STEP 1: GET CURRENT SEASON
+    const seasonRes = await fetch(
+      `${BASE}/leagues/${PSL}?include=seasons&api_token=${TOKEN}`
+    );
 
-    const response = await fetch(url);
-    const fixturesData = await response.json();
+    const seasonData = await seasonRes.json();
+
+    const seasons = seasonData.data?.seasons;
+
+    if (!seasons || seasons.length === 0) {
+      return res.status(500).json({
+        error: "No seasons found",
+        received: seasonData
+      });
+    }
+
+    // 👉 get latest season
+    const seasonId = seasons[0].id;
+
+    // 🔥 STEP 2: GET FIXTURES USING SEASON
+    const fixturesRes = await fetch(
+      `${BASE}/fixtures?filters=season_id:${seasonId}&include=participants;scores&api_token=${TOKEN}`
+    );
+
+    const fixturesData = await fixturesRes.json();
 
     if (!fixturesData || !Array.isArray(fixturesData.data)) {
       return res.status(500).json({
-        error: "Invalid response from Sportmonks",
+        error: "Invalid fixtures response",
         received: fixturesData
       });
     }
@@ -64,6 +86,7 @@ module.exports = async (req, res) => {
 
     return res.json({
       success: true,
+      season_id: seasonId,
       fixtures_updated: updated
     });
 
