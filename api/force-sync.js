@@ -18,34 +18,46 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  if (!TOKEN) {
+    return res.status(500).json({ error: 'SPORTMONKS_TOKEN missing' });
+  }
+
   const db = createClient(SB_URL, SB_KEY);
 
   try {
 
-    // 1. Get fixtures (latest)
-    const fixturesRes = await fetch(
-      `${BASE}/fixtures/leagues/${PSL}?include=participants;scores&api_token=${TOKEN}`
-    );
+    const url = `${BASE}/fixtures/leagues/${PSL}?include=participants;scores&api_token=${TOKEN}`;
 
-    const fixturesData = await fixturesRes.json();
+    const response = await fetch(url);
+    const fixturesData = await response.json();
+
+    // 🔍 DEBUG RETURN (VERY IMPORTANT)
+    if (!fixturesData || !fixturesData.data) {
+      return res.status(500).json({
+        error: "Invalid response from Sportmonks",
+        received: fixturesData
+      });
+    }
 
     let updated = 0;
 
     for (const f of fixturesData.data) {
 
-      const home = f.participants.find(p => p.meta.location === "home");
-      const away = f.participants.find(p => p.meta.location === "away");
+      const home = f.participants?.find(p => p.meta?.location === "home");
+      const away = f.participants?.find(p => p.meta?.location === "away");
 
-      const homeScore = f.scores?.find(s => s.description === "CURRENT")?.score?.goals_home ?? null;
-      const awayScore = f.scores?.find(s => s.description === "CURRENT")?.score?.goals_away ?? null;
+      const scoreObj = f.scores?.find(s => s.description === "CURRENT");
+
+      const homeScore = scoreObj?.score?.goals_home ?? null;
+      const awayScore = scoreObj?.score?.goals_away ?? null;
 
       await db.from("fixtures").upsert({
         id: f.id,
-        home_team: home?.name,
-        away_team: away?.name,
+        home_team: home?.name || "TBD",
+        away_team: away?.name || "TBD",
         home_score: homeScore,
         away_score: awayScore,
-        status: f.state.name,
+        status: f.state?.name || "NS",
         kickoff_at: f.starting_at
       });
 
@@ -58,6 +70,8 @@ module.exports = async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      error: err.message
+    });
   }
 };
