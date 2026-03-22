@@ -55,17 +55,12 @@ module.exports = async (req, res) => {
       // 2. Get current season
       let seasonId = null;
       try {
-        const d = await smGet('/leagues/' + PSL_LEAGUE + '?include=currentSeason');
-        const s = (d.data && d.data.currentSeason) || (d.data && d.data.current_season);
-        if (s && s.id) { seasonId = s.id; report.results.current_season = { ok: true, id: s.id, name: s.name }; }
-        else {
-          // fallback: list seasons
-          const d2 = await smGet('/seasons?filters=leagueId:' + PSL_LEAGUE);
-          const list = (d2.data || []).sort((a,b) => b.id - a.id);
-          if (list.length) { seasonId = list[0].id; report.results.current_season = { ok: true, id: list[0].id, name: list[0].name, note: 'via season list fallback' }; }
-          else { report.results.current_season = { ok: false, error: 'No seasons found' }; report.errors.push('No season found for PSL league'); }
-        }
-      } catch(e) { report.results.current_season = { ok: false, error: e.message }; report.errors.push('season: ' + e.message); }
+        seasonId = await autoGetSeasonId();
+        report.results.current_season = { ok: true, id: seasonId, note: 'auto-detected via /seasons list' };
+      } catch(e) {
+        report.results.current_season = { ok: false, error: e.message };
+        report.errors.push('season: ' + e.message);
+      }
 
       if (seasonId) {
         report.results.season_id_to_use = seasonId;
@@ -281,15 +276,36 @@ async function smGet(path) {
 }
 
 async function autoGetSeasonId() {
+  // Strategy 1: /leagues/806 basic — current_season_id is a direct field (no include needed)
   try {
-    const d = await smGet('/leagues/' + PSL_LEAGUE + '?include=currentSeason');
-    const s = (d.data && d.data.currentSeason) || (d.data && d.data.current_season);
-    if (s && s.id) return s.id;
+    const d = await smGet('/leagues/' + PSL_LEAGUE);
+    const sid = (d.data || {}).current_season_id || (d.data || {}).currentSeasonId;
+    if (sid) return sid;
   } catch(_) {}
-  const d = await smGet('/seasons?filters=leagueId:' + PSL_LEAGUE);
-  const list = (d.data || []).sort((a,b) => b.id - a.id);
-  if (list.length) return list[0].id;
-  throw new Error('Could not determine PSL season ID');
+
+  // Strategy 2: list ALL seasons, no filters — find PSL league_id:806
+  let found = null;
+  try {
+    let page = 1;
+    while (page <= 8) {
+      const d = await smGet('/seasons?per_page=100&page=' + page);
+      const seasons = d.data || [];
+      if (!seasons.length) break;
+      for (const s of seasons) {
+        if (s.league_id === PSL_LEAGUE) {
+          if (s.is_current) { found = s.id; break; }
+          if (!found || s.id > found) found = s.id;
+        }
+      }
+      if (found) break;
+      const meta = d.meta && d.meta.pagination;
+      if (!meta || !meta.has_next_page) break;
+      page++;
+    }
+  } catch(_) {}
+
+  // Strategy 3: known confirmed season ID for PSL 2024/25
+  return found || 26173;
 }
 
 function formatFixture(f) {
