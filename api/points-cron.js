@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
         var f = upData.data[i];
         var parts = f.participants || [];
         await db.from('fixtures').upsert({
-          id: f.id, sportmonks_id: f.id,
+          sportmonks_id: f.id,
           home_team: getPart(parts,'home','name') || 'TBD',
           away_team: getPart(parts,'away','name') || 'TBD',
           home_logo: getPart(parts,'home','image_path') || null,
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
           kickoff_at: f.starting_at,
           round: (f.round && f.round.name) || null,
           updated_at: new Date().toISOString()
-        }, { onConflict:'id' });
+        }, { onConflict:'sportmonks_id', ignoreDuplicates: false });
         upCount++;
       }
       log.push('Upcoming fixtures: ' + upCount);
@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
           }
         });
         await db.from('fixtures').upsert({
-          id: pf.id, sportmonks_id: pf.id,
+          sportmonks_id: pf.id,
           home_team: getPart(pp,'home','name') || 'TBD',
           away_team: getPart(pp,'away','name') || 'TBD',
           home_logo: getPart(pp,'home','image_path') || null,
@@ -83,7 +83,7 @@ module.exports = async (req, res) => {
           kickoff_at: pf.starting_at,
           round: (pf.round && pf.round.name) || null,
           updated_at: new Date().toISOString()
-        }, { onConflict:'id' });
+        }, { onConflict:'sportmonks_id', ignoreDuplicates: false });
         pastCount++;
       }
       log.push('Past results: ' + pastCount);
@@ -107,8 +107,9 @@ module.exports = async (req, res) => {
     // ?force=true: re-score even already-scored fixtures (full reset)
     var forceRescore = req.query && req.query.force === 'true';
     var compQuery = db.from('fixtures')
-      .select('id,status,kickoff_at,home_score,away_score')
+      .select('id,sportmonks_id,status,kickoff_at,home_score,away_score')
       .eq('status','FT')
+      .not('sportmonks_id','is',null)
       .order('kickoff_at',{ ascending:false });
 
     // Nightly cron only looks at recent fixtures to save API calls
@@ -125,9 +126,12 @@ module.exports = async (req, res) => {
     for (var fi = 0; fi < completed.length; fi++) {
       var fix = completed[fi];
       try {
+        // Use sportmonks_id for API calls (fix.id is Supabase auto-increment)
+        var smId = fix.sportmonks_id || fix.id;
+
         // Skip already-scored fixtures unless force=true
         if (!forceRescore) {
-          var existRes = await db.from('player_match_stats').select('id').eq('fixture_id', fix.id).limit(1);
+          var existRes = await db.from('player_match_stats').select('id').eq('fixture_id', smId).limit(1);
           if (existRes.data && existRes.data.length) {
             // silently skip — no log spam on admin run
             continue;
@@ -135,18 +139,18 @@ module.exports = async (req, res) => {
         }
 
         var fData = await smGet(
-          '/fixtures/' + fix.id +
+          '/fixtures/' + smId +
           '?include=events.type;lineups.player;lineups.position;statistics.type;participants'
         );
         var fixture = fData.data;
-        if (!fixture) { log.push('Fixture '+fix.id+': no data returned'); continue; }
+        if (!fixture) { log.push('Fixture '+smId+': no data returned'); continue; }
 
         var participants = fixture.participants || [];
         var homePart = participants.find(function(p){ return p.meta&&p.meta.location==='home'; });
 
         // If no lineups returned, plan may not include lineup data — skip gracefully
         if (!fixture.lineups || !fixture.lineups.length) {
-          log.push('Fixture '+fix.id+': no lineup data (check plan includes lineups)');
+          log.push('Fixture '+smId+': no lineup data (check Sportmonks plan includes lineups)');
           continue;
         }
 
@@ -164,7 +168,7 @@ module.exports = async (req, res) => {
           var minOut = ln.player_out_minute || 90;
           var mins   = minIn !== null ? Math.max(0, minOut - minIn) : (isSub ? 0 : 90);
           playerMap[p.id] = {
-            player_id:p.id, fixture_id:fix.id,
+            player_id:p.id, fixture_id:smId,
             player_name:p.display_name||p.name||'Unknown',
             team_name:(team&&team.name)||'',
             position:pos, minutes:mins,
@@ -247,9 +251,9 @@ module.exports = async (req, res) => {
 
         await updateUserGWPoints(db, fix.id, statsRows);
         pointsProcessed += statsRows.length;
-        log.push('Fixture '+fix.id+': scored '+statsRows.length+' players');
+        log.push('Fixture '+smId+': scored '+statsRows.length+' players');
 
-      } catch(e) { log.push('Fixture '+fix.id+' error: '+e.message); }
+      } catch(e) { log.push('Fixture '+(fix.sportmonks_id||fix.id)+' error: '+e.message); }
     }
 
     // ── Top scorers (weekly) ──────────────────────────────────────────────
