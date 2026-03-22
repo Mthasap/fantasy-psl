@@ -28,6 +28,16 @@ module.exports = async (req, res) => {
       : await getSeasonId(db, TOKEN);
     log.push('Season ID: ' + seasonId);
 
+    // ── Test single insert first to catch RLS/schema errors early ──────
+    var testRow = { sportmonks_id: -1, home_team:'TEST', away_team:'TEST', status:'NS', kickoff_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    var testRes = await db.from('fixtures').upsert(testRow, { onConflict:'sportmonks_id' });
+    if (testRes.error) {
+      log.push('⚠️ WRITE TEST FAILED: ' + testRes.error.message + ' — code: ' + testRes.error.code);
+    } else {
+      log.push('✅ Write test passed — DB writes are working');
+      await db.from('fixtures').delete().eq('sportmonks_id', -1); // clean up test row
+    }
+
     // ── Upcoming fixtures ─────────────────────────────────────────────────
     // Uses /fixtures?filters=fixtureSeasons:{id};fixtureStates:1 (state 1 = Not Started)
     var upCount = 0;
@@ -40,8 +50,10 @@ module.exports = async (req, res) => {
         if (!upcoming.length) break;
         for (var i = 0; i < upcoming.length; i++) {
           var f = upcoming[i];
-          await upsertFixture(db, f, 'NS', null, null);
-          upCount++;
+          try {
+            await upsertFixture(db, f, 'NS', null, null);
+            upCount++;
+          } catch(ue) { log.push('Upcoming row error: ' + ue.message); }
         }
         var umeta = upData.meta && upData.meta.pagination;
         if (!umeta || !umeta.has_next_page) break;
@@ -63,8 +75,10 @@ module.exports = async (req, res) => {
         for (var pi = 0; pi < past.length; pi++) {
           var pf = past[pi];
           var scores = extractScores(pf.scores || []);
-          await upsertFixture(db, pf, 'FT', scores.home, scores.away);
-          pastCount++;
+          try {
+            await upsertFixture(db, pf, 'FT', scores.home, scores.away);
+            pastCount++;
+          } catch(pe) { log.push('Past row error: ' + pe.message); }
         }
         var pmeta = pastData.meta && pastData.meta.pagination;
         if (!pmeta || !pmeta.has_next_page) break;
@@ -122,12 +136,10 @@ module.exports = async (req, res) => {
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function upsertFixture(db, f, status, homeScore, awayScore) {
   var parts = f.participants || [];
-  // Use sportmonks_id as the conflict key — 'id' is a BIGSERIAL auto-increment in Supabase
-  // If sportmonks_id column doesn't exist yet, run the migration SQL below
-  await db.from('fixtures').upsert({
+  var row = {
     sportmonks_id: f.id,
-    home_team:     getParticipant(parts,'home','name')      || 'TBD',
-    away_team:     getParticipant(parts,'away','name')      || 'TBD',
+    home_team:     getParticipant(parts,'home','name')       || 'TBD',
+    away_team:     getParticipant(parts,'away','name')       || 'TBD',
     home_logo:     getParticipant(parts,'home','image_path') || null,
     away_logo:     getParticipant(parts,'away','image_path') || null,
     home_score:    homeScore,
@@ -136,7 +148,16 @@ async function upsertFixture(db, f, status, homeScore, awayScore) {
     kickoff_at:    f.starting_at,
     round:         (f.round && f.round.name) || null,
     updated_at:    new Date().toISOString()
-  }, { onConflict:'sportmonks_id', ignoreDuplicates: false });
+  };
+  // Try upsert on sportmonks_id first
+  var res = await db.from('fixtures').upsert(row, { onConflict: 'sportmonks_id' });
+  if (res.error) {
+    // Fallback: try plain insert, ignore duplicate error
+    var res2 = await db.from('fixtures').insert(row);
+    if (res2.error && !res2.error.message.includes('duplicate')) {
+      throw new Error('fixture upsert failed: ' + res2.error.message);
+    }
+  }
 }
 
 function getParticipant(parts, loc, field) {
