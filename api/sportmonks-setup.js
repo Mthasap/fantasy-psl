@@ -66,16 +66,16 @@ module.exports = async (req, res) => {
         report.results.season_id_to_use = seasonId;
         report.instructions = ['Set SPORTMONKS_SEASON_ID=' + seasonId + ' in Vercel env vars (optional — cron auto-detects it)'];
 
-        // 3. Test upcoming fixtures
+        // 3. Test upcoming fixtures (fixtureStates:1 = Not Started)
         try {
-          const d = await smGet('/fixtures/upcoming/season/' + seasonId + '?include=participants;round&per_page=5');
+          const d = await smGet('/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:1&include=participants;round&per_page=5');
           const count = (d.data || []).length;
           report.results.upcoming_fixtures = { ok: true, count_returned: count, sample: (d.data || []).slice(0, 2).map(f => ({ id: f.id, starting_at: f.starting_at })) };
         } catch(e) { report.results.upcoming_fixtures = { ok: false, error: e.message }; report.errors.push('upcoming fixtures: ' + e.message); }
 
-        // 4. Test past fixtures (results)
+        // 4. Test past fixtures (fixtureStates:5 = Finished/FT)
         try {
-          const d = await smGet('/fixtures/past/season/' + seasonId + '?include=participants;scores&per_page=5');
+          const d = await smGet('/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:5&include=participants;scores&per_page=5');
           const count = (d.data || []).length;
           const sample = (d.data || []).slice(0, 2).map(f => ({ id: f.id, starting_at: f.starting_at }));
           report.results.past_fixtures = { ok: true, count_returned: count, sample };
@@ -162,8 +162,8 @@ module.exports = async (req, res) => {
       // ── List upcoming + recent fixtures ───────────────────────────────
       const sid = req.query.season_id || await autoGetSeasonId();
       const [upcoming, past] = await Promise.all([
-        smGet('/fixtures/upcoming/season/' + sid + '?include=participants;round&per_page=20'),
-        smGet('/fixtures/past/season/' + sid + '?include=participants;scores&per_page=20')
+        smGet('/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:1&include=participants;round&per_page=20'),
+        smGet('/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5&include=participants;scores&per_page=20')
       ]);
       report.results = {
         season_id: sid,
