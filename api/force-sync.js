@@ -103,20 +103,21 @@ module.exports = async (req, res) => {
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function upsertFixture(db, f, status, homeScore, awayScore) {
   var parts = f.participants || [];
+  // Use sportmonks_id as the conflict key — 'id' is a BIGSERIAL auto-increment in Supabase
+  // If sportmonks_id column doesn't exist yet, run the migration SQL below
   await db.from('fixtures').upsert({
-    id:           f.id,
-    sportmonks_id:f.id,
-    home_team:    getParticipant(parts,'home','name')     || 'TBD',
-    away_team:    getParticipant(parts,'away','name')     || 'TBD',
-    home_logo:    getParticipant(parts,'home','image_path') || null,
-    away_logo:    getParticipant(parts,'away','image_path') || null,
-    home_score:   homeScore,
-    away_score:   awayScore,
-    status:       status,
-    kickoff_at:   f.starting_at,
-    round:        (f.round && f.round.name) || null,
-    updated_at:   new Date().toISOString()
-  }, { onConflict:'id' });
+    sportmonks_id: f.id,
+    home_team:     getParticipant(parts,'home','name')      || 'TBD',
+    away_team:     getParticipant(parts,'away','name')      || 'TBD',
+    home_logo:     getParticipant(parts,'home','image_path') || null,
+    away_logo:     getParticipant(parts,'away','image_path') || null,
+    home_score:    homeScore,
+    away_score:    awayScore,
+    status:        status,
+    kickoff_at:    f.starting_at,
+    round:         (f.round && f.round.name) || null,
+    updated_at:    new Date().toISOString()
+  }, { onConflict:'sportmonks_id', ignoreDuplicates: false });
 }
 
 function getParticipant(parts, loc, field) {
