@@ -102,21 +102,36 @@ module.exports = async (req, res) => {
     } catch(e) { log.push('Standings error: ' + e.message); }
 
     // ── Score completed matches ───────────────────────────────────────────
-    var oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
-    var compRes = await db.from('fixtures')
+    // Admin run: score ALL unscored FT fixtures (no date limit)
+    // Cron run:  only fixtures from last 3 days (saves API calls)
+    // ?force=true: re-score even already-scored fixtures (full reset)
+    var forceRescore = req.query && req.query.force === 'true';
+    var compQuery = db.from('fixtures')
       .select('id,status,kickoff_at,home_score,away_score')
-      .eq('status','FT').gte('kickoff_at', oneWeekAgo)
+      .eq('status','FT')
       .order('kickoff_at',{ ascending:false });
+
+    // Nightly cron only looks at recent fixtures to save API calls
+    if (!isAdmin) {
+      var threeDaysAgo = new Date(Date.now() - 3*24*60*60*1000).toISOString();
+      compQuery = compQuery.gte('kickoff_at', threeDaysAgo);
+    }
+
+    var compRes = await compQuery;
     var completed = compRes.data || [];
     var pointsProcessed = 0;
+    log.push('FT fixtures to process: ' + completed.length);
 
     for (var fi = 0; fi < completed.length; fi++) {
       var fix = completed[fi];
       try {
-        var existRes = await db.from('player_match_stats').select('id').eq('fixture_id', fix.id).limit(1);
-        if (existRes.data && existRes.data.length && !isAdmin) {
-          log.push('Fixture ' + fix.id + ': already scored');
-          continue;
+        // Skip already-scored fixtures unless force=true
+        if (!forceRescore) {
+          var existRes = await db.from('player_match_stats').select('id').eq('fixture_id', fix.id).limit(1);
+          if (existRes.data && existRes.data.length) {
+            // silently skip — no log spam on admin run
+            continue;
+          }
         }
 
         var fData = await smGet(
@@ -124,10 +139,16 @@ module.exports = async (req, res) => {
           '?include=events.type;lineups.player;lineups.position;statistics.type;participants'
         );
         var fixture = fData.data;
-        if (!fixture) continue;
+        if (!fixture) { log.push('Fixture '+fix.id+': no data returned'); continue; }
 
         var participants = fixture.participants || [];
         var homePart = participants.find(function(p){ return p.meta&&p.meta.location==='home'; });
+
+        // If no lineups returned, plan may not include lineup data — skip gracefully
+        if (!fixture.lineups || !fixture.lineups.length) {
+          log.push('Fixture '+fix.id+': no lineup data (check plan includes lineups)');
+          continue;
+        }
 
         // Build player map from lineups
         var playerMap = {};
