@@ -91,7 +91,7 @@ async function getFromSupabase(dataType) {
       .select('*')
       .eq('status', 'NS')
       .order('kickoff_at', { ascending: true })
-      .limit(20);
+      .limit(50);
     if (error) throw new Error('fixtures: ' + error.message);
     return { type: 'fixtures', fixtures: (data || []).map(formatFixtureRow), fetched_at: new Date().toISOString() };
   }
@@ -101,8 +101,9 @@ async function getFromSupabase(dataType) {
       .from('fixtures')
       .select('*')
       .eq('status', 'FT')
+      .not('sportmonks_id', 'is', null)
       .order('kickoff_at', { ascending: false })
-      .limit(20);
+      .limit(50);
     if (error) throw new Error('results: ' + error.message);
     return { type: 'results', results: (data || []).map(formatFixtureRow), fetched_at: new Date().toISOString() };
   }
@@ -121,16 +122,32 @@ async function getFromSupabase(dataType) {
   }
 
   if (dataType === 'topscorers') {
+    // Read from player_season_stats (populated by points-cron topscorers sync)
+    const { data: ssData, error: ssErr } = await client
+      .from('player_season_stats')
+      .select('player_name,team_name,goals,rank')
+      .order('rank', { ascending: true })
+      .limit(30);
+    if (!ssErr && ssData && ssData.length) {
+      return {
+        type: 'topscorers',
+        topScorers: ssData.map(function(p, i) {
+          return { rank: p.rank || i+1, name: p.player_name, club: p.team_name, goals: p.goals || 0, apps: 0 };
+        }),
+        fetched_at: new Date().toISOString()
+      };
+    }
+    // Fallback: read from players table
     const { data, error } = await client
       .from('players')
-      .select('id,name,club,position,goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points')
+      .select('display_name,team,position,goals,apps,total_points')
       .order('goals', { ascending: false })
-      .limit(20);
+      .limit(30);
     if (error) throw new Error('topscorers: ' + error.message);
     return {
       type: 'topscorers',
       topScorers: (data || []).map(function(p, i) {
-        return { rank: i + 1, name: p.name, club: p.club, goals: p.goals || 0, apps: p.apps || 0 };
+        return { rank: i+1, name: p.display_name||p.name, club: p.team, goals: p.goals||0, apps: p.apps||0 };
       }),
       fetched_at: new Date().toISOString()
     };
@@ -141,6 +158,7 @@ async function getFromSupabase(dataType) {
 function formatFixtureRow(f) {
   return {
     fixture_id: f.sportmonks_id || f.id,
+    sportmonks_id: f.sportmonks_id || f.id,
     status:     f.status || 'NS',
     date:       f.kickoff_at,
     home:       f.home_team,
