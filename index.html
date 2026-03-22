@@ -330,6 +330,145 @@
   0%,100% { opacity:1; transform:scale(1); }
   50%      { opacity:.4; transform:scale(1.3); }
 }
+
+  /* ═══════════════════════════════════════════════════
+     FPSL FOOTBALL LOADER  (replaces all loading-players)
+  ═══════════════════════════════════════════════════ */
+  .fpsl-loader {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:2.5rem 1rem; gap:.75rem;
+  }
+  .fpsl-loader-ball {
+    width:44px; height:44px;
+    animation: ldrBounce .65s cubic-bezier(.36,.07,.19,.97) infinite alternate,
+               ldrSpin   1.3s linear infinite;
+    filter: drop-shadow(0 6px 10px rgba(185,28,58,.5));
+  }
+  @keyframes ldrBounce { from{transform:translateY(0)}  to{transform:translateY(-10px)} }
+  @keyframes ldrSpin   { from{transform:rotate(0deg)}   to{transform:rotate(360deg)}    }
+  .fpsl-loader-shadow {
+    width:26px; height:6px; margin-top:-4px;
+    background:radial-gradient(ellipse,rgba(185,28,58,.35) 0%,transparent 70%);
+    border-radius:50%;
+    animation:ldrShd .65s cubic-bezier(.36,.07,.19,.97) infinite alternate;
+  }
+  @keyframes ldrShd { from{transform:scaleX(1);opacity:.55} to{transform:scaleX(.5);opacity:.15} }
+  .fpsl-loader-dots { display:flex; gap:5px; align-items:center; }
+  .fpsl-loader-dots span {
+    width:5px; height:5px; border-radius:50%; background:var(--red);
+    animation:ldrDot 1s ease infinite;
+  }
+  .fpsl-loader-dots span:nth-child(2){animation-delay:.15s;background:var(--gold-soft);}
+  .fpsl-loader-dots span:nth-child(3){animation-delay:.3s; background:var(--green-soft);}
+  @keyframes ldrDot{0%,80%,100%{transform:scale(.55);opacity:.25}40%{transform:scale(1);opacity:1}}
+  .fpsl-loader-label {
+    font-family:var(--font-ui); font-size:.68rem; font-weight:700;
+    letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.28);
+    animation:ldrLbl 1.4s ease infinite;
+  }
+  @keyframes ldrLbl{0%,100%{opacity:.25}50%{opacity:.65}}
+
+  /* ═══════════════════════════════════════════════════
+     DISKI CHAT  —  iMessage-style bubble layout
+  ═══════════════════════════════════════════════════ */
+  #chat-feed { display:flex; flex-direction:column; padding:.25rem 0; }
+
+  .dk-row {
+    display:flex; align-items:flex-end; gap:.45rem;
+    margin-bottom:.5rem; padding:0 .1rem;
+    animation:dkIn .2s cubic-bezier(.34,1.4,.64,1) both;
+  }
+  @keyframes dkIn{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+  .dk-row.dk-own { flex-direction:row-reverse; }
+
+  .dk-av {
+    width:30px; height:30px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:var(--red); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-ui); font-size:.7rem; font-weight:900; color:#fff;
+    border:1.5px solid rgba(255,255,255,.1);
+  }
+  .dk-av img { width:100%; height:100%; object-fit:cover; }
+
+  .dk-body { display:flex; flex-direction:column; max-width:80%; }
+  .dk-row.dk-own .dk-body { align-items:flex-end; }
+
+  .dk-meta {
+    display:flex; align-items:center; gap:.4rem; flex-wrap:wrap;
+    font-family:var(--font-ui); font-size:.62rem; font-weight:700;
+    color:rgba(255,255,255,.32); margin-bottom:.18rem; padding:0 .35rem;
+  }
+  .dk-meta .dk-team {
+    font-size:.55rem; background:rgba(255,255,255,.07);
+    padding:.08rem .32rem; border-radius:3px; color:rgba(255,255,255,.38);
+  }
+
+  .dk-bubble {
+    padding:.58rem .82rem; border-radius:18px; word-break:break-word;
+    font-family:var(--font-body); font-size:.875rem; line-height:1.5; color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.22);
+  }
+  .dk-bubble.dk-theirs { background:#252D3A; border-bottom-left-radius:5px; }
+  .dk-bubble.dk-mine   { background:linear-gradient(135deg,#C0253F,#8B1A2E); border-bottom-right-radius:5px; }
+
+  /* action row under each bubble */
+  .dk-acts {
+    display:flex; align-items:center; gap:.25rem; flex-wrap:wrap;
+    margin-top:.28rem; padding:0 .35rem;
+  }
+  .dk-row.dk-own .dk-acts { justify-content:flex-end; }
+
+  .dk-btn {
+    display:inline-flex; align-items:center; gap:.22rem;
+    background:none; border:none; cursor:pointer; padding:.22rem .38rem;
+    border-radius:8px; font-family:var(--font-ui); font-size:.65rem; font-weight:700;
+    color:rgba(255,255,255,.38); transition:color .12s,background .12s;
+    -webkit-tap-highlight-color:transparent; line-height:1;
+  }
+  .dk-btn:hover          { color:rgba(255,255,255,.75); background:rgba(255,255,255,.06); }
+  .dk-btn.dk-liked       { color:#DBA94A; }
+  .dk-btn.dk-disliked    { color:#D4274F; }
+  .dk-btn.dk-reposted    { color:#22895A; }
+  .dk-btn svg            { flex-shrink:0; }
+
+  /* date separator */
+  .dk-sep {
+    text-align:center; font-family:var(--font-ui); font-size:.6rem;
+    font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+    color:rgba(255,255,255,.18); padding:.55rem 0 .35rem;
+  }
+
+  /* repost label above bubble */
+  .dk-repost-label {
+    display:flex; align-items:center; gap:.3rem;
+    font-family:var(--font-ui); font-size:.6rem; font-weight:700;
+    color:rgba(255,255,255,.28); margin-bottom:.2rem; padding:0 .35rem;
+  }
+
+  /* reply thread box */
+  .dk-reply-wrap {
+    display:none; margin-top:.5rem;
+    background:rgba(0,0,0,.18); border-left:2px solid rgba(255,255,255,.1);
+    border-radius:0 8px 8px 0; padding:.5rem .65rem;
+  }
+  .dk-reply-item {
+    display:flex; gap:.5rem; padding:.32rem 0;
+    border-top:1px solid rgba(255,255,255,.05);
+  }
+  .dk-reply-item:first-child { border-top:none; }
+  .dk-reply-av {
+    width:24px; height:24px; border-radius:50%; flex-shrink:0;
+    background:var(--red); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-ui); font-size:.6rem; font-weight:700; color:#fff;
+  }
+
+  /* compose input override */
+  #chat-input {
+    background:rgba(255,255,255,.05) !important;
+    border:1px solid rgba(255,255,255,.09) !important;
+    border-radius:10px !important; padding:.6rem .8rem !important;
+  }
+  #chat-input:focus { border-color:rgba(185,28,58,.45) !important; }
+
 </style>
 
   <!-- ==============================================================
@@ -807,7 +946,7 @@
           <input id="player-search" type="text" placeholder="Search player or club..." oninput="filterSearch(this.value)">
         </div>
         <div id="player-list" style="overflow-y:auto;flex:1;min-height:200px">
-          <div class="loading-players">Loading players...</div>
+          <div class="fpsl-loader"><div class="fpsl-loader-ball"><svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#ddd" stroke-width="1"/><path d="M22 2 L27 15 L13 11 Z" fill="#111"/><path d="M22 42 L17 29 L31 33 Z" fill="#111"/><path d="M2 22 L15 17 L11 31 Z" fill="#111"/><path d="M42 22 L29 27 L33 13 Z" fill="#111"/><circle cx="22" cy="22" r="4.5" fill="#111"/></svg></div><div class="fpsl-loader-shadow"></div><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
     </div>
@@ -829,7 +968,7 @@
         <span id="live-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(212,39,79,.35);margin-right:4px;vertical-align:middle"></span>Live
       </button>
     </div>
-    <div id="fix-list"><div class="loading-players">Loading fixtures...</div></div>
+    <div id="fix-list"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
 
     <div style="margin-top:2.5rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem">
@@ -840,7 +979,7 @@
           <button class="ftab"        id="ttab-form"  onclick="setTableView('form',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Form</button>
         </div>
       </div>
-      <div id="table-body"><div class="loading-players">Loading table...</div></div>
+      <div id="table-body"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
   </div>
 </div>
@@ -852,11 +991,11 @@
     <h1 class="section-title">PSL News &amp; Injuries</h1>
     <div style="margin-bottom:2rem">
       <span class="eyebrow">Injury Updates</span>
-      <div id="injury-list" style="margin-top:.8rem"><div class="loading-players">Loading injuries...</div></div>
+      <div id="injury-list" style="margin-top:.8rem"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
-      <div class="loading-players" style="grid-column:1/-1">Loading news...</div>
+      <div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>
     </div>
   </div>
 </div>
@@ -878,7 +1017,7 @@
       <button class="ftab"        id="stab-cards"    onclick="setStatTab('cards',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle;margin-right:5px"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>Cards</button>
     </div>
 
-    <div id="stats-body"><div class="loading-players">Loading stats...</div></div>
+    <div id="stats-body"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
   </div>
 </div>
 
@@ -891,7 +1030,7 @@
     <div style="background:linear-gradient(135deg,rgba(201,150,58,.08),rgba(185,28,58,.06));border:1px solid rgba(201,150,58,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;position:relative">
       <div style="position:absolute;top:.8rem;right:1rem;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25)">[Sponsor]</div>
       <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A;text-align:center;margin-bottom:1.2rem">SA Overall -- Season Prizes</div>
-      <div class="podium-wrap" id="podium-wrap"><div class="loading-players">Loading...</div></div>
+      <div class="podium-wrap" id="podium-wrap"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
@@ -923,10 +1062,10 @@
           <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Global Leaderboard</div>
         </div>
       </div>
-      <div id="global-lb"><div class="loading-players">Loading rankings...</div></div>
+      <div id="global-lb"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
 
-    <div id="my-leagues-wrap"><div class="loading-players">Loading your leagues...</div></div>
+    <div id="my-leagues-wrap"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
   </div>
 </div>
 
@@ -934,10 +1073,10 @@
 <div id="page-profile" class="page">
   <div class="page-section" style="max-width:800px">
     <span class="eyebrow">Manager Profile</span>
-    <div id="profile-wrap"><div class="loading-players">Loading profile...</div></div>
+    <div id="profile-wrap"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     <div style="margin-top:1.5rem">
       <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">Gameweek History</div>
-      <div id="gw-history-table"><div class="loading-players">Loading history...</div></div>
+      <div id="gw-history-table"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
   </div>
 </div>
@@ -969,7 +1108,7 @@
       <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">Latest</button>
       <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">Top</button>
     </div>
-    <div id="chat-feed"><div class="loading-players">Loading Diski Chat...</div></div>
+    <div id="chat-feed"><div class="fpsl-loader"><div class="fpsl-loader-ball"><svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#ddd" stroke-width="1"/><path d="M22 2 L27 15 L13 11 Z" fill="#111"/><path d="M22 42 L17 29 L31 33 Z" fill="#111"/><path d="M2 22 L15 17 L11 31 Z" fill="#111"/><path d="M42 22 L29 27 L33 13 Z" fill="#111"/><circle cx="22" cy="22" r="4.5" fill="#111"/></svg></div><div class="fpsl-loader-shadow"></div><div class="fpsl-loader-dots"><span></span><span></span><span></span></div><div class="fpsl-loader-label">Loading Diski Chat</div></div></div>
     <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
       <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more</button>
     </div>
@@ -1471,7 +1610,7 @@ function posIcon(pos) {
 
 function renderPlayerList() {
   var c = document.getElementById('player-list'); if (!c) return;
-  if (!ST.filtered.length) { c.innerHTML = '<div class="loading-players">No players found</div>'; return; }
+  if (!ST.filtered.length) { c.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.3)">No players found</div>'; return; }
 
   // -- PAGINATION: only render PAGE_SIZE players at a time --------------
   var PAGE_SIZE = 20;
@@ -2979,7 +3118,7 @@ function renderLeaguesList(leagues) {
           '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private . Code: <span style="color:#DBA94A;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
         '</div>' +
       '</div>' +
-      '<div id="ls-' + l.id + '"><div class="loading-players">Loading...</div></div>' +
+      '<div id="ls-' + l.id + '"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>' +
     '</div>';
   }).join('');
   leagues.forEach(function(l) { loadLeagueStandings(l.id); });
@@ -3169,7 +3308,7 @@ function getAvatarHtml(username, avatarUrl, size) {
 
 function loadProfile() {
   var c = document.getElementById('profile-wrap'); if (!c) return;
-  if (!ST.user) { c.innerHTML = '<div class="loading-players">Please log in to view your profile</div>'; return; }
+  if (!ST.user) { c.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.3)">Please log in to view your profile</div>'; return; }
 
   // -- Use dashboard cache (set by getUserDashboard) when warm ----------
   loadGWHistory();
@@ -3178,12 +3317,12 @@ function loadProfile() {
     return;
   }
   if (rateLimited()) return;
-  c.innerHTML = '<div class="loading-players">Loading...</div>';
+  c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
   db.from('profiles').select('*').eq('id', ST.user.id).single().then(function(res) {
     var p = res.data;
     CACHE._profile = p;
     loadGWHistory();
-    if (!p) { c.innerHTML = '<div class="loading-players">Profile not found</div>'; return; }
+    if (!p) { c.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.3)">Profile not found</div>'; return; }
     var initials = (p.team_name || '?').substring(0, 2).toUpperCase();
     c.innerHTML =
       '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
@@ -3220,7 +3359,7 @@ function loadProfile() {
             '<span class="pli-pos pos-' + (pl.position || 'mid').toLowerCase() + '">' + pl.position + '</span>' +
             '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points || 0) + ' pts</span>' +
           '</div>';
-        }).join('') : '<div class="loading-players">No squad yet -- go build yours!</div>') +
+        }).join('') : '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem;color:rgba(255,255,255,.35)">No squad yet — go pick yours! ⚽</div>') +
       '</div>' +
       '<div style="padding:1.2rem;background:rgba(185,28,58,.05);border:1px solid rgba(185,28,58,.2);border-radius:10px">' +
         '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D4274F;margin-bottom:.4rem">Danger Zone</div>' +
@@ -4164,7 +4303,7 @@ function fetchPlayerStats(cb) {
 
 function loadStats() {
   var c = document.getElementById('stats-body'); if (!c) return;
-  c.innerHTML = '<div style="padding:2rem;text-align:center;color:rgba(255,255,255,.35);font-family:var(--font-ui);font-size:.85rem">Loading stats...</div>';
+  c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
 
   // 1. Render immediately from PSL_ROSTER (instant fallback)
   renderStats();
@@ -4460,7 +4599,7 @@ function renderRealTable(c) {
     });
   } else {
     // Absolute fallback: show loading message
-    if (c) c.innerHTML = '<div style="padding:2rem;text-align:center;color:rgba(255,255,255,.4);font-family:var(--font-ui)">Loading standings...</div>';
+    if (c) c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
     return;
   }
   renderTableFromData(c, tblData);
@@ -4722,7 +4861,7 @@ function renderProfileData(c, p) {
           '<span class="pli-pos pos-' + (pl.position||'mid').toLowerCase() + '">' + pl.position + '</span>' +
           '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points||0) + ' pts</span>' +
         '</div>';
-      }).join('') : '<div class="loading-players">No squad yet -- go build yours!</div>') +
+      }).join('') : '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem;color:rgba(255,255,255,.35)">No squad yet — go pick yours! ⚽</div>') +
     '</div>' +
     '<div style="padding:1.2rem;background:rgba(185,28,58,.05);border:1px solid rgba(185,28,58,.2);border-radius:10px">' +
       '<div style="font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D4274F;margin-bottom:.4rem">Danger Zone</div>' +
@@ -5156,7 +5295,7 @@ function setChatTab(tab,el){
 function fetchPosts(reset){
   if(reset){CHAT.posts=[];CHAT.page=0;}
   var feed=document.getElementById('chat-feed');if(!feed)return;
-  if(reset)feed.innerHTML='<div class="loading-players">Loading...</div>';
+  if(reset)feed.innerHTML='<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
   var order=CHAT.tab==='top'?'likes':'created_at';
   db.from('diski_posts').select('*').eq('is_removed',false).order(order,{ascending:false})
     .range(CHAT.page*CHAT.PAGE_SIZE,(CHAT.page+1)*CHAT.PAGE_SIZE)
@@ -5168,59 +5307,134 @@ function fetchPosts(reset){
       renderFeed();
       var lm=document.getElementById('chat-load-more');
       if(lm)lm.style.display=CHAT.hasMore?'block':'none';
-    }).catch(function(){if(feed)feed.innerHTML='<div class="loading-players">Could not load posts.</div>';});
+    }).catch(function(){if(feed)feed.innerHTML='<div style="text-align:center;padding:1.5rem;font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.35)">Could not load posts — try again</div>';});
 }
 function loadMorePosts(){CHAT.page++;fetchPosts(false);}
 function renderFeed(){
   var feed=document.getElementById('chat-feed');if(!feed)return;
   if(!CHAT.posts.length){
-    feed.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.9rem;font-weight:700">No posts yet -- be the first!</div>';
+    feed.innerHTML='<div style="text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.28);font-family:var(--font-ui);font-size:.82rem;font-weight:700;letter-spacing:1px">NO POSTS YET — BE THE FIRST! ⚽</div>';
     return;
   }
-  var btnBase='display:flex;align-items:center;gap:.3rem;background:none;border:1px solid rgba(255,255,255,.08);border-radius:20px;cursor:pointer;padding:.28rem .65rem;font-family:var(--font-ui);font-size:.65rem;font-weight:700;transition:all .15s;-webkit-tap-highlight-color:transparent;';
+  var lastDay='';
   feed.innerHTML=CHAT.posts.map(function(p){
-    var isOwn=ST.user&&ST.user.id===p.user_id;
-    var liked=CHAT.myReactions[p.id]==='like';
-    var disliked=CHAT.myReactions[p.id]==='dislike';
-    var likeColor=liked?'#DBA94A':'rgba(255,255,255,.4)';
-    var dislikeColor=disliked?'#D4274F':'rgba(255,255,255,.4)';
-    var repostColor=(CHAT.myReposts&&CHAT.myReposts[p.id])?'#22895A':'rgba(255,255,255,.4)';
-    var pid=p.id;
-    var repostBanner='';
-    if(p.repost_of&&p.repost_username){
-      repostBanner='<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.55rem;font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.35);font-weight:700">'+DSVG.repost+'<span>'+esc(p.username||'')+'</span><span style="font-weight:400">reposted</span><span style="color:rgba(255,255,255,.55)">@'+esc(p.repost_username)+'</span></div>';
+    var isOwn  = ST.user && ST.user.id===p.user_id;
+    var liked    = CHAT.myReactions[p.id]==='like';
+    var disliked = CHAT.myReactions[p.id]==='dislike';
+    var reposted = CHAT.myReposts && CHAT.myReposts[p.id];
+    var pid = p.id;
+
+    // ── Date separator ──────────────────────────────
+    var sepHtml='';
+    if(p.created_at){
+      var dayKey=new Date(p.created_at).toDateString();
+      if(dayKey!==lastDay){
+        lastDay=dayKey;
+        var now=new Date(),pd=new Date(p.created_at);
+        var diffD=Math.floor((now-pd)/86400000);
+        var sepLabel=diffD===0?'Today':diffD===1?'Yesterday':pd.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+        sepHtml='<div class="dk-sep">'+sepLabel+'</div>';
+      }
     }
-    var likeBtn='<button onclick="likePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+likeColor+'">'+DSVG.like+'<span style="margin-left:1px">'+(p.likes||0)+'</span></button>';
-    var dislikeBtn=ST.user?'<button onclick="dislikePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:'+dislikeColor+'">'+DSVG.dislike+'<span style="margin-left:1px">'+(p.dislikes||0)+'</span></button>':'';
-    var repostBtn=ST.user&&!isOwn?'<button onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'" style="'+btnBase+'color:'+repostColor+'">'+DSVG.repost+'<span>'+(p.reposts||0)+'</span></button>':'';
-    var replyBtn=ST.user?'<button onclick="openReplyBox(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(255,255,255,.4)">'+DSVG.reply+'<span>Reply'+((p.reply_count||0)?' ('+(p.reply_count||0)+')':'')+'</span></button>':'';
-    var reportBtn=!isOwn&&ST.user?'<button onclick="reportPost(this)" data-pid="'+pid+'" title="Report" style="'+btnBase+'color:rgba(255,255,255,.2);border-color:transparent">'+DSVG.flag+'</button>':'';
-    var deleteBtn=isOwn?'<button onclick="deletePost(this)" data-pid="'+pid+'" style="'+btnBase+'color:rgba(212,39,79,.45);border-color:transparent;margin-left:auto">'+DSVG.trash+'</button>':'';
-    return '<div id="post-'+pid+'" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.7rem">'
-      +repostBanner
-      +'<div style="display:flex;gap:.7rem">'
-        +(p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,.12)">' : '<div style="width:36px;height:36px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#fff;flex-shrink:0">'+esc(p.username||'?')[0].toUpperCase()+'</div>')
-        +'<div style="flex:1;min-width:0">'
-          +'<div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">'
-            +'<span style="font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+esc(p.username||'Manager')+'</span>'
-            +(p.team_name?'<span style="font-size:.7rem;color:rgba(255,255,255,.3)">'+esc(p.team_name)+'</span>':'')
-            +'<span style="font-size:.65rem;color:rgba(255,255,255,.22);margin-left:auto">'+chatTimeAgo(p.created_at)+'</span>'
-          +'</div>'
-          +'<div style="font-size:.88rem;color:rgba(255,255,255,.82);line-height:1.55;margin-bottom:.75rem;word-break:break-word">'+esc(p.content)+'</div>'
-          +'<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">'+likeBtn+dislikeBtn+repostBtn+replyBtn+reportBtn+deleteBtn+'</div>'
-          +'<div id="reply-box-'+pid+'" style="display:none;margin-top:.7rem">'
-          +'<div id="reply-thread-'+pid+'" style="margin-bottom:.6rem"></div>'
-            +'<div style="display:flex;gap:.5rem">'
-              +'<textarea placeholder="Write a reply..." maxlength="280" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:var(--font-body);font-size:.82rem;padding:.5rem .7rem;resize:none;outline:none;min-height:56px;" id="reply-input-'+pid+'"></textarea>'
-              +'<button onclick="submitReply(this)" data-pid="'+pid+'" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.72rem;font-weight:700;padding:.5rem .8rem;cursor:pointer;align-self:flex-end">Reply</button>'
-            +'</div>'
-          +'</div>'
+
+    // ── Repost banner ────────────────────────────────
+    var repostLabel='';
+    if(p.repost_of&&p.repost_username){
+      repostLabel='<div class="dk-repost-label">'+DSVG.repost+'<span>Reposted from @'+esc(p.repost_username)+'</span></div>';
+    }
+
+    // ── Avatar ───────────────────────────────────────
+    var avInner=p.avatar_url
+      ?'<img src="'+p.avatar_url+'" alt="">'
+      :'<span>'+esc(p.username||'?')[0].toUpperCase()+'</span>';
+    var av='<div class="dk-av">'+avInner+'</div>';
+
+    // ── Meta line (name + team + time) ───────────────
+    var metaHtml='<div class="dk-meta">';
+    if(!isOwn){
+      metaHtml+='<span style="color:rgba(255,255,255,.72);font-size:.72rem">'+esc(p.username||'Manager')+'</span>';
+      if(p.team_name) metaHtml+='<span class="dk-team">'+esc(p.team_name)+'</span>';
+    }
+    metaHtml+='<span style="margin-left:'+(isOwn?'0':'auto')+'">'+chatTimeAgo(p.created_at)+'</span>';
+    metaHtml+='</div>';
+
+    // ── Bubble ───────────────────────────────────────
+    var bubbleCls=isOwn?'dk-mine':'dk-theirs';
+    var bubble='<div class="dk-bubble '+bubbleCls+'">'+esc(p.content)+'</div>';
+
+    // ── Action buttons ───────────────────────────────
+    // like — always show (count visible to all)
+    var likeClass='dk-btn'+(liked?' dk-liked':'');
+    var likeBtn='<button class="'+likeClass+'" onclick="likePost(this)" data-pid="'+pid+'">'+DSVG.like+'<span>'+(p.likes||0)+'</span></button>';
+
+    // dislike — logged-in only
+    var dislikeBtn='';
+    if(ST.user){
+      var dislikeClass='dk-btn'+(disliked?' dk-disliked':'');
+      dislikeBtn='<button class="'+dislikeClass+'" onclick="dislikePost(this)" data-pid="'+pid+'">'+DSVG.dislike+'<span>'+(p.dislikes||0)+'</span></button>';
+    }
+
+    // repost — logged-in, not own post
+    var repostBtn='';
+    if(ST.user&&!isOwn){
+      var repostClass='dk-btn'+(reposted?' dk-reposted':'');
+      repostBtn='<button class="'+repostClass+'" onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'">'+DSVG.repost+'<span>'+(p.reposts||0)+'</span></button>';
+    }
+
+    // reply — logged-in only
+    var replyBtn='';
+    if(ST.user){
+      var rCount=p.reply_count||0;
+      replyBtn='<button class="dk-btn" onclick="openReplyBox(this)" data-pid="'+pid+'">'+DSVG.reply+'<span>'+(rCount?rCount:'')+'</span></button>';
+    }
+
+    // report — logged-in, not own
+    var reportBtn='';
+    if(ST.user&&!isOwn){
+      reportBtn='<button class="dk-btn" onclick="reportPost(this)" data-pid="'+pid+'" title="Report" style="opacity:.45">'+DSVG.flag+'</button>';
+    }
+
+    // delete — own only
+    var deleteBtn='';
+    if(isOwn){
+      deleteBtn='<button class="dk-btn" onclick="deletePost(this)" data-pid="'+pid+'" style="color:rgba(212,39,79,.5);margin-left:auto">'+DSVG.trash+'</button>';
+    }
+
+    var actsHtml='<div class="dk-acts">'+likeBtn+dislikeBtn+repostBtn+replyBtn+reportBtn+deleteBtn+'</div>';
+
+    // ── Reply box ────────────────────────────────────
+    var replyBoxHtml=''
+      +'<div id="reply-box-'+pid+'" class="dk-reply-wrap">'
+        +'<div id="reply-thread-'+pid+'" style="margin-bottom:.5rem"></div>'
+        +'<div style="display:flex;gap:.5rem;align-items:flex-end">'
+          +'<textarea placeholder="Write a reply…" maxlength="280" '
+            +'style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);'
+            +'border-radius:10px;color:#fff;font-family:var(--font-body);font-size:.82rem;'
+            +'padding:.5rem .7rem;resize:none;outline:none;min-height:48px;" '
+            +'id="reply-input-'+pid+'"></textarea>'
+          +'<button onclick="submitReply(this)" data-pid="'+pid+'" '
+            +'style="background:#B91C3A;border:none;border-radius:10px;color:#fff;'
+            +'font-family:var(--font-ui);font-size:.72rem;font-weight:700;'
+            +'padding:.55rem .9rem;cursor:pointer;flex-shrink:0">Reply</button>'
         +'</div>'
-      +'</div>'
-    +'</div>';
+      +'</div>';
+
+    // ── Assemble row ─────────────────────────────────
+    var rowClass='dk-row'+(isOwn?' dk-own':'');
+    return sepHtml
+      +'<div id="post-'+pid+'" class="'+rowClass+'">'
+        +(isOwn?'':av)
+        +'<div class="dk-body">'
+          +repostLabel
+          +metaHtml
+          +bubble
+          +actsHtml
+          +replyBoxHtml
+        +'</div>'
+        +(isOwn?av:'')
+      +'</div>';
   }).join('');
 }
-
 function chatInputChange(el){
   var len=el.value.length;var cc=document.getElementById('chat-charcount');
   if(cc){cc.textContent=280-len;cc.style.color=len>260?'#D4274F':'rgba(255,255,255,.3)';}
