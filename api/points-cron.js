@@ -34,9 +34,10 @@ module.exports = async (req, res) => {
     log.push('Season ID: ' + seasonId);
 
     // ── Sync upcoming fixtures ────────────────────────────────────────────
+    // fixtureStates:1 = Not Started / scheduled
     var upCount = 0;
     try {
-      var upData = await smGet('/fixtures/upcoming/season/' + seasonId + '?include=participants;round&per_page=50');
+      var upData = await smGet('/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:1&include=participants;round&per_page=50');
       for (var i = 0; i < (upData.data || []).length; i++) {
         var f = upData.data[i];
         var parts = f.participants || [];
@@ -57,9 +58,10 @@ module.exports = async (req, res) => {
     } catch(e) { log.push('Upcoming error: ' + e.message); }
 
     // ── Sync past results ─────────────────────────────────────────────────
+    // fixtureStates:5 = Finished/FT
     var pastCount = 0;
     try {
-      var pastData = await smGet('/fixtures/past/season/' + seasonId + '?include=participants;scores&per_page=50');
+      var pastData = await smGet('/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:5&include=participants;scores&per_page=50');
       for (var pi = 0; pi < (pastData.data || []).length; pi++) {
         var pf = pastData.data[pi];
         var pp = pf.participants || [];
