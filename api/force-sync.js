@@ -85,13 +85,32 @@ module.exports = async (req, res) => {
       log.push('Standings synced: ' + standCount + ' teams');
     } catch(e) { log.push('Standings error: ' + e.message); }
 
+    // ── Diagnostic: read back what's actually stored in Supabase ─────────
+    var dbCheck = {};
+    try {
+      var ftRes   = await db.from('fixtures').select('id,sportmonks_id,status,home_team,away_team').eq('status','FT').not('sportmonks_id','is',null).limit(3);
+      var nsRes   = await db.from('fixtures').select('id,sportmonks_id,status,home_team,away_team').eq('status','NS').not('sportmonks_id','is',null).limit(3);
+      var nullRes = await db.from('fixtures').select('id,sportmonks_id,status').is('sportmonks_id',null).limit(3);
+      var totRes  = await db.from('fixtures').select('id',{count:'exact',head:true});
+      dbCheck = {
+        total_rows:      totRes.count,
+        ft_with_sm_id:   (ftRes.data||[]).length,
+        ns_with_sm_id:   (nsRes.data||[]).length,
+        null_sm_id_rows: (nullRes.data||[]).length,
+        ft_sample:  (ftRes.data||[]).map(function(r){return r.sportmonks_id+'|'+r.home_team+'v'+r.away_team;}),
+        ns_sample:  (nsRes.data||[]).map(function(r){return r.sportmonks_id+'|'+r.home_team+'v'+r.away_team;}),
+        null_sample:(nullRes.data||[]).map(function(r){return 'id:'+r.id+' sm:'+r.sportmonks_id+' st:'+r.status;})
+      };
+    } catch(e) { dbCheck = { error: e.message }; }
+
     return res.json({
       success: true, season_id: seasonId,
       upcoming_synced: upCount,
       past_synced: pastCount,
       standings_synced: standCount,
+      db_check: dbCheck,
       log,
-      message: 'Sync complete — run /api/points-cron?admin_key=' + ADMIN + ' next to score players'
+      message: 'Sync complete'
     });
 
   } catch(err) {
