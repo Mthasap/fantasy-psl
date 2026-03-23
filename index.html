@@ -2921,22 +2921,23 @@ function cancelTransfer() {
 
 // Real team logos from SuperSport CDN
 var SS_LOGOS = {
-  'Orlando Pirates':    'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
+  // Keys use Sportmonks exact team names (confirmed season 26173)
+  'Orlando Pirates':   'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
   'Mamelodi Sundowns': 'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png',
   'Sekhukhune United': 'https://images.supersport.com/media/ysvjj3ep/sekhuk-united.png',
   'Durban City':       'https://images.supersport.com/media/yi4mugcg/durban_city_logo_200x200.png',
   'Kaizer Chiefs':     'https://images.supersport.com/media/snyn3ar5/kaizerchiefs_new-logo_200x200.png',
-  'AmaZulu FC':        'https://images.supersport.com/media/lkll0gep/amazulufc_-2025_logo_rgb_124.png',
+  'AmaZulu':           'https://images.supersport.com/media/lkll0gep/amazulufc_-2025_logo_rgb_124.png',
   'Polokwane City':    'https://images.supersport.com/media/sw2l3sct/polokwane_city_fc_logo_160x160.png',
   'TS Galaxy':         'https://images.supersport.com/media/p4adysnj/tsgalaxy.png',
-  'Stellenbosch FC':   'https://images.supersport.com/media/qjfnk22o/stellenbosch-fc.png',
+  'Stellenbosch':      'https://images.supersport.com/media/qjfnk22o/stellenbosch-fc.png',
   'Golden Arrows':     'https://images.supersport.com/media/ou1p0ums/lamontville-golden-arrows.png',
-  'Siwelele FC':       'https://images.supersport.com/media/fprdumlm/siwelele-fc.png',
+  'Siwelele':          'https://images.supersport.com/media/fprdumlm/siwelele-fc.png',
   'Richards Bay':      'https://images.supersport.com/media/o03dsxyb/richards-bay.png',
   'Chippa United':     'https://images.supersport.com/media/n2jl52bj/chippa-united.png',
-  'Marumo Gallants':   'https://images.supersport.com/media/xdbdstfu/marumo-gallants-fc.png',
-  'Orbit College FC':  'https://images.supersport.com/media/dx3jsm15/orbit-college-fc.png',
-  'Magesi FC':         'https://images.supersport.com/media/yc3lut03/magesi-fc.png'
+  'Marumo Gallants FC':'https://images.supersport.com/media/xdbdstfu/marumo-gallants-fc.png',
+  'Orbit College':     'https://images.supersport.com/media/dx3jsm15/orbit-college-fc.png',
+  'Magesi':            'https://images.supersport.com/media/yc3lut03/magesi-fc.png'
 };
 
 function getTeamLogo(name) {
@@ -2945,14 +2946,15 @@ function getTeamLogo(name) {
 
 // Short name map -- prevents wrapping in fixture rows
 var SHORT_NAMES = {
-  'Orlando Pirates':'Pirates',      'Mamelodi Sundowns':'Sundowns',
-  'Sekhukhune United':'Sekhukhune', 'Durban City':'Durban City',
-  'Kaizer Chiefs':'Chiefs',         'AmaZulu FC':'AmaZulu',
-  'Polokwane City':'Polokwane',     'TS Galaxy':'TS Galaxy',
-  'Stellenbosch FC':'Stellenbosch', 'Golden Arrows':'Arrows',
-  'Siwelele FC':'Siwelele',         'Richards Bay':'R. Bay',
-  'Chippa United':'Chippa',         'Marumo Gallants':'Gallants',
-  'Orbit College FC':'Orbit Col.',  'Magesi FC':'Magesi'
+  // Keys use Sportmonks exact team names (season 26173)
+  'Orlando Pirates':   'Pirates',    'Mamelodi Sundowns': 'Sundowns',
+  'Sekhukhune United': 'Sekhukhune', 'Durban City':       'Durban City',
+  'Kaizer Chiefs':     'Chiefs',     'AmaZulu':           'AmaZulu',
+  'Polokwane City':    'Polokwane',  'TS Galaxy':         'TS Galaxy',
+  'Stellenbosch':      'Stellies',   'Golden Arrows':     'Arrows',
+  'Siwelele':          'Siwelele',   'Richards Bay':      'R. Bay',
+  'Chippa United':     'Chippa',     'Marumo Gallants FC':'Gallants',
+  'Orbit College':     'Orbit Col.', 'Magesi':            'Magesi'
 };
 function sn(name) { return SHORT_NAMES[name] || name; }
 
@@ -2981,24 +2983,24 @@ function fdrColor(fdr) {
 }
 
 var REAL_TABLE = [
-  // Source: Betway PSL official — GW22 standings — 21 March 2026
-  // Note: This is the fallback. Live standings are loaded from Supabase (synced from Sportmonks)
+  // Fallback standings — uses Sportmonks exact team names for season 26173
+  // Live standings loaded from Supabase (synced nightly from Sportmonks)
   { pos:1,  team:'Mamelodi Sundowns',  p:26, w:17, d:6,  l:3,  gf:44, ga:14, gd:30,  pts:57, form:['W','W','W','D','W'] },
   { pos:2,  team:'Orlando Pirates',    p:21, w:15, d:3,  l:3,  gf:34, ga:9,  gd:25,  pts:48, form:['W','W','W','W','W'] },
-  { pos:3,  team:'AmaZulu FC',         p:22, w:11, d:4,  l:7,  gf:22, ga:19, gd:3,   pts:37, form:['W','W','L','W','D'] },
+  { pos:3,  team:'AmaZulu',            p:22, w:11, d:4,  l:7,  gf:22, ga:19, gd:3,   pts:37, form:['W','W','L','W','D'] },
   { pos:4,  team:'Sekhukhune United',  p:21, w:9,  d:7,  l:5,  gf:21, ga:14, gd:7,   pts:34, form:['D','W','D','L','W'] },
   { pos:5,  team:'Kaizer Chiefs',      p:19, w:9,  d:6,  l:4,  gf:17, ga:12, gd:5,   pts:33, form:['W','W','D','W','L'] },
   { pos:6,  team:'Durban City',        p:21, w:9,  d:5,  l:7,  gf:19, ga:15, gd:4,   pts:32, form:['W','L','W','D','L'] },
   { pos:7,  team:'Polokwane City',     p:21, w:7,  d:8,  l:6,  gf:16, ga:14, gd:2,   pts:29, form:['D','W','D','L','W'] },
-  { pos:8,  team:'Stellenbosch FC',    p:22, w:7,  d:7,  l:8,  gf:19, ga:23, gd:-4,  pts:28, form:['D','D','W','D','D'] },
+  { pos:8,  team:'Stellenbosch',       p:22, w:7,  d:7,  l:8,  gf:19, ga:23, gd:-4,  pts:28, form:['D','D','W','D','D'] },
   { pos:9,  team:'Golden Arrows',      p:21, w:7,  d:4,  l:10, gf:27, ga:26, gd:1,   pts:25, form:['W','L','W','L','W'] },
   { pos:10, team:'TS Galaxy',          p:21, w:7,  d:4,  l:10, gf:24, ga:23, gd:1,   pts:25, form:['L','L','W','L','W'] },
-  { pos:11, team:'Siwelele FC',        p:20, w:5,  d:8,  l:7,  gf:11, ga:15, gd:-4,  pts:23, form:['D','L','D','W','L'] },
+  { pos:11, team:'Siwelele',           p:20, w:5,  d:8,  l:7,  gf:11, ga:15, gd:-4,  pts:23, form:['D','L','D','W','L'] },
   { pos:12, team:'Richards Bay',       p:21, w:5,  d:7,  l:9,  gf:17, ga:24, gd:-7,  pts:22, form:['D','L','D','L','W'] },
   { pos:13, team:'Chippa United',      p:21, w:4,  d:8,  l:9,  gf:14, ga:24, gd:-10, pts:20, form:['D','L','D','L','D'] },
-  { pos:14, team:'Cape Town Spurs',    p:21, w:4,  d:7,  l:10, gf:15, ga:26, gd:-11, pts:19, form:['D','L','D','L','L'] },
-  { pos:15, team:'Magesi FC',          p:21, w:3,  d:4,  l:14, gf:15, ga:32, gd:-17, pts:13, form:['L','L','L','L','L'] },
-  { pos:16, team:'Orbit College FC',   p:21, w:2,  d:4,  l:15, gf:12, ga:36, gd:-24, pts:10, form:['L','L','L','L','D'] }
+  { pos:14, team:'Marumo Gallants FC', p:21, w:4,  d:7,  l:10, gf:15, ga:26, gd:-11, pts:19, form:['D','L','D','L','L'] },
+  { pos:15, team:'Magesi',             p:21, w:3,  d:4,  l:14, gf:15, ga:32, gd:-17, pts:13, form:['L','L','L','L','L'] },
+  { pos:16, team:'Orbit College',      p:21, w:2,  d:4,  l:15, gf:12, ga:36, gd:-24, pts:10, form:['L','L','L','L','D'] }
 ];
 
 function loadInjuries() {
