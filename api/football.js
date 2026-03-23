@@ -161,8 +161,8 @@ function formatFixtureRow(f) {
     sportmonks_id: f.sportmonks_id || f.id,
     status:     f.status || 'NS',
     date:       f.kickoff_at,
-    home:       f.home_team,
-    away:       f.away_team,
+    home:       normaliseTeamName(f.home_team || ''),
+    away:       normaliseTeamName(f.away_team || ''),
     home_logo:  f.home_logo || '',
     away_logo:  f.away_logo || '',
     hg:         f.home_score !== null && f.home_score !== undefined ? f.home_score : null,
@@ -173,10 +173,57 @@ function formatFixtureRow(f) {
   };
 }
 
+// Normalise Sportmonks team names to match app's SS_LOGOS / SHORT_NAMES keys
+var TEAM_NAME_MAP = {
+  'Mamelodi Sundowns FC':         'Mamelodi Sundowns',
+  'Mamelodi Sundowns':            'Mamelodi Sundowns',
+  'Orlando Pirates FC':           'Orlando Pirates',
+  'Orlando Pirates':              'Orlando Pirates',
+  'Kaizer Chiefs FC':             'Kaizer Chiefs',
+  'Kaizer Chiefs':                'Kaizer Chiefs',
+  'AmaZulu FC':                   'AmaZulu FC',
+  'AmaZulu':                      'AmaZulu FC',
+  'Sekhukhune United FC':         'Sekhukhune United',
+  'Sekhukhune United':            'Sekhukhune United',
+  'Stellenbosch FC':              'Stellenbosch FC',
+  'Stellenbosch':                 'Stellenbosch FC',
+  'Polokwane City FC':            'Polokwane City',
+  'Polokwane City':               'Polokwane City',
+  'Durban City FC':               'Durban City',
+  'Durban City':                  'Durban City',
+  'TS Galaxy FC':                 'TS Galaxy',
+  'TS Galaxy':                    'TS Galaxy',
+  'Lamontville Golden Arrows FC': 'Golden Arrows',
+  'Golden Arrows FC':             'Golden Arrows',
+  'Golden Arrows':                'Golden Arrows',
+  'Chippa United FC':             'Chippa United',
+  'Chippa United':                'Chippa United',
+  'Richards Bay FC':              'Richards Bay',
+  'Richards Bay':                 'Richards Bay',
+  'Siwelele FC':                  'Siwelele FC',
+  'Siwelele':                     'Siwelele FC',
+  'Magesi FC':                    'Magesi FC',
+  'Magesi':                       'Magesi FC',
+  'Orbit College FC':             'Orbit College FC',
+  'Orbit College':                'Orbit College FC',
+  'Marumo Gallants FC':           'Marumo Gallants',
+  'Marumo Gallants':              'Marumo Gallants',
+  'Cape Town Spurs FC':           'Cape Town Spurs',
+  'Cape Town Spurs':              'Cape Town Spurs',
+  'Cape Town City FC':            'Cape Town City',
+  'Cape Town City':               'Cape Town City'
+};
+
+function normaliseTeamName(name) {
+  return TEAM_NAME_MAP[name] || name;
+}
+
 function formatStandingRow(s) {
+  var rawName = s.team_name || s.team || '';
   return {
     pos:  s.position || s.pos,
-    team: s.team_name || s.team,
+    team: normaliseTeamName(rawName),
+    logo: s.team_logo || null,
     p:    s.played   || 0,
     w:    s.won      || 0,
     d:    s.drawn    || 0,
