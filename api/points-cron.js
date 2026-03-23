@@ -303,64 +303,69 @@ module.exports = async (req, res) => {
 
 // ── User GW points — aggregates ALL fixtures, called once after scoring ──
 async function updateUserGWPoints(db) {
-  // Get current GW
   var gwRes = await db.from('gameweeks').select('id,number').eq('is_current',true).limit(1);
-  if (!gwRes.data||!gwRes.data.length) return;
+  if (!gwRes.data||!gwRes.data.length) {
+    console.log('[GW points] No current gameweek — skipping'); return;
+  }
   var gw = gwRes.data[0];
+  console.log('[GW points] GW:', gw.number);
 
-  // Get ALL player match stats (every scored fixture this season)
-  // player_match_stats.fixture_id = sportmonks_id, player_id = sportmonks player id
+  // All scored player stats: sportmonks player_id → total fantasy points
   var statsRes = await db.from('player_match_stats').select('player_id,fantasy_points');
   var allStats = statsRes.data || [];
+  console.log('[GW points] player_match_stats rows:', allStats.length);
 
-  // Build map: sportmonks player_id → total fantasy points across all fixtures
   var smIdTotals = {};
   for (var i=0; i<allStats.length; i++) {
-    var s = allStats[i];
-    var key = String(s.player_id);
-    smIdTotals[key] = (smIdTotals[key]||0) + (s.fantasy_points||0);
+    var key = String(allStats[i].player_id);
+    smIdTotals[key] = (smIdTotals[key]||0) + (allStats[i].fantasy_points||0);
   }
+  console.log('[GW points] Unique players scored:', Object.keys(smIdTotals).length);
 
-  // Also build map: supabase players.id → sportmonks player_id
-  // (squad saves p.id = supabase int id, not api_player_id)
+  // Map: supabase players.id (int) → sportmonks api_player_id
   var playersRes = await db.from('players').select('id,api_player_id');
-  var supaIdToSmId = {};
+  var supaToSm = {};
   (playersRes.data||[]).forEach(function(p) {
-    if (p.api_player_id) supaIdToSmId[String(p.id)] = String(p.api_player_id);
+    if (p.api_player_id) supaToSm[String(p.id)] = String(p.api_player_id);
   });
+  console.log('[GW points] Players table rows with api_player_id:', Object.keys(supaToSm).length);
 
-  // Process each user's squad
   var prRes = await db.from('profiles').select('id,squad');
-  for (var pi=0; pi<(prRes.data||[]).length; pi++) {
-    var pr = prRes.data[pi];
+  var profiles = prRes.data || [];
+  var updated = 0;
+
+  for (var pi=0; pi<profiles.length; pi++) {
+    var pr = profiles[pi];
     if (!pr.squad||!Array.isArray(pr.squad)||!pr.squad.length) continue;
 
-    var totalPts = 0;
+    var totalPts = 0, matched = 0;
     for (var j=0; j<pr.squad.length; j++) {
       var sp = pr.squad[j];
-      // Squad stores p.id (supabase int) — look up sportmonks id via map
-      var smId = supaIdToSmId[String(sp.id)] || String(sp.api_player_id||'');
-      var playerPts = smIdTotals[smId] || 0;
-      if (!playerPts) continue;
-      // Apply captain bonus
-      totalPts += (sp.isCaptain||sp.is_captain) ? playerPts*2 : playerPts;
+      var smId = supaToSm[String(sp.id)] || String(sp.api_player_id||'');
+      var pts = smIdTotals[smId] || 0;
+      if (!pts) continue;
+      matched++;
+      totalPts += (sp.isCaptain||sp.is_captain) ? pts*2 : pts;
     }
+    console.log('[GW points] Profile', String(pr.id).substring(0,8),
+      'squad:', pr.squad.length, 'matched:', matched, 'pts:', totalPts);
 
     if (totalPts > 0) {
-      // Upsert GW points record
-      await db.from('user_gw_points').upsert({
-        user_id: pr.id, gw_id: gw.id, gw_number: gw.number,
-        points: totalPts, updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,gw_id' });
+      var ur = await db.from('user_gw_points').upsert({
+        user_id:pr.id, gw_id:gw.id, gw_number:gw.number,
+        points:totalPts, updated_at:new Date().toISOString()
+      }, { onConflict:'user_id,gw_number' });
+      if (ur.error) console.log('[GW points] upsert error:', ur.error.message);
 
-      // Update profile totals
-      await db.from('profiles').update({
-        gw_points: totalPts,
-        total_points: totalPts,
-        updated_at: new Date().toISOString()
-      }).eq('id', pr.id);
+      var pr2 = await db.from('profiles').update({
+        gw_points:totalPts, total_points:totalPts,
+        updated_at:new Date().toISOString()
+      }).eq('id',pr.id);
+      if (pr2.error) console.log('[GW points] profile error:', pr2.error.message);
+      updated++;
     }
   }
+  console.log('[GW points] Profiles updated:', updated);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
