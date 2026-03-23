@@ -249,12 +249,17 @@ module.exports = async (req, res) => {
           }).eq('id',ex.id);
         }
 
-        await updateUserGWPoints(db, fix.id, statsRows);
         pointsProcessed += statsRows.length;
         log.push('Fixture '+smId+': scored '+statsRows.length+' players');
 
       } catch(e) { log.push('Fixture '+(fix.sportmonks_id||fix.id)+' error: '+e.message); }
     }
+
+    // ── Update user GW points (once, after all fixtures scored) ─────────
+    try {
+      await updateUserGWPoints(db);
+      log.push('User GW points updated');
+    } catch(e) { log.push('GW points error: '+e.message); }
 
     // ── Top scorers (weekly) ──────────────────────────────────────────────
     var scorersSynced = false;
@@ -296,26 +301,64 @@ module.exports = async (req, res) => {
   }
 };
 
-// ── User GW points ────────────────────────────────────────────────────────
-async function updateUserGWPoints(db, fixtureId, statsRows) {
+// ── User GW points — aggregates ALL fixtures, called once after scoring ──
+async function updateUserGWPoints(db) {
+  // Get current GW
   var gwRes = await db.from('gameweeks').select('id,number').eq('is_current',true).limit(1);
   if (!gwRes.data||!gwRes.data.length) return;
   var gw = gwRes.data[0];
+
+  // Get ALL player match stats (every scored fixture this season)
+  // player_match_stats.fixture_id = sportmonks_id, player_id = sportmonks player id
+  var statsRes = await db.from('player_match_stats').select('player_id,fantasy_points');
+  var allStats = statsRes.data || [];
+
+  // Build map: sportmonks player_id → total fantasy points across all fixtures
+  var smIdTotals = {};
+  for (var i=0; i<allStats.length; i++) {
+    var s = allStats[i];
+    var key = String(s.player_id);
+    smIdTotals[key] = (smIdTotals[key]||0) + (s.fantasy_points||0);
+  }
+
+  // Also build map: supabase players.id → sportmonks player_id
+  // (squad saves p.id = supabase int id, not api_player_id)
+  var playersRes = await db.from('players').select('id,api_player_id');
+  var supaIdToSmId = {};
+  (playersRes.data||[]).forEach(function(p) {
+    if (p.api_player_id) supaIdToSmId[String(p.id)] = String(p.api_player_id);
+  });
+
+  // Process each user's squad
   var prRes = await db.from('profiles').select('id,squad');
-  for (var i=0;i<(prRes.data||[]).length;i++) {
-    var pr=prRes.data[i]; if(!pr.squad||!Array.isArray(pr.squad)) continue;
-    var pts=0;
-    for (var j=0;j<pr.squad.length;j++) {
-      var sp=pr.squad[j];
-      var ms=statsRows.find(function(s){return String(s.player_id)===String(sp.api_player_id)||String(s.player_id)===String(sp.player_id);});
-      if (!ms) continue;
-      pts += sp.is_captain ? (ms.fantasy_points||0)*2 : (ms.fantasy_points||0);
+  for (var pi=0; pi<(prRes.data||[]).length; pi++) {
+    var pr = prRes.data[pi];
+    if (!pr.squad||!Array.isArray(pr.squad)||!pr.squad.length) continue;
+
+    var totalPts = 0;
+    for (var j=0; j<pr.squad.length; j++) {
+      var sp = pr.squad[j];
+      // Squad stores p.id (supabase int) — look up sportmonks id via map
+      var smId = supaIdToSmId[String(sp.id)] || String(sp.api_player_id||'');
+      var playerPts = smIdTotals[smId] || 0;
+      if (!playerPts) continue;
+      // Apply captain bonus
+      totalPts += (sp.isCaptain||sp.is_captain) ? playerPts*2 : playerPts;
     }
-    if (pts>0) {
-      await db.from('user_gw_points').upsert({ user_id:pr.id,gw_id:gw.id,gw_number:gw.number,points:pts,updated_at:new Date().toISOString() },{ onConflict:'user_id,gw_id' });
-      var hist = await db.from('user_gw_points').select('points').eq('user_id',pr.id);
-      var total = (hist.data||[]).reduce(function(s,r){return s+(r.points||0);},0);
-      await db.from('profiles').update({ gw_points:pts,total_points:total,updated_at:new Date().toISOString() }).eq('id',pr.id);
+
+    if (totalPts > 0) {
+      // Upsert GW points record
+      await db.from('user_gw_points').upsert({
+        user_id: pr.id, gw_id: gw.id, gw_number: gw.number,
+        points: totalPts, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,gw_id' });
+
+      // Update profile totals
+      await db.from('profiles').update({
+        gw_points: totalPts,
+        total_points: totalPts,
+        updated_at: new Date().toISOString()
+      }).eq('id', pr.id);
     }
   }
 }
