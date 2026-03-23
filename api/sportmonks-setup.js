@@ -252,8 +252,27 @@ module.exports = async (req, res) => {
       report.results.total_found = allPlayers.length;
       report.summary = imported > 0 ? '✅ Imported ' + imported + ' players into Supabase' : '❌ Import failed';
 
+    } else if (action === 'teams') {
+      // Show exact Sportmonks team names + IDs for season
+      const sid = req.query.season_id || await autoGetSeasonId();
+      const teamsData = await smGet('/teams/seasons/' + sid + '?per_page=25');
+      report.results = {
+        season_id: sid,
+        teams: (teamsData.data || []).map(function(t) {
+          return { id: t.id, name: t.name, short_name: t.short_name || '' };
+        })
+      };
+
+    } else if (action === 'standings_raw') {
+      // Show what is currently in Supabase standings table
+      const { createClient } = require('@supabase/supabase-js');
+      const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data, error } = await db.from('standings').select('id,team_name,position,points,played').order('position');
+      if (error) throw new Error('standings query: ' + error.message);
+      report.results = { count: (data||[]).length, standings: data };
+
     } else {
-      return res.status(400).json({ error: 'Unknown action. Use: diagnose, fixtures, players, import_players' });
+      return res.status(400).json({ error: 'Unknown action. Use: diagnose, fixtures, players, import_players, teams, standings_raw' });
     }
 
   } catch(err) {
