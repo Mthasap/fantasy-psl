@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-const { calculateFantasyPoints } = require('./football_scoring');
 const { getSeasonId } = require('./season-helper');
 
 const TOKEN  = process.env.SPORTMONKS_TOKEN;
@@ -16,6 +15,7 @@ module.exports = async (req, res) => {
     const seasonId = await getSeasonId(db, TOKEN);
     log.push("Season ID: " + seasonId);
 
+    // 🔁 STEP 1: FETCH FINISHED FIXTURES
     const fixturesRes = await fetch(
       `${BASE}/fixtures?filters=fixtureSeasons:${seasonId};fixtureStates:5&per_page=50&api_token=${TOKEN}`
     );
@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
 
     let statsInserted = 0;
 
+    // 🔁 STEP 2: BUILD PLAYER MATCH STATS
     for (const f of fixtures) {
       const statsRes = await fetch(
         `${BASE}/fixtures/${f.id}?include=events&api_token=${TOKEN}`
@@ -35,7 +36,6 @@ module.exports = async (req, res) => {
 
       const events = statsJson.data.events || [];
 
-      // ✅ AGGREGATE PLAYER STATS PER FIXTURE
       let playerMap = {};
 
       for (const e of events) {
@@ -44,10 +44,7 @@ module.exports = async (req, res) => {
         const pid = e.player_id;
 
         if (!playerMap[pid]) {
-          playerMap[pid] = {
-            goals: 0,
-            assists: 0
-          };
+          playerMap[pid] = { goals: 0, assists: 0 };
         }
 
         const type = (e.type || '').toLowerCase();
@@ -61,7 +58,7 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ✅ SAVE AGGREGATED DATA
+      // 💾 SAVE MATCH STATS
       for (const pid in playerMap) {
         await db.from('player_match_stats').upsert({
           fixture_id: f.id,
@@ -82,26 +79,32 @@ module.exports = async (req, res) => {
 
     log.push("Stats inserted: " + statsInserted);
 
-    // ✅ CALCULATE TOTAL POINTS
+    // 🔁 STEP 3: CALCULATE POINTS (SIMPLE + RELIABLE)
     const { data: stats } = await db.from('player_match_stats').select('*');
 
     let playersMap = {};
 
     for (const s of stats || []) {
-      const result = calculateFantasyPoints({
-        minutes: 90,
-        goals: s.goals || 0,
-        assists: s.assists || 0,
-        saves: 0,
-        goalsConceded: 0,
-        pos: 'MID'
-      });
+      let points = 0;
+
+      // ✅ ALWAYS give appearance points
+      points += 2;
+
+      // ✅ Goals
+      if (s.goals) {
+        points += s.goals * 5;
+      }
+
+      // ✅ Assists
+      if (s.assists) {
+        points += s.assists * 3;
+      }
 
       if (!playersMap[s.player_id]) {
         playersMap[s.player_id] = 0;
       }
 
-      playersMap[s.player_id] += result.total;
+      playersMap[s.player_id] += points;
     }
 
     let playersScored = 0;
