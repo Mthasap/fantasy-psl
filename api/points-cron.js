@@ -16,34 +16,39 @@ module.exports = async (req, res) => {
     const seasonId = await getSeasonId(db, TOKEN);
     log.push("Season ID: " + seasonId);
 
-    // ✅ STEP 1: GET FINISHED FIXTURES
+    // ✅ GET FINISHED FIXTURES
     const fixturesRes = await fetch(
-      `${BASE}/fixtures?filters=fixtureSeasons:${seasonId};fixtureStates:5&include=participants;scores&per_page=50&api_token=${TOKEN}`
+      `${BASE}/fixtures?filters=fixtureSeasons:${seasonId};fixtureStates:5&per_page=50&api_token=${TOKEN}`
     );
-    const fixturesData = await fixturesRes.json();
+    const fixturesJson = await fixturesRes.json();
+    const fixtures = fixturesJson.data || [];
 
     let statsInserted = 0;
 
-    // ✅ STEP 2: LOOP FIXTURES → FETCH PLAYER STATS
-    for (const f of fixturesData.data || []) {
+    // ✅ LOOP FIXTURES
+    for (const f of fixtures) {
       const statsRes = await fetch(
-        `${BASE}/fixtures/${f.id}?include=players.statistics&api_token=${TOKEN}`
+        `${BASE}/fixtures/${f.id}?include=participants;events;statistics&api_token=${TOKEN}`
       );
+
       const statsJson = await statsRes.json();
 
-      const players = statsJson.data.players || [];
+      if (!statsJson || !statsJson.data) continue;
 
-      for (const p of players) {
-        const s = p.statistics || {};
+      const events = statsJson.data.events || [];
+
+      // ✅ EXTRACT FROM EVENTS (goals, assists)
+      for (const e of events) {
+        if (!e.player_id) continue;
 
         const row = {
           fixture_id: f.id,
-          player_id: p.id,
-          minutes: s.minutes || 0,
-          goals: s.goals || 0,
-          assists: s.assists || 0,
-          saves: s.saves || 0,
-          goalsConceded: s.goals_conceded || 0,
+          player_id: e.player_id,
+          goals: e.type === 'goal' ? 1 : 0,
+          assists: e.assist_id ? 1 : 0,
+          minutes: 90,
+          saves: 0,
+          goalsConceded: 0,
           updated_at: new Date()
         };
 
@@ -57,7 +62,7 @@ module.exports = async (req, res) => {
 
     log.push("Stats inserted: " + statsInserted);
 
-    // ✅ STEP 3: CALCULATE POINTS
+    // ✅ CALCULATE POINTS
     const { data: stats } = await db.from('player_match_stats').select('*');
 
     let playersScored = 0;
