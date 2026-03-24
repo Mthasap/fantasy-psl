@@ -25,10 +25,10 @@ module.exports = async (req, res) => {
 
     let statsInserted = 0;
 
-    // ✅ LOOP FIXTURES → EXTRACT EVENTS
+    // ✅ LOOP FIXTURES → EXTRACT EVENTS SAFELY
     for (const f of fixtures) {
       const statsRes = await fetch(
-        `${BASE}/fixtures/${f.id}?include=participants;events&api_token=${TOKEN}`
+        `${BASE}/fixtures/${f.id}?include=events&api_token=${TOKEN}`
       );
 
       const statsJson = await statsRes.json();
@@ -40,10 +40,16 @@ module.exports = async (req, res) => {
       for (const e of events) {
         if (!e.player_id) continue;
 
+        // ✅ SAFE GOAL DETECTION (handles all types)
+        const isGoal =
+          e.type &&
+          typeof e.type === 'string' &&
+          e.type.toLowerCase().includes('goal');
+
         const row = {
           fixture_id: f.id,
           player_id: e.player_id,
-          goals: e.type === 'goal' ? 1 : 0,
+          goals: isGoal ? 1 : 0,
           assists: e.assist_id ? 1 : 0,
           minutes: 90,
           saves: 0,
@@ -61,19 +67,19 @@ module.exports = async (req, res) => {
 
     log.push("Stats inserted: " + statsInserted);
 
-    // ✅ FIXED POINTS CALCULATION (ACCUMULATED)
+    // ✅ CALCULATE POINTS (ACCUMULATED CORRECTLY)
     const { data: stats } = await db.from('player_match_stats').select('*');
 
     let playersMap = {};
 
     for (const s of stats || []) {
       const result = calculateFantasyPoints({
-        minutes: s.minutes || 90,
+        minutes: (s.minutes && s.minutes > 0) ? s.minutes : 90,
         goals: s.goals || 0,
         assists: s.assists || 0,
         saves: s.saves || 0,
         goalsConceded: s.goalsConceded || 0,
-        pos: 'MID'
+        pos: 'MID' // fallback (we will improve later)
       });
 
       if (!playersMap[s.player_id]) {
