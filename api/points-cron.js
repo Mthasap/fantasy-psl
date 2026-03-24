@@ -255,7 +255,7 @@ module.exports = async (req, res) => {
       } catch(e) { log.push('Fixture '+(fix.sportmonks_id||fix.id)+' error: '+e.message); }
     }
 
-    // ── Update user GW points (once, after all fixtures scored) ─────────
+    // ── Update user GW points (always runs — even if no new fixtures scored) ─
     try {
       await updateUserGWPoints(db);
       log.push('User GW points updated');
