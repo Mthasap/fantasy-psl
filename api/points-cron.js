@@ -109,161 +109,116 @@ module.exports = async (req, res) => {
     } // end sync step
 
     if (step === 'all' || step === 'score') {
-    // ── Score completed matches ───────────────────────────────────────────
-    // Admin run: score ALL unscored FT fixtures (no date limit)
-    // Cron run:  only fixtures from last 3 days (saves API calls)
-    // ?force=true: re-score even already-scored fixtures (full reset)
+    // ── Calculate fantasy points from existing player_match_stats ─────────
+    // NO Sportmonks API calls — uses data already in DB from previous runs
+    // This avoids all timeout issues on Vercel free tier
+
     var forceRescore = req.query && req.query.force === 'true';
-    var compQuery = db.from('fixtures')
-      .select('id,sportmonks_id,status,kickoff_at,home_score,away_score')
-      .eq('status','FT')
-      .not('sportmonks_id','is',null)
-      .order('kickoff_at',{ ascending:false });
 
-    // Nightly cron only looks at recent fixtures to save API calls
-    if (!isAdmin) {
-      var threeDaysAgo = new Date(Date.now() - 3*24*60*60*1000).toISOString();
-      compQuery = compQuery.gte('kickoff_at', threeDaysAgo);
+    // Get all rows from player_match_stats that need points calculated
+    // (where fantasy_points is 0 or null, unless force=true)
+    var pmsQuery = db.from('player_match_stats')
+      .select('id,fixture_id,player_id,player_name,team_name,position,minutes,goals,assists,yellow_cards,red_cards,saves,pen_saved,pen_missed,goals_conceded,fantasy_points')
+      .limit(2000);
+
+    if (!forceRescore) {
+      pmsQuery = pmsQuery.eq('fantasy_points', 0);
     }
 
-    var compRes = await compQuery;
-    var completed = compRes.data || [];
+    var pmsRes = await pmsQuery;
+    var pmsRows = pmsRes.data || [];
+    log.push('player_match_stats rows to score: ' + pmsRows.length);
+
+    if (!pmsRows.length && !forceRescore) {
+      log.push('All players already have points — use ?force=true to recalculate');
+    }
+
     var pointsProcessed = 0;
-    log.push('FT fixtures to process: ' + completed.length);
+    var updateBatch = [];
 
-    for (var fi = 0; fi < completed.length; fi++) {
-      var fix = completed[fi];
-      try {
-        // Use sportmonks_id for API calls (fix.id is Supabase auto-increment)
-        var smId = fix.sportmonks_id || fix.id;
+    for (var pi2 = 0; pi2 < pmsRows.length; pi2++) {
+      var row = pmsRows[pi2];
+      var result = calculateFantasyPoints({
+        minutes:       row.minutes       || 0,
+        goals:         row.goals         || 0,
+        assists:       row.assists       || 0,
+        goalsConceded: row.goals_conceded|| 0,
+        saves:         row.saves         || 0,
+        penSaved:      row.pen_saved     || 0,
+        penMissed:     row.pen_missed    || 0,
+        yellowCards:   row.yellow_cards  || 0,
+        redCards:      row.red_cards     || 0,
+        pos:           row.position      || 'MID'
+      });
 
-        // Skip already-scored fixtures unless force=true
-        if (!forceRescore) {
-          var existRes = await db.from('player_match_stats').select('id').eq('fixture_id', smId).limit(1);
-          if (existRes.data && existRes.data.length) {
-            // silently skip — no log spam on admin run
-            continue;
-          }
-        }
-
-        var fData = await smGet(
-          '/fixtures/' + smId +
-          '?include=events.type;lineups.player;lineups.position;statistics.type;participants'
-        );
-        var fixture = fData.data;
-        if (!fixture) { log.push('Fixture '+smId+': no data returned'); continue; }
-
-        var participants = fixture.participants || [];
-        var homePart = participants.find(function(p){ return p.meta&&p.meta.location==='home'; });
-
-        // If no lineups returned, plan may not include lineup data — skip gracefully
-        if (!fixture.lineups || !fixture.lineups.length) {
-          log.push('Fixture '+smId+': no lineup data (check Sportmonks plan includes lineups)');
-          continue;
-        }
-
-        // Build player map from lineups
-        var playerMap = {};
-        (fixture.lineups || []).forEach(function(ln) {
-          var p = ln.player || {};
-          if (!p.id) return;
-          var team   = participants.find(function(t){ return t.id === ln.team_id; });
-          var pos    = normalisePosition((ln.position&&(ln.position.name||ln.position.developer_name))||'');
-          var isHome = homePart && team && team.id === homePart.id;
-          var conc   = isHome ? (fix.away_score||0) : (fix.home_score||0);
-          var isSub  = !!ln.is_substitute;
-          var minIn  = ln.player_in_minute !== null && ln.player_in_minute !== undefined ? ln.player_in_minute : (isSub ? null : 0);
-          var minOut = ln.player_out_minute || 90;
-          var mins   = minIn !== null ? Math.max(0, minOut - minIn) : (isSub ? 0 : 90);
-          playerMap[p.id] = {
-            player_id:p.id, fixture_id:smId,
-            player_name:p.display_name||p.name||'Unknown',
-            team_name:(team&&team.name)||'',
-            position:pos, minutes:mins,
-            goals:0, assists:0, yellow_cards:0, red_cards:0,
-            saves:0, pen_saved:0, pen_missed:0,
-            goals_conceded:(pos==='GK'||pos==='DEF') ? conc : 0
-          };
-        });
-
-        // Events → stats
-        (fixture.events || []).forEach(function(ev) {
-          var tid  = (ev.type&&ev.type.id)||ev.type_id;
-          var dn   = ((ev.type&&ev.type.developer_name)||'').toUpperCase();
-          var pid  = ev.player_id||(ev.player&&ev.player.id);
-          var rpid = ev.related_player_id||(ev.related_player&&ev.related_player.id);
-
-          if (tid===16||tid===19||dn==='GOAL'||dn==='GOAL_NORMAL'||dn==='GOAL_PENALTY') {
-            if (pid  && playerMap[pid])  playerMap[pid].goals++;
-            if (rpid && playerMap[rpid]) playerMap[rpid].assists++;
-          } else if (tid===20||dn==='MISSED_PENALTY'||dn==='PENALTY_MISSED') {
-            if (pid && playerMap[pid]) playerMap[pid].pen_missed++;
-          } else if (tid===58||dn==='PENALTY_SAVED') {
-            if (pid && playerMap[pid]) playerMap[pid].pen_saved++;
-          } else if (tid===84||dn==='YELLOWCARD'||dn==='YELLOW_CARD') {
-            if (pid && playerMap[pid]) playerMap[pid].yellow_cards++;
-          } else if (tid===83||dn==='REDCARD'||dn==='RED_CARD'||dn==='YELLOWRED'||dn==='YELLOW_RED_CARD') {
-            if (pid && playerMap[pid]) playerMap[pid].red_cards++;
-          }
-        });
-
-        // Statistics → saves
-        (fixture.statistics || []).forEach(function(stat) {
-          var tn = ((stat.type&&stat.type.developer_name)||'').toUpperCase();
-          if (tn==='SAVES'||tn==='GOALKEEPER_SAVES') {
-            var pid = stat.player_id||(stat.player&&stat.player.id);
-            if (pid && playerMap[pid]) playerMap[pid].saves = (stat.value&&stat.value.total)||0;
-          }
-        });
-
-        // Calculate points
-        var statsRows = [];
-        Object.keys(playerMap).forEach(function(key) {
-          var p = playerMap[key];
-          var r = calculateFantasyPoints({
-            minutes:p.minutes, goals:p.goals, assists:p.assists,
-            goalsConceded:p.goals_conceded, saves:p.saves,
-            penSaved:p.pen_saved, penMissed:p.pen_missed,
-            yellowCards:p.yellow_cards, redCards:p.red_cards, pos:p.position
-          });
-          statsRows.push(Object.assign({},p,{
-            fantasy_points:r.total, points_breakdown:r.breakdown,
-            updated_at:new Date().toISOString()
-          }));
-        });
-
-        if (statsRows.length) {
-          await db.from('player_match_stats').upsert(statsRows,{ onConflict:'fixture_id,player_id' });
-        }
-
-        // Update season totals on players table
-        for (var ri = 0; ri < statsRows.length; ri++) {
-          var row = statsRows[ri];
-          var fr = await db.from('players')
-            .select('id,goals,assists,yellow_cards,red_cards,apps,clean_sheets,total_points')
-            .eq('api_player_id',String(row.player_id)).limit(1);
-          if (!fr.data||!fr.data.length) continue;
-          var ex = fr.data[0];
-          var cs = (row.goals_conceded===0&&row.minutes>=60&&(row.position==='GK'||row.position==='DEF'))?1:0;
-          await db.from('players').update({
-            goals:       (ex.goals       ||0)+row.goals,
-            assists:     (ex.assists     ||0)+row.assists,
-            yellow_cards:(ex.yellow_cards||0)+row.yellow_cards,
-            red_cards:   (ex.red_cards   ||0)+row.red_cards,
-            clean_sheets:(ex.clean_sheets||0)+cs,
-            apps:        (ex.apps        ||0)+(row.minutes>0?1:0),
-            total_points:(ex.total_points||0)+row.fantasy_points,
-            updated_at:  new Date().toISOString()
-          }).eq('id',ex.id);
-        }
-
-        pointsProcessed += statsRows.length;
-        log.push('Fixture '+smId+': scored '+statsRows.length+' players');
-
-      } catch(e) { log.push('Fixture '+(fix.sportmonks_id||fix.id)+' error: '+e.message); }
+      if (result.total !== row.fantasy_points) {
+        updateBatch.push({ id: row.id, fantasy_points: result.total, points_breakdown: result.breakdown });
+      }
+      pointsProcessed++;
     }
 
+    // Bulk update fantasy_points
+    log.push('Updating ' + updateBatch.length + ' player point values');
+    for (var ub = 0; ub < updateBatch.length; ub++) {
+      await db.from('player_match_stats').update({
+        fantasy_points:   updateBatch[ub].fantasy_points,
+        points_breakdown: updateBatch[ub].points_breakdown,
+        updated_at:       new Date().toISOString()
+      }).eq('id', updateBatch[ub].id);
+    }
+
+    // Update players table season totals from player_match_stats
+    if (updateBatch.length > 0 || forceRescore) {
+      // Reset player season stats then sum from player_match_stats
+      var resetRes = await db.from('players').update({
+        goals: 0, assists: 0, yellow_cards: 0, red_cards: 0,
+        clean_sheets: 0, apps: 0, total_points: 0,
+        updated_at: new Date().toISOString()
+      }).gte('id', 0); // update all
+      if (resetRes.error) log.push('Reset error: ' + resetRes.error.message);
+
+      // Get all stats grouped by player
+      var allStatsRes = await db.from('player_match_stats')
+        .select('player_id,minutes,goals,assists,yellow_cards,red_cards,saves,goals_conceded,fantasy_points,position')
+        .limit(2000);
+
+      var playerTotals = {};
+      (allStatsRes.data || []).forEach(function(r) {
+        var pid = String(r.player_id);
+        if (!playerTotals[pid]) playerTotals[pid] = { goals:0,assists:0,yellow_cards:0,red_cards:0,apps:0,clean_sheets:0,total_points:0 };
+        var t = playerTotals[pid];
+        t.goals        += r.goals         || 0;
+        t.assists      += r.assists       || 0;
+        t.yellow_cards += r.yellow_cards  || 0;
+        t.red_cards    += r.red_cards     || 0;
+        t.total_points += r.fantasy_points|| 0;
+        if ((r.minutes||0) > 0) t.apps++;
+        var pos = r.position || '';
+        if (r.goals_conceded === 0 && (r.minutes||0) >= 60 && (pos==='GK'||pos==='DEF')) t.clean_sheets++;
+      });
+
+      // Update each player in the players table
+      var playerIds = Object.keys(playerTotals);
+      log.push('Updating season totals for ' + playerIds.length + ' players');
+      for (var pk = 0; pk < playerIds.length; pk++) {
+        var pid = playerIds[pk];
+        var tot = playerTotals[pid];
+        await db.from('players').update({
+          goals:        tot.goals,
+          assists:      tot.assists,
+          yellow_cards: tot.yellow_cards,
+          red_cards:    tot.red_cards,
+          clean_sheets: tot.clean_sheets,
+          apps:         tot.apps,
+          total_points: tot.total_points,
+          updated_at:   new Date().toISOString()
+        }).eq('api_player_id', pid);
+      }
+    }
+
+    log.push('Players scored: ' + pointsProcessed);
     } // end score step
+
 
     // ── Update user GW points ─────────────────────────────────────────────
     if (step === 'all' || step === 'score' || step === 'points') {
