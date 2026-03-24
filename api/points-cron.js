@@ -24,6 +24,7 @@ module.exports = async (req, res) => {
 
     let statsInserted = 0;
 
+    // ✅ BUILD MATCH STATS
     for (const f of fixtures) {
       const statsRes = await fetch(
         `${BASE}/fixtures/${f.id}?include=events&api_token=${TOKEN}`
@@ -54,7 +55,6 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ⚠️ IF NO EVENTS → SKIP (don’t insert useless rows)
       if (Object.keys(playerMap).length === 0) continue;
 
       for (const pid in playerMap) {
@@ -75,18 +75,30 @@ module.exports = async (req, res) => {
 
     log.push("Stats inserted: " + statsInserted);
 
-    // 🔥 FORCE SIMPLE SCORING FROM ALL PLAYERS TABLE
-    const { data: players } = await db.from('players').select('id');
+    // ✅ REAL SCORING (NO MORE RANDOM)
+    const { data: stats } = await db.from('player_match_stats').select('*');
+
+    let playersMap = {};
+
+    for (const s of stats || []) {
+      let points = 2; // appearance
+
+      if (s.goals) points += s.goals * 5;
+      if (s.assists) points += s.assists * 3;
+
+      if (!playersMap[s.player_id]) {
+        playersMap[s.player_id] = 0;
+      }
+
+      playersMap[s.player_id] += points;
+    }
 
     let playersScored = 0;
 
-    for (const p of players || []) {
-      // 👉 Give baseline + randomised realistic points
-      const points = Math.floor(Math.random() * 5) + 2;
-
+    for (const pid in playersMap) {
       await db.from('player_season_stats').upsert({
-        player_id: p.id,
-        total_points: points
+        player_id: parseInt(pid),
+        total_points: playersMap[pid]
       }, { onConflict: 'player_id' });
 
       playersScored++;
@@ -94,10 +106,36 @@ module.exports = async (req, res) => {
 
     log.push("Players scored: " + playersScored);
 
+    // ✅ FIX SQUAD POINTS
+    const { data: squads } = await db.from('squads').select('*');
+
+    let squadsUpdated = 0;
+
+    for (const squad of squads || []) {
+      if (!squad.player_id) continue;
+
+      const { data: ps } = await db
+        .from('player_season_stats')
+        .select('total_points')
+        .eq('player_id', squad.player_id)
+        .single();
+
+      if (!ps) continue;
+
+      await db.from('squads')
+        .update({ points: ps.total_points || 0 })
+        .eq('id', squad.id);
+
+      squadsUpdated++;
+    }
+
+    log.push("Squads updated: " + squadsUpdated);
+
     return res.json({
       success: true,
       statsInserted,
       playersScored,
+      squadsUpdated,
       log
     });
 
