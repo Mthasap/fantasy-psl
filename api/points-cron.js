@@ -257,8 +257,8 @@ module.exports = async (req, res) => {
 
     // ── Update user GW points (always runs — even if no new fixtures scored) ─
     try {
-      await updateUserGWPoints(db);
-      log.push('User GW points updated');
+      var gwDbg = await updateUserGWPoints(db);
+      (gwDbg||[]).forEach(function(l){ log.push('GWpts: '+l); });
     } catch(e) { log.push('GW points error: '+e.message); }
 
     // ── Top scorers (weekly) ──────────────────────────────────────────────
@@ -303,35 +303,33 @@ module.exports = async (req, res) => {
 
 // ── User GW points — aggregates ALL fixtures, called once after scoring ──
 async function updateUserGWPoints(db) {
+  var dbg = [];
   var gwRes = await db.from('gameweeks').select('id,number').eq('is_current',true).limit(1);
-  if (!gwRes.data||!gwRes.data.length) {
-    console.log('[GW points] No current gameweek — skipping'); return;
-  }
+  if (!gwRes.data||!gwRes.data.length) { dbg.push('No current GW'); return dbg; }
   var gw = gwRes.data[0];
-  console.log('[GW points] GW:', gw.number);
+  dbg.push('GW: '+gw.number);
 
-  // All scored player stats: sportmonks player_id → total fantasy points
   var statsRes = await db.from('player_match_stats').select('player_id,fantasy_points');
   var allStats = statsRes.data || [];
-  console.log('[GW points] player_match_stats rows:', allStats.length);
+  dbg.push('player_match_stats rows: '+allStats.length);
 
   var smIdTotals = {};
   for (var i=0; i<allStats.length; i++) {
     var key = String(allStats[i].player_id);
     smIdTotals[key] = (smIdTotals[key]||0) + (allStats[i].fantasy_points||0);
   }
-  console.log('[GW points] Unique players scored:', Object.keys(smIdTotals).length);
+  dbg.push('Unique players with points: '+Object.keys(smIdTotals).length);
 
-  // Map: supabase players.id (int) → sportmonks api_player_id
   var playersRes = await db.from('players').select('id,api_player_id');
   var supaToSm = {};
   (playersRes.data||[]).forEach(function(p) {
     if (p.api_player_id) supaToSm[String(p.id)] = String(p.api_player_id);
   });
-  console.log('[GW points] Players table rows with api_player_id:', Object.keys(supaToSm).length);
+  dbg.push('Players with api_player_id: '+Object.keys(supaToSm).length);
 
   var prRes = await db.from('profiles').select('id,squad');
   var profiles = prRes.data || [];
+  dbg.push('Profiles to process: '+profiles.length);
   var updated = 0;
 
   for (var pi=0; pi<profiles.length; pi++) {
@@ -347,25 +345,25 @@ async function updateUserGWPoints(db) {
       matched++;
       totalPts += (sp.isCaptain||sp.is_captain) ? pts*2 : pts;
     }
-    console.log('[GW points] Profile', String(pr.id).substring(0,8),
-      'squad:', pr.squad.length, 'matched:', matched, 'pts:', totalPts);
+    dbg.push('Profile '+String(pr.id).substring(0,8)+' squad:'+pr.squad.length+' matched:'+matched+' pts:'+totalPts);
 
     if (totalPts > 0) {
       var ur = await db.from('user_gw_points').upsert({
         user_id:pr.id, gw_id:gw.id, gw_number:gw.number,
         points:totalPts, updated_at:new Date().toISOString()
       }, { onConflict:'user_id,gw_number' });
-      if (ur.error) console.log('[GW points] upsert error:', ur.error.message);
+      if (ur.error) dbg.push('upsert error: '+ur.error.message);
 
       var pr2 = await db.from('profiles').update({
         gw_points:totalPts, total_points:totalPts,
         updated_at:new Date().toISOString()
       }).eq('id',pr.id);
-      if (pr2.error) console.log('[GW points] profile error:', pr2.error.message);
+      if (pr2.error) dbg.push('profile error: '+pr2.error.message);
       updated++;
     }
   }
-  console.log('[GW points] Profiles updated:', updated);
+  dbg.push('Profiles updated: '+updated);
+  return dbg;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
