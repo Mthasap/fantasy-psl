@@ -22,8 +22,13 @@ module.exports = async (req, res) => {
   if (!TOKEN)              return res.status(500).json({ error:'SPORTMONKS_TOKEN missing' });
   if (!SB_URL || !SB_KEY)  return res.status(500).json({ error:'Supabase env vars missing' });
 
-  var db  = createClient(SB_URL, SB_KEY);
-  var log = [];
+  var db   = createClient(SB_URL, SB_KEY);
+  var log  = [];
+  // ?step=sync  → only sync fixtures+standings (fast)
+  // ?step=score → only score players (slow, makes many API calls)
+  // ?step=points → only update user GW points (fast, no API calls)
+  // no step → run all (used by nightly cron)
+  var step = (req.query && req.query.step) || 'all';
 
   try {
     // ── Season ID ─────────────────────────────────────────────────────────
@@ -33,7 +38,8 @@ module.exports = async (req, res) => {
       : await getSeasonId(db, TOKEN);
     log.push('Season ID: ' + seasonId);
 
-    // ── Sync upcoming fixtures ────────────────────────────────────────────
+    // ── Steps: sync + standings ──────────────────────────────────────────
+    if (step === 'all' || step === 'sync') {
     // fixtureStates:1 = Not Started / scheduled
     var upCount = 0;
     try {
@@ -100,7 +106,9 @@ module.exports = async (req, res) => {
       }
       log.push('Standings: ' + standCount + ' teams');
     } catch(e) { log.push('Standings error: ' + e.message); }
+    } // end sync step
 
+    if (step === 'all' || step === 'score') {
     // ── Score completed matches ───────────────────────────────────────────
     // Admin run: score ALL unscored FT fixtures (no date limit)
     // Cron run:  only fixtures from last 3 days (saves API calls)
@@ -255,12 +263,17 @@ module.exports = async (req, res) => {
       } catch(e) { log.push('Fixture '+(fix.sportmonks_id||fix.id)+' error: '+e.message); }
     }
 
-    // ── Update user GW points (always runs — even if no new fixtures scored) ─
+    } // end score step
+
+    // ── Update user GW points ─────────────────────────────────────────────
+    if (step === 'all' || step === 'score' || step === 'points') {
     try {
       var gwDbg = await updateUserGWPoints(db);
       (gwDbg||[]).forEach(function(l){ log.push('GWpts: '+l); });
     } catch(e) { log.push('GW points error: '+e.message); }
+    } // end points step
 
+    if (step === 'all' || step === 'sync') {
     // ── Top scorers (weekly) ──────────────────────────────────────────────
     var scorersSynced = false;
     try {
@@ -286,6 +299,7 @@ module.exports = async (req, res) => {
         await db.from('api_cache').upsert({ key:'topscorers_last_sync', value:new Date().toISOString(), updated_at:new Date().toISOString() },{ onConflict:'key' });
       }
     } catch(e) { log.push('Top scorers error: '+e.message); }
+    } // end topscorers sync step
 
     return res.json({
       success:true, season_id:seasonId,
@@ -304,40 +318,57 @@ module.exports = async (req, res) => {
 // ── User GW points — aggregates ALL fixtures, called once after scoring ──
 async function updateUserGWPoints(db) {
   var dbg = [];
+
+  // Get current GW
   var gwRes = await db.from('gameweeks').select('id,number').eq('is_current',true).limit(1);
-  if (!gwRes.data||!gwRes.data.length) { dbg.push('No current GW'); return dbg; }
+  if (!gwRes.data||!gwRes.data.length) { dbg.push('No current GW found'); return dbg; }
   var gw = gwRes.data[0];
   dbg.push('GW: '+gw.number);
 
-  var statsRes = await db.from('player_match_stats').select('player_id,fantasy_points');
-  var allStats = statsRes.data || [];
-  dbg.push('player_match_stats rows: '+allStats.length);
-
+  // Fetch player totals in pages to avoid Supabase 1000-row default limit
   var smIdTotals = {};
-  for (var i=0; i<allStats.length; i++) {
-    var key = String(allStats[i].player_id);
-    smIdTotals[key] = (smIdTotals[key]||0) + (allStats[i].fantasy_points||0);
+  var page = 0;
+  var pageSize = 1000;
+  while (true) {
+    var statsRes = await db.from('player_match_stats')
+      .select('player_id,fantasy_points')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    var rows = statsRes.data || [];
+    if (!rows.length) break;
+    for (var i = 0; i < rows.length; i++) {
+      var key = String(rows[i].player_id);
+      smIdTotals[key] = (smIdTotals[key]||0) + (rows[i].fantasy_points||0);
+    }
+    if (rows.length < pageSize) break;
+    page++;
   }
   dbg.push('Unique players with points: '+Object.keys(smIdTotals).length);
 
-  var playersRes = await db.from('players').select('id,api_player_id');
+  if (!Object.keys(smIdTotals).length) {
+    dbg.push('No scored players found — run step=score first');
+    return dbg;
+  }
+
+  // Map: supabase players.id → sportmonks api_player_id
+  var playersRes = await db.from('players').select('id,api_player_id').limit(2000);
   var supaToSm = {};
   (playersRes.data||[]).forEach(function(p) {
     if (p.api_player_id) supaToSm[String(p.id)] = String(p.api_player_id);
   });
   dbg.push('Players with api_player_id: '+Object.keys(supaToSm).length);
 
-  var prRes = await db.from('profiles').select('id,squad');
+  // Get all profiles with squads
+  var prRes = await db.from('profiles').select('id,squad').limit(500);
   var profiles = prRes.data || [];
-  dbg.push('Profiles to process: '+profiles.length);
-  var updated = 0;
+  dbg.push('Profiles: '+profiles.length);
 
-  for (var pi=0; pi<profiles.length; pi++) {
+  var updated = 0;
+  for (var pi = 0; pi < profiles.length; pi++) {
     var pr = profiles[pi];
     if (!pr.squad||!Array.isArray(pr.squad)||!pr.squad.length) continue;
 
     var totalPts = 0, matched = 0;
-    for (var j=0; j<pr.squad.length; j++) {
+    for (var j = 0; j < pr.squad.length; j++) {
       var sp = pr.squad[j];
       var smId = supaToSm[String(sp.id)] || String(sp.api_player_id||'');
       var pts = smIdTotals[smId] || 0;
@@ -345,20 +376,20 @@ async function updateUserGWPoints(db) {
       matched++;
       totalPts += (sp.isCaptain||sp.is_captain) ? pts*2 : pts;
     }
-    dbg.push('Profile '+String(pr.id).substring(0,8)+' squad:'+pr.squad.length+' matched:'+matched+' pts:'+totalPts);
+    dbg.push('Profile '+String(pr.id).substring(0,8)+' matched:'+matched+'/'+pr.squad.length+' pts:'+totalPts);
 
     if (totalPts > 0) {
       var ur = await db.from('user_gw_points').upsert({
         user_id:pr.id, gw_id:gw.id, gw_number:gw.number,
         points:totalPts, updated_at:new Date().toISOString()
       }, { onConflict:'user_id,gw_number' });
-      if (ur.error) dbg.push('upsert error: '+ur.error.message);
+      if (ur.error) dbg.push('upsert err: '+ur.error.message);
 
-      var pr2 = await db.from('profiles').update({
+      var upRes = await db.from('profiles').update({
         gw_points:totalPts, total_points:totalPts,
         updated_at:new Date().toISOString()
       }).eq('id',pr.id);
-      if (pr2.error) dbg.push('profile error: '+pr2.error.message);
+      if (upRes.error) dbg.push('profile err: '+upRes.error.message);
       updated++;
     }
   }
