@@ -16,48 +16,63 @@ module.exports = async (req, res) => {
     const seasonId = await getSeasonId(db, TOKEN);
     log.push("Season ID: " + seasonId);
 
-    // ✅ GET FINISHED FIXTURES
     const fixturesRes = await fetch(
       `${BASE}/fixtures?filters=fixtureSeasons:${seasonId};fixtureStates:5&per_page=50&api_token=${TOKEN}`
     );
+
     const fixturesJson = await fixturesRes.json();
     const fixtures = fixturesJson.data || [];
 
     let statsInserted = 0;
 
-    // ✅ LOOP FIXTURES → EXTRACT EVENTS SAFELY
     for (const f of fixtures) {
       const statsRes = await fetch(
         `${BASE}/fixtures/${f.id}?include=events&api_token=${TOKEN}`
       );
 
       const statsJson = await statsRes.json();
-
       if (!statsJson || !statsJson.data) continue;
 
       const events = statsJson.data.events || [];
 
+      // ✅ AGGREGATE PLAYER STATS PER FIXTURE
+      let playerMap = {};
+
       for (const e of events) {
         if (!e.player_id) continue;
 
-        // ✅ SAFE GOAL DETECTION (handles all types)
-        const isGoal =
-          e.type &&
-          typeof e.type === 'string' &&
-          e.type.toLowerCase().includes('goal');
+        const pid = e.player_id;
 
-        const row = {
+        if (!playerMap[pid]) {
+          playerMap[pid] = {
+            goals: 0,
+            assists: 0
+          };
+        }
+
+        const type = (e.type || '').toLowerCase();
+
+        if (type.includes('goal')) {
+          playerMap[pid].goals += 1;
+        }
+
+        if (e.assist_id) {
+          playerMap[pid].assists += 1;
+        }
+      }
+
+      // ✅ SAVE AGGREGATED DATA
+      for (const pid in playerMap) {
+        await db.from('player_match_stats').upsert({
           fixture_id: f.id,
-          player_id: e.player_id,
-          goals: isGoal ? 1 : 0,
-          assists: e.assist_id ? 1 : 0,
+          player_id: parseInt(pid),
+          goals: playerMap[pid].goals,
+          assists: playerMap[pid].assists,
           minutes: 90,
           saves: 0,
           goalsConceded: 0,
           updated_at: new Date()
-        };
-
-        await db.from('player_match_stats').upsert(row, {
+        }, {
           onConflict: 'fixture_id,player_id'
         });
 
@@ -67,19 +82,19 @@ module.exports = async (req, res) => {
 
     log.push("Stats inserted: " + statsInserted);
 
-    // ✅ CALCULATE POINTS (ACCUMULATED CORRECTLY)
+    // ✅ CALCULATE TOTAL POINTS
     const { data: stats } = await db.from('player_match_stats').select('*');
 
     let playersMap = {};
 
     for (const s of stats || []) {
       const result = calculateFantasyPoints({
-        minutes: (s.minutes && s.minutes > 0) ? s.minutes : 90,
+        minutes: 90,
         goals: s.goals || 0,
         assists: s.assists || 0,
-        saves: s.saves || 0,
-        goalsConceded: s.goalsConceded || 0,
-        pos: 'MID' // fallback (we will improve later)
+        saves: 0,
+        goalsConceded: 0,
+        pos: 'MID'
       });
 
       if (!playersMap[s.player_id]) {
@@ -91,10 +106,10 @@ module.exports = async (req, res) => {
 
     let playersScored = 0;
 
-    for (const playerId in playersMap) {
+    for (const pid in playersMap) {
       await db.from('player_season_stats').upsert({
-        player_id: parseInt(playerId),
-        total_points: playersMap[playerId]
+        player_id: parseInt(pid),
+        total_points: playersMap[pid]
       }, { onConflict: 'player_id' });
 
       playersScored++;
