@@ -2870,6 +2870,10 @@ function closeDeadlineInfo() {
   var m = document.getElementById('deadline-info-modal');
   if (m) { m.style.display = 'none'; }
 }
+function isDeadlinePassed(deadline) {
+  if (!deadline) return false;
+  return new Date() > new Date(deadline);
+}
 
 // Roll over free transfers at the start of a new GW (called when GW changes)
 function rolloverFreeTransfers() {
