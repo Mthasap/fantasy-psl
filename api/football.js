@@ -137,17 +137,17 @@ async function getFromSupabase(dataType) {
         fetched_at: new Date().toISOString()
       };
     }
-    // Fallback: read from players table
+    // Fallback: read from players table (safe column list)
     const { data, error } = await client
       .from('players')
-      .select('display_name,team,position,goals,apps,total_points')
+      .select('display_name,position,goals,total_points')
       .order('goals', { ascending: false })
       .limit(30);
     if (error) throw new Error('topscorers: ' + error.message);
     return {
       type: 'topscorers',
       topScorers: (data || []).map(function(p, i) {
-        return { rank: i+1, name: p.display_name||p.name, club: p.team, goals: p.goals||0, apps: p.apps||0 };
+        return { rank: i+1, name: p.display_name || 'Unknown', club: '', goals: p.goals||0, apps: 0 };
       }),
       fetched_at: new Date().toISOString()
     };
