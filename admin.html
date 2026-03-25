@@ -1072,7 +1072,7 @@
   // ══════════════════════════════════════════════════════════════════
   const SUPABASE_URL   = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-  const ADMIN_PASSWORD = 'mzansi4sho';
+  const ADMIN_PASSWORD = 'fpsl-admin-2026';
 
   const TEAMS = [
     'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
@@ -1938,7 +1938,33 @@
       }).join('');
     } catch(e) {
       if (e.message && e.message.includes('does not exist')) {
-        list.innerHTML = '<div style="color:var(--amber);font-size:13px;padding:16px;line-height:1.6">⚠ The <strong>news_posts</strong> table does not exist yet.<br>Click <strong>Publish Now</strong> on a post — it will show the SQL you need to run in Supabase.</div>';
+        const sql = `CREATE TABLE news_posts (
+  id           bigserial PRIMARY KEY,
+  title        text NOT NULL,
+  slug         text UNIQUE,
+  summary      text,
+  body         text,
+  category     text DEFAULT 'News',
+  image_url    text,
+  published    boolean DEFAULT false,
+  published_at timestamptz DEFAULT now(),
+  created_at   timestamptz DEFAULT now(),
+  updated_at   timestamptz DEFAULT now()
+);
+ALTER TABLE news_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read" ON news_posts FOR SELECT USING (published = true);
+CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
+        list.innerHTML =
+          '<div style="color:var(--amber);font-size:13px;padding:16px;line-height:1.7">' +
+          '<strong style="font-size:14px">⚠ Setup required — run this SQL in Supabase</strong><br>' +
+          'Go to <strong>Supabase → SQL Editor</strong>, paste and run:<br><br>' +
+          '<div style="position:relative">' +
+          '<pre style="background:#0a0a0a;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:12px;font-size:11px;overflow-x:auto;white-space:pre;line-height:1.5;margin:0">' + escHtml(sql) + '</pre>' +
+          '<button onclick="navigator.clipboard.writeText(' + JSON.stringify(sql) + ').then(function(){this.textContent=\'Copied!\';var b=this;setTimeout(function(){b.textContent=\'Copy SQL\'},2000)}).bind(this)" ' +
+          'style="position:absolute;top:8px;right:8px;background:var(--blue);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700">Copy SQL</button>' +
+          '</div>' +
+          '<br>After running the SQL, click <strong>Refresh</strong> above to reload this panel.' +
+          '</div>';
       } else {
         list.innerHTML = '<div style="color:var(--red);font-size:13px;padding:16px">Error: ' + escHtml(e.message) + '</div>';
       }
