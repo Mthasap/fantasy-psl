@@ -688,6 +688,10 @@
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     <span class="bnav-label">Stats</span>
   </button>
+  <button class="bnav-btn" id="bn-news" onclick="goPage('news')">
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
+    <span class="bnav-label">News</span>
+  </button>
   <button class="bnav-btn" id="bn-leagues" onclick="goPage('leagues')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
     <span class="bnav-label">Leagues</span>
@@ -1337,8 +1341,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ====================================================
 //  NAVIGATION
 // ====================================================
-var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-chat','bn-stats','bn-leagues'];
-var BN_MAP = { home:0, squad:1, fixtures:2, chat:3, stats:4, leagues:5, news:5 };
+var BN_IDS = ['bn-home','bn-squad','bn-fixtures','bn-chat','bn-stats','bn-news','bn-leagues'];
+var BN_MAP = { home:0, squad:1, fixtures:2, chat:3, stats:4, news:5, leagues:6 };
 
 function goPage(id) {
   var guarded = ['squad','leagues','profile'];
@@ -4816,7 +4820,16 @@ function loadTable() {
         // because Sportmonks standings endpoint doesn't include played stats
         // without extra includes that cost more API credits
         REAL_TABLE = namedRows.map(function(s, i) {
+          // Robust team name match — try exact first, then partial
           var ex = REAL_TABLE.find(function(r){ return r.team === s.team; });
+          if (!ex) ex = REAL_TABLE.find(function(r){
+            return r.team.toLowerCase().replace(/\s+fc$/i,'').trim() ===
+                   s.team.toLowerCase().replace(/\s+fc$/i,'').trim();
+          });
+          if (!ex) ex = REAL_TABLE.find(function(r){
+            return r.team.toLowerCase().includes(s.team.toLowerCase().split(' ')[0]) ||
+                   s.team.toLowerCase().includes(r.team.toLowerCase().split(' ')[0]);
+          });
           var formRaw = s.form || '';
           var formArr = Array.isArray(formRaw) ? formRaw
                       : formRaw ? formRaw.split(',').filter(Boolean) : [];
@@ -4825,16 +4838,17 @@ function loadTable() {
             pos:  s.pos  || i + 1,
             team: s.team,
             logo: s.logo || getTeamLogo(s.team),
-            // Use live points from Sportmonks (always accurate)
+            // Sportmonks gives accurate live points and position
             pts:  s.pts  || (ex ? ex.pts : 0),
-            // Use played stats from REAL_TABLE if API returns 0
-            p:    (s.p  > 0) ? s.p  : (ex ? ex.p  : 0),
-            w:    (s.w  > 0) ? s.w  : (ex ? ex.w  : 0),
-            d:    (s.d  > 0) ? s.d  : (ex ? ex.d  : 0),
-            l:    (s.l  > 0) ? s.l  : (ex ? ex.l  : 0),
-            gf:   (s.gf > 0) ? s.gf : (ex ? ex.gf : 0),
-            ga:   (s.ga > 0) ? s.ga : (ex ? ex.ga : 0),
-            gd:   s.gd || (ex ? ex.gd : 0),
+            // Always use REAL_TABLE for played/won/drawn/lost/gf/ga/gd
+            // Sportmonks standings endpoint doesn't return these without paid includes
+            p:    ex ? ex.p  : (s.p  || 0),
+            w:    ex ? ex.w  : (s.w  || 0),
+            d:    ex ? ex.d  : (s.d  || 0),
+            l:    ex ? ex.l  : (s.l  || 0),
+            gf:   ex ? ex.gf : (s.gf || 0),
+            ga:   ex ? ex.ga : (s.ga || 0),
+            gd:   ex ? ex.gd : (s.gd || 0),
             form: formArr
           };
         });
