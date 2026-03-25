@@ -63,11 +63,17 @@ module.exports = async (req, res) => {
       case 'live':         return res.json(await getLive());
       case 'fixtures':     return res.json(await getFixtures());
       case 'results':      return res.json(await getResults());
+      case 'standings_raw':
+        // Debug: returns raw Sportmonks standings response so you can inspect the shape
+        const sid2 = await seasonId();
+        const raw  = await smGet('/standings/seasons/' + sid2 + '?include=participant');
+        return res.json({ season_id: sid2, raw_data: (raw.data || []).slice(0, 2), fetched_at: new Date().toISOString() });
       case 'standings':    return res.json(await getStandings());
       case 'topscorers':   return res.json(await getTopScorers());
       case 'player_stats':
         if (!fixtureId) return res.status(400).json({ error: 'fixture_id required' });
         return res.json(await getPlayerStats(fixtureId));
+      case 'seasons':      return res.json(await getSeasons());
       case 'status':       return res.json(await getStatus());
       default:
         return res.status(400).json({ error: 'Unknown type: ' + type });
@@ -190,68 +196,86 @@ async function getStandings() {
   const cached = fromCache('standings');
   if (cached) return cached;
 
-  const sid  = await seasonId();
-  const d    = await smGet('/standings/seasons/' + sid);
+  const sid = await seasonId();
+
+  // Include participant so we get team name + logo
+  const d    = await smGet('/standings/seasons/' + sid + '?include=participant');
   const rows = flattenStandings(d.data || []);
 
-  // Also persist to Supabase standings table so cron and admin can read it
-  if (SB_URL && SB_KEY && rows.length) {
-    try {
-      await db().from('standings').upsert(rows, { onConflict: 'id' });
-    } catch(e) {
-      console.warn('[standings] Supabase upsert failed:', e.message);
-    }
+  if (!rows.length) {
+    // Sportmonks returned empty — return null so frontend uses REAL_TABLE fallback
+    return toCache('standings', { type: 'standings', standings: [], fetched_at: new Date().toISOString() });
+  }
+
+  // Persist to Supabase for cron use
+  if (SB_URL && SB_KEY) {
+    try { await db().from('standings').upsert(rows, { onConflict: 'id' }); } catch(e) {}
   }
 
   const standings = rows.map(formatStandingRow);
-  return toCache('standings', {
-    type: 'standings', standings,
-    fetched_at: new Date().toISOString()
-  });
+  return toCache('standings', { type: 'standings', standings, fetched_at: new Date().toISOString() });
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// TOP SCORERS — from Supabase players table (populated by points-cron)
-// Falls back to Sportmonks topscorers endpoint if table is empty
+// TOP SCORERS — from Supabase players table (populated by import-players + PSL_ROSTER)
+// Only falls back to Sportmonks if DB has nothing at all
 // ══════════════════════════════════════════════════════════════════════════
 async function getTopScorers() {
   const cached = fromCache('topscorers');
   if (cached) return cached;
 
+  // Read from Supabase players table — this has the PSL_ROSTER stats
+  // (goals, apps etc set during import or manually updated)
   if (SB_URL && SB_KEY) {
     try {
       const { data } = await db()
         .from('players')
-        .select('display_name, team, goals, apps, total_points')
+        .select('display_name, team, goals, apps, total_points, photo')
         .gt('goals', 0)
         .order('goals', { ascending: false })
-        .limit(20);
+        .limit(30);
 
-      if (data && data.length) {
+      if (data && data.length >= 5) {
         const topScorers = data.map(function(p, i) {
-          return { rank: i + 1, name: p.display_name || 'Unknown', club: p.team || '', goals: p.goals || 0, apps: p.apps || 0 };
+          return {
+            rank:  i + 1,
+            name:  p.display_name || 'Unknown',
+            club:  p.team || '',
+            goals: p.goals || 0,
+            apps:  p.apps  || 0,
+            photo: p.photo || null
+          };
         });
-        return toCache('topscorers', { type: 'topscorers', topScorers, fetched_at: new Date().toISOString() });
+        return toCache('topscorers', { type: 'topscorers', topScorers, source: 'supabase', fetched_at: new Date().toISOString() });
       }
     } catch(e) {
       console.warn('[topscorers] Supabase error:', e.message);
     }
   }
 
-  // Fallback: Sportmonks topscorers endpoint
-  const sid = await seasonId();
-  const d   = await smGet('/topscorers/seasons/' + sid + '?include=player;participant&limit=20');
-  const topScorers = (d.data || []).map(function(s, i) {
-    const p = s.player || {};
-    return {
-      rank:  i + 1,
-      name:  p.display_name || p.name || 'Unknown',
-      club:  (s.participant && s.participant.name) || '',
-      goals: s.total || 0,
-      apps:  s.appearances || 0
-    };
-  });
-  return toCache('topscorers', { type: 'topscorers', topScorers, fetched_at: new Date().toISOString() });
+  // Fallback: Sportmonks topscorers endpoint (may be incomplete)
+  try {
+    const sid = await seasonId();
+    const d   = await smGet('/topscorers/seasons/' + sid + '?include=player;participant&limit=20');
+    const topScorers = (d.data || []).map(function(s, i) {
+      const p = s.player || {};
+      return {
+        rank:  i + 1,
+        name:  p.display_name || p.name || 'Unknown',
+        club:  (s.participant && s.participant.name) || '',
+        goals: s.total || 0,
+        apps:  s.appearances || 0
+      };
+    });
+    if (topScorers.length) {
+      return toCache('topscorers', { type: 'topscorers', topScorers, source: 'sportmonks', fetched_at: new Date().toISOString() });
+    }
+  } catch(e) {
+    console.warn('[topscorers] Sportmonks error:', e.message);
+  }
+
+  // Last resort: empty
+  return toCache('topscorers', { type: 'topscorers', topScorers: [], fetched_at: new Date().toISOString() });
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -267,6 +291,50 @@ async function getPlayerStats(fixtureId) {
     type: 'player_stats',
     fixture_id: parseInt(fixtureId, 10),
     players: data || [],
+    fetched_at: new Date().toISOString()
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SEASONS DEBUG — lists all PSL seasons so you can find the correct ID
+// Visit: /api/football?type=seasons
+// ══════════════════════════════════════════════════════════════════════════
+async function getSeasons() {
+  // Check what /leagues/806 says the current season is
+  let leagueCurrentId = null;
+  try {
+    const ld = await smGet('/leagues/' + PSL_ID);
+    leagueCurrentId = (ld.data || {}).current_season_id || null;
+  } catch(e) {}
+
+  // List all seasons for PSL league
+  const pslSeasons = [];
+  for (let page = 1; page <= 5; page++) {
+    const d = await smGet('/seasons?per_page=100&page=' + page);
+    const rows = d.data || [];
+    if (!rows.length) break;
+    rows.forEach(function(s) {
+      if (s.league_id === PSL_ID) {
+        pslSeasons.push({ id: s.id, name: s.name, is_current: s.is_current, league_id: s.league_id });
+      }
+    });
+    if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+  }
+
+  // Sort newest first
+  pslSeasons.sort(function(a, b) { return b.id - a.id; });
+
+  const envSeasonId = process.env.SPORTMONKS_SEASON_ID || null;
+
+  return {
+    type: 'seasons',
+    action_required: !envSeasonId,
+    instruction: envSeasonId
+      ? 'SPORTMONKS_SEASON_ID env var is set to ' + envSeasonId + '. Change it in Vercel if wrong.'
+      : 'Set SPORTMONKS_SEASON_ID in Vercel env vars to the correct season ID from the list below, then redeploy.',
+    league_current_season_id: leagueCurrentId,
+    env_season_id: envSeasonId,
+    psl_seasons: pslSeasons,
     fetched_at: new Date().toISOString()
   };
 }
@@ -401,30 +469,61 @@ function formatStandingRow(s) {
 
 function flattenStandings(data) {
   const rows = [];
-  data.forEach(function(g) {
-    const items = (g.standings && Array.isArray(g.standings)) ? g.standings : (g.position ? [g] : []);
+
+  // Sportmonks v3 /standings/seasons/{id}?include=participant returns:
+  // data = array of group objects, each with a .standings array of team rows
+  // Each standing row has: position, points, participant_id, participant{name,image_path}, details[]
+  data.forEach(function(group) {
+    // The standings array is the list of teams
+    const items = Array.isArray(group.standings) ? group.standings
+                : Array.isArray(group)           ? group
+                : group.position                 ? [group]
+                : [];
+
     items.forEach(function(s) {
-      const det  = s.details || [];
+      // participant can be on s.participant (with include) or s directly
       const part = s.participant || {};
-      function dv(tid) { const d = det.find(function(x) { return x.type_id === tid; }); return d ? (d.value || 0) : 0; }
+      const det  = s.details || [];
+
+      // Helper: find a detail value by type_id
+      function dv(tid) {
+        const d = det.find(function(x) { return x.type_id === tid; });
+        return d ? (parseFloat(d.value) || 0) : 0;
+      }
+
+      // Team name: try participant first, then various fallback fields
+      const teamName = part.name || s.team_name || s.name || s.club_name || '';
+
+      // Stats: Sportmonks type_ids for standing details
+      // 129=played, 130=won, 131=drawn, 132=lost, 133=gf, 134=ga, 135=gd
+      const played = dv(129) || s.games_played || s.played || 0;
+      const won    = dv(130) || s.won          || 0;
+      const drawn  = dv(131) || s.draw         || s.drawn  || 0;
+      const lost   = dv(132) || s.lost         || 0;
+      const gf     = dv(133) || s.goals_scored || s.goals_for || 0;
+      const ga     = dv(134) || s.goals_conceded || s.goals_against || 0;
+      const gd     = dv(135) || s.goal_difference || (gf - ga) || 0;
+
+      if (!teamName) return; // skip rows with no team name at all
+
       rows.push({
-        id:            s.participant_id || part.id || rows.length + 1,
-        team_name:     normTeam(part.name || s.team_name || 'Unknown'),
-        team_logo:     part.image_path || null,
+        id:            s.participant_id || part.id || s.id || (rows.length + 1),
+        team_name:     normTeam(teamName),
+        team_logo:     part.image_path || s.team_logo || null,
         position:      s.position || rows.length + 1,
-        played:        dv(129) || s.games_played || 0,
-        won:           dv(130) || s.won   || 0,
-        drawn:         dv(131) || s.draw  || 0,
-        lost:          dv(132) || s.lost  || 0,
-        goals_for:     dv(133) || s.goals_scored   || 0,
-        goals_against: dv(134) || s.goals_conceded || 0,
-        goal_diff:     dv(135) || s.goal_difference || 0,
+        played, won, drawn, lost,
+        goals_for:     gf,
+        goals_against: ga,
+        goal_diff:     gd,
         points:        s.points || 0,
         form:          Array.isArray(s.form) ? s.form.slice(-5).join(',') : (s.form || ''),
         updated_at:    new Date().toISOString()
       });
     });
   });
+
+  // Sort by position
+  rows.sort(function(a, b) { return a.position - b.position; });
   return rows;
 }
 
