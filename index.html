@@ -4799,23 +4799,31 @@ function loadTable() {
   fetch('/api/football?type=standings')
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (data && data.standings && data.standings.length >= 10) {
-        REAL_TABLE = data.standings.map(function(s, i) {
+      var rows = data && data.standings ? data.standings : [];
+      // Reject if fewer than 10 teams or if most teams are "Unknown" (broken API response)
+      var unknownCount = rows.filter(function(s){ return !s.team || s.team === 'Unknown'; }).length;
+      var validRows = rows.length >= 10 && unknownCount < rows.length / 2;
+      if (validRows) {
+        REAL_TABLE = rows.map(function(s, i) {
           var formRaw = s.form || '';
           var formArr = Array.isArray(formRaw) ? formRaw : (formRaw ? formRaw.split(',').filter(Boolean) : []);
           var ex = REAL_TABLE.find(function(r){ return r.team === s.team; });
+          // Keep form from hardcoded table if API has none
           if (!formArr.length && ex && ex.form) formArr = ex.form;
+          // Keep played count from hardcoded table if API returns 0
+          var p = (s.p > 0) ? s.p : (ex ? ex.p : 0);
           return {
             pos:  s.pos  || i+1,
-            team: s.team || s.club || 'Unknown',
+            team: s.team || s.club || (ex ? ex.team : 'Unknown'),
             logo: s.logo || getTeamLogo(s.team || s.club),
-            p: s.p||0, w: s.w||0, d: s.d||0, l: s.l||0,
+            p: p, w: s.w||0, d: s.d||0, l: s.l||0,
             gf: s.gf||0, ga: s.ga||0, gd: s.gd||0,
             pts: s.pts||0, form: formArr
           };
         });
         renderRealTable(c);
       }
+      // else: keep showing REAL_TABLE which was already rendered
     })
     .catch(function(){});
 }
