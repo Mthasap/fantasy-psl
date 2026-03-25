@@ -152,7 +152,15 @@ async function getFixtures() {
     } catch(e) { console.warn('[fixtures] Supabase error:', e.message); }
   }
 
-  // FALLBACK: Sportmonks upcoming fixtures (state 1 = NS)
+  // ── TIER 2: TheSportsDB upcoming fixtures (free, current) ─────────────
+  try {
+    const tsdbFixtures = await getTheSportsDBFixtures();
+    if (tsdbFixtures && tsdbFixtures.length >= 3) {
+      return toCache('fixtures', { type: 'fixtures', fixtures: tsdbFixtures, source: 'thesportsdb', fetched_at: new Date().toISOString() });
+    }
+  } catch(e) { console.warn('[fixtures] TheSportsDB error:', e.message); }
+
+  // ── TIER 3: Sportmonks upcoming fixtures ─────────────────────────────
   try {
     const sid = await seasonId();
     const d = await smGet(
@@ -169,6 +177,42 @@ async function getFixtures() {
   }
 }
 
+// ── TheSportsDB: fetch upcoming PSL fixtures ─────────────────────────────
+async function getTheSportsDBFixtures() {
+  const TSDB = 'https://www.thesportsdb.com/api/v1/json/3';
+  const url  = TSDB + '/eventsseason.php?id=4802&s=2025-2026';
+  const r    = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error('TheSportsDB HTTP ' + r.status);
+  const json = await r.json();
+  const events = json.events || [];
+
+  const now = Date.now();
+  const upcoming = events.filter(function(e) {
+    if (!e.strDate) return false;
+    return new Date(e.strDate + ' ' + (e.strTime || '00:00:00')).getTime() > now;
+  });
+  upcoming.sort(function(a, b) { return new Date(a.strDate) - new Date(b.strDate); });
+
+  return upcoming.slice(0, 50).map(function(e) {
+    return {
+      fixture_id:    e.idEvent,
+      sportmonks_id: null,
+      status:        'NS',
+      date:          e.strDate + ' ' + (e.strTime || '00:00:00'),
+      home:          normTeam(e.strHomeTeam || ''),
+      away:          normTeam(e.strAwayTeam || ''),
+      home_logo:     e.strHomeTeamBadge || null,
+      away_logo:     e.strAwayTeamBadge || null,
+      hg:            null,
+      ag:            null,
+      is_live:       false,
+      is_ft:         false,
+      elapsed:       null,
+      round:         e.intRound ? 'Round ' + e.intRound : null
+    };
+  });
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // RESULTS — Supabase PRIMARY (admin-entered), Sportmonks fallback
 // Sportmonks only has 50 PSL fixtures indexed (Aug–Feb 2026).
@@ -180,8 +224,7 @@ async function getResults() {
 
   let results = [];
 
-  // PRIMARY: Supabase fixtures table — admin enters results here
-  // These are always current and accurate
+  // ── TIER 1: Supabase (admin-entered — always most accurate) ─────────────
   if (SB_URL && SB_KEY) {
     try {
       const { data, error } = await db()
@@ -197,7 +240,16 @@ async function getResults() {
     } catch(e) { console.warn('[results] Supabase error:', e.message); }
   }
 
-  // FALLBACK: Sportmonks (only has Aug–Feb data, better than nothing)
+  // ── TIER 2: TheSportsDB (free, covers PSL up to date) ───────────────────
+  try {
+    const tsdbResults = await getTheSportsDBResults();
+    if (tsdbResults && tsdbResults.length >= 5) {
+      results = tsdbResults;
+      return toCache('results', { type: 'results', results, source: 'thesportsdb', fetched_at: new Date().toISOString() });
+    }
+  } catch(e) { console.warn('[results] TheSportsDB error:', e.message); }
+
+  // ── TIER 3: Sportmonks (only Aug–Feb 2026, incomplete but better than nothing)
   try {
     const sid = await seasonId();
     const allResults = [];
@@ -222,6 +274,44 @@ async function getResults() {
 
   return toCache('results', { type: 'results', results, source: 'sportmonks_fallback', fetched_at: new Date().toISOString() });
 }
+
+// ── TheSportsDB: fetch PSL season results (free, no key needed) ──────────
+// TheSportsDB PSL league ID = 4802, season format = "2025-2026"
+async function getTheSportsDBResults() {
+  const TSDB = 'https://www.thesportsdb.com/api/v1/json/3';
+  const url  = TSDB + '/eventsseason.php?id=4802&s=2025-2026';
+  const r    = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error('TheSportsDB HTTP ' + r.status);
+  const json = await r.json();
+  const events = json.events || [];
+
+  const now = Date.now();
+  const completed = events.filter(function(e) {
+    if (!e.strDate || e.intHomeScore === null || e.intHomeScore === '') return false;
+    return new Date(e.strDate + ' ' + (e.strTime || '00:00:00')).getTime() <= now;
+  });
+  completed.sort(function(a, b) { return new Date(b.strDate) - new Date(a.strDate); });
+
+  return completed.slice(0, 60).map(function(e) {
+    return {
+      fixture_id:    e.idEvent,
+      sportmonks_id: null,
+      status:        'FT',
+      date:          e.strDate + ' ' + (e.strTime || '00:00:00'),
+      home:          normTeam(e.strHomeTeam || ''),
+      away:          normTeam(e.strAwayTeam || ''),
+      home_logo:     e.strHomeTeamBadge || null,
+      away_logo:     e.strAwayTeamBadge || null,
+      hg:            e.intHomeScore !== '' && e.intHomeScore !== null ? parseInt(e.intHomeScore) : null,
+      ag:            e.intAwayScore !== '' && e.intAwayScore !== null ? parseInt(e.intAwayScore) : null,
+      is_live:       false,
+      is_ft:         true,
+      elapsed:       null,
+      round:         e.intRound ? 'Round ' + e.intRound : null
+    };
+  });
+}
+
 
 // ══════════════════════════════════════════════════════════════════════════
 // STANDINGS — fetched from Sportmonks, also written to Supabase for cron use
@@ -402,20 +492,24 @@ async function getStatus() {
 
 // Maps any team name variant to the Sportmonks canonical name used in the app
 const TEAM_NAME_MAP = {
+  // Sportmonks / general FC suffix variants
   'Mamelodi Sundowns FC': 'Mamelodi Sundowns',
   'Orlando Pirates FC':   'Orlando Pirates',
   'Kaizer Chiefs FC':     'Kaizer Chiefs',
   'AmaZulu FC':           'AmaZulu',
+  'Amazulu':              'AmaZulu',
   'Sekhukhune United FC': 'Sekhukhune United',
   'Stellenbosch FC':      'Stellenbosch',
   'Polokwane City FC':    'Polokwane City',
   'Durban City FC':       'Durban City',
   'TS Galaxy FC':         'TS Galaxy',
   'Lamontville Golden Arrows FC': 'Golden Arrows',
+  'Lamontville Golden Arrows': 'Golden Arrows',
   'Golden Arrows FC':     'Golden Arrows',
   'Chippa United FC':     'Chippa United',
   'Richards Bay FC':      'Richards Bay',
   'Siwelele FC':          'Siwelele',
+  'SuperSport United':    'Siwelele',
   'Magesi FC':            'Magesi',
   'Orbit College FC':     'Orbit College',
   'Marumo Gallants':      'Marumo Gallants FC',
