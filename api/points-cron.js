@@ -76,13 +76,31 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Missing env vars: SPORTMONKS_TOKEN / SUPABASE_URL / SUPABASE_SERVICE_KEY' });
   }
 
+  // mode param from admin buttons: 'fixtures', 'results', 'points', 'all'
+  var mode = (req.query && req.query.mode) || 'all';
+
   var db  = createClient(SB_URL, SB_KEY);
   var log = [];
 
   try {
-    // ── 1. Season ID ───────────────────────────────────────────────────
     var seasonId = await getSeasonId(db, TOKEN);
     log.push('Season: ' + seasonId);
+
+    // ── mode=fixtures: sync only upcoming NS fixtures to Supabase ──────
+    if (mode === 'fixtures') {
+      var count = await syncFixtures(db, seasonId, log, 'NS');
+      return res.json({ success: true, mode: 'fixtures', fixtures_synced: count, log });
+    }
+
+    // ── mode=results: sync only FT results to Supabase ─────────────────
+    if (mode === 'results') {
+      var count = await syncFixtures(db, seasonId, log, 'FT');
+      return res.json({ success: true, mode: 'results', results_updated: count, log });
+    }
+
+    // ── mode=points or mode=all: full scoring run ───────────────────────
+    // (fall through to existing scoring logic below)
+    log.push('Mode: ' + mode + ' — running full scoring pipeline');
 
     // ── 2. Fetch all FT fixtures ───────────────────────────────────────
     var allFixtures = [];
@@ -338,7 +356,66 @@ module.exports = async (req, res) => {
   }
 };
 
+// ── syncFixtures: upsert NS or FT fixtures into Supabase ─────────────────
+// state: 'NS' (upcoming, fixtureState 1) or 'FT' (results, fixtureState 5)
+async function syncFixtures(db, seasonId, log, state) {
+  var stateCode = state === 'NS' ? 1 : 5;
+  var count = 0;
+  for (var page = 1; page <= 10; page++) {
+    var d = await smGet(
+      '/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:' + stateCode +
+      '&include=participants;scores&per_page=50&page=' + page
+    );
+    var rows = d.data || [];
+    if (!rows.length) break;
+    for (var i = 0; i < rows.length; i++) {
+      var f     = rows[i];
+      var parts = f.participants || [];
+      var scores = { home: null, away: null };
+      if (state === 'FT') {
+        (f.scores || []).forEach(function(s) {
+          var desc = (s.description || '').toUpperCase();
+          if (['CURRENT','FT','FULLTIME','2ND_HALF'].indexOf(desc) > -1 && s.score) {
+            scores[s.score.participant] = s.score.goals;
+          }
+        });
+      }
+      var home = parts.find(function(p){ return p.meta && p.meta.location === 'home'; }) || parts[0] || {};
+      var away = parts.find(function(p){ return p.meta && p.meta.location === 'away'; }) || parts[1] || {};
+      await db.from('fixtures').upsert({
+        sportmonks_id: f.id,
+        home_team:     home.name || 'TBD',
+        away_team:     away.name || 'TBD',
+        home_logo:     home.image_path || null,
+        away_logo:     away.image_path || null,
+        home_score:    scores.home,
+        away_score:    scores.away,
+        status:        state,
+        kickoff_at:    f.starting_at,
+        round:         (f.round && f.round.name) || null,
+        updated_at:    new Date().toISOString()
+      }, { onConflict: 'sportmonks_id' });
+      count++;
+    }
+    if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+  }
+  log.push(state + ' fixtures synced: ' + count);
+  return count;
+}
+
 async function smGet(path) {
+  var sep = path.indexOf('?') > -1 ? '&' : '?';
+  var url = BASE + path + sep + 'api_token=' + TOKEN;
+  var r   = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!r.ok) {
+    var b = await r.text().catch(function(){ return ''; });
+    throw new Error('Sportmonks ' + r.status + ': ' + b.substring(0, 300));
+  }
+  var json = await r.json();
+  if (json.errors) throw new Error('Sportmonks errors: ' + JSON.stringify(json.errors).substring(0, 300));
+  return json;
+}
+
   var sep = path.indexOf('?') > -1 ? '&' : '?';
   var url = BASE + path + sep + 'api_token=' + TOKEN;
   var r   = await fetch(url, { headers: { Accept: 'application/json' } });
