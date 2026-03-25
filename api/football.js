@@ -470,46 +470,46 @@ function formatStandingRow(s) {
 function flattenStandings(data) {
   const rows = [];
 
-  // Sportmonks v3 /standings/seasons/{id}?include=participant returns:
-  // data = array of group objects, each with a .standings array of team rows
-  // Each standing row has: position, points, participant_id, participant{name,image_path}, details[]
+  // Sportmonks v3 /standings/seasons/{id}?include=participant
+  // Top-level data[] is an array of standing rule groups.
+  // Each group has a .standings[] array of team position rows.
+  // Each row: { id, participant_id, position, points, participant:{name,image_path,...}, details:[] }
+  // Note: played/won/drawn/lost come from details[] with type_ids, OR from a
+  // separate ?include=participant.details call. With basic include=participant
+  // we only reliably get: position, points, participant.name, participant.image_path
+
   data.forEach(function(group) {
-    // The standings array is the list of teams
     const items = Array.isArray(group.standings) ? group.standings
-                : Array.isArray(group)           ? group
-                : group.position                 ? [group]
+                : group.position                  ? [group]
                 : [];
 
     items.forEach(function(s) {
-      // participant can be on s.participant (with include) or s directly
       const part = s.participant || {};
       const det  = s.details || [];
 
-      // Helper: find a detail value by type_id
+      // Safely read a detail value by type_id
       function dv(tid) {
         const d = det.find(function(x) { return x.type_id === tid; });
         return d ? (parseFloat(d.value) || 0) : 0;
       }
 
-      // Team name: try participant first, then various fallback fields
-      const teamName = part.name || s.team_name || s.name || s.club_name || '';
+      const teamName = part.name || s.team_name || '';
+      if (!teamName) return; // skip empty rows
 
-      // Stats: Sportmonks type_ids for standing details
-      // 129=played, 130=won, 131=drawn, 132=lost, 133=gf, 134=ga, 135=gd
-      const played = dv(129) || s.games_played || s.played || 0;
-      const won    = dv(130) || s.won          || 0;
-      const drawn  = dv(131) || s.draw         || s.drawn  || 0;
-      const lost   = dv(132) || s.lost         || 0;
-      const gf     = dv(133) || s.goals_scored || s.goals_for || 0;
-      const ga     = dv(134) || s.goals_conceded || s.goals_against || 0;
+      // Stats from details (populated if Sportmonks includes them)
+      // Fall back to 0 — frontend will merge with REAL_TABLE form/played data
+      const played = dv(129) || s.games_played || 0;
+      const won    = dv(130) || s.won    || 0;
+      const drawn  = dv(131) || s.draw   || s.drawn || 0;
+      const lost   = dv(132) || s.lost   || 0;
+      const gf     = dv(133) || s.goals_for     || s.goals_scored   || 0;
+      const ga     = dv(134) || s.goals_against || s.goals_conceded || 0;
       const gd     = dv(135) || s.goal_difference || (gf - ga) || 0;
 
-      if (!teamName) return; // skip rows with no team name at all
-
       rows.push({
-        id:            s.participant_id || part.id || s.id || (rows.length + 1),
+        id:            s.participant_id || part.id || s.id,
         team_name:     normTeam(teamName),
-        team_logo:     part.image_path || s.team_logo || null,
+        team_logo:     part.image_path || null,
         position:      s.position || rows.length + 1,
         played, won, drawn, lost,
         goals_for:     gf,
@@ -522,7 +522,6 @@ function flattenStandings(data) {
     });
   });
 
-  // Sort by position
   rows.sort(function(a, b) { return a.position - b.position; });
   return rows;
 }
