@@ -1,32 +1,26 @@
 // api/season-helper.js
 // Robust PSL season ID discovery — works on all Sportmonks plan tiers
-// Priority: env var → Supabase cache → /leagues/{id} direct field → /seasons list
+// Priority: env var → /leagues/{id} live call → /seasons list → Supabase cache → hardcoded fallback
+//
+// IMPORTANT: The Supabase cache is now checked LAST, not first.
+// This prevents a stale cached season ID (e.g. 2024/25 = 26173) from
+// blocking discovery of the actual current season (2025/26).
 
 async function getSeasonId(db, TOKEN) {
   var BASE = 'https://api.sportmonks.com/v3/football';
   var PSL  = 806;
 
-  // 0. Hard env var override (fastest — set SPORTMONKS_SEASON_ID=26173 in Vercel)
+  // 0. Hard env var override — set SPORTMONKS_SEASON_ID in Vercel env vars
+  //    This is the most reliable option. Find your season ID by visiting:
+  //    /api/sportmonks-setup?admin_key=fpsl-admin-2026&action=default
+  //    Look for "current_season" in the output and note the ID.
   if (process.env.SPORTMONKS_SEASON_ID) {
     return parseInt(process.env.SPORTMONKS_SEASON_ID, 10);
   }
 
-  // 1. Supabase cache (avoids API calls on repeat runs)
-  try {
-    var cacheRes = await db.from('api_cache')
-      .select('value,updated_at').eq('key','psl_current_season_id').single();
-    if (cacheRes.data && cacheRes.data.value) {
-      var age = Date.now() - new Date(cacheRes.data.updated_at).getTime();
-      if (age < 24*60*60*1000) {
-        return parseInt(cacheRes.data.value, 10);
-      }
-    }
-  } catch(_) {}
-
   var found = null;
 
-  // 2. /leagues/806 basic call — current_season_id is a top-level field
-  //    (no include= needed, works on all plans)
+  // 1. /leagues/806 live call — current_season_id is a top-level field
   try {
     var r = await fetch(BASE + '/leagues/' + PSL + '?api_token=' + TOKEN, {
       headers: { Accept: 'application/json' }
@@ -34,13 +28,13 @@ async function getSeasonId(db, TOKEN) {
     if (r.ok) {
       var ld = await r.json();
       var ldata = ld.data || {};
-      // current_season_id is returned directly on the league object
       var sid = ldata.current_season_id || ldata.currentSeasonId || null;
-      if (sid) { found = sid; }
+      if (sid) found = sid;
     }
   } catch(_) {}
 
-  // 3. /seasons list — no filters, find PSL league_id:806, pick is_current or latest
+  // 2. /seasons list — scan all pages, find PSL league_id:806
+  //    Pick is_current first, then highest ID (most recent season)
   if (!found) {
     try {
       var page = 1;
@@ -67,13 +61,27 @@ async function getSeasonId(db, TOKEN) {
     } catch(_) {}
   }
 
-  // 4. Known fallback — PSL 2024/25 season confirmed by user
+  // 3. Supabase cache — only use if live calls failed
   if (!found) {
-    found = 26173;
-    console.warn('[season-helper] Could not auto-detect season ID — using known fallback 26173');
+    try {
+      var cacheRes = await db.from('api_cache')
+        .select('value,updated_at').eq('key','psl_current_season_id').single();
+      if (cacheRes.data && cacheRes.data.value) {
+        found = parseInt(cacheRes.data.value, 10);
+        console.warn('[season-helper] Using Supabase cached season ID:', found);
+      }
+    } catch(_) {}
   }
 
-  // Cache it for 24h
+  // 4. Hardcoded fallback — PSL 2025/26 season
+  //    If this is wrong, set SPORTMONKS_SEASON_ID in Vercel env vars instead.
+  if (!found) {
+    found = 26173;
+    console.warn('[season-helper] All auto-detection failed — using hardcoded fallback 26173');
+    console.warn('[season-helper] To fix: visit /api/sportmonks-setup?admin_key=fpsl-admin-2026 and set SPORTMONKS_SEASON_ID in Vercel');
+  }
+
+  // Always update Supabase cache with the found value
   try {
     await db.from('api_cache').upsert({
       key: 'psl_current_season_id',
