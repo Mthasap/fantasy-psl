@@ -40,7 +40,7 @@ const CACHE = {};
 const TTL = {
   live:      60  * 1000,   //  1 min  — live scores
   fixtures:  5   * 60 * 1000,  //  5 min  — upcoming fixtures
-  results:   10  * 60 * 1000,  // 10 min  — results (rarely change once FT)
+  results:   2   * 60 * 1000,  //  2 min  — results (short so admin entries show fast)
   standings: 15  * 60 * 1000,  // 15 min  — table
 };
 
@@ -180,44 +180,38 @@ async function getFixtures() {
 // ── TheSportsDB: fetch upcoming PSL fixtures ─────────────────────────────
 async function getTheSportsDBFixtures() {
   const TSDB = 'https://www.thesportsdb.com/api/v1/json/3';
-  const url  = TSDB + '/eventsseason.php?id=4802&s=2025-2026';
-  const r    = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!r.ok) throw new Error('TheSportsDB HTTP ' + r.status);
-  const json = await r.json();
-  const events = json.events || [];
+  let events = [];
 
-  const now = Date.now();
-  const upcoming = events.filter(function(e) {
-    if (!e.strDate) return false;
-    return new Date(e.strDate + ' ' + (e.strTime || '00:00:00')).getTime() > now;
-  });
-  upcoming.sort(function(a, b) { return new Date(a.strDate) - new Date(b.strDate); });
+  // Primary: eventsnextleague = next scheduled fixtures for league
+  try {
+    const r1 = await fetch(TSDB + '/eventsnextleague.php?id=4802', { headers: { Accept: 'application/json' } });
+    if (r1.ok) { const j1 = await r1.json(); events = j1.events || []; }
+  } catch(e) { console.warn('[TSDB] eventsnextleague failed:', e.message); }
 
-  return upcoming.slice(0, 50).map(function(e) {
+  // Fallback: full season filtered to upcoming
+  if (!events.length) {
+    const r2 = await fetch(TSDB + '/eventsseason.php?id=4802&s=2025-2026', { headers: { Accept: 'application/json' } });
+    if (r2.ok) {
+      const j2 = await r2.json();
+      const now = Date.now();
+      events = (j2.events || []).filter(function(e) {
+        return e.strDate && new Date(e.strDate + ' ' + (e.strTime || '00:00:00')).getTime() > now;
+      });
+      events.sort(function(a, b) { return new Date(a.strDate) - new Date(b.strDate); });
+    }
+  }
+
+  return events.slice(0, 50).map(function(e) {
     return {
-      fixture_id:    e.idEvent,
-      sportmonks_id: null,
-      status:        'NS',
-      date:          e.strDate + ' ' + (e.strTime || '00:00:00'),
-      home:          normTeam(e.strHomeTeam || ''),
-      away:          normTeam(e.strAwayTeam || ''),
-      home_logo:     e.strHomeTeamBadge || null,
-      away_logo:     e.strAwayTeamBadge || null,
-      hg:            null,
-      ag:            null,
-      is_live:       false,
-      is_ft:         false,
-      elapsed:       null,
-      round:         e.intRound ? 'Round ' + e.intRound : null
+      fixture_id: e.idEvent, sportmonks_id: null, status: 'NS',
+      date: e.strDate + ' ' + (e.strTime || '00:00:00'),
+      home: normTeam(e.strHomeTeam || ''), away: normTeam(e.strAwayTeam || ''),
+      home_logo: e.strHomeTeamBadge || null, away_logo: e.strAwayTeamBadge || null,
+      hg: null, ag: null, is_live: false, is_ft: false, elapsed: null,
+      round: e.intRound ? 'Round ' + e.intRound : null
     };
   });
 }
-
-// ══════════════════════════════════════════════════════════════════════════
-// RESULTS — Supabase PRIMARY (admin-entered), Sportmonks fallback
-// Sportmonks only has 50 PSL fixtures indexed (Aug–Feb 2026).
-// All matches from Feb onwards must be entered manually via admin panel.
-// ══════════════════════════════════════════════════════════════════════════
 async function getResults() {
   const cached = fromCache('results');
   if (cached) return cached;
@@ -279,43 +273,47 @@ async function getResults() {
 // TheSportsDB PSL league ID = 4802, season format = "2025-2026"
 async function getTheSportsDBResults() {
   const TSDB = 'https://www.thesportsdb.com/api/v1/json/3';
-  const url  = TSDB + '/eventsseason.php?id=4802&s=2025-2026';
-  const r    = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!r.ok) throw new Error('TheSportsDB HTTP ' + r.status);
-  const json = await r.json();
-  const events = json.events || [];
+  let allEvents = [];
+
+  // Primary: eventspastleague = last 15 completed fixtures (most current data)
+  try {
+    const r1 = await fetch(TSDB + '/eventspastleague.php?id=4802', { headers: { Accept: 'application/json' } });
+    if (r1.ok) { const j1 = await r1.json(); allEvents = j1.events || []; }
+  } catch(e) { console.warn('[TSDB] eventspastleague failed:', e.message); }
+
+  // Supplement with full season for older results
+  try {
+    const r2 = await fetch(TSDB + '/eventsseason.php?id=4802&s=2025-2026', { headers: { Accept: 'application/json' } });
+    if (r2.ok) {
+      const j2 = await r2.json();
+      const existing = new Set(allEvents.map(function(e) { return e.idEvent; }));
+      (j2.events || []).forEach(function(e) { if (!existing.has(e.idEvent)) allEvents.push(e); });
+    }
+  } catch(e) { console.warn('[TSDB] eventsseason failed:', e.message); }
+
+  if (!allEvents.length) throw new Error('No events from TheSportsDB');
 
   const now = Date.now();
-  const completed = events.filter(function(e) {
-    if (!e.strDate || e.intHomeScore === null || e.intHomeScore === '') return false;
-    return new Date(e.strDate + ' ' + (e.strTime || '00:00:00')).getTime() <= now;
+  const completed = allEvents.filter(function(e) {
+    if (!e.strDate) return false;
+    const hasScore = e.intHomeScore !== null && e.intHomeScore !== '' && e.intHomeScore !== undefined;
+    const isPast   = new Date(e.strDate + ' ' + (e.strTime || '23:59:00')).getTime() <= now;
+    return hasScore && isPast;
   });
   completed.sort(function(a, b) { return new Date(b.strDate) - new Date(a.strDate); });
 
   return completed.slice(0, 60).map(function(e) {
     return {
-      fixture_id:    e.idEvent,
-      sportmonks_id: null,
-      status:        'FT',
-      date:          e.strDate + ' ' + (e.strTime || '00:00:00'),
-      home:          normTeam(e.strHomeTeam || ''),
-      away:          normTeam(e.strAwayTeam || ''),
-      home_logo:     e.strHomeTeamBadge || null,
-      away_logo:     e.strAwayTeamBadge || null,
-      hg:            e.intHomeScore !== '' && e.intHomeScore !== null ? parseInt(e.intHomeScore) : null,
-      ag:            e.intAwayScore !== '' && e.intAwayScore !== null ? parseInt(e.intAwayScore) : null,
-      is_live:       false,
-      is_ft:         true,
-      elapsed:       null,
-      round:         e.intRound ? 'Round ' + e.intRound : null
+      fixture_id: e.idEvent, sportmonks_id: null, status: 'FT',
+      date: e.strDate + ' ' + (e.strTime || '00:00:00'),
+      home: normTeam(e.strHomeTeam || ''), away: normTeam(e.strAwayTeam || ''),
+      home_logo: e.strHomeTeamBadge || null, away_logo: e.strAwayTeamBadge || null,
+      hg: parseInt(e.intHomeScore) || 0, ag: parseInt(e.intAwayScore) || 0,
+      is_live: false, is_ft: true, elapsed: null,
+      round: e.intRound ? 'Round ' + e.intRound : null
     };
   });
 }
-
-
-// ══════════════════════════════════════════════════════════════════════════
-// STANDINGS — fetched from Sportmonks, also written to Supabase for cron use
-// ══════════════════════════════════════════════════════════════════════════
 async function getStandings() {
   const cached = fromCache('standings');
   if (cached) return cached;
@@ -515,6 +513,10 @@ const TEAM_NAME_MAP = {
   'Marumo Gallants':      'Marumo Gallants FC',
   'Cape Town Spurs FC':   'Cape Town Spurs',
   'Cape Town City FC':    'Cape Town City',
+  // TheSportsDB variants
+  'Amazulu':                   'AmaZulu',
+  'Lamontville Golden Arrows': 'Golden Arrows',
+  'SuperSport United':         'Siwelele',
 };
 
 function normTeam(name) {
