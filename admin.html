@@ -1088,36 +1088,49 @@
   let statsSearchTimeout = null;
 
   // ── Supabase REST helper ──────────────────────────────────────────
+  // READs: anon key (safe, public data)
+  // WRITES: /api/admin-api endpoint (uses service role key server-side, bypasses RLS)
   async function sb(method, table, body, query) {
-    const url     = SUPABASE_URL + '/rest/v1/' + table + (query ? '?' + query : '');
-    const headers = {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON,
-      'Authorization': 'Bearer ' + SUPABASE_ANON,
-      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
-    };
-    const opts = { method, headers };
-    if (body) opts.body = JSON.stringify(body);
-    const res  = await fetch(url, opts);
-    const text = await res.text();
-    if (!res.ok) throw new Error(text || String(res.status));
-    return text ? JSON.parse(text) : null;
+    if (method === 'GET') {
+      const url = SUPABASE_URL + '/rest/v1/' + table + (query ? '?' + query : '');
+      const res = await fetch(url, { headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON } });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || String(res.status));
+      return text ? JSON.parse(text) : [];
+    }
+    // All writes go through secure server-side endpoint
+    const action = method === 'POST' ? 'insert' : method === 'DELETE' ? 'delete' : 'update';
+    const match  = query ? parseQueryToMatch(query) : null;
+    return sbWrite(action, table, body, match);
   }
 
-  // ── Supabase helper with count ────────────────────────────────────
+  async function sbWrite(action, table, data, match, extra) {
+    const payload = Object.assign({ action, table, data, match }, extra || {});
+    const res = await fetch('/api/admin-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || String(res.status));
+    return json.data;
+  }
+
+  function parseQueryToMatch(query) {
+    const match = {};
+    String(query).split('&').forEach(function(part) {
+      const m = part.match(/^([^=]+)=eq\.(.+)$/);
+      if (m) match[m[1]] = m[2];
+    });
+    return Object.keys(match).length ? match : null;
+  }
+
   async function sbCount(table, query) {
     const url = SUPABASE_URL + '/rest/v1/' + table + '?select=id&' + (query || '');
-    const res = await fetch(url, {
-      headers: {
-        'apikey': SUPABASE_ANON,
-        'Authorization': 'Bearer ' + SUPABASE_ANON,
-        'Prefer': 'count=exact',
-        'Range': '0-0'
-      }
-    });
+    const res = await fetch(url, { headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Prefer': 'count=exact', 'Range': '0-0' } });
     const range = res.headers.get('content-range') || '';
-    const match = range.match(/\/(\d+)/);
-    return match ? parseInt(match[1]) : 0;
+    const m = range.match(/\/(\d+)/);
+    return m ? parseInt(m[1]) : 0;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -1231,18 +1244,19 @@
 
   async function jumpToGW() {
     const gw = parseInt(document.getElementById('jump-gw').value);
-    if (!gw || gw < 1 || gw > 38) { showStatus('gw-status', 'error', 'Enter a valid GW (1–38)'); return; }
+    if (!gw || gw < 1 || gw > 38) { showStatus('gw-status', 'error', 'Enter a valid GW (1-38)'); return; }
     if (!confirm('Set GW' + gw + ' as current? All other GWs will be deactivated.')) return;
     try {
-      await sb('PATCH', 'gameweeks', { is_current: false }, 'number=neq.' + gw);
+      // Use server-side endpoint with service key to bypass RLS
+      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { number: gw } });
       const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + gw + '&select=number&limit=1');
       if (existing && existing.length) {
-        await sb('PATCH', 'gameweeks', { is_current: true }, 'number=eq.' + gw);
+        await sbWrite('update', 'gameweeks', { is_current: true }, { number: String(gw) });
       } else {
-        await sb('POST', 'gameweeks', { number: gw, name: 'Gameweek ' + gw, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { number: gw, name: 'Gameweek ' + gw, is_current: true, is_finished: false });
       }
       STATE.gw = gw;
-      showStatus('gw-status', 'ok', '✓ GW' + gw + ' is now active');
+      showStatus('gw-status', 'ok', '✓ GW' + gw + ' is now active — app updates within 5 min');
       await loadCurrentGW();
       await loadCurrentFixtures();
     } catch(e) { showStatus('gw-status', 'error', '✗ ' + e.message); }
@@ -1255,7 +1269,7 @@
     const localDate = new Date(val);
     const utcDate   = new Date(localDate.getTime() - 2 * 60 * 60 * 1000);
     try {
-      await sb('PATCH', 'gameweeks', { deadline_at: utcDate.toISOString() }, 'is_current=eq.true');
+      await sbWrite('update', 'gameweeks', { deadline_at: utcDate.toISOString() }, { is_current: 'true' });
       showStatus('gw-status', 'ok', '✓ Deadline set for GW' + (STATE.gw || '?') + ' → ' + val + ' SAST');
     } catch(e) { showStatus('gw-status', 'error', '✗ ' + e.message); }
   }
@@ -1263,7 +1277,7 @@
   async function forceCloseGW() {
     if (!confirm('Close GW' + STATE.gw + '? This marks it as finished.')) return;
     try {
-      await sb('PATCH', 'gameweeks', { is_current: false, is_finished: true }, 'number=eq.' + STATE.gw);
+      await sbWrite('update', 'gameweeks', { is_current: false, is_finished: true }, { number: String(STATE.gw) });
       showStatus('gw-close-status', 'ok', '✓ GW' + STATE.gw + ' closed and marked finished');
       await loadCurrentGW();
     } catch(e) { showStatus('gw-close-status', 'error', '✗ ' + e.message); }
@@ -1273,12 +1287,12 @@
     const next = (STATE.gw || 23) + 1;
     if (!confirm('Open GW' + next + '?\n\nMake sure GW' + STATE.gw + ' is closed first.')) return;
     try {
-      await sb('PATCH', 'gameweeks', { is_current: false }, 'number=neq.' + next);
+      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { number: next } });
       const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + next + '&select=number&limit=1');
       if (existing && existing.length) {
-        await sb('PATCH', 'gameweeks', { is_current: true, is_finished: false }, 'number=eq.' + next);
+        await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { number: String(next) });
       } else {
-        await sb('POST', 'gameweeks', { number: next, name: 'Gameweek ' + next, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { number: next, name: 'Gameweek ' + next, is_current: true, is_finished: false });
       }
       showStatus('gw-close-status', 'ok', '✓ GW' + next + ' is now active');
       STATE.gw = next;
@@ -1347,10 +1361,7 @@
     const ag   = parseInt(document.getElementById('res-ag').value) || 0;
     if (home === away) { showStatus('result-status', 'error', 'Teams cannot be the same'); return; }
     try {
-      await sb('PATCH', 'fixtures',
-        { home_score: hg, away_score: ag, status: 'FT', updated_at: new Date().toISOString() },
-        'home_team=eq.' + encodeURIComponent(home) + '&away_team=eq.' + encodeURIComponent(away)
-      );
+      await sbWrite('update', 'fixtures', { home_score: hg, away_score: ag, status: 'FT', updated_at: new Date().toISOString() }, { home_team: home, away_team: away });
       showStatus('result-status', 'ok', '✓ Result saved: ' + home + ' ' + hg + '–' + ag + ' ' + away);
       await loadCurrentFixtures();
     } catch(e) { showStatus('result-status', 'error', '✗ ' + e.message); }
@@ -1368,7 +1379,7 @@
     const localDate  = new Date(kickoff);
     const kickoffUTC = new Date(localDate.getTime() - 2 * 60 * 60 * 1000).toISOString();
     try {
-      await sb('POST', 'fixtures', { gameweek: gw, home_team: home, away_team: away, kickoff_at: kickoffUTC, status: 'NS' });
+      await sbWrite('insert', 'fixtures', { gameweek: gw, home_team: home, away_team: away, kickoff_at: kickoffUTC, status: 'NS' });
       showStatus('fixture-status', 'ok', '✓ Fixture added: ' + home + ' vs ' + away + ' — GW' + gw);
       document.getElementById('fix-gw').value = '';
       document.getElementById('fix-kickoff').value = '';
@@ -1440,7 +1451,7 @@
     const price = parseFloat(document.getElementById('edit-price').value);
     const avail = document.getElementById('edit-available').value === 'true';
     try {
-      await sb('PATCH', 'players', { price, is_available: avail }, 'id=eq.' + editingPlayerId);
+      await sbWrite('update', 'players', { price, is_available: avail }, { id: String(editingPlayerId) });
       showStatus('player-status', 'ok', '✓ Player updated — R' + price + 'M · ' + (avail ? 'Available' : 'Unavailable'));
     } catch(e) { showStatus('player-status', 'error', '✗ ' + e.message); }
   }
@@ -1535,11 +1546,11 @@
     const newTotal = appPts + gPts + aPts + csPts + yPts + rPts;
 
     try {
-      await sb('PATCH', 'players', {
+      await sbWrite('update', 'players', {
         goals: newGoals, assists: newAssists, clean_sheets: newCS,
         yellow_cards: newYellow, red_cards: newRed, apps: newApps,
         total_points: newTotal, updated_at: new Date().toISOString()
-      }, 'id=eq.' + statsPlayerId);
+      }, { id: String(statsPlayerId) });
       showStatus('stats-status', 'ok',
         '✓ Updated — ' + newGoals + 'G ' + newAssists + 'A ' + newCS + 'CS ' + newYellow + 'YC · Est. ' + newTotal + ' fantasy pts'
       );
@@ -1598,7 +1609,7 @@
 
   async function clearCache(key) {
     try {
-      await sb('DELETE', 'api_cache', null, 'key=eq.' + encodeURIComponent(key));
+      await sbWrite('delete', 'api_cache', null, { key: key });
       showStatus('cron-status', 'ok', '✓ Cache cleared: ' + key);
     } catch(e) {
       showStatus('cron-status', 'error', '✗ ' + e.message + ' (api_cache table may not exist)');
@@ -1628,7 +1639,7 @@
     showStatus('rankings-status', 'info', '⚙ Resetting GW points…');
     try {
       // Supabase REST requires a filter — use neq on a non-null column
-      await sb('PATCH', 'profiles', { gw_points: 0 }, 'id=neq.00000000-0000-0000-0000-000000000000');
+      await sbWrite('update_not', 'profiles', { gw_points: 0 }, null, { notMatch: { id: '00000000-0000-0000-0000-000000000000' } });
       showStatus('rankings-status', 'ok', '✓ All GW points reset to 0');
     } catch(e) { showStatus('rankings-status', 'error', '✗ ' + e.message); }
   }
@@ -1709,13 +1720,13 @@
 
     try {
       // Try announcements table first
-      await sb('POST', 'announcements', row);
+      await sbWrite('insert', 'announcements', row);
       showStatus('ann-status', 'ok', '✓ Broadcast sent — ' + (expires > 0 ? 'expires in ' + expires + 'h' : 'sticky'));
     } catch(e) {
       // Fallback: store in api_cache so the main app can still read it
       try {
-        await sb('DELETE', 'api_cache', null, 'key=eq.active_announcement');
-        await sb('POST', 'api_cache', { key: 'active_announcement', value: msg, updated_at: new Date().toISOString() });
+        await sbWrite('delete', 'api_cache', null, { key: 'active_announcement' });
+        await sbWrite('upsert', 'api_cache', { key: 'active_announcement', value: msg, updated_at: new Date().toISOString() }, null, { onConflict: 'key' });
         showStatus('ann-status', 'ok', '✓ Broadcast saved (api_cache fallback) — visible to all users on next load');
       } catch(e2) {
         showStatus('ann-status', 'error', '✗ Could not save: ' + e2.message + '\n\nRun the SQL below in Supabase to create the table:\nCREATE TABLE announcements (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, message text, color text DEFAULT \'red\', is_active boolean DEFAULT true, expires_at timestamptz, created_at timestamptz DEFAULT now());');
@@ -1777,7 +1788,7 @@
 
   async function deactivateAnn(id) {
     try {
-      await sb('PATCH', 'announcements', { is_active: false }, 'id=eq.' + id);
+      await sbWrite('update', 'announcements', { is_active: false }, { id: String(id) });
       await loadAnnouncements();
     } catch(e) { alert('Error: ' + e.message); }
   }
@@ -1865,10 +1876,10 @@
     try {
       let result;
       if (editId) {
-        result = await sb('PATCH', 'news_posts', row, 'id=eq.' + editId);
+        result = await sbWrite('update', 'news_posts', row, { id: editId });
       } else {
         row.created_at = new Date().toISOString();
-        result = await sb('POST', 'news_posts', row, null);
+        result = await sbWrite('insert', 'news_posts', row);
       }
       showStatus('news-status','ok', publish
         ? '✅ Published! Users can see this immediately.'
@@ -1998,7 +2009,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
   async function deleteNewsPost(id, title) {
     if (!confirm('Delete "'+title+'"?\n\nThis cannot be undone.')) return;
     try {
-      await sb('DELETE','news_posts',null,'id=eq.'+id);
+      await sbWrite('delete','news_posts',null,{ id: String(id) });
       await loadNewsPosts();
       showStatus('news-status','ok','Deleted.');
     } catch(e) {
