@@ -4566,11 +4566,16 @@ function loadStats() {
 function renderStats() {
   var c = document.getElementById('stats-body'); if (!c) return;
 
-  // Use live API data if available, else fall back to PSL_ROSTER
-  var useLive = LIVE_STATS && (
-    (LIVE_STATS.topScorers && LIVE_STATS.topScorers.length > 0) ||
-    (LIVE_STATS.topAssists && LIVE_STATS.topAssists.length > 0)
-  );
+  // IMPORTANT: PSL_ROSTER is the primary source of truth for stats.
+  // It has manually-verified full-season data (goals, apps, positions etc).
+  // API data (LIVE_STATS) is only used if it has MORE goals than PSL_ROSTER max,
+  // meaning the season has progressed beyond what PSL_ROSTER records.
+  var rosterMaxGoals = PSL_ROSTER.reduce(function(m,p){ return Math.max(m, p.goals||0); }, 0);
+  var apiMaxGoals    = (LIVE_STATS && LIVE_STATS.topScorers && LIVE_STATS.topScorers.length)
+    ? LIVE_STATS.topScorers.reduce(function(m,p){ return Math.max(m, p.goals||0); }, 0) : 0;
+
+  // Use API only if it clearly has fresher/more complete data
+  var useLive = apiMaxGoals > rosterMaxGoals;
 
   if (STAT_TAB === 'goals')   { renderStatGoals(c, useLive ? LIVE_STATS : null); return; }
   if (STAT_TAB === 'assists') { renderStatAssists(c, useLive ? LIVE_STATS : null); return; }
@@ -4643,7 +4648,9 @@ function renderStatGoals(c, live) {
     }).join('');
   } else {
     scorerRows = rosterTopN('goals', 15, function(p){ return p.goals > 0; }).map(function(p,i) {
-      return statRow(i+1, p.display_name, p.club, null, p.goals, 'Goals', p.club + ' . ' + p.position + ' . ' + p.apps + ' apps');
+      var posLabel = p.position || 'MID';
+      var sub = p.club + ' · ' + posLabel + ' · ' + (p.apps||0) + ' apps';
+      return statRow(i+1, p.display_name, p.club, null, p.goals, 'Goals', sub);
     }).join('');
   }
 
@@ -4669,7 +4676,8 @@ function renderStatAssists(c, live) {
     }).join('');
   } else {
     rows = rosterTopN('assists', 15, function(p){ return p.assists > 0; }).map(function(p,i) {
-      return statRow(i+1, p.display_name, p.club, null, p.assists, 'Assists', p.club + ' . ' + p.position);
+      var sub = p.club + ' · ' + (p.position||'MID') + ' · ' + (p.apps||0) + ' apps';
+      return statRow(i+1, p.display_name, p.club, null, p.assists, 'Assists', sub);
     }).join('');
   }
   c.innerHTML = statSection('Most Assists', SVG.assists, rows);
@@ -4800,30 +4808,39 @@ function loadTable() {
     .then(function(r){ return r.json(); })
     .then(function(data){
       var rows = data && data.standings ? data.standings : [];
-      // Reject if fewer than 10 teams or if most teams are "Unknown" (broken API response)
-      var unknownCount = rows.filter(function(s){ return !s.team || s.team === 'Unknown'; }).length;
-      var validRows = rows.length >= 10 && unknownCount < rows.length / 2;
-      if (validRows) {
-        REAL_TABLE = rows.map(function(s, i) {
-          var formRaw = s.form || '';
-          var formArr = Array.isArray(formRaw) ? formRaw : (formRaw ? formRaw.split(',').filter(Boolean) : []);
+      // Need at least 10 teams with real names
+      var namedRows = rows.filter(function(s){ return s.team && s.team !== 'Unknown'; });
+      if (namedRows.length >= 10) {
+        // Merge live Sportmonks data (position, points, logo) with
+        // REAL_TABLE (played, won, drawn, lost, gf, ga, gd, form)
+        // because Sportmonks standings endpoint doesn't include played stats
+        // without extra includes that cost more API credits
+        REAL_TABLE = namedRows.map(function(s, i) {
           var ex = REAL_TABLE.find(function(r){ return r.team === s.team; });
-          // Keep form from hardcoded table if API has none
-          if (!formArr.length && ex && ex.form) formArr = ex.form;
-          // Keep played count from hardcoded table if API returns 0
-          var p = (s.p > 0) ? s.p : (ex ? ex.p : 0);
+          var formRaw = s.form || '';
+          var formArr = Array.isArray(formRaw) ? formRaw
+                      : formRaw ? formRaw.split(',').filter(Boolean) : [];
+          if (!formArr.length && ex) formArr = ex.form || [];
           return {
-            pos:  s.pos  || i+1,
-            team: s.team || s.club || (ex ? ex.team : 'Unknown'),
-            logo: s.logo || getTeamLogo(s.team || s.club),
-            p: p, w: s.w||0, d: s.d||0, l: s.l||0,
-            gf: s.gf||0, ga: s.ga||0, gd: s.gd||0,
-            pts: s.pts||0, form: formArr
+            pos:  s.pos  || i + 1,
+            team: s.team,
+            logo: s.logo || getTeamLogo(s.team),
+            // Use live points from Sportmonks (always accurate)
+            pts:  s.pts  || (ex ? ex.pts : 0),
+            // Use played stats from REAL_TABLE if API returns 0
+            p:    (s.p  > 0) ? s.p  : (ex ? ex.p  : 0),
+            w:    (s.w  > 0) ? s.w  : (ex ? ex.w  : 0),
+            d:    (s.d  > 0) ? s.d  : (ex ? ex.d  : 0),
+            l:    (s.l  > 0) ? s.l  : (ex ? ex.l  : 0),
+            gf:   (s.gf > 0) ? s.gf : (ex ? ex.gf : 0),
+            ga:   (s.ga > 0) ? s.ga : (ex ? ex.ga : 0),
+            gd:   s.gd || (ex ? ex.gd : 0),
+            form: formArr
           };
         });
         renderRealTable(c);
       }
-      // else: keep showing REAL_TABLE which was already rendered
+      // else: keep REAL_TABLE as-is (already rendered above)
     })
     .catch(function(){});
 }
