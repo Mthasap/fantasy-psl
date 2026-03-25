@@ -135,58 +135,92 @@ async function getFixtures() {
   const cached = fromCache('fixtures');
   if (cached) return cached;
 
-  const sid = await seasonId();
-  // Sort ascending so page 1 = the next upcoming fixtures (soonest first)
-  const d = await smGet(
-    '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:1' +
-    '&include=participants;round' +
-    '&orderBy=starting_at&sortedBy=asc' +
-    '&per_page=50&page=1'
-  );
-  const fixtures = (d.data || []).map(function(f) { return formatSMFixture(f, 'NS'); });
+  // PRIMARY: Supabase fixtures table (admin enters/syncs these)
+  // This is always accurate because you control it
+  if (SB_URL && SB_KEY) {
+    try {
+      const { data, error } = await db()
+        .from('fixtures')
+        .select('*')
+        .eq('status', 'NS')
+        .order('kickoff_at', { ascending: true })
+        .limit(50);
+      if (!error && data && data.length) {
+        const fixtures = data.map(formatSupabaseFixture);
+        return toCache('fixtures', { type: 'fixtures', fixtures, source: 'supabase', fetched_at: new Date().toISOString() });
+      }
+    } catch(e) { console.warn('[fixtures] Supabase error:', e.message); }
+  }
 
-  return toCache('fixtures', {
-    type: 'fixtures', fixtures,
-    fetched_at: new Date().toISOString()
-  });
+  // FALLBACK: Sportmonks upcoming fixtures (state 1 = NS)
+  try {
+    const sid = await seasonId();
+    const d = await smGet(
+      '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:1' +
+      '&include=participants;round' +
+      '&sortBy=starting_at&order=asc' +
+      '&per_page=50&page=1'
+    );
+    const fixtures = (d.data || []).map(function(f) { return formatSMFixture(f, 'NS'); });
+    return toCache('fixtures', { type: 'fixtures', fixtures, source: 'sportmonks', fetched_at: new Date().toISOString() });
+  } catch(e) {
+    console.warn('[fixtures] Sportmonks error:', e.message);
+    return toCache('fixtures', { type: 'fixtures', fixtures: [], fetched_at: new Date().toISOString() });
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// RESULTS — fetched directly from Sportmonks (state 5 = FT)
-// Always current — never stale from a DB that was last synced months ago
+// RESULTS — Supabase PRIMARY (admin-entered), Sportmonks fallback
+// Sportmonks only has 50 PSL fixtures indexed (Aug–Feb 2026).
+// All matches from Feb onwards must be entered manually via admin panel.
 // ══════════════════════════════════════════════════════════════════════════
 async function getResults() {
   const cached = fromCache('results');
   if (cached) return cached;
 
-  const sid = await seasonId();
+  let results = [];
 
-  // Fetch with orderBy=starting_at desc so page 1 = most recent matches
-  // We only need 1-2 pages (50-100 matches) since we show ~30 results max
-  let allResults = [];
-  for (let page = 1; page <= 2; page++) {
-    const d = await smGet(
-      '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5' +
-      '&include=participants;scores' +
-      '&orderBy=starting_at&sortedBy=desc' +
-      '&per_page=50&page=' + page
-    );
-    const rows = d.data || [];
-    if (!rows.length) break;
-    allResults = allResults.concat(rows);
-    if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+  // PRIMARY: Supabase fixtures table — admin enters results here
+  // These are always current and accurate
+  if (SB_URL && SB_KEY) {
+    try {
+      const { data, error } = await db()
+        .from('fixtures')
+        .select('*')
+        .eq('status', 'FT')
+        .order('kickoff_at', { ascending: false })
+        .limit(60);
+      if (!error && data && data.length) {
+        results = data.map(formatSupabaseFixture);
+        return toCache('results', { type: 'results', results, source: 'supabase', fetched_at: new Date().toISOString() });
+      }
+    } catch(e) { console.warn('[results] Supabase error:', e.message); }
   }
 
-  const results = allResults.map(function(f) {
-    const scores = extractScores(f.scores || []);
-    return formatSMFixture(f, 'FT', scores.home, scores.away);
-  });
+  // FALLBACK: Sportmonks (only has Aug–Feb data, better than nothing)
+  try {
+    const sid = await seasonId();
+    const allResults = [];
+    for (let page = 1; page <= 2; page++) {
+      const d = await smGet(
+        '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5' +
+        '&include=participants;scores' +
+        '&sortBy=starting_at&order=desc' +
+        '&per_page=50&page=' + page
+      );
+      const rows = d.data || [];
+      if (!rows.length) break;
+      allResults.push(...rows);
+      if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+    }
+    results = allResults.map(function(f) {
+      const scores = extractScores(f.scores || []);
+      return formatSMFixture(f, 'FT', scores.home, scores.away);
+    });
+    results.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+  } catch(e) { console.warn('[results] Sportmonks fallback error:', e.message); }
 
-  // Already sorted most-recent-first from API, keep that order
-  return toCache('results', {
-    type: 'results', results,
-    fetched_at: new Date().toISOString()
-  });
+  return toCache('results', { type: 'results', results, source: 'sportmonks_fallback', fetched_at: new Date().toISOString() });
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -391,6 +425,29 @@ const TEAM_NAME_MAP = {
 
 function normTeam(name) {
   return TEAM_NAME_MAP[name] || name;
+}
+
+// ── Format Supabase fixtures row → standard fixture shape ─────────────────
+// Used when Supabase is the primary data source (admin-entered results)
+function formatSupabaseFixture(f) {
+  const isLive = f.status === 'LIVE' || f.status === '1H' || f.status === '2H' || f.status === 'HT';
+  const isFT   = f.status === 'FT';
+  return {
+    fixture_id:    f.sportmonks_id || f.id,
+    sportmonks_id: f.sportmonks_id || f.id,
+    status:        f.status || 'NS',
+    date:          f.kickoff_at,
+    home:          normTeam(f.home_team || ''),
+    away:          normTeam(f.away_team || ''),
+    home_logo:     f.home_logo || null,
+    away_logo:     f.away_logo || null,
+    hg:            (isFT || isLive) ? f.home_score : null,
+    ag:            (isFT || isLive) ? f.away_score : null,
+    is_live:       isLive,
+    is_ft:         isFT,
+    elapsed:       f.elapsed || null,
+    round:         f.round   || null
+  };
 }
 
 function formatSMFixture(f, statusOverride, hgOverride, agOverride) {
