@@ -130,13 +130,14 @@ async function getFixtures() {
   if (cached) return cached;
 
   const sid = await seasonId();
-  const d   = await smGet(
+  // Sort ascending so page 1 = the next upcoming fixtures (soonest first)
+  const d = await smGet(
     '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:1' +
-    '&include=participants;round&per_page=50&page=1'
+    '&include=participants;round' +
+    '&orderBy=starting_at&sortedBy=asc' +
+    '&per_page=50&page=1'
   );
   const fixtures = (d.data || []).map(function(f) { return formatSMFixture(f, 'NS'); });
-  // Sort by kickoff date ascending
-  fixtures.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
 
   return toCache('fixtures', {
     type: 'fixtures', fixtures,
@@ -154,12 +155,15 @@ async function getResults() {
 
   const sid = await seasonId();
 
-  // Fetch last 2 pages of results (100 matches) — most recent first
+  // Fetch with orderBy=starting_at desc so page 1 = most recent matches
+  // We only need 1-2 pages (50-100 matches) since we show ~30 results max
   let allResults = [];
   for (let page = 1; page <= 2; page++) {
     const d = await smGet(
       '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5' +
-      '&include=participants;scores&per_page=50&page=' + page
+      '&include=participants;scores' +
+      '&orderBy=starting_at&sortedBy=desc' +
+      '&per_page=50&page=' + page
     );
     const rows = d.data || [];
     if (!rows.length) break;
@@ -172,9 +176,7 @@ async function getResults() {
     return formatSMFixture(f, 'FT', scores.home, scores.away);
   });
 
-  // Sort most recent first
-  results.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
-
+  // Already sorted most-recent-first from API, keep that order
   return toCache('results', {
     type: 'results', results,
     fetched_at: new Date().toISOString()
