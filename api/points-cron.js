@@ -359,12 +359,15 @@ module.exports = async (req, res) => {
 // ── syncFixtures: upsert NS or FT fixtures into Supabase ─────────────────
 // state: 'NS' (upcoming, fixtureState 1) or 'FT' (results, fixtureState 5)
 async function syncFixtures(db, seasonId, log, state) {
-  var stateCode = state === 'NS' ? 1 : 5;
+  var stateCode  = state === 'NS' ? 1 : 5;
+  var sortedBy   = state === 'NS' ? 'asc' : 'desc'; // upcoming: soonest first; results: newest first
   var count = 0;
   for (var page = 1; page <= 10; page++) {
     var d = await smGet(
       '/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:' + stateCode +
-      '&include=participants;scores&per_page=50&page=' + page
+      '&include=participants;scores' +
+      '&orderBy=starting_at&sortedBy=' + sortedBy +
+      '&per_page=50&page=' + page
     );
     var rows = d.data || [];
     if (!rows.length) break;
