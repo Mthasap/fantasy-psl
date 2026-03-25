@@ -3055,17 +3055,18 @@ function fdrColor(fdr) {
 }
 
 var REAL_TABLE = [
-  // Fallback standings (GW26, 25 Mar 2026) — live data loaded from Supabase first
-  { pos:1,  team:'Mamelodi Sundowns',  p:28, w:18, d:7,  l:3,  gf:47, ga:15, gd:32,  pts:61, form:['W','D','W','W','W'] },
-  { pos:2,  team:'Orlando Pirates',    p:26, w:16, d:4,  l:6,  gf:37, ga:14, gd:23,  pts:52, form:['W','L','W','W','D'] },
-  { pos:3,  team:'Kaizer Chiefs',      p:25, w:11, d:7,  l:7,  gf:22, ga:18, gd:4,   pts:40, form:['W','D','L','W','W'] },
-  { pos:4,  team:'AmaZulu',            p:26, w:11, d:6,  l:9,  gf:24, ga:22, gd:2,   pts:39, form:['L','W','D','W','L'] },
-  { pos:5,  team:'Sekhukhune United',  p:25, w:10, d:8,  l:7,  gf:24, ga:17, gd:7,   pts:38, form:['W','D','D','W','D'] },
-  { pos:6,  team:'Durban City',        p:25, w:10, d:5,  l:10, gf:22, ga:20, gd:2,   pts:35, form:['W','L','W','L','D'] },
-  { pos:7,  team:'Stellenbosch',       p:26, w:9,  d:8,  l:9,  gf:23, ga:25, gd:-2,  pts:35, form:['D','W','L','D','W'] },
-  { pos:8,  team:'Polokwane City',     p:25, w:8,  d:9,  l:8,  gf:18, ga:17, gd:1,   pts:33, form:['D','D','W','D','L'] },
-  { pos:9,  team:'Siwelele',           p:24, w:6,  d:9,  l:9,  gf:14, ga:18, gd:-4,  pts:27, form:['D','D','L','D','W'] },
-  { pos:10, team:'Golden Arrows',      p:25, w:8,  d:5,  l:12, gf:29, ga:29, gd:0,   pts:29, form:['L','W','L','W','L'] },
+  // Fallback standings (GW26, 25 Mar 2026) — P values from Sportmonks live data (Image 3)
+  // Live data always loads first from Sportmonks standings API
+  { pos:1,  team:'Orlando Pirates',    p:26, w:16, d:4,  l:6,  gf:37, ga:14, gd:23,  pts:52, form:['W','L','W','W','D'] },
+  { pos:2,  team:'Mamelodi Sundowns',  p:28, w:18, d:7,  l:3,  gf:47, ga:15, gd:32,  pts:61, form:['W','D','W','W','W'] },
+  { pos:3,  team:'AmaZulu',            p:26, w:11, d:6,  l:9,  gf:24, ga:22, gd:2,   pts:39, form:['L','W','D','W','L'] },
+  { pos:4,  team:'Kaizer Chiefs',      p:25, w:11, d:7,  l:7,  gf:22, ga:18, gd:4,   pts:40, form:['W','D','L','W','W'] },
+  { pos:5,  team:'Durban City',        p:25, w:10, d:5,  l:10, gf:22, ga:20, gd:2,   pts:35, form:['W','L','W','L','D'] },
+  { pos:6,  team:'Sekhukhune United',  p:25, w:10, d:8,  l:7,  gf:24, ga:17, gd:7,   pts:38, form:['W','D','D','W','D'] },
+  { pos:7,  team:'Polokwane City',     p:25, w:8,  d:9,  l:8,  gf:18, ga:17, gd:1,   pts:33, form:['D','D','W','D','L'] },
+  { pos:8,  team:'Golden Arrows',      p:25, w:8,  d:5,  l:12, gf:29, ga:29, gd:0,   pts:29, form:['L','W','L','W','L'] },
+  { pos:9,  team:'Stellenbosch',       p:26, w:9,  d:8,  l:9,  gf:23, ga:25, gd:-2,  pts:35, form:['D','W','L','D','W'] },
+  { pos:10, team:'Siwelele',           p:24, w:6,  d:9,  l:9,  gf:14, ga:18, gd:-4,  pts:27, form:['D','D','L','D','W'] },
   { pos:11, team:'TS Galaxy',          p:25, w:7,  d:5,  l:13, gf:25, ga:27, gd:-2,  pts:26, form:['L','L','W','L','W'] },
   { pos:12, team:'Richards Bay',       p:25, w:6,  d:8,  l:11, gf:20, ga:28, gd:-8,  pts:26, form:['D','W','L','D','L'] },
   { pos:13, team:'Chippa United',      p:25, w:5,  d:9,  l:11, gf:16, ga:27, gd:-11, pts:24, form:['D','L','D','D','L'] },
@@ -3073,7 +3074,6 @@ var REAL_TABLE = [
   { pos:15, team:'Magesi',             p:25, w:3,  d:5,  l:17, gf:16, ga:37, gd:-21, pts:14, form:['L','L','L','L','D'] },
   { pos:16, team:'Orbit College',      p:25, w:2,  d:5,  l:18, gf:13, ga:40, gd:-27, pts:11, form:['L','D','L','L','L'] }
 ];
-
 // ── REAL_INJURIES — updated manually each week ────────────────────────────
 var REAL_INJURIES = [
   { name: 'Thapelo Morena',    team: 'Mamelodi Sundowns', type: '⚕ Muscle Strain',    reason: 'Hamstring — day-to-day',  severe: false },
