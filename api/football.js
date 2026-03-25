@@ -1,42 +1,48 @@
 // ══════════════════════════════════════════════════════════════════════════
-// api/football.js  —  Fantasy PSL  —  Sportmonks Proxy  (Budget-Safe v2)
+// api/football.js  —  Fantasy PSL  —  Sportmonks Proxy  (v4 — Live First)
 // ══════════════════════════════════════════════════════════════════════════
 //
-// ARCHITECTURE: This file is a THIN PROXY only.
-// All data is read from Supabase (populated by points-cron.js nightly).
-// Direct Sportmonks calls are ONLY made here for:
-//   - Live scores (during match windows, every 5min)
-//   - Status/health check
-//   - Season ID discovery (once ever, then cached in Supabase)
+// ARCHITECTURE: Fetches directly from Sportmonks for fixtures/results/standings.
+// No longer depends on Supabase fixtures table being synced — results are always
+// live from Sportmonks, so stale data from Feb 2026 can never appear again.
+//
+// Supabase is ONLY used for: player_match_stats, player_season_stats lookups.
 //
 // ENDPOINTS:
-//   GET /api/football?type=live            → live scores (5min cache)
-//   GET /api/football?type=fixtures        → from Supabase fixtures table
-//   GET /api/football?type=results         → from Supabase fixtures table
-//   GET /api/football?type=standings       → from Supabase standings table
-//   GET /api/football?type=topscorers      → from Supabase player_season_stats
+//   GET /api/football?type=live            → live scores (60s in-memory cache)
+//   GET /api/football?type=fixtures        → upcoming NS fixtures from Sportmonks
+//   GET /api/football?type=results         → completed FT results from Sportmonks
+//   GET /api/football?type=standings       → league table from Sportmonks
+//   GET /api/football?type=topscorers      → top scorers from Supabase players table
 //   GET /api/football?type=player_stats&fixture_id=XXX → from Supabase
-//   GET /api/football?type=status          → health check + call budget
+//   GET /api/football?type=status          → health check
 //
 // ENV VARS:
 //   SPORTMONKS_TOKEN     — Sportmonks API token
 //   SUPABASE_URL         — Supabase project URL
 //   SUPABASE_SERVICE_KEY — Supabase service role key
+//   SPORTMONKS_SEASON_ID — (optional) hard-override season ID e.g. 26173
 //
-// PSL League ID: 806  |  Season auto-discovered and cached in Supabase
+// PSL League ID: 806
 // ══════════════════════════════════════════════════════════════════════════
 
 const { createClient } = require('@supabase/supabase-js');
+const { getSeasonId }  = require('./season-helper');
 
-const TOKEN    = process.env.SPORTMONKS_TOKEN    || '';
-const SB_URL   = process.env.SUPABASE_URL        || '';
-const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || '';
-const PSL_ID   = 806;
-const BASE_URL = 'https://api.sportmonks.com/v3/football';
+const TOKEN  = process.env.SPORTMONKS_TOKEN    || '';
+const SB_URL = process.env.SUPABASE_URL        || '';
+const SB_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const PSL_ID = 806;
+const BASE   = 'https://api.sportmonks.com/v3/football';
 
-// Short in-memory cache for live scores only (55s)
-let LIVE_CACHE = { data: null, ts: 0 };
-const LIVE_TTL = 55 * 1000;
+// In-memory caches — keyed by type, value: { data, ts }
+const CACHE = {};
+const TTL = {
+  live:      60  * 1000,   //  1 min  — live scores
+  fixtures:  5   * 60 * 1000,  //  5 min  — upcoming fixtures
+  results:   10  * 60 * 1000,  // 10 min  — results (rarely change once FT)
+  standings: 15  * 60 * 1000,  // 15 min  — table
+};
 
 // ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
@@ -48,24 +54,21 @@ module.exports = async (req, res) => {
   const type      = (req.query && req.query.type) || 'live';
   const fixtureId = req.query && req.query.fixture_id;
 
-  // Token check only needed for live/status
-  if ((type === 'live' || type === 'status') && !TOKEN) {
-    return res.status(500).json({
-      error: 'SPORTMONKS_TOKEN not set in Vercel Environment Variables'
-    });
+  if (!TOKEN) {
+    return res.status(500).json({ error: 'SPORTMONKS_TOKEN not set in Vercel Environment Variables' });
   }
 
   try {
     switch (type) {
-      case 'live':        return res.json(await getLive());
-      case 'fixtures':    return res.json(await getFromSupabase('fixtures'));
-      case 'results':     return res.json(await getFromSupabase('results'));
-      case 'standings':   return res.json(await getFromSupabase('standings'));
-      case 'topscorers':  return res.json(await getFromSupabase('topscorers'));
+      case 'live':         return res.json(await getLive());
+      case 'fixtures':     return res.json(await getFixtures());
+      case 'results':      return res.json(await getResults());
+      case 'standings':    return res.json(await getStandings());
+      case 'topscorers':   return res.json(await getTopScorers());
       case 'player_stats':
         if (!fixtureId) return res.status(400).json({ error: 'fixture_id required' });
         return res.json(await getPlayerStats(fixtureId));
-      case 'status':      return res.json(await getStatus());
+      case 'status':       return res.json(await getStatus());
       default:
         return res.status(400).json({ error: 'Unknown type: ' + type });
     }
@@ -75,158 +78,312 @@ module.exports = async (req, res) => {
   }
 };
 
+// ── Cache helper ──────────────────────────────────────────────────────────
+function fromCache(key) {
+  const c = CACHE[key];
+  if (c && (Date.now() - c.ts) < (TTL[key] || 300000)) return c.data;
+  return null;
+}
+function toCache(key, data) {
+  CACHE[key] = { data, ts: Date.now() };
+  return data;
+}
+
 // ── Supabase client ───────────────────────────────────────────────────────
 function db() {
   if (!SB_URL || !SB_KEY) throw new Error('Supabase env vars not set');
   return createClient(SB_URL, SB_KEY);
 }
 
-// ── Read data from Supabase cache tables ──────────────────────────────────
-async function getFromSupabase(dataType) {
-  const client = db();
-
-  if (dataType === 'fixtures') {
-    const { data, error } = await client
-      .from('fixtures')
-      .select('*')
-      .eq('status', 'NS')
-      .order('kickoff_at', { ascending: true })
-      .limit(50);
-    if (error) throw new Error('fixtures: ' + error.message);
-    return { type: 'fixtures', fixtures: (data || []).map(formatFixtureRow), fetched_at: new Date().toISOString() };
-  }
-
-  if (dataType === 'results') {
-    const { data, error } = await client
-      .from('fixtures')
-      .select('*')
-      .eq('status', 'FT')
-      .not('sportmonks_id', 'is', null)
-      .order('kickoff_at', { ascending: false })
-      .limit(50);
-    if (error) throw new Error('results: ' + error.message);
-    return { type: 'results', results: (data || []).map(formatFixtureRow), fetched_at: new Date().toISOString() };
-  }
-
-  if (dataType === 'standings') {
-    const { data, error } = await client
-      .from('standings')
-      .select('*')
-      .order('position', { ascending: true });
-    if (error) {
-      // standings table may not exist yet — return empty
-      console.warn('standings table missing:', error.message);
-      return { type: 'standings', standings: [], fetched_at: new Date().toISOString() };
-    }
-    return { type: 'standings', standings: (data || []).map(formatStandingRow), fetched_at: new Date().toISOString() };
-  }
-
-  if (dataType === 'topscorers') {
-    // Read from player_season_stats (populated by points-cron topscorers sync)
-    const { data: ssData, error: ssErr } = await client
-      .from('player_season_stats')
-      .select('player_name,team_name,goals,rank')
-      .order('rank', { ascending: true })
-      .limit(30);
-    if (!ssErr && ssData && ssData.length) {
-      return {
-        type: 'topscorers',
-        topScorers: ssData.map(function(p, i) {
-          return { rank: p.rank || i+1, name: p.player_name, club: p.team_name, goals: p.goals || 0, apps: 0 };
-        }),
-        fetched_at: new Date().toISOString()
-      };
-    }
-    // Fallback: read from players table (safe column list)
-    const { data, error } = await client
-      .from('players')
-      .select('display_name,position,goals,total_points')
-      .order('goals', { ascending: false })
-      .limit(30);
-    if (error) throw new Error('topscorers: ' + error.message);
-    return {
-      type: 'topscorers',
-      topScorers: (data || []).map(function(p, i) {
-        return { rank: i+1, name: p.display_name || 'Unknown', club: '', goals: p.goals||0, apps: 0 };
-      }),
-      fetched_at: new Date().toISOString()
-    };
-  }
+// ── Season ID helper ──────────────────────────────────────────────────────
+async function seasonId() {
+  const cached = fromCache('season_id');
+  if (cached) return cached;
+  const id = await getSeasonId(db(), TOKEN);
+  toCache('season_id', id);
+  return id;
 }
 
-// ── Format helpers ────────────────────────────────────────────────────────
-function formatFixtureRow(f) {
+// ══════════════════════════════════════════════════════════════════════════
+// LIVE SCORES — straight from Sportmonks inplay endpoint
+// ══════════════════════════════════════════════════════════════════════════
+async function getLive() {
+  const cached = fromCache('live');
+  if (cached) return cached;
+
+  const d = await smGet(
+    '/livescores/inplay?include=participants;scores;state' +
+    '&filters=fixtureLeagues:' + PSL_ID
+  );
+  const matches = (d.data || []).map(formatSMFixture);
+  return toCache('live', {
+    type: 'live', isLive: matches.length > 0,
+    matches, fetched_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// UPCOMING FIXTURES — fetched directly from Sportmonks (state 1 = NS)
+// ══════════════════════════════════════════════════════════════════════════
+async function getFixtures() {
+  const cached = fromCache('fixtures');
+  if (cached) return cached;
+
+  const sid = await seasonId();
+  const d   = await smGet(
+    '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:1' +
+    '&include=participants;round&per_page=50&page=1'
+  );
+  const fixtures = (d.data || []).map(function(f) { return formatSMFixture(f, 'NS'); });
+  // Sort by kickoff date ascending
+  fixtures.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  return toCache('fixtures', {
+    type: 'fixtures', fixtures,
+    fetched_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RESULTS — fetched directly from Sportmonks (state 5 = FT)
+// Always current — never stale from a DB that was last synced months ago
+// ══════════════════════════════════════════════════════════════════════════
+async function getResults() {
+  const cached = fromCache('results');
+  if (cached) return cached;
+
+  const sid = await seasonId();
+
+  // Fetch last 2 pages of results (100 matches) — most recent first
+  let allResults = [];
+  for (let page = 1; page <= 2; page++) {
+    const d = await smGet(
+      '/fixtures?filters=fixtureSeasons:' + sid + ';fixtureStates:5' +
+      '&include=participants;scores&per_page=50&page=' + page
+    );
+    const rows = d.data || [];
+    if (!rows.length) break;
+    allResults = allResults.concat(rows);
+    if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+  }
+
+  const results = allResults.map(function(f) {
+    const scores = extractScores(f.scores || []);
+    return formatSMFixture(f, 'FT', scores.home, scores.away);
+  });
+
+  // Sort most recent first
+  results.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+  return toCache('results', {
+    type: 'results', results,
+    fetched_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// STANDINGS — fetched from Sportmonks, also written to Supabase for cron use
+// ══════════════════════════════════════════════════════════════════════════
+async function getStandings() {
+  const cached = fromCache('standings');
+  if (cached) return cached;
+
+  const sid  = await seasonId();
+  const d    = await smGet('/standings/seasons/' + sid);
+  const rows = flattenStandings(d.data || []);
+
+  // Also persist to Supabase standings table so cron and admin can read it
+  if (SB_URL && SB_KEY && rows.length) {
+    try {
+      await db().from('standings').upsert(rows, { onConflict: 'id' });
+    } catch(e) {
+      console.warn('[standings] Supabase upsert failed:', e.message);
+    }
+  }
+
+  const standings = rows.map(formatStandingRow);
+  return toCache('standings', {
+    type: 'standings', standings,
+    fetched_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TOP SCORERS — from Supabase players table (populated by points-cron)
+// Falls back to Sportmonks topscorers endpoint if table is empty
+// ══════════════════════════════════════════════════════════════════════════
+async function getTopScorers() {
+  const cached = fromCache('topscorers');
+  if (cached) return cached;
+
+  if (SB_URL && SB_KEY) {
+    try {
+      const { data } = await db()
+        .from('players')
+        .select('display_name, team, goals, apps, total_points')
+        .gt('goals', 0)
+        .order('goals', { ascending: false })
+        .limit(20);
+
+      if (data && data.length) {
+        const topScorers = data.map(function(p, i) {
+          return { rank: i + 1, name: p.display_name || 'Unknown', club: p.team || '', goals: p.goals || 0, apps: p.apps || 0 };
+        });
+        return toCache('topscorers', { type: 'topscorers', topScorers, fetched_at: new Date().toISOString() });
+      }
+    } catch(e) {
+      console.warn('[topscorers] Supabase error:', e.message);
+    }
+  }
+
+  // Fallback: Sportmonks topscorers endpoint
+  const sid = await seasonId();
+  const d   = await smGet('/topscorers/seasons/' + sid + '?include=player;participant&limit=20');
+  const topScorers = (d.data || []).map(function(s, i) {
+    const p = s.player || {};
+    return {
+      rank:  i + 1,
+      name:  p.display_name || p.name || 'Unknown',
+      club:  (s.participant && s.participant.name) || '',
+      goals: s.total || 0,
+      apps:  s.appearances || 0
+    };
+  });
+  return toCache('topscorers', { type: 'topscorers', topScorers, fetched_at: new Date().toISOString() });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PLAYER STATS — from Supabase player_match_stats table
+// ══════════════════════════════════════════════════════════════════════════
+async function getPlayerStats(fixtureId) {
+  const { data, error } = await db()
+    .from('player_match_stats')
+    .select('*')
+    .eq('fixture_id', fixtureId);
+  if (error) throw new Error('player_stats: ' + error.message);
   return {
-    fixture_id: f.sportmonks_id || f.id,
-    sportmonks_id: f.sportmonks_id || f.id,
-    status:     f.status || 'NS',
-    date:       f.kickoff_at,
-    home:       normaliseTeamName(f.home_team || ''),
-    away:       normaliseTeamName(f.away_team || ''),
-    home_logo:  f.home_logo || '',
-    away_logo:  f.away_logo || '',
-    hg:         f.home_score !== null && f.home_score !== undefined ? f.home_score : null,
-    ag:         f.away_score !== null && f.away_score !== undefined ? f.away_score : null,
-    is_live:    f.status === 'LIVE' || f.status === '1H' || f.status === '2H',
-    elapsed:    f.elapsed || null,
-    round:      f.round || null
+    type: 'player_stats',
+    fixture_id: parseInt(fixtureId, 10),
+    players: data || [],
+    fetched_at: new Date().toISOString()
   };
 }
 
-// Normalise Sportmonks team names to match app's SS_LOGOS / SHORT_NAMES keys
-// Team name normalisation — maps any variant to the Sportmonks canonical name
-// Sportmonks exact names for season 26173 (confirmed via /api/sportmonks-setup?action=teams)
-var TEAM_NAME_MAP = {
-  // Sportmonks exact → same (identity, handles DB values already correct)
-  'Mamelodi Sundowns':   'Mamelodi Sundowns',
-  'Orlando Pirates':     'Orlando Pirates',
-  'Kaizer Chiefs':       'Kaizer Chiefs',
-  'AmaZulu':             'AmaZulu',
-  'Sekhukhune United':   'Sekhukhune United',
-  'Stellenbosch':        'Stellenbosch',
-  'Polokwane City':      'Polokwane City',
-  'Durban City':         'Durban City',
-  'TS Galaxy':           'TS Galaxy',
-  'Golden Arrows':       'Golden Arrows',
-  'Chippa United':       'Chippa United',
-  'Richards Bay':        'Richards Bay',
-  'Siwelele':            'Siwelele',
-  'Magesi':              'Magesi',
-  'Orbit College':       'Orbit College',
-  'Marumo Gallants FC':  'Marumo Gallants FC',
-  // Old variants with FC suffix → Sportmonks canonical
-  'Mamelodi Sundowns FC':         'Mamelodi Sundowns',
-  'Orlando Pirates FC':           'Orlando Pirates',
-  'Kaizer Chiefs FC':             'Kaizer Chiefs',
-  'AmaZulu FC':                   'AmaZulu',
-  'Sekhukhune United FC':         'Sekhukhune United',
-  'Stellenbosch FC':              'Stellenbosch',
-  'Polokwane City FC':            'Polokwane City',
-  'Durban City FC':               'Durban City',
-  'TS Galaxy FC':                 'TS Galaxy',
+// ══════════════════════════════════════════════════════════════════════════
+// STATUS / HEALTH CHECK
+// ══════════════════════════════════════════════════════════════════════════
+async function getStatus() {
+  const status = {
+    ok: true, provider: 'Sportmonks v3',
+    token_set: !!TOKEN,
+    psl_league_id: PSL_ID,
+    supabase_configured: !!(SB_URL && SB_KEY),
+    checked_at: new Date().toISOString()
+  };
+  try {
+    const d = await smGet('/leagues/' + PSL_ID);
+    status.league_name = d.data && d.data.name;
+    status.current_season_id = d.data && d.data.current_season_id;
+    status.league_ok = true;
+  } catch(e) {
+    status.league_ok    = false;
+    status.league_error = e.message;
+  }
+  return status;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ══════════════════════════════════════════════════════════════════════════
+
+// Maps any team name variant to the Sportmonks canonical name used in the app
+const TEAM_NAME_MAP = {
+  'Mamelodi Sundowns FC': 'Mamelodi Sundowns',
+  'Orlando Pirates FC':   'Orlando Pirates',
+  'Kaizer Chiefs FC':     'Kaizer Chiefs',
+  'AmaZulu FC':           'AmaZulu',
+  'Sekhukhune United FC': 'Sekhukhune United',
+  'Stellenbosch FC':      'Stellenbosch',
+  'Polokwane City FC':    'Polokwane City',
+  'Durban City FC':       'Durban City',
+  'TS Galaxy FC':         'TS Galaxy',
   'Lamontville Golden Arrows FC': 'Golden Arrows',
-  'Golden Arrows FC':             'Golden Arrows',
-  'Chippa United FC':             'Chippa United',
-  'Richards Bay FC':              'Richards Bay',
-  'Siwelele FC':                  'Siwelele',
-  'Magesi FC':                    'Magesi',
-  'Orbit College FC':             'Orbit College',
-  'Marumo Gallants':              'Marumo Gallants FC',
-  'Cape Town Spurs FC':           'Cape Town Spurs',
-  'Cape Town Spurs':              'Cape Town Spurs',
-  'Cape Town City FC':            'Cape Town City',
-  'Cape Town City':               'Cape Town City'
+  'Golden Arrows FC':     'Golden Arrows',
+  'Chippa United FC':     'Chippa United',
+  'Richards Bay FC':      'Richards Bay',
+  'Siwelele FC':          'Siwelele',
+  'Magesi FC':            'Magesi',
+  'Orbit College FC':     'Orbit College',
+  'Marumo Gallants':      'Marumo Gallants FC',
+  'Cape Town Spurs FC':   'Cape Town Spurs',
+  'Cape Town City FC':    'Cape Town City',
 };
 
-function normaliseTeamName(name) {
+function normTeam(name) {
   return TEAM_NAME_MAP[name] || name;
 }
 
-function formatStandingRow(s) {
-  var rawName = s.team_name || s.team || '';
+function formatSMFixture(f, statusOverride, hgOverride, agOverride) {
+  const parts  = f.participants || [];
+  const home   = parts.find(function(p) { return p.meta && p.meta.location === 'home'; }) || parts[0] || {};
+  const away   = parts.find(function(p) { return p.meta && p.meta.location === 'away'; }) || parts[1] || {};
+
+  let hg = hgOverride !== undefined ? hgOverride : null;
+  let ag = agOverride !== undefined ? agOverride : null;
+
+  // Parse scores if not provided as override
+  if (hg === null && ag === null) {
+    (f.scores || []).forEach(function(s) {
+      if (!s.score) return;
+      const desc = (s.description || '').toUpperCase();
+      if (['CURRENT','2ND_HALF','FULLTIME','FT'].indexOf(desc) > -1) {
+        if (s.score.participant === 'home') hg = s.score.goals;
+        if (s.score.participant === 'away') ag = s.score.goals;
+      }
+    });
+  }
+
+  const state  = f.state || {};
+  const rawStatus = statusOverride || (state.short_name || state.state || 'NS').toUpperCase();
+  const status = rawStatus === '5' ? 'FT' : rawStatus === '1' ? 'NS' : rawStatus;
+
+  const isLive = status === 'LIVE' || status === '1H' || status === '2H' || status === 'HT';
+  const isFT   = status === 'FT';
+
   return {
-    pos:  s.position || s.pos,
-    team: normaliseTeamName(rawName),
+    fixture_id:   f.id,
+    sportmonks_id: f.id,
+    status,
+    date:         f.starting_at,
+    home:         normTeam(home.name || ''),
+    away:         normTeam(away.name || ''),
+    home_logo:    home.image_path || '',
+    away_logo:    away.image_path || '',
+    hg:           hg,
+    ag:           ag,
+    is_live:      isLive,
+    is_ft:        isFT,
+    elapsed:      f.minute || null,
+    round:        (f.round && f.round.name) || null
+  };
+}
+
+function extractScores(scores) {
+  let home = null, away = null;
+  scores.forEach(function(s) {
+    const desc = (s.description || '').toUpperCase();
+    if (['CURRENT','FT','FULLTIME','2ND_HALF'].indexOf(desc) > -1) {
+      if (s.score && s.score.participant === 'home') home = s.score.goals;
+      if (s.score && s.score.participant === 'away') away = s.score.goals;
+    }
+  });
+  return { home, away };
+}
+
+function formatStandingRow(s) {
+  return {
+    pos:  s.position,
+    team: normTeam(s.team_name || ''),
     logo: s.team_logo || null,
     p:    s.played   || 0,
     w:    s.won      || 0,
@@ -234,120 +391,57 @@ function formatStandingRow(s) {
     l:    s.lost     || 0,
     gf:   s.goals_for     || 0,
     ga:   s.goals_against || 0,
-    gd:   s.goal_diff     || (s.goals_for || 0) - (s.goals_against || 0),
+    gd:   s.goal_diff     || 0,
     pts:  s.points   || 0,
     form: s.form ? s.form.split(',').slice(-5) : []
   };
 }
 
-// ── Live scores ───────────────────────────────────────────────────────────
-async function getLive() {
-  // Check in-memory cache first
-  if (LIVE_CACHE.data && (Date.now() - LIVE_CACHE.ts) < LIVE_TTL) {
-    return LIVE_CACHE.data;
-  }
-
-  const d = await smGet(
-    '/livescores/inplay?include=participants;scores;state' +
-    '&filters=fixtureLeagues:' + PSL_ID
-  );
-
-  const matches = (d.data || []).map(formatSMFixture);
-  const result  = {
-    type:    'live',
-    isLive:  matches.length > 0,
-    matches,
-    fetched_at: new Date().toISOString()
-  };
-
-  LIVE_CACHE = { data: result, ts: Date.now() };
-  return result;
-}
-
-// ── Player stats from Supabase ────────────────────────────────────────────
-async function getPlayerStats(fixtureId) {
-  const client = db();
-  const { data, error } = await client
-    .from('player_match_stats')
-    .select('*')
-    .eq('fixture_id', fixtureId);
-  if (error) throw new Error('player_stats: ' + error.message);
-  return {
-    type:       'player_stats',
-    fixture_id: parseInt(fixtureId, 10),
-    players:    data || [],
-    fetched_at: new Date().toISOString()
-  };
-}
-
-// ── Status / health check ─────────────────────────────────────────────────
-async function getStatus() {
-  const status = {
-    ok: true,
-    provider: 'Sportmonks v3',
-    token_set: !!TOKEN,
-    psl_league_id: PSL_ID,
-    supabase_configured: !!(SB_URL && SB_KEY),
-    checked_at: new Date().toISOString()
-  };
-
-  // Quick token ping
-  try {
-    const d = await smGet('/leagues/' + PSL_ID + '?include=currentSeason');
-    status.league_name = d.data && d.data.name;
-    status.league_ok = true;
-    const cs = d.data && (d.data.currentSeason || d.data.current_season);
-    if (cs && cs.id) status.current_season_id = cs.id;
-  } catch (e) {
-    status.league_ok = false;
-    status.league_error = e.message;
-  }
-
-  return status;
+function flattenStandings(data) {
+  const rows = [];
+  data.forEach(function(g) {
+    const items = (g.standings && Array.isArray(g.standings)) ? g.standings : (g.position ? [g] : []);
+    items.forEach(function(s) {
+      const det  = s.details || [];
+      const part = s.participant || {};
+      function dv(tid) { const d = det.find(function(x) { return x.type_id === tid; }); return d ? (d.value || 0) : 0; }
+      rows.push({
+        id:            s.participant_id || part.id || rows.length + 1,
+        team_name:     normTeam(part.name || s.team_name || 'Unknown'),
+        team_logo:     part.image_path || null,
+        position:      s.position || rows.length + 1,
+        played:        dv(129) || s.games_played || 0,
+        won:           dv(130) || s.won   || 0,
+        drawn:         dv(131) || s.draw  || 0,
+        lost:          dv(132) || s.lost  || 0,
+        goals_for:     dv(133) || s.goals_scored   || 0,
+        goals_against: dv(134) || s.goals_conceded || 0,
+        goal_diff:     dv(135) || s.goal_difference || 0,
+        points:        s.points || 0,
+        form:          Array.isArray(s.form) ? s.form.slice(-5).join(',') : (s.form || ''),
+        updated_at:    new Date().toISOString()
+      });
+    });
+  });
+  return rows;
 }
 
 // ── Sportmonks GET helper ─────────────────────────────────────────────────
 async function smGet(path) {
   const sep = path.includes('?') ? '&' : '?';
-  const url = BASE_URL + path + sep + 'api_token=' + TOKEN;
-  console.log('[SM] GET', BASE_URL + path.split('?')[0]);
-
-  const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error('Sportmonks HTTP ' + response.status + ': ' + body.substring(0, 300));
+  const url = BASE + path + sep + 'api_token=' + TOKEN;
+  console.log('[SM] GET', BASE + path.split('?')[0]);
+  const r = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+  if (!r.ok) {
+    const body = await r.text().catch(function() { return ''; });
+    throw new Error('Sportmonks HTTP ' + r.status + ': ' + body.substring(0, 300));
   }
-  const json = await response.json();
+  const json = await r.json();
   if (json.errors) throw new Error('Sportmonks error: ' + JSON.stringify(json.errors).substring(0, 300));
   return json;
 }
 
-// ── Format Sportmonks live fixture ────────────────────────────────────────
-function formatSMFixture(f) {
-  const parts  = f.participants || [];
-  const home   = parts.find(function(p) { return p.meta && p.meta.location === 'home'; }) || parts[0] || {};
-  const away   = parts.find(function(p) { return p.meta && p.meta.location === 'away'; }) || parts[1] || {};
-  const scores = f.scores || [];
-  let hg = null, ag = null;
-  scores.forEach(function(s) {
-    if (!s.score) return;
-    const desc = (s.description || '').toUpperCase();
-    if (desc === 'CURRENT' || desc === '2ND_HALF' || desc === 'FULLTIME' || desc === 'FT') {
-      if (s.score.participant === 'home') hg = s.score.goals;
-      if (s.score.participant === 'away') ag = s.score.goals;
-    }
-  });
-  const state  = f.state || {};
-  const status = (state.short_name || state.state || 'NS').toUpperCase();
-  return {
-    fixture_id: f.id, status, date: f.starting_at,
-    home: home.name || '', away: away.name || '',
-    home_logo: home.image_path || '', away_logo: away.image_path || '',
-    hg, ag, is_live: true, elapsed: f.minute || null
-  };
-}
-
-// Export for points-cron.js
+// Export scoring helpers for points-cron.js
 const { calculateFantasyPoints, normalisePosition } = require('./football_scoring');
 module.exports.calculateFantasyPoints = calculateFantasyPoints;
 module.exports.normalisePosition      = normalisePosition;
