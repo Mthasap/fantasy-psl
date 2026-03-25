@@ -592,6 +592,7 @@
     <button class="tab-btn" onclick="switchTab('automation')">Automation</button>
     <button class="tab-btn" onclick="switchTab('users')">Users</button>
     <button class="tab-btn" onclick="switchTab('announcements')">Announcements</button>
+    <button class="tab-btn" onclick="switchTab('news')">📰 News</button>
   </div>
 
   <main>
@@ -634,17 +635,22 @@
 
     <!-- ══════════════════ GAMEWEEK TAB ══════════════════ -->
     <div id="tab-gameweek" class="tab-page">
+
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.6">
+        <strong style="color:#60A5FA">&#9432; Admin-only control:</strong> The gameweek number shown across the entire app is set <em>only</em> here — never hardcoded. Users always see whatever you set here, in real time. No auto-advancing happens anywhere.
+      </div>
+
       <div class="grid-2">
 
         <!-- GW Status -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><span class="dot dot-blue"></span>Gameweek Status</div>
+            <div class="card-title"><span class="dot dot-blue"></span>Current Gameweek Status</div>
           </div>
           <div class="card-body">
             <div class="gw-display">
               <div class="gw-number" id="gw-num">—</div>
-              <div class="gw-label">Current Gameweek</div>
+              <div class="gw-label">Active Gameweek</div>
               <div class="gw-stats">
                 <div class="gw-stat">
                   <div class="gw-stat-val" id="gw-total">—</div>
@@ -660,10 +666,11 @@
                 </div>
               </div>
             </div>
-            <div style="display:flex;gap:10px;margin-bottom:10px;">
-              <button class="btn btn-red btn-full" onclick="forceCloseGW()">Force Close GW</button>
+            <div style="display:flex;gap:10px;margin-bottom:4px;">
+              <button class="btn btn-red btn-full" onclick="forceCloseGW()">Close Current GW</button>
               <button class="btn btn-green btn-full" onclick="forceOpenNextGW()">Open Next GW</button>
             </div>
+            <p style="font-size:11px;color:var(--muted);margin:0 0 10px">Close marks this GW finished. Open Next increments by 1 and activates it.</p>
             <div class="status-msg" id="gw-close-status"></div>
           </div>
         </div>
@@ -674,15 +681,17 @@
             <div class="card-title"><span class="dot dot-green"></span>Set Active Gameweek</div>
           </div>
           <div class="card-body">
-            <label>Jump to GW</label>
+            <label>Jump to any GW number (1–38)</label>
             <div class="row">
-              <input type="number" id="jump-gw" min="1" max="38" placeholder="e.g. 24" style="margin-bottom:0">
+              <input type="number" id="jump-gw" min="1" max="38" placeholder="e.g. 26" style="margin-bottom:0">
               <button class="btn btn-blue btn-full" onclick="jumpToGW()">Set Active</button>
             </div>
-            <div style="margin-bottom:14px"></div>
-            <label>Deadline (SAST — auto converts to UTC)</label>
-            <input type="datetime-local" id="gw-deadline">
-            <button class="btn btn-green btn-full" onclick="setDeadline()">Set Deadline for Current GW</button>
+            <p style="font-size:11px;color:var(--muted);margin:6px 0 16px">All users see this GW number immediately across the whole app.</p>
+
+            <label>Transfer Deadline for current GW <span style="font-weight:400;color:var(--muted)">(SAST — stored as UTC)</span></label>
+            <input type="datetime-local" id="gw-deadline" style="margin-bottom:6px">
+            <button class="btn btn-green btn-full" onclick="setDeadline()">Save Deadline</button>
+            <p style="font-size:11px;color:var(--muted);margin:6px 0 0">Once deadline passes, user squads lock automatically. A countdown shows in the app.</p>
             <div class="status-msg" id="gw-status"></div>
           </div>
         </div>
@@ -967,7 +976,92 @@
         </div>
 
       </div>
-    </div>
+    </div><!-- end tab-announcements -->
+
+    <!-- ══════════════════ NEWS CMS TAB ══════════════════ -->
+    <div id="tab-news" class="tab-page">
+
+      <div class="grid-2">
+
+        <!-- Compose new post -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot dot-green"></span>Publish News Post</div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="clearNewsForm()">Clear</button>
+          </div>
+          <div class="card-body">
+
+            <input type="hidden" id="news-edit-id" value="">
+
+            <label>Headline *</label>
+            <input type="text" id="news-title" placeholder="e.g. GW24 Transfer Tips: Best Differentials" maxlength="120" style="margin-bottom:10px">
+
+            <label>Summary (shown on card)</label>
+            <textarea id="news-summary" placeholder="2–3 sentence teaser shown on the news card…" maxlength="280" rows="3" style="margin-bottom:10px"></textarea>
+
+            <label>Full Article Body</label>
+            <textarea id="news-body" placeholder="Write the full article here. Supports plain text, line breaks etc." rows="8" style="margin-bottom:10px"></textarea>
+
+            <label>Category</label>
+            <select id="news-category" style="margin-bottom:10px">
+              <option value="Tips">💡 Tips</option>
+              <option value="Gameweek">📅 Gameweek</option>
+              <option value="Table">📊 Table</option>
+              <option value="Transfer">🔄 Transfer</option>
+              <option value="Injury">⚕ Injury</option>
+              <option value="News">📰 News</option>
+            </select>
+
+            <label>Cover Image URL (optional)</label>
+            <input type="url" id="news-image" placeholder="https://…" style="margin-bottom:10px">
+
+            <label>Publish Date</label>
+            <input type="datetime-local" id="news-date" style="margin-bottom:14px">
+
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-green btn-full" onclick="saveNewsPost(true)" style="flex:1">
+                ✅ Publish Now
+              </button>
+              <button class="btn btn-ghost" onclick="saveNewsPost(false)" style="flex:0 0 auto;padding:10px 16px">
+                💾 Draft
+              </button>
+            </div>
+            <div class="status-msg" id="news-status"></div>
+          </div>
+        </div>
+
+        <!-- Published posts list -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot dot-green"></span>Published Posts</div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadNewsPosts()">Refresh</button>
+          </div>
+          <div class="card-body" id="news-posts-list" style="max-height:600px;overflow-y:auto">
+            <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SEO tip box -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div class="card-title"><span class="dot dot-amber"></span>SEO Guide — Getting Found on Google</div>
+        </div>
+        <div class="card-body" style="font-size:13px;color:var(--muted);line-height:1.7">
+          <p style="margin-bottom:8px">Each post you publish gets a unique URL at <strong style="color:var(--text)">/news/[slug]</strong> that Google can index. Follow these tips to rank for PSL searches:</p>
+          <ul style="margin-left:1.2rem;list-style:disc;display:flex;flex-direction:column;gap:4px">
+            <li>Use keywords like <em>"PSL"</em>, <em>"Betway Premiership"</em>, <em>"Fantasy PSL"</em> in your headline</li>
+            <li>Write at least 200 words in the article body — Google rewards longer content</li>
+            <li>Post within 1–2 hours of a match finishing for breaking news</li>
+            <li>Use the <strong>Tips</strong> category for transfer advice posts — these rank well for "PSL fantasy tips GW24" etc.</li>
+            <li>Add a cover image URL to get rich previews when shared on WhatsApp/Twitter</li>
+          </ul>
+          <p style="margin-top:10px">Posts are served with proper meta tags (title, description, og:image) so they preview correctly when shared.</p>
+        </div>
+      </div>
+
+    </div><!-- end tab-news -->
 
   </main>
 </div>
@@ -1703,6 +1797,189 @@
     return String(str || '')
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // NEWS CMS
+  // ══════════════════════════════════════════════════════════════════
+
+  // Auto-load when switching to news tab
+  const _origSwitchTab = switchTab;
+  switchTab = function(tab) {
+    _origSwitchTab(tab);
+    if (tab === 'news') loadNewsPosts();
+  };
+
+  // Set default date to now
+  function initNewsDate() {
+    const el = document.getElementById('news-date');
+    if (el && !el.value) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      el.value = now.toISOString().slice(0,16);
+    }
+  }
+
+  function clearNewsForm() {
+    ['news-edit-id','news-title','news-summary','news-body','news-image'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    const cat = document.getElementById('news-category');
+    if (cat) cat.value = 'Tips';
+    initNewsDate();
+    showStatus('news-status','','');
+  }
+
+  async function saveNewsPost(publish) {
+    const title    = (document.getElementById('news-title')   .value || '').trim();
+    const summary  = (document.getElementById('news-summary') .value || '').trim();
+    const body     = (document.getElementById('news-body')    .value || '').trim();
+    const category = document.getElementById('news-category').value || 'News';
+    const imageUrl = (document.getElementById('news-image')   .value || '').trim();
+    const dateVal  = document.getElementById('news-date').value;
+    const editId   = document.getElementById('news-edit-id').value || null;
+
+    if (!title) { showStatus('news-status','error','Headline is required'); return; }
+
+    // Generate slug from title
+    const slug = title.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g,'')
+      .replace(/\s+/g,'-')
+      .replace(/-+/g,'-')
+      .substring(0, 80);
+
+    const pubDate = dateVal ? new Date(dateVal).toISOString() : new Date().toISOString();
+
+    const row = {
+      title,
+      summary,
+      body,
+      category,
+      image_url:    imageUrl || null,
+      slug,
+      published:    !!publish,
+      published_at: pubDate,
+      updated_at:   new Date().toISOString()
+    };
+
+    try {
+      let result;
+      if (editId) {
+        result = await sb('PATCH', 'news_posts', row, 'id=eq.' + editId);
+      } else {
+        row.created_at = new Date().toISOString();
+        result = await sb('POST', 'news_posts', row, null);
+      }
+      showStatus('news-status','ok', publish
+        ? '✅ Published! Users can see this immediately.'
+        : '💾 Saved as draft.');
+      clearNewsForm();
+      await loadNewsPosts();
+    } catch(e) {
+      // If news_posts table doesn't exist yet, show SQL hint
+      if (e.message && e.message.includes('relation "news_posts" does not exist')) {
+        showStatus('news-status','error','⚠ Table missing — run the SQL below in Supabase first, then retry.');
+        document.getElementById('news-status').innerHTML +=
+          '<pre style="background:#111;padding:8px;border-radius:4px;font-size:11px;margin-top:8px;overflow:auto;white-space:pre-wrap">' +
+          'CREATE TABLE news_posts (\n' +
+          '  id            bigserial PRIMARY KEY,\n' +
+          '  title         text NOT NULL,\n' +
+          '  slug          text UNIQUE,\n' +
+          '  summary       text,\n' +
+          '  body          text,\n' +
+          '  category      text DEFAULT \'News\',\n' +
+          '  image_url     text,\n' +
+          '  published     boolean DEFAULT false,\n' +
+          '  published_at  timestamptz DEFAULT now(),\n' +
+          '  created_at    timestamptz DEFAULT now(),\n' +
+          '  updated_at    timestamptz DEFAULT now()\n' +
+          ');\n' +
+          'ALTER TABLE news_posts ENABLE ROW LEVEL SECURITY;\n' +
+          'CREATE POLICY "Public read published" ON news_posts\n' +
+          '  FOR SELECT USING (published = true);\n' +
+          'CREATE POLICY "Service role full access" ON news_posts\n' +
+          '  USING (true) WITH CHECK (true);' +
+          '</pre>';
+        return;
+      }
+      showStatus('news-status','error','✗ ' + e.message);
+    }
+  }
+
+  async function loadNewsPosts() {
+    const list = document.getElementById('news-posts-list');
+    if (!list) return;
+    initNewsDate();
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Loading…</div>';
+    try {
+      const posts = await sb('GET','news_posts',null,'order=published_at.desc&limit=50&select=id,title,category,published,published_at,slug');
+      if (!posts || !posts.length) {
+        list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No posts yet. Write your first one!</div>';
+        return;
+      }
+      list.innerHTML = posts.map(function(p) {
+        const catColors = {Tips:'#DBA94A',Gameweek:'#B91C3A',Table:'#22895A',Transfer:'#3B82F6',Injury:'#E8732A',News:'#6B7280'};
+        const catColor = catColors[p.category] || catColors.News;
+        const dateStr = p.published_at ? new Date(p.published_at).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '';
+        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+              '<span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;background:'+catColor+';padding:2px 6px;border-radius:3px">'+escHtml(p.category)+'</span>' +
+              '<span style="font-size:11px;color:var(--muted)">'+dateStr+'</span>' +
+              (p.published ? '<span style="font-size:10px;color:var(--green);font-weight:700">● LIVE</span>' : '<span style="font-size:10px;color:var(--muted)">DRAFT</span>') +
+            '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.title)+'</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:4px;flex-shrink:0">' +
+            '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="editNewsPost('+p.id+')">Edit</button>' +
+            '<button class="btn" style="font-size:11px;padding:4px 8px;background:rgba(185,28,58,.15);color:#D4274F;border:1px solid rgba(185,28,58,.3)" onclick="deleteNewsPost('+p.id+',\''+escHtml(p.title).replace(/'/g,'')+'\')">Del</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    } catch(e) {
+      if (e.message && e.message.includes('does not exist')) {
+        list.innerHTML = '<div style="color:var(--amber);font-size:13px;padding:16px;line-height:1.6">⚠ The <strong>news_posts</strong> table does not exist yet.<br>Click <strong>Publish Now</strong> on a post — it will show the SQL you need to run in Supabase.</div>';
+      } else {
+        list.innerHTML = '<div style="color:var(--red);font-size:13px;padding:16px">Error: ' + escHtml(e.message) + '</div>';
+      }
+    }
+  }
+
+  async function editNewsPost(id) {
+    try {
+      const posts = await sb('GET','news_posts',null,'id=eq.'+id+'&limit=1');
+      const p = posts && posts[0];
+      if (!p) return;
+      document.getElementById('news-edit-id').value  = p.id;
+      document.getElementById('news-title').value    = p.title || '';
+      document.getElementById('news-summary').value  = p.summary || '';
+      document.getElementById('news-body').value     = p.body || '';
+      document.getElementById('news-category').value = p.category || 'News';
+      document.getElementById('news-image').value    = p.image_url || '';
+      if (p.published_at) {
+        const d = new Date(p.published_at);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        document.getElementById('news-date').value = d.toISOString().slice(0,16);
+      }
+      showStatus('news-status','ok','✏ Editing: '+p.title);
+      // Scroll form into view
+      document.getElementById('news-title').scrollIntoView({behavior:'smooth'});
+    } catch(e) {
+      showStatus('news-status','error','Error loading post: '+e.message);
+    }
+  }
+
+  async function deleteNewsPost(id, title) {
+    if (!confirm('Delete "'+title+'"?\n\nThis cannot be undone.')) return;
+    try {
+      await sb('DELETE','news_posts',null,'id=eq.'+id);
+      await loadNewsPosts();
+      showStatus('news-status','ok','Deleted.');
+    } catch(e) {
+      showStatus('news-status','error','Delete failed: '+e.message);
+    }
+  }
+
 </script>
 </body>
 </html>
