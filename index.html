@@ -701,7 +701,7 @@
 <div id="page-home" class="page active">
   <section class="hero">
     <div class="hero-bg"><div class="hero-glow"></div></div>
-    <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">22</span></div>
+    <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">--</span></div>
     <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
       South Africa's Greatest<br>Fantasy Football Game<br>
       <span style="color:#C9963A">Is Here</span>
@@ -759,7 +759,7 @@
     <div style="max-width:960px;margin:0 auto;padding:0 1.5rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;">
       <button onclick="goPage('fixtures')" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--red-muted);border:1px solid var(--red-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(185,28,58,.2)'" onmouseout="this.style.background='rgba(185,28,58,.15)'">
         <svg viewBox="0 0 24 24" fill="none" stroke="#D4274F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4274F;white-space:nowrap" id="home-gw-fixtures-btn">GW<span id="gw-fixtures-num">22</span> Fixtures</span>
+        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4274F;white-space:nowrap" id="home-gw-fixtures-btn">GW<span id="gw-fixtures-num">--</span> Fixtures</span>
       </button>
       <button onclick="openPOTMFromHome()" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--gold-muted);border:1px solid var(--gold-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(201,150,58,.18)'" onmouseout="this.style.background='rgba(201,150,58,.12)'">
         <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
@@ -958,7 +958,7 @@
     <span class="eyebrow">Betway Premiership 2025/26</span>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;margin-bottom:.3rem">
       <h1 class="section-title" style="margin:0">Fixtures &amp; Results</h1>
-      <span id="gw-nav-badge" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;text-transform:uppercase">GW <span id="gw-nav-num">22</span></span>
+      <span id="gw-nav-badge" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;text-transform:uppercase">GW <span id="gw-nav-num">--</span></span>
     </div>
     <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;flex-wrap:wrap">
       <button class="ftab active" id="ftab-upcoming" onclick="setFixTab('NS',this)">Upcoming</button>
@@ -1506,44 +1506,65 @@ function doLogout() {
 }
 
 // ====================================================
-//  GAMEWEEK
+//  GAMEWEEK — single source of truth: Supabase only
+//  The active GW is set exclusively via the Admin panel.
+//  The UI never shows a hardcoded number — always reads
+//  from the gameweeks table (is_current = true).
 // ====================================================
 function loadGW(cb) {
-  // Fallback values if DB has no current GW set
-  var FALLBACK_GW = 22;
-  var FALLBACK_DEADLINE = 'Sat, 14 Mar 2026';
+  db.from('gameweeks')
+    .select('*')
+    .eq('is_current', true)
+    .single()
+    .then(function(res) {
+      if (res.data) {
+        ST.gw = res.data;
+        var n = ST.gw.number;
 
-  db.from('gameweeks').select('*').eq('is_current', true).single().then(function(res) {
-    if (res.data) {
-      ST.gw = res.data;
-    } else {
-      // No GW marked is_current in DB -- use fallback so UI doesn't show dashes
-      ST.gw = { id: null, number: FALLBACK_GW, deadline_at: null };
-    }
-    var n = ST.gw.number || FALLBACK_GW;
-    ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = n;
+        // Update every GW number element on the page
+        ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+          var el = document.getElementById(elId);
+          if (el) el.textContent = n;
+        });
+
+        // Update deadline display
+        var dl = document.getElementById('gw-deadline');
+        if (dl) {
+          if (ST.gw.deadline_at) {
+            var d   = new Date(ST.gw.deadline_at);
+            var fmt = d.toLocaleDateString('en-ZA', {
+              weekday:'short', day:'numeric', month:'short',
+              hour:'2-digit', minute:'2-digit'
+            });
+            dl.textContent = fmt;
+          } else {
+            dl.textContent = 'Deadline TBC';
+          }
+        }
+      } else {
+        // No gameweek is set in DB yet — show dashes, never a stale number
+        ST.gw = null;
+        ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+          var el = document.getElementById(elId);
+          if (el) el.textContent = '--';
+        });
+        var dl = document.getElementById('gw-deadline');
+        if (dl) dl.textContent = 'Set by admin';
+      }
+      if (cb) cb();
+    })
+    .catch(function(err) {
+      // DB error — show dashes, log for debugging
+      console.warn('[loadGW] DB error:', err && err.message);
+      ST.gw = null;
+      ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+        var el = document.getElementById(elId);
+        if (el) el.textContent = '--';
+      });
+      var dl = document.getElementById('gw-deadline');
+      if (dl) dl.textContent = 'Unavailable';
+      if (cb) cb();
     });
-    var dl = document.getElementById('gw-deadline');
-    if (ST.gw.deadline_at) {
-      var d = new Date(ST.gw.deadline_at);
-      var fmt = d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-      if (dl) dl.textContent = fmt;
-    } else {
-      if (dl) dl.textContent = FALLBACK_DEADLINE;
-    }
-    if (cb) cb();
-  }).catch(function() {
-    // DB error -- still show something
-    ST.gw = { id: null, number: FALLBACK_GW, deadline_at: null };
-    ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.textContent = FALLBACK_GW;
-    });
-    var dl = document.getElementById('gw-deadline');
-    if (dl) dl.textContent = FALLBACK_DEADLINE;
-    if (cb) cb();
-  });
 }
 
 // ====================================================
@@ -2007,7 +2028,7 @@ function showPointsBreakdown(playerScores) {
 
 function addPlayer(id) {
   if (!ST.user)  { openAuth('login'); return; }
-  if (!ST.gw)    { showToast('No active gameweek found', 'error'); return; }
+  if (!ST.gw)    { showToast('Gameweek is being prepared. Check back soon!', 'info'); return; }
 
 
   // TRANSFER MODE -- out player already selected, pick replacement
@@ -2962,9 +2983,9 @@ var SHORT_NAMES = {
 };
 function sn(name) { return SHORT_NAMES[name] || name; }
 
-// Betway Premiership 2025/26 standings -- GW22 (5 Mar 2026)
+// Betway Premiership 2025/26 standings — FALLBACK ONLY (GW26, 25 Mar 2026)
+// Live data always loaded first from Supabase — this only shows if API/DB fails
 // W D L GF GA GD Pts  Form (newest last)
-// Fixture Difficulty Rating -- 1 (easy) to 5 (hardest)
 function getNextFixture(team) {
   var upcoming = (REAL_FIXTURES && REAL_FIXTURES.NS) || [];
   for (var i = 0; i < upcoming.length; i++) {
@@ -2987,25 +3008,134 @@ function fdrColor(fdr) {
 }
 
 var REAL_TABLE = [
-  // Fallback standings — uses Sportmonks exact team names for season 26173
-  // Live standings loaded from Supabase (synced nightly from Sportmonks)
-  { pos:1,  team:'Mamelodi Sundowns',  p:26, w:17, d:6,  l:3,  gf:44, ga:14, gd:30,  pts:57, form:['W','W','W','D','W'] },
-  { pos:2,  team:'Orlando Pirates',    p:21, w:15, d:3,  l:3,  gf:34, ga:9,  gd:25,  pts:48, form:['W','W','W','W','W'] },
-  { pos:3,  team:'AmaZulu',            p:22, w:11, d:4,  l:7,  gf:22, ga:19, gd:3,   pts:37, form:['W','W','L','W','D'] },
-  { pos:4,  team:'Sekhukhune United',  p:21, w:9,  d:7,  l:5,  gf:21, ga:14, gd:7,   pts:34, form:['D','W','D','L','W'] },
-  { pos:5,  team:'Kaizer Chiefs',      p:19, w:9,  d:6,  l:4,  gf:17, ga:12, gd:5,   pts:33, form:['W','W','D','W','L'] },
-  { pos:6,  team:'Durban City',        p:21, w:9,  d:5,  l:7,  gf:19, ga:15, gd:4,   pts:32, form:['W','L','W','D','L'] },
-  { pos:7,  team:'Polokwane City',     p:21, w:7,  d:8,  l:6,  gf:16, ga:14, gd:2,   pts:29, form:['D','W','D','L','W'] },
-  { pos:8,  team:'Stellenbosch',       p:22, w:7,  d:7,  l:8,  gf:19, ga:23, gd:-4,  pts:28, form:['D','D','W','D','D'] },
-  { pos:9,  team:'Golden Arrows',      p:21, w:7,  d:4,  l:10, gf:27, ga:26, gd:1,   pts:25, form:['W','L','W','L','W'] },
-  { pos:10, team:'TS Galaxy',          p:21, w:7,  d:4,  l:10, gf:24, ga:23, gd:1,   pts:25, form:['L','L','W','L','W'] },
-  { pos:11, team:'Siwelele',           p:20, w:5,  d:8,  l:7,  gf:11, ga:15, gd:-4,  pts:23, form:['D','L','D','W','L'] },
-  { pos:12, team:'Richards Bay',       p:21, w:5,  d:7,  l:9,  gf:17, ga:24, gd:-7,  pts:22, form:['D','L','D','L','W'] },
-  { pos:13, team:'Chippa United',      p:21, w:4,  d:8,  l:9,  gf:14, ga:24, gd:-10, pts:20, form:['D','L','D','L','D'] },
-  { pos:14, team:'Marumo Gallants FC', p:21, w:4,  d:7,  l:10, gf:15, ga:26, gd:-11, pts:19, form:['D','L','D','L','L'] },
-  { pos:15, team:'Magesi',             p:21, w:3,  d:4,  l:14, gf:15, ga:32, gd:-17, pts:13, form:['L','L','L','L','L'] },
-  { pos:16, team:'Orbit College',      p:21, w:2,  d:4,  l:15, gf:12, ga:36, gd:-24, pts:10, form:['L','L','L','L','D'] }
+  // Fallback standings (GW26, 25 Mar 2026) — live data loaded from Supabase first
+  { pos:1,  team:'Mamelodi Sundowns',  p:28, w:18, d:7,  l:3,  gf:47, ga:15, gd:32,  pts:61, form:['W','D','W','W','W'] },
+  { pos:2,  team:'Orlando Pirates',    p:26, w:16, d:4,  l:6,  gf:37, ga:14, gd:23,  pts:52, form:['W','L','W','W','D'] },
+  { pos:3,  team:'Kaizer Chiefs',      p:25, w:11, d:7,  l:7,  gf:22, ga:18, gd:4,   pts:40, form:['W','D','L','W','W'] },
+  { pos:4,  team:'AmaZulu',            p:26, w:11, d:6,  l:9,  gf:24, ga:22, gd:2,   pts:39, form:['L','W','D','W','L'] },
+  { pos:5,  team:'Sekhukhune United',  p:25, w:10, d:8,  l:7,  gf:24, ga:17, gd:7,   pts:38, form:['W','D','D','W','D'] },
+  { pos:6,  team:'Durban City',        p:25, w:10, d:5,  l:10, gf:22, ga:20, gd:2,   pts:35, form:['W','L','W','L','D'] },
+  { pos:7,  team:'Stellenbosch',       p:26, w:9,  d:8,  l:9,  gf:23, ga:25, gd:-2,  pts:35, form:['D','W','L','D','W'] },
+  { pos:8,  team:'Polokwane City',     p:25, w:8,  d:9,  l:8,  gf:18, ga:17, gd:1,   pts:33, form:['D','D','W','D','L'] },
+  { pos:9,  team:'Siwelele',           p:24, w:6,  d:9,  l:9,  gf:14, ga:18, gd:-4,  pts:27, form:['D','D','L','D','W'] },
+  { pos:10, team:'Golden Arrows',      p:25, w:8,  d:5,  l:12, gf:29, ga:29, gd:0,   pts:29, form:['L','W','L','W','L'] },
+  { pos:11, team:'TS Galaxy',          p:25, w:7,  d:5,  l:13, gf:25, ga:27, gd:-2,  pts:26, form:['L','L','W','L','W'] },
+  { pos:12, team:'Richards Bay',       p:25, w:6,  d:8,  l:11, gf:20, ga:28, gd:-8,  pts:26, form:['D','W','L','D','L'] },
+  { pos:13, team:'Chippa United',      p:25, w:5,  d:9,  l:11, gf:16, ga:27, gd:-11, pts:24, form:['D','L','D','D','L'] },
+  { pos:14, team:'Marumo Gallants FC', p:25, w:4,  d:8,  l:13, gf:16, ga:29, gd:-13, pts:20, form:['L','D','L','L','D'] },
+  { pos:15, team:'Magesi',             p:25, w:3,  d:5,  l:17, gf:16, ga:37, gd:-21, pts:14, form:['L','L','L','L','D'] },
+  { pos:16, team:'Orbit College',      p:25, w:2,  d:5,  l:18, gf:13, ga:40, gd:-27, pts:11, form:['L','D','L','L','L'] }
 ];
+
+// ── REAL_INJURIES — updated manually each week ────────────────────────────
+var REAL_INJURIES = [
+  { name: 'Thapelo Morena',    team: 'Mamelodi Sundowns', type: '⚕ Muscle Strain',    reason: 'Hamstring — day-to-day',  severe: false },
+  { name: 'Siyanda Xulu',      team: 'Kaizer Chiefs',     type: '⚕ Knee Injury',       reason: 'Meniscus — out 6 weeks',  severe: true  },
+  { name: 'Bradley Grobler',   team: 'Sekhukhune United', type: '⚕ Hamstring',          reason: 'Grade 2 tear',            severe: true  },
+  { name: 'Lyle Foster',       team: 'AmaZulu',           type: '⚕ Ankle',              reason: 'Rolled ankle — monitored',severe: false },
+  { name: 'Lebohang Manyama',  team: 'Kaizer Chiefs',     type: '⚕ Calf',               reason: 'Calf tightness',          severe: false },
+];
+
+// ── loadNews: fetch news_posts from Supabase, fallback to static posts ────
+function loadNews() {
+  var grid = document.getElementById('news-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
+
+  db.from('news_posts')
+    .select('*')
+    .eq('published', true)
+    .order('published_at', { ascending: false })
+    .limit(20)
+    .then(function(res) {
+      var posts = res.data || [];
+      if (!posts.length) {
+        // Static fallback news cards
+        posts = [
+          { id: 1, title: 'GW24 Deadline Reminder', summary: 'Make sure your transfers are in before kick-off on Saturday. Double check your captain pick!', published_at: new Date().toISOString(), category: 'Gameweek', image_url: '' },
+          { id: 2, title: 'Mamelodi Sundowns Storm Clear', summary: 'Sundowns extend their lead at the top of the Betway Premiership table after a dominant run of form.', published_at: new Date(Date.now() - 86400000).toISOString(), category: 'Table', image_url: '' },
+          { id: 3, title: 'Pirates Striker Form Guide', summary: 'Evidence Makgopa is in red-hot form — here is why he should be in your Fantasy PSL squad right now.', published_at: new Date(Date.now() - 2*86400000).toISOString(), category: 'Tips', image_url: '' },
+          { id: 4, title: 'Differential Picks: GW24', summary: 'Low-ownership players who could score big this gameweek. Our writers break down the best under-10% options.', published_at: new Date(Date.now() - 3*86400000).toISOString(), category: 'Tips', image_url: '' },
+        ];
+      }
+      renderNews(grid, posts);
+    })
+    .catch(function() {
+      // DB error — show placeholder
+      grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">Unable to load news. Check back soon.</div>';
+    });
+}
+
+var NEWS_CAT_COLORS = {
+  'Gameweek': '#B91C3A',
+  'Tips':     '#DBA94A',
+  'Table':    '#22895A',
+  'Transfer': '#3B82F6',
+  'Injury':   '#E8732A',
+  'default':  '#6B7280'
+};
+
+function renderNews(grid, posts) {
+  if (!posts.length) {
+    grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">No news yet.</div>';
+    return;
+  }
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(280px,1fr))';
+  grid.style.gap = '.9rem';
+  grid.innerHTML = posts.map(function(post, idx) {
+    var catColor = NEWS_CAT_COLORS[post.category] || NEWS_CAT_COLORS['default'];
+    var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : '';
+    var isFeatured = idx === 0;
+    var imgHtml  = post.image_url
+      ? '<img src="' + post.image_url + '" style="width:100%;height:' + (isFeatured?'180px':'130px') + ';object-fit:cover;border-radius:10px 10px 0 0;display:block" onerror="this.style.display=\'none\'">'
+      : '<div style="width:100%;height:' + (isFeatured?'100px':'70px') + ';background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:' + (isFeatured?'2.5rem':'1.8rem') + '">' + (post.category==='Tips'?'💡':post.category==='Injury'?'⚕':'📰') + '</div>';
+    return '<div onclick="openNewsPost(' + JSON.stringify(post).replace(/'/g,"\\'") + ')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;' + (isFeatured?'grid-column:1/-1;':'') + '" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,.3)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
+      imgHtml +
+      '<div style="padding:.9rem 1rem 1rem">' +
+        '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem">' +
+          '<span style="font-family:var(--font-ui,sans-serif);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:' + catColor + ';padding:2px 7px;border-radius:4px">' + (post.category || 'News') + '</span>' +
+          '<span style="font-size:.7rem;color:rgba(255,255,255,.35)">' + dateStr + '</span>' +
+        '</div>' +
+        '<div style="font-family:var(--font-display,sans-serif);font-size:' + (isFeatured?'1.05rem':'.9rem') + ';font-weight:900;line-height:1.3;margin-bottom:.4rem;color:#fff">' + post.title + '</div>' +
+        '<div style="font-size:.78rem;color:rgba(255,255,255,.5);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (post.summary || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openNewsPost(post) {
+  // Show full post in a modal/overlay
+  var overlay = document.getElementById('news-overlay') || (function(){
+    var el = document.createElement('div');
+    el.id = 'news-overlay';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;backdrop-filter:blur(4px)';
+    el.onclick = function(e){ if(e.target===el) closeNewsOverlay(); };
+    document.body.appendChild(el);
+    return el;
+  })();
+  var catColor = NEWS_CAT_COLORS[post.category] || NEWS_CAT_COLORS['default'];
+  var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
+  overlay.innerHTML = '<div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:640px;width:100%;padding:0;overflow:hidden">' +
+    (post.image_url ? '<img src="'+post.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block">' : '') +
+    '<div style="padding:1.5rem 1.5rem 2rem">' +
+      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem">' +
+        '<span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+catColor+';padding:3px 8px;border-radius:4px">'+(post.category||'News')+'</span>' +
+        '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">'+dateStr+'</span>' +
+      '</div>' +
+      '<h2 style="font-family:var(--font-display,sans-serif);font-size:1.4rem;font-weight:900;margin-bottom:.8rem;line-height:1.2">'+post.title+'</h2>' +
+      '<div style="font-size:.88rem;color:rgba(255,255,255,.7);line-height:1.7;white-space:pre-wrap">'+(post.body||post.summary||'')+'</div>' +
+    '</div>' +
+    '<div style="padding:0 1.5rem 1.5rem;display:flex;justify-content:flex-end">' +
+      '<button onclick="closeNewsOverlay()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:.85rem;font-weight:600;padding:.5rem 1.2rem;cursor:pointer">Close</button>' +
+    '</div>' +
+  '</div>';
+  overlay.style.display = 'flex';
+}
+function closeNewsOverlay() {
+  var el = document.getElementById('news-overlay');
+  if (el) el.style.display = 'none';
+}
 
 function loadInjuries() {
   var c = document.getElementById('injury-list'); if (!c) return;
@@ -4811,15 +4941,9 @@ function dismissAd() {
 }
 
 // -- Game Week display ----------------------------------------
-function updateGWDisplay(gwNumber) {
-  if (!gwNumber) return;
-  ['gw-nav-num','gw-hero','gw-squad','gw-fixtures-num'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = gwNumber;
-  });
-  if (!ST.gw) ST.gw = {};
-  ST.gw.number = gwNumber;
-}
+// GW display is set exclusively by loadGW() from Supabase.
+// Call loadGW() to refresh after admin changes.
+function refreshGWDisplay() { loadGW(); }
 
 // -- Format match date ----------------------------------------
 function formatMatchDate(dateStr) {
@@ -4958,7 +5082,7 @@ var FAN_POLLS = [
     opts: ['Orlando Pirates','Kaizer Chiefs','Mamelodi Sundowns','AmaZulu FC']
   },
   {
-    q: "GW22 Prediction: Kaizer Chiefs vs Durban City",
+    q: "Match Prediction: Kaizer Chiefs vs Durban City",
     opts: ['Chiefs Win','Draw','Durban City Win','Both to Score']
   }
 ];
