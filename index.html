@@ -1551,12 +1551,18 @@ function loadGW(cb) {
         var dl = document.getElementById('gw-deadline');
         if (dl) dl.textContent = 'Set by admin';
       }
+
+      // CRITICAL: always re-evaluate deadline lock after loading fresh GW data
+      // This clears stale locks when admin advances to a new GW with no deadline
+      ST.deadlinePassed = false;
+      checkDeadline();
+
       if (cb) cb();
     })
     .catch(function(err) {
-      // DB error — show dashes, log for debugging
       console.warn('[loadGW] DB error:', err && err.message);
       ST.gw = null;
+      ST.deadlinePassed = false;
       ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
         var el = document.getElementById(elId);
         if (el) el.textContent = '--';
@@ -1566,6 +1572,16 @@ function loadGW(cb) {
       if (cb) cb();
     });
 }
+
+// Poll for GW changes every 5 minutes (catches admin updates without page refresh)
+// Also re-checks when user returns to the tab
+(function() {
+  setInterval(function() { loadGW(); }, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') loadGW();
+  });
+  window.addEventListener('focus', function() { loadGW(); });
+})();
 
 // ====================================================
 //  PLAYERS -- load all, render list
@@ -1738,25 +1754,36 @@ function openPmodal(id) {
   document.getElementById('pmodal').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Then fetch live stats from Supabase and refresh silently
-  var lastName = (p.display_name || p.name || '').split(' ').pop();
-  var club     = p.clubs ? p.clubs.name : (p.club || '');
-  if (db && lastName) {
-    db.from('players')
-      .select('goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points,photo,updated_at')
-      .ilike('name', '%' + lastName + '%')
-      .eq('club', club)
-      .limit(1)
-      .then(function(res) {
-        if (res.data && res.data.length && ST.activeId === id) {
-          var live = res.data[0];
-          var merged = Object.assign({}, p, {
-            goals:        (live.goals        !== null && live.goals        > 0) ? live.goals        : p.goals,
-            assists:      (live.assists       !== null && live.assists      > 0) ? live.assists      : p.assists,
-            yellow_cards: (live.yellow_cards  !== null && live.yellow_cards > 0) ? live.yellow_cards : p.yellow_cards,
-            red_cards:    (live.red_cards     !== null && live.red_cards    > 0) ? live.red_cards    : p.red_cards,
-            clean_sheets: (live.clean_sheets  !== null && live.clean_sheets > 0) ? live.clean_sheets : p.clean_sheets,
-            apps:         (live.apps          !== null && live.apps         > 0) ? live.apps         : p.apps,
+  // Fetch live stats from Supabase using the player's DB id if available
+  if (db) {
+    var fetchPromise;
+    if (p.id && typeof p.id === 'number' && p.id > 0 && !String(p.id).startsWith('10') ) {
+      // Use direct id lookup — fastest and most accurate
+      fetchPromise = db.from('players')
+        .select('goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points,photo,updated_at')
+        .eq('id', p.id)
+        .single();
+    } else {
+      // Fallback: match on display_name + team
+      var lastName = (p.display_name || p.name || '').split(' ').pop();
+      var club     = p.clubs ? p.clubs.name : (p.club || '');
+      fetchPromise = db.from('players')
+        .select('goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points,photo,updated_at')
+        .ilike('display_name', '%' + lastName + '%')
+        .eq('team', club)
+        .limit(1)
+        .then(function(r) { return { data: r.data && r.data[0] ? r.data[0] : null, error: r.error }; });
+    }
+    fetchPromise.then(function(res) {
+      var live = res.data;
+      if (live && ST.activeId === id) {
+        var merged = Object.assign({}, p, {
+          goals:        (live.goals        > 0) ? live.goals        : p.goals,
+          assists:      (live.assists      > 0) ? live.assists      : p.assists,
+          yellow_cards: (live.yellow_cards > 0) ? live.yellow_cards : p.yellow_cards,
+          red_cards:    (live.red_cards    > 0) ? live.red_cards    : p.red_cards,
+          clean_sheets: (live.clean_sheets > 0) ? live.clean_sheets : p.clean_sheets,
+          apps:         (live.apps         > 0) ? live.apps         : p.apps,
             total_points: (live.total_points  !== null && live.total_points > 0) ? live.total_points : p.total_points,
             photo:        live.photo || p.photo,
             _live_updated: live.updated_at ? new Date(live.updated_at).toLocaleDateString('en-ZA') : null
@@ -2833,39 +2860,55 @@ function renderTransferBadge() {
 
 // -- Deadline lock --------------------------------------------------
 function checkDeadline() {
-  // If no deadline stored in DB, squad is OPEN (never lock by default)
+  // If no GW or no deadline set → squad is OPEN, actively unlock everything
   if (!ST.gw || !ST.gw.deadline_at) {
     ST.deadlinePassed = false;
+    // Hide lock banner
     var lb = document.getElementById('deadline-lock-banner');
     if (lb) lb.style.display = 'none';
+    // Re-enable save button
+    var saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+      saveBtn.disabled    = false;
+      saveBtn.textContent = 'Save Squad';
+      saveBtn.style.opacity = '';
+    }
+    // Clear any deadline countdown text
+    var dlEl = document.getElementById('gw-deadline');
+    if (dlEl) dlEl.style.color = '';
     return;
   }
-  var deadline = new Date(ST.gw.deadline_at);
-  var now      = new Date();
+
+  var deadline  = new Date(ST.gw.deadline_at);
+  var now       = new Date();
   var wasPassed = ST.deadlinePassed;
   ST.deadlinePassed = now >= deadline;
 
+  // Lock banner
   var lockBanner = document.getElementById('deadline-lock-banner');
-  // Only show banner if deadline passed AND user hasn't dismissed it this session
   if (lockBanner && !lockBanner._dismissed) {
     lockBanner.style.display = ST.deadlinePassed ? 'flex' : 'none';
   }
 
+  // Save button
   var saveBtn = document.getElementById('save-btn');
   if (saveBtn) {
     saveBtn.disabled = ST.deadlinePassed;
     if (ST.deadlinePassed) {
-      saveBtn.textContent = 'Deadline Passed';
+      saveBtn.textContent   = 'Deadline Passed';
       saveBtn.style.opacity = '0.5';
+    } else {
+      saveBtn.textContent   = 'Save Squad';
+      saveBtn.style.opacity = '';
     }
   }
 
-  // If deadline just passed during this session, notify the user
+  // One-time toast when deadline first passes
   if (!wasPassed && ST.deadlinePassed) {
-    showToast('Gameweek ' + (ST.gw.number || '') + ' deadline has passed -- your squad is now locked for scoring', 'warning');
+    showToast('GW' + (ST.gw.number || '') + ' deadline passed — squad locked for scoring', 'warning');
   }
 
-  // Show countdown if deadline is upcoming (within 24 hours)
+  // Show countdown if within 24 hours
   var msLeft = deadline - now;
   var dlEl   = document.getElementById('gw-deadline');
   if (dlEl && msLeft > 0 && msLeft < 86400000) {
@@ -2879,8 +2922,8 @@ function checkDeadline() {
   var bannerGwNum = document.getElementById('banner-gw-num');
   if (bannerGwNum && ST.gw && ST.gw.number) bannerGwNum.textContent = ST.gw.number;
 
-  // Recheck every 30 seconds
-  setTimeout(checkDeadline, 30000);
+  // Recheck every 60 seconds (no need for 30s — GW changes come via loadGW poll)
+  setTimeout(checkDeadline, 60000);
 }
 
 function showDeadlineInfo() {
@@ -4043,20 +4086,76 @@ var PSL_ROSTER = [
   { id:16017, club:'Stellenbosch FC',  position:'GK',  display_name:'Sage Stephens-Stellenbosch', price:4.5, apps:15, goals:0, assists:0, clean_sheets:4, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:30 },
 ];
 
-// -- Override loadPlayers to use PSL_ROSTER instead of Supabase -
-// (Supabase is used for saving squad; roster comes from here)
+// -- loadPlayers: reads live stats from Supabase, falls back to PSL_ROSTER --
+// PSL_ROSTER is used ONLY if the players table is empty (e.g. before first import)
 (function() {
-  var _origLoad = loadPlayers;
   loadPlayers = function() {
-    var mapped = PSL_ROSTER.map(function(p) {
-      return Object.assign({}, p, {
-        clubs: { name: p.club, short_name: sn(p.club) },
-        is_available: true
+    // Check 1-hour cache first
+    if (cacheValid('players') && CACHE.players && CACHE.players.data && CACHE.players.data.length) {
+      ST.allPlayers = CACHE.players.data;
+      ST.filtered   = ST.allPlayers.slice();
+      ST.playerPage = 0;
+      renderPlayerList();
+      return;
+    }
+
+    function normPos(pos) {
+      if (!pos) return 'MID';
+      var p = pos.toUpperCase();
+      if (p === 'GK'   || p === 'GOALKEEPER') return 'GK';
+      if (p === 'DEF'  || p === 'DEFENDER')   return 'DEF';
+      if (p === 'MID'  || p === 'MIDFIELDER') return 'MID';
+      if (p === 'FWD'  || p === 'FORWARD' || p === 'ATTACKER') return 'FWD';
+      return pos;
+    }
+
+    db.from('players')
+      .select('id, api_player_id, display_name, position, team, photo, price, is_available, goals, assists, yellow_cards, red_cards, clean_sheets, apps, total_points, updated_at')
+      .order('total_points', { ascending: false })
+      .limit(400)
+      .then(function(res) {
+        var players = res.data || [];
+
+        if (players.length) {
+          // Map DB rows to the shape the UI expects
+          players = players.map(function(p) {
+            return Object.assign({}, p, {
+              position: normPos(p.position),
+              club:     p.team || '',
+              clubs:    { name: p.team || '', short_name: sn(p.team || '') },
+              is_available: p.is_available !== false
+            });
+          });
+        } else {
+          // DB empty — fall back to hardcoded PSL_ROSTER
+          players = PSL_ROSTER.map(function(p) {
+            return Object.assign({}, p, {
+              clubs: { name: p.club, short_name: sn(p.club) },
+              is_available: true
+            });
+          });
+        }
+
+        ST.allPlayers = players;
+        ST.filtered   = players.slice();
+        ST.playerPage = 0;
+        CACHE.players = { data: players, ts: Date.now() };
+        renderPlayerList();
+      })
+      .catch(function(err) {
+        console.warn('[loadPlayers] DB error, using PSL_ROSTER:', err && err.message);
+        // Network/DB error — use hardcoded roster so UI isn't broken
+        var fallback = PSL_ROSTER.map(function(p) {
+          return Object.assign({}, p, {
+            clubs: { name: p.club, short_name: sn(p.club) },
+            is_available: true
+          });
+        });
+        ST.allPlayers = fallback;
+        ST.filtered   = fallback.slice();
+        ST.playerPage = 0;
+        renderPlayerList();
       });
-    });
-    ST.allPlayers = mapped.sort(function(a,b){ return b.total_points - a.total_points; });
-    ST.filtered   = ST.allPlayers.slice();
-    renderPlayerList();
   };
 })();
 
