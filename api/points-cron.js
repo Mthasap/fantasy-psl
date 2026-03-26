@@ -17,7 +17,7 @@ const { getSeasonId }  = require('./season-helper');
 const TOKEN  = process.env.SPORTMONKS_TOKEN;
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ADMIN  = process.env.ADMIN_SECRET || 'fpsl-admin-2026';
+const ADMIN  = process.env.ADMIN_SECRET || 'mzansi4sho';
 const BASE   = 'https://api.sportmonks.com/v3/football';
 
 // ── Fantasy scoring rules ─────────────────────────────────────────────────
@@ -322,22 +322,19 @@ module.exports = async (req, res) => {
     log.push('Players synced: ' + playersSynced);
 
     // ── 6. Recalculate profile total_points ───────────────────────────
-    // Only count each user's current squad (avoid double-counting if squad rows have history)
     var { data: squads } = await db.from('squads').select('user_id, player_id');
     var userSquads = {};
     (squads || []).forEach(function(sq) {
-      if (!sq.user_id || !sq.player_id) return;
-      if (!userSquads[sq.user_id]) userSquads[sq.user_id] = new Set();
-      userSquads[sq.user_id].add(sq.player_id); // Set deduplicates in case of duplicate rows
+      if (!userSquads[sq.user_id]) userSquads[sq.user_id] = [];
+      userSquads[sq.user_id].push(sq.player_id);
     });
 
     var profilesUpdated = 0;
     for (var uid in userSquads) {
-      var pids = Array.from(userSquads[uid]);
-      if (!pids.length) continue;
+      var pids = userSquads[uid];
       var { data: pts } = await db.from('players').select('total_points').in('id', pids);
       var total = (pts || []).reduce(function(acc, p) { return acc + (p.total_points || 0); }, 0);
-      await db.from('profiles').update({ total_points: total, squad_count: pids.length }).eq('id', uid);
+      await db.from('profiles').update({ total_points: total }).eq('id', uid);
       profilesUpdated++;
     }
     log.push('Profiles updated: ' + profilesUpdated);
@@ -410,6 +407,18 @@ async function syncFixtures(db, seasonId, log, state) {
 }
 
 async function smGet(path) {
+  var sep = path.indexOf('?') > -1 ? '&' : '?';
+  var url = BASE + path + sep + 'api_token=' + TOKEN;
+  var r   = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!r.ok) {
+    var b = await r.text().catch(function(){ return ''; });
+    throw new Error('Sportmonks ' + r.status + ': ' + b.substring(0, 300));
+  }
+  var json = await r.json();
+  if (json.errors) throw new Error('Sportmonks errors: ' + JSON.stringify(json.errors).substring(0, 300));
+  return json;
+}
+
   var sep = path.indexOf('?') > -1 ? '&' : '?';
   var url = BASE + path + sep + 'api_token=' + TOKEN;
   var r   = await fetch(url, { headers: { Accept: 'application/json' } });
