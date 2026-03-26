@@ -3,6 +3,11 @@
     { "src": "/admin",   "dest": "/admin.html"   },
     { "src": "/confirm", "dest": "/confirm.html" },
 
+    { "src": "/sitemap.xml", "dest": "/api/sitemap" },
+    { "src": "/robots.txt",  "dest": "/api/robots"  },
+
+    { "src": "/news/(.*)", "dest": "/index.html" },
+
     { "src": "/api/live-matches",      "dest": "/api/sync?action=live"           },
     { "src": "/api/psl-data",          "dest": "/api/sync?action=psl-data"       },
     { "src": "/api/force-sync",        "dest": "/api/sync?action=force-sync"     },
@@ -28,6 +33,12 @@
       "source": "/api/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=30" }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=600" }
       ]
     }
   ],
