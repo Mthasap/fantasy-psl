@@ -1265,12 +1265,13 @@
   async function setDeadline() {
     const val = document.getElementById('gw-deadline').value;
     if (!val) { showStatus('gw-status', 'error', 'Pick a date and time first'); return; }
-    // datetime-local gives local time — convert to UTC (assuming SAST = UTC+2)
+    if (!STATE.gw) { showStatus('gw-status', 'error', 'No active GW found — set a current GW first'); return; }
+    // datetime-local gives local time — convert to UTC (SAST = UTC+2)
     const localDate = new Date(val);
     const utcDate   = new Date(localDate.getTime() - 2 * 60 * 60 * 1000);
     try {
-      await sbWrite('update', 'gameweeks', { deadline_at: utcDate.toISOString() }, { is_current: 'true' });
-      showStatus('gw-status', 'ok', '✓ Deadline set for GW' + (STATE.gw || '?') + ' → ' + val + ' SAST');
+      await sbWrite('update', 'gameweeks', { deadline_at: utcDate.toISOString() }, { number: String(STATE.gw) });
+      showStatus('gw-status', 'ok', '✓ Deadline set for GW' + STATE.gw + ' → ' + val + ' SAST');
     } catch(e) { showStatus('gw-status', 'error', '✗ ' + e.message); }
   }
 
