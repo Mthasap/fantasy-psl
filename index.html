@@ -6045,16 +6045,16 @@ function deletePost(btn){
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
 <!-- Legal modal: single scrollable sheet, close bar sticky at top -->
-<div id="legal-modal" style="display:none;position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9200;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#0D1017">
+<div id="legal-modal" style="display:none;position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9200;background:#0D1017;flex-direction:column;overflow:hidden">
 
-  <!-- CLOSE BAR — sticky so it stays at top of scroll at all times -->
-  <div style="position:sticky;top:0;left:0;right:0;z-index:9999;background:#B91C3A;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;min-height:52px;box-shadow:0 2px 12px rgba(0,0,0,.5)">
-    <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;flex:1"></div>
-    <button onclick="closeLegalModal()" style="background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.4);border-radius:50%;width:40px;height:40px;min-width:40px;color:#fff;font-size:1.3rem;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0;line-height:1">&#x2715;</button>
+  <!-- CLOSE BAR: flex-shrink:0 = never shrinks, always fully visible at top -->
+  <div style="flex-shrink:0;background:#B91C3A;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:54px;min-height:54px;box-shadow:0 3px 16px rgba(0,0,0,.5)">
+    <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;flex:1;padding-right:.5rem"></div>
+    <button onclick="closeLegalModal()" style="flex-shrink:0;width:44px;height:44px;min-width:44px;background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.5);border-radius:50%;color:#fff;font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;line-height:1">&#x2715;</button>
   </div>
 
-  <!-- Scrollable content -->
-  <div id="legal-modal-body" style="padding:1.4rem 1.1rem 6rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
+  <!-- Scroll area: flex:1 fills all remaining space below the close bar -->
+  <div id="legal-modal-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1.4rem 1.1rem 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
 
 </div>
 <script>
@@ -6185,8 +6185,10 @@ function openTermsModal(type) {
   var ct = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
   titleEl.textContent = ct.title;
   bodyEl.innerHTML    = ct.html;
-  modal.style.display = 'block';
-  modal.scrollTop     = 0;
+  modal.style.display = 'flex';
+  // Scroll body panel to top
+  var bd = document.getElementById('legal-modal-body');
+  if (bd) bd.scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
 function closeLegalModal() {
@@ -6224,7 +6226,7 @@ function showChatRules() {
   if (!modal) return;
   titleEl.textContent = 'Community Rules';
   bodyEl.innerHTML    = rulesHtml;
-  modal.style.display = 'block';
+  modal.style.display = 'flex';
   modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
   var bd2 = document.getElementById('legal-modal-body');
