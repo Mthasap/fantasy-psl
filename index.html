@@ -1434,6 +1434,17 @@ db.auth.onAuthStateChange(function(event, session) {
   }
 });
 
+// Handle direct /news/slug URL — opens article on page load (for Google/sharing links)
+(function() {
+  var path = window.location.pathname;
+  var match = path.match(/^\/news\/([a-z0-9\-]+)$/);
+  if (match) {
+    var targetSlug = match[1];
+    // Wait for news to load, then open the matching article
+    window._pendingNewsSlug = targetSlug;
+  }
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
   // Init ad visibility
   updateAdVisibility();
@@ -3273,6 +3284,16 @@ function renderNews(grid, posts) {
   }
   // Store posts in global cache so onclick can reference by index (avoids JSON escaping issues)
   window._newsPosts = posts;
+  // Auto-open article if user arrived via a /news/slug URL (e.g. from Google)
+  if (window._pendingNewsSlug) {
+    var slug = window._pendingNewsSlug;
+    window._pendingNewsSlug = null;
+    var matchIdx = posts.findIndex(function(p) {
+      var ps = p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      return ps === slug;
+    });
+    if (matchIdx > -1) { setTimeout(function(){ openNewsPost(matchIdx); }, 300); }
+  }
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(280px,1fr))';
   grid.style.gap = '.9rem';
