@@ -10,7 +10,48 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fantasy PSL">
-  <meta name="description" content="South Africa's fantasy football game for the Betway Premiership">
+  <meta name="description" content="South Africa's #1 fantasy football game for the Betway Premiership. Pick your squad, earn points, compete with friends.">
+  <link rel="canonical" href="https://fantasy-psl.vercel.app/">
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="Fantasy PSL">
+  <meta property="og:url"         content="https://fantasy-psl.vercel.app/">
+  <meta property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta property="og:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
+  <meta property="og:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+  <meta property="og:locale"      content="en_ZA">
+
+  <!-- Twitter/X card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta name="twitter:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
+  <meta name="twitter:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+
+  <!-- Google Search / structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Fantasy PSL",
+    "url": "https://fantasy-psl.vercel.app",
+    "description": "South Africa's fantasy football game for the Betway Premiership",
+    "applicationCategory": "SportsApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "inLanguage": "en-ZA",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Headway Projects (PTY) LTD",
+      "url": "https://fantasy-psl.vercel.app"
+    },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" }
+  }
+  </script>
+  <meta id="og-title"       property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta id="og-description" property="og:description" content="Pick 15 PSL players, earn fantasy points from real matches.">
+  <meta id="og-url"         property="og:url"         content="https://fantasy-psl.vercel.app/">
+  <meta id="og-image"       property="og:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+  <meta id="page-desc"      name="description"        content="South Africa's #1 fantasy football game for the Betway Premiership.">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
@@ -3230,6 +3271,8 @@ function renderNews(grid, posts) {
     grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">No news yet.</div>';
     return;
   }
+  // Store posts in global cache so onclick can reference by index (avoids JSON escaping issues)
+  window._newsPosts = posts;
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(280px,1fr))';
   grid.style.gap = '.9rem';
@@ -3237,10 +3280,11 @@ function renderNews(grid, posts) {
     var catColor = NEWS_CAT_COLORS[post.category] || NEWS_CAT_COLORS['default'];
     var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : '';
     var isFeatured = idx === 0;
-    var imgHtml  = post.image_url
-      ? '<img src="' + post.image_url + '" style="width:100%;height:' + (isFeatured?'180px':'130px') + ';object-fit:cover;border-radius:10px 10px 0 0;display:block" onerror="this.style.display=\'none\'">'
-      : '<div style="width:100%;height:' + (isFeatured?'100px':'70px') + ';background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:' + (isFeatured?'2.5rem':'1.8rem') + '">' + (post.category==='Tips'?'💡':post.category==='Injury'?'⚕':'📰') + '</div>';
-    return '<div onclick="openNewsPost(' + JSON.stringify(post).replace(/'/g,"\\'") + ')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;' + (isFeatured?'grid-column:1/-1;':'') + '" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,.3)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
+    var imgHtml = post.image_url
+      ? '<img src="' + post.image_url + '" style="width:100%;height:' + (isFeatured?'180px':'130px') + ';object-fit:cover;border-radius:10px 10px 0 0;display:block" onerror=\'this.style.display=\\"none\\"\'>'
+      : '<div style="width:100%;height:' + (isFeatured?'100px':'70px') + ';background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:' + (isFeatured?'2.5rem':'1.8rem') + '">' + (post.category==='Tips'?'💡':post.category==='Injury'?'⚕️':'📰') + '</div>';
+    // Use index-based onclick — no JSON serialisation needed
+    return '<div onclick="openNewsPost(' + idx + ')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;' + (isFeatured?'grid-column:1/-1;':'') + '">' +
       imgHtml +
       '<div style="padding:.9rem 1rem 1rem">' +
         '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem">' +
@@ -3253,38 +3297,92 @@ function renderNews(grid, posts) {
     '</div>';
   }).join('');
 }
+function openNewsPost(postOrIdx) {
+  // Accept either an index into window._newsPosts or a post object directly
+  var post = (typeof postOrIdx === 'number' && window._newsPosts)
+    ? window._newsPosts[postOrIdx]
+    : postOrIdx;
+  if (!post) return;
 
-function openNewsPost(post) {
-  // Show full post in a modal/overlay
+  // Update URL and meta tags for SEO / sharing
+  var slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  var shareUrl = 'https://fantasy-psl.vercel.app/news/' + slug;
+  try { window.history.pushState({ newsSlug: slug }, post.title, shareUrl); } catch(e) {}
+  // Update Open Graph meta for social sharing
+  var setMeta = function(id, val) { var el = document.getElementById(id); if(el) el.setAttribute('content', val); };
+  setMeta('og-title',       post.title + ' — Fantasy PSL');
+  setMeta('og-description', post.summary || post.title);
+  setMeta('og-url',         shareUrl);
+  setMeta('og-image',       post.image_url || 'https://fantasy-psl.vercel.app/icon-512.png');
+  setMeta('page-desc',      post.summary || post.title);
+  try { document.title = post.title + ' — Fantasy PSL'; } catch(e) {}
+
+  // Build overlay
   var overlay = document.getElementById('news-overlay') || (function(){
     var el = document.createElement('div');
     el.id = 'news-overlay';
-    el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;backdrop-filter:blur(4px)';
+    el.style.cssText = 'position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch';
     el.onclick = function(e){ if(e.target===el) closeNewsOverlay(); };
     document.body.appendChild(el);
     return el;
   })();
+
   var catColor = NEWS_CAT_COLORS[post.category] || NEWS_CAT_COLORS['default'];
   var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
-  overlay.innerHTML = '<div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:640px;width:100%;padding:0;overflow:hidden">' +
-    (post.image_url ? '<img src="'+post.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block">' : '') +
-    '<div style="padding:1.5rem 1.5rem 2rem">' +
-      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem">' +
-        '<span style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+catColor+';padding:3px 8px;border-radius:4px">'+(post.category||'News')+'</span>' +
-        '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">'+dateStr+'</span>' +
+  var readTime = post.body ? Math.max(1, Math.round(post.body.split(' ').length / 200)) + ' min read' : '';
+
+  overlay.innerHTML =
+    // Back button bar
+    '<div style="background:#0D1017;border-bottom:1px solid rgba(255,255,255,.08);padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:1">' +
+      '<button onclick="closeNewsOverlay()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.1rem;-webkit-tap-highlight-color:transparent;flex-shrink:0">&#8592;</button>' +
+      '<span style="font-family:var(--font-ui,sans-serif);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.5px">PSL News</span>' +
+    '</div>' +
+    // Cover image
+    (post.image_url ? '<img src="' + post.image_url + '" style="width:100%;max-height:260px;object-fit:cover;display:block">' : '') +
+    // Article content
+    '<div style="padding:1.4rem 1.1rem 5rem;max-width:680px;margin:0 auto">' +
+      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">' +
+        '<span style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:' + catColor + ';padding:3px 9px;border-radius:4px">' + (post.category||'News') + '</span>' +
+        '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">' + dateStr + '</span>' +
+        (readTime ? '<span style="font-size:.72rem;color:rgba(255,255,255,.3)">· ' + readTime + '</span>' : '') +
       '</div>' +
-      '<h2 style="font-family:var(--font-display,sans-serif);font-size:1.4rem;font-weight:900;margin-bottom:.8rem;line-height:1.2">'+post.title+'</h2>' +
-      '<div style="font-size:.88rem;color:rgba(255,255,255,.7);line-height:1.7;white-space:pre-wrap">'+(post.body||post.summary||'')+'</div>' +
-    '</div>' +
-    '<div style="padding:0 1.5rem 1.5rem;display:flex;justify-content:flex-end">' +
-      '<button onclick="closeNewsOverlay()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:.85rem;font-weight:600;padding:.5rem 1.2rem;cursor:pointer">Close</button>' +
-    '</div>' +
-  '</div>';
-  overlay.style.display = 'flex';
+      '<h1 style="font-family:var(--font-display,sans-serif);font-size:1.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem;color:#fff">' + post.title + '</h1>' +
+      '<p style="font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:1.2rem;font-style:italic;border-left:3px solid #B91C3A;padding-left:.8rem">' + (post.summary || '') + '</p>' +
+      '<div style="font-size:.9rem;color:rgba(255,255,255,.78);line-height:1.85;white-space:pre-wrap">' + (post.body || post.summary || '') + '</div>' +
+      // Share button
+      '<div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.08)">' +
+        '<button onclick="shareNewsPost(this)" data-slug="' + slug + '" data-title="' + post.title.replace(/"/g,'&quot;') + '" style="background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.3);border-radius:10px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:700;padding:.6rem 1.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent">&#128279; Share Article</button>' +
+      '</div>' +
+    '</div>';
+
+  overlay.style.display = 'block';
+  overlay.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
 }
+
 function closeNewsOverlay() {
   var el = document.getElementById('news-overlay');
   if (el) el.style.display = 'none';
+  document.body.style.overflow = '';
+  // Restore URL and title
+  try { window.history.pushState({}, 'Fantasy PSL', '/'); } catch(e) {}
+  try { document.title = 'Fantasy PSL'; } catch(e) {}
+  var setMeta = function(id, val) { var el2 = document.getElementById(id); if(el2) el2.setAttribute('content', val); };
+  setMeta('og-title', "Fantasy PSL \u2014 South Africa's Fantasy Football");
+  setMeta('og-description', 'Pick 15 PSL players, earn fantasy points from real matches.');
+}
+
+function shareNewsPost(btn) {
+  var slug  = btn ? btn.getAttribute('data-slug')  : '';
+  var title = btn ? btn.getAttribute('data-title') : 'Fantasy PSL News';
+  var url = 'https://fantasy-psl.vercel.app/news/' + slug;
+  if (navigator.share) {
+    navigator.share({ title: title + ' — Fantasy PSL', text: title, url: url }).catch(function(){});
+  } else {
+    try { navigator.clipboard.writeText(url); showToast('Link copied! 🔗', 'success'); } catch(e) {
+      showToast('Share: ' + url, 'info');
+    }
+  }
 }
 
 function loadInjuries() {
