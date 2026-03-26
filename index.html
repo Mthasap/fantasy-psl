@@ -470,6 +470,25 @@
   }
   #chat-input:focus { border-color:rgba(185,28,58,.45) !important; }
 
+
+  /* ── Bottom nav: bright white icons & labels (was too dim) ── */
+  .bnav-btn        { color: rgba(255,255,255,.78) !important; }
+  .bnav-btn svg    { stroke: rgba(255,255,255,.78) !important; }
+  .bnav-label      { color: rgba(255,255,255,.78) !important; }
+  .bnav-btn:not(.active):hover { color: #fff !important; }
+  .bnav-btn:not(.active):hover svg { stroke: #fff !important; }
+
+  /* ── Section/tab labels — was #4A5568 (near-invisible dark grey) ── */
+  .ftab:not(.active) {
+    color: rgba(255,255,255,.75) !important;
+    border-color: rgba(255,255,255,.15) !important;
+  }
+  .ftab:not(.active):hover {
+    color: #fff !important;
+    background: rgba(255,255,255,.08) !important;
+  }
+  .lt-header { color: rgba(255,255,255,.75) !important; }
+
 </style>
 
   <!-- ==============================================================
@@ -6023,15 +6042,15 @@ function deletePost(btn){
 </script>
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
-<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);flex-direction:column;overflow:hidden">
-  <!-- Floating close button — position:fixed inside the modal, always in top-right corner -->
-  <button onclick="closeLegalModal()" id="legal-modal-close" style="position:fixed;top:16px;right:16px;z-index:9200;width:44px;height:44px;background:#B91C3A;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.3rem;font-weight:700;line-height:1;box-shadow:0 4px 16px rgba(0,0,0,.5);-webkit-tap-highlight-color:transparent;touch-action:manipulation">&#x2715;</button>
-  <!-- Title bar below the close button -->
-  <div style="flex-shrink:0;background:#0D1017;border-bottom:1px solid rgba(255,255,255,.1);padding:.85rem 4rem .85rem 1.1rem;min-height:56px;display:flex;align-items:center">
+<!-- Legal modal close button — lives OUTSIDE the modal div so position:fixed works on iOS -->
+<button id="legal-close-btn" onclick="closeLegalModal()" style="display:none;position:fixed;top:18px;right:16px;z-index:9300;width:46px;height:46px;background:#B91C3A;border:none;border-radius:50%;color:#fff;font-size:1.4rem;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;touch-action:manipulation;align-items:center;justify-content:center">&#x2715;</button>
+
+<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+  <!-- Title row — padding-right leaves space for the close button -->
+  <div style="position:sticky;top:0;z-index:1;background:#0D1017;border-bottom:1px solid rgba(255,255,255,.1);padding:.9rem 60px .9rem 1.1rem;min-height:56px;display:flex;align-items:center">
     <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff"></div>
   </div>
-  <!-- Scrollable body ONLY -->
-  <div id="legal-modal-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1.4rem 1.1rem 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.8;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
+  <div id="legal-modal-body" style="padding:1.4rem 1.1rem 6rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
 </div>
 <script>
 var LEGAL_CONTENT = {
@@ -6155,20 +6174,23 @@ var LEGAL_CONTENT = {
 };
 
 function openTermsModal(type) {
-  var modal = document.getElementById('legal-modal');
+  var modal   = document.getElementById('legal-modal');
+  var closeBtn = document.getElementById('legal-close-btn');
   var titleEl = document.getElementById('legal-modal-title');
   var bodyEl  = document.getElementById('legal-modal-body');
-  var c = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
-  titleEl.textContent = c.title;
-  bodyEl.innerHTML    = c.html;
-  modal.style.display = 'flex';
+  var ct = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
+  titleEl.textContent = ct.title;
+  bodyEl.innerHTML    = ct.html;
+  modal.style.display   = 'block';
+  if (closeBtn) closeBtn.style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  var bd = document.getElementById('legal-modal-body');
-  if (bd) bd.scrollTop = 0;
+  modal.scrollTop = 0;
 }
 function closeLegalModal() {
-  var modal = document.getElementById('legal-modal');
-  if (modal) modal.style.display = 'none';
+  var modal    = document.getElementById('legal-modal');
+  var closeBtn = document.getElementById('legal-close-btn');
+  if (modal)    modal.style.display    = 'none';
+  if (closeBtn) closeBtn.style.display = 'none';
   document.body.style.overflow = '';
 }
 // Also close on Escape key (already handled by global keydown, but add specific check)
@@ -6201,7 +6223,9 @@ function showChatRules() {
   if (!modal) return;
   titleEl.textContent = 'Community Rules';
   bodyEl.innerHTML    = rulesHtml;
-  modal.style.display = 'flex';
+  modal.style.display = 'block';
+  var cb = document.getElementById('legal-close-btn');
+  if (cb) cb.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   var bd2 = document.getElementById('legal-modal-body');
   if (bd2) bd2.scrollTop = 0;
