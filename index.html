@@ -366,6 +366,8 @@
     animation:ldrLbl 1.4s ease infinite;
   }
   @keyframes ldrLbl{0%,100%{opacity:.25}50%{opacity:.65}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.85)}}
+
 
   /* ═══════════════════════════════════════════════════
      DISKI CHAT  —  iMessage-style bubble layout
@@ -626,6 +628,7 @@
           <div id="cp-name" style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:#fff;line-height:1"></div>
           <div id="cp-nick" style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:.3rem"></div>
           <div id="cp-meta" style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:.2rem;display:flex;align-items:center;gap:.6rem"></div>
+          <div id="cp-website" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -1087,8 +1090,31 @@
 <!-- == DISKI CHAT == -->
 <div id="page-chat" class="page">
   <div class="page-section" style="max-width:680px;padding-bottom:100px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem">
-      <div><span class="eyebrow">Community</span><h1 class="section-title" style="margin:0">Diski Chat</h1></div>
+    <!-- Community header bar -->
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#8B1A2E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;line-height:1.1">Diski Chat</div>
+          <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:1px">Fantasy PSL Community</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.3rem;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.25);border-radius:20px;padding:.28rem .7rem">
+          <div style="width:7px;height:7px;border-radius:50%;background:#22895A;animation:pulse 2s infinite"></div>
+          <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#22895A" id="chat-online-count">Live</span>
+        </div>
+        <div id="chat-post-count" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3)"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+      <div style="display:flex;gap:.4rem">
+        <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">🔥 Latest</button>
+        <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">⭐ Top</button>
+      </div>
+      <div id="chat-rules-link" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.5px;cursor:pointer" onclick="showChatRules()">Community Rules ›</div>
     </div>
     <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;margin-bottom:1.2rem">
       <div style="display:flex;gap:.75rem;align-items:flex-start">
@@ -1107,10 +1133,7 @@
       <div style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.8rem">Create a free account to post and react</div>
       <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.2rem;cursor:pointer">Register Free</button>
     </div>
-    <div style="display:flex;gap:.4rem;margin-bottom:1rem">
-      <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">Latest</button>
-      <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">Top</button>
-    </div>
+
     <div id="chat-feed"><div class="fpsl-loader"><div class="fpsl-loader-ball"><svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#ddd" stroke-width="1"/><path d="M22 2 L27 15 L13 11 Z" fill="#111"/><path d="M22 42 L17 29 L31 33 Z" fill="#111"/><path d="M2 22 L15 17 L11 31 Z" fill="#111"/><path d="M42 22 L29 27 L33 13 Z" fill="#111"/><circle cx="22" cy="22" r="4.5" fill="#111"/></svg></div><div class="fpsl-loader-shadow"></div><div class="fpsl-loader-dots"><span></span><span></span><span></span></div><div class="fpsl-loader-label">Loading Diski Chat</div></div></div>
     <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
       <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more</button>
@@ -1122,8 +1145,8 @@
   <div class="foot-inner">
     <div class="foot-logo"><img id="footer-logo" src="/logo.png" alt="Fantasy PSL" style="height:28px;opacity:.4;filter:grayscale(1)" onerror="this.style.display='none'"></div>
     <ul class="foot-links">
-      <li><a href="#">Terms</a></li>
-      <li><a href="#">Privacy</a></li>
+      <li><a href="#" onclick="openTermsModal('terms');return false;">Terms</a></li>
+      <li><a href="#" onclick="openTermsModal('privacy');return false;">Privacy</a></li>
       <li><a href="#">Contact</a></li>
     </ul>
     <div class="foot-copy">
@@ -3054,6 +3077,28 @@ function fdrColor(fdr) {
   return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#DBA94A' : fdr === 2 ? '#88c541' : '#22895A';
 }
 
+// ── Club info: metadata + official website links ──────────────────────────
+var CLUB_INFO = {
+  'Orlando Pirates':    { nickname:'The Buccaneers',      est:1937, stadium:'Orlando Stadium',          city:'Soweto, Johannesburg',       website:'https://www.orlandopiratesfc.com' },
+  'Mamelodi Sundowns': { nickname:'Masandawana',          est:1970, stadium:'Loftus Versfeld',           city:'Tshwane, Pretoria',          website:'https://www.mamelodifc.co.za' },
+  'Kaizer Chiefs':     { nickname:'Amakhosi',              est:1970, stadium:'FNB Stadium',               city:'Johannesburg',                website:'https://www.kaizerchiefs.com' },
+  'AmaZulu':           { nickname:'Usuthu',                est:1932, stadium:'Moses Mabhida Stadium',     city:'Durban',                     website:'https://amazulufc.com' },
+  'Stellenbosch':      { nickname:'Stellies',              est:1994, stadium:'Danie Craven Stadium',      city:'Stellenbosch',                website:'https://stellenboschathletic.co.za' },
+  'Sekhukhune United': { nickname:'Babina Noko',           est:2015, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                   website:'https://www.sekhukhuneufc.co.za' },
+  'Polokwane City':    { nickname:'Rise and Shine',        est:1978, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                   website:'https://www.polokwanecityfc.com' },
+  'Durban City':       { nickname:'The City',              est:2020, stadium:'Moses Mabhida Stadium',     city:'Durban',                     website:'https://www.psl.co.za' },
+  'Golden Arrows':     { nickname:'Abafana Bes\'thende',  est:1943, stadium:'Princess Magogo Stadium',   city:'KwaMashu, Durban',           website:'https://www.goldenarrowsfc.com' },
+  'Chippa United':     { nickname:'The Chilli Boys',       est:2010, stadium:'Nelson Mandela Bay Stadium',city:'Gqeberha',                   website:'https://www.chippaunited.co.za' },
+  'Richards Bay':      { nickname:'Umhlobo',               est:1999, stadium:'Umhlathuze Sports Complex', city:'Richards Bay',               website:'https://www.psl.co.za' },
+  'Siwelele':          { nickname:'Siwelele',              est:1994, stadium:'Lucas Moripe Stadium',      city:'Atteridgeville, Tshwane',    website:'https://www.psl.co.za' },
+  'TS Galaxy':         { nickname:'The Rockets',           est:2001, stadium:'Mbombela Stadium',          city:'Nelspruit, Mpumalanga',      website:'https://www.tsgalaxy.co.za' },
+  'Magesi':            { nickname:'The Motor City Boys',   est:2019, stadium:'Peter Mokaba Stadium',      city:'Limpopo',                    website:'https://www.psl.co.za' },
+  'Marumo Gallants FC':{ nickname:'Gallants',              est:1931, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                  website:'https://www.psl.co.za' },
+  'Orbit College':     { nickname:'Orbit',                 est:2013, stadium:'Olympia Park Stadium',      city:'Rustenburg',                 website:'https://www.psl.co.za' },
+  'Cape Town City':    { nickname:'The Citizens',          est:2016, stadium:'DHL Newlands',              city:'Cape Town',                  website:'https://www.capetowncityfc.com' },
+  'Cape Town Spurs':   { nickname:'The Urban Warriors',   est:1999, stadium:'Athlone Stadium',            city:'Cape Town',                  website:'https://www.capetownspurs.co.za' }
+};
+
 var REAL_TABLE = [
   // Fallback standings (GW26, 25 Mar 2026) — P values from Sportmonks live data (Image 3)
   // Live data always loads first from Sportmonks standings API
@@ -4916,6 +4961,17 @@ function openClubProfile(teamName) {
   if (info.city)    metaParts.push(info.city);
   metaEl.innerHTML = metaParts.join('<span style="opacity:.3;margin:0 .3rem">.</span>');
 
+  // Website link button
+  var websiteEl = document.getElementById('cp-website');
+  if (websiteEl) {
+    if (info.website) {
+      websiteEl.innerHTML = '<a href="' + info.website + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:.38rem .85rem;color:#fff;font-family:var(--font-ui);font-size:.72rem;font-weight:700;letter-spacing:.8px;text-decoration:none;margin-top:.6rem;transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,.14)\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Official Website</a>';
+      websiteEl.style.display = 'block';
+    } else {
+      websiteEl.style.display = 'none';
+    }
+  }
+
   // Season at-a-glance tiles
   var pos = REAL_TABLE.indexOf(tbl) + 1;
   var gd  = tbl.gd !== undefined ? tbl.gd : (tbl.gf||0)-(tbl.ga||0);
@@ -5528,7 +5584,16 @@ function loadDiskiChat(){
     if(compose)compose.style.display='block';
     if(prompt)prompt.style.display='none';
     var av=document.getElementById('chat-avatar');
-    if(av){var m=ST.user.user_metadata||{};av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();}
+    if(av){
+      var m=ST.user.user_metadata||{};
+      var avatarUrl=CACHE._profile&&CACHE._profile.avatar_url||null;
+      if(avatarUrl){
+        av.innerHTML='<img src="'+avatarUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent=\''+((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase()+'\'"/>';
+        av.style.padding='0';
+      } else {
+        av.textContent=((m.username||m.team_name||ST.user.email||'?')[0]).toUpperCase();
+      }
+    }
   }else{
     if(compose)compose.style.display='none';
     if(prompt)prompt.style.display='block';
@@ -5577,7 +5642,17 @@ function fetchPosts(reset){
       var posts=res.data||[];
       CHAT.hasMore=posts.length>CHAT.PAGE_SIZE;
       if(CHAT.hasMore)posts=posts.slice(0,CHAT.PAGE_SIZE);
+      // Sanitise null counts so display always shows a number
+      posts.forEach(function(p){
+        p.likes    = p.likes    || 0;
+        p.dislikes = p.dislikes || 0;
+        p.reposts  = p.reposts  || 0;
+        p.reply_count = p.reply_count || 0;
+      });
       CHAT.posts=reset?posts:CHAT.posts.concat(posts);
+      // Update post count badge
+      var countEl=document.getElementById('chat-post-count');
+      if(countEl&&reset){ db.from('diski_posts').select('id',{count:'exact',head:true}).eq('is_removed',false).then(function(r){ if(countEl)countEl.textContent=(r.count||0)+' posts'; }); }
       renderFeed();
       var lm=document.getElementById('chat-load-more');
       if(lm)lm.style.display=CHAT.hasMore?'block':'none';
@@ -5873,6 +5948,189 @@ function deletePost(btn){
       CHAT.posts=CHAT.posts.filter(function(p){return p.id!==pid;});
       renderFeed();showToast('Post deleted','info');
     });
+}
+</script>
+
+<!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
+<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);overflow-y:auto;-webkit-overflow-scrolling:touch" onclick="if(event.target===this)closeLegalModal()">
+  <div style="margin:0 auto;max-width:680px;min-height:100%;background:#0E1119;padding:0 0 4rem">
+    <div style="position:sticky;top:0;z-index:1;background:#0E1119;border-bottom:1px solid rgba(255,255,255,.07);padding:1rem 1.2rem;display:flex;align-items:center;justify-content:space-between">
+      <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff"></div>
+      <button onclick="closeLegalModal()" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.7);font-size:1rem">✕</button>
+    </div>
+    <div id="legal-modal-body" style="padding:1.5rem 1.2rem;color:rgba(255,255,255,.75);font-family:var(--font-body);font-size:.88rem;line-height:1.75"></div>
+  </div>
+</div>
+<script>
+var LEGAL_CONTENT = {
+  terms: {
+    title: 'Terms of Service',
+    html: `
+      <p style="color:rgba(255,255,255,.4);font-size:.78rem;margin-bottom:1.5rem">Last updated: March 2026 &nbsp;·&nbsp; Effective for all users of Fantasy PSL</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">1. Acceptance of Terms</h2>
+      <p>By accessing or using the Fantasy PSL application ("the App", "the Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, please do not use the Service. These Terms apply to all users, including visitors, registered users and managers.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">2. Description of Service</h2>
+      <p>Fantasy PSL is a free-to-play fantasy football game based on the South African Betway Premiership. Users build virtual squads of real PSL players, earn fantasy points based on real match performances, and compete on public and private leaderboards. The App is operated by Headway Projects (PTY) LTD, a company registered in South Africa.</p>
+      <p style="margin-top:.6rem"><strong style="color:#fff">The Service is not affiliated with, endorsed by, or officially connected to</strong> the Premier Soccer League (PSL), Betway, any PSL club, or any other football governing body.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">3. Eligibility</h2>
+      <p>You must be at least 13 years old to use this Service. If you are under 18, you confirm that you have your parent or guardian's permission to use the App. By creating an account, you represent and warrant that you meet these requirements.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">4. Account Registration</h2>
+      <p>You must provide accurate, current and complete information when registering. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately of any unauthorised use at support@fantasypsl.co.za. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">5. Free-to-Play &amp; No Real Money</h2>
+      <p>Fantasy PSL is entirely free to play. No real money is wagered, won or lost through this Service. Any points, rankings or prizes mentioned are fantasy game mechanics only and carry no monetary value. This Service does not constitute gambling in any form.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">6. User Conduct</h2>
+      <p>When using Fantasy PSL, including Diski Chat and any community features, you agree not to:</p>
+      <ul style="padding-left:1.2rem;margin:.5rem 0;display:flex;flex-direction:column;gap:.3rem">
+        <li>Post content that is abusive, hateful, threatening, defamatory or obscene</li>
+        <li>Harass, bully or impersonate other users</li>
+        <li>Use automated bots, scrapers or scripts to interact with the Service</li>
+        <li>Attempt to gain unauthorised access to our systems or other users' accounts</li>
+        <li>Post spam, advertisements or promotional content</li>
+        <li>Violate any applicable laws or regulations</li>
+      </ul>
+      <p style="margin-top:.5rem">We reserve the right to remove content and ban users who violate these rules without notice.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">7. Intellectual Property</h2>
+      <p>All original content in this App — including the Fantasy PSL name, design, code and branding — is owned by Headway Projects (PTY) LTD. Club names, crests and trademarks remain the property of their respective owners. You may not reproduce, distribute or create derivative works without our express written consent.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">8. Data Accuracy &amp; Disclaimer</h2>
+      <p>Player statistics, match results, fixtures and standings are sourced from third-party providers and may be delayed or inaccurate. Fantasy PSL makes no warranty as to the accuracy, completeness or timeliness of any data. Fantasy points calculations are automated and, while we strive for accuracy, errors may occur. We reserve the right to correct errors at any time.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">9. Limitation of Liability</h2>
+      <p>To the maximum extent permitted by South African law, Headway Projects (PTY) LTD shall not be liable for any indirect, incidental, special or consequential damages arising from your use of, or inability to use, the Service. Your sole remedy for dissatisfaction with the Service is to stop using it.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">10. Service Availability</h2>
+      <p>We do not guarantee uninterrupted or error-free operation of the Service. We may suspend, modify or discontinue any part of the Service at any time without notice. We will endeavour to provide advance notice of significant changes where reasonably possible.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">11. Third-Party Links</h2>
+      <p>The App may contain links to third-party websites (including club official sites). We are not responsible for the content, accuracy or privacy practices of those sites. Visiting them is at your own risk.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">12. Changes to Terms</h2>
+      <p>We may update these Terms at any time. We will notify users of material changes via the App or by email. Continued use of the Service after changes are posted constitutes acceptance of the updated Terms.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">13. Governing Law</h2>
+      <p>These Terms are governed by the laws of the Republic of South Africa. Any disputes shall be subject to the exclusive jurisdiction of the South African courts.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">14. Contact</h2>
+      <p>For any questions regarding these Terms, contact us at: <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a></p>
+    `
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    html: `
+      <p style="color:rgba(255,255,255,.4);font-size:.78rem;margin-bottom:1.5rem">Last updated: March 2026 &nbsp;·&nbsp; Applies to all Fantasy PSL users</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">1. Who We Are</h2>
+      <p>Fantasy PSL is operated by Headway Projects (PTY) LTD, registered in South Africa. This Privacy Policy explains how we collect, use, store and protect your personal information when you use our App. We are committed to complying with the Protection of Personal Information Act (POPIA) 4 of 2013.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">2. Information We Collect</h2>
+      <ul style="padding-left:1.2rem;margin:.5rem 0;display:flex;flex-direction:column;gap:.4rem">
+        <li><strong style="color:#fff">Account information:</strong> Email address, username, team name, country and optional profile picture when you register</li>
+        <li><strong style="color:#fff">Game data:</strong> Your squad selections, transfer history, points history and league memberships</li>
+        <li><strong style="color:#fff">Community content:</strong> Posts and reactions you submit to Diski Chat</li>
+        <li><strong style="color:#fff">Usage data:</strong> Pages visited, features used and general interaction patterns (collected anonymously)</li>
+        <li><strong style="color:#fff">Device data:</strong> Browser type, device type and general geographic location (country level)</li>
+      </ul>
+      <p style="margin-top:.5rem">We do not collect payment information. We do not collect precise GPS location.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">3. How We Use Your Information</h2>
+      <ul style="padding-left:1.2rem;margin:.5rem 0;display:flex;flex-direction:column;gap:.3rem">
+        <li>To operate and maintain your Fantasy PSL account</li>
+        <li>To calculate and display fantasy points and leaderboards</li>
+        <li>To enable community features such as Diski Chat</li>
+        <li>To send transactional emails (account confirmation, password reset)</li>
+        <li>To improve our Service through anonymised analytics</li>
+        <li>To detect and prevent fraud, abuse and violations of our Terms</li>
+      </ul>
+      <p style="margin-top:.5rem">We will never sell your personal information to third parties.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">4. Data Storage &amp; Security</h2>
+      <p>Your data is stored securely in Supabase (a GDPR-compliant cloud database platform). We implement industry-standard security measures including encrypted connections (HTTPS), hashed passwords and access controls. No method of transmission over the internet is 100% secure, but we take reasonable precautions to protect your data.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">5. Data Retention</h2>
+      <p>We retain your account data for as long as your account is active. When you delete your account, your personal data is scheduled for deletion within 30 days. Anonymised usage statistics may be retained indefinitely. Community posts (Diski Chat) may be retained in anonymised form after account deletion.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">6. Your Rights (POPIA)</h2>
+      <p>Under South African law you have the right to:</p>
+      <ul style="padding-left:1.2rem;margin:.5rem 0;display:flex;flex-direction:column;gap:.3rem">
+        <li>Access the personal information we hold about you</li>
+        <li>Request correction of inaccurate information</li>
+        <li>Request deletion of your account and associated data</li>
+        <li>Object to the processing of your personal information</li>
+        <li>Lodge a complaint with the Information Regulator of South Africa</li>
+      </ul>
+      <p style="margin-top:.5rem">To exercise these rights, contact us at <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a>.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">7. Cookies &amp; Local Storage</h2>
+      <p>We use browser local storage to save your login session and app preferences. We do not use advertising cookies or third-party tracking pixels. Our Service uses Supabase authentication which may set session cookies. You can clear these at any time through your browser settings.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">8. Children's Privacy</h2>
+      <p>Our Service is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, contact us immediately and we will delete it.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">9. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via the App or email. The "Last updated" date at the top of this policy reflects the most recent revision.</p>
+
+      <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">10. Contact</h2>
+      <p>Questions about this Privacy Policy? Reach us at: <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a><br>Information Regulator (South Africa): <a href="https://www.justice.gov.za/inforeg/" target="_blank" style="color:#DBA94A">www.justice.gov.za/inforeg</a></p>
+    `
+  }
+};
+
+function openTermsModal(type) {
+  var modal = document.getElementById('legal-modal');
+  var titleEl = document.getElementById('legal-modal-title');
+  var bodyEl  = document.getElementById('legal-modal-body');
+  var c = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
+  titleEl.textContent = c.title;
+  bodyEl.innerHTML    = c.html;
+  modal.style.display = 'block';
+  modal.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function closeLegalModal() {
+  var modal = document.getElementById('legal-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+// Also close on Escape key (already handled by global keydown, but add specific check)
+
+function showChatRules() {
+  var rulesHtml = '<div style="padding:1.4rem 1.2rem;color:rgba(255,255,255,.75);font-family:var(--font-body);font-size:.88rem;line-height:1.75">' +
+    '<h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:0 0 1rem">Diski Chat Community Rules</h2>' +
+    '<p style="margin-bottom:.8rem">Diski Chat is for Fantasy PSL fans to discuss football, their squads and the Betway Premiership. Keep it fun and respectful.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:.6rem">' +
+      ruleItem('✅', 'Be Respectful', 'Debate the football, not the person. No insults, bullying or personal attacks.') +
+      ruleItem('✅', 'Keep it Football', 'This is a football community — keep discussions relevant to PSL, Fantasy PSL and the beautiful game.') +
+      ruleItem('✅', 'No Spam', 'No repeated posts, promotional content or off-topic advertising.') +
+      ruleItem('✅', 'No Hate Speech', 'Content that is racist, sexist, homophobic or otherwise hateful will result in an immediate ban.') +
+      ruleItem('✅', 'English or Zulu/Sotho', 'Post in any South African language — we are proudly local.') +
+      ruleItem('🚫', 'No Spoilers', 'Respect users who may not have watched the match yet — mark spoilers clearly.') +
+      ruleItem('🚫', 'No Impersonation', 'Do not pretend to be another user, club or public figure.') +
+    '</div>' +
+    '<p style="margin-top:1rem;font-size:.75rem;color:rgba(255,255,255,.35)">Violations may result in post removal or account suspension without notice. Report posts using the flag icon.</p>' +
+  '</div>';
+  function ruleItem(icon, title, desc) {
+    return '<div style="display:flex;gap:.75rem;padding:.6rem .8rem;background:rgba(255,255,255,.04);border-radius:8px">' +
+      '<span style="font-size:1rem;flex-shrink:0">' + icon + '</span>' +
+      '<div><div style="font-family:var(--font-ui);font-size:.82rem;font-weight:800;color:#fff">' + title + '</div>' +
+      '<div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-top:2px">' + desc + '</div></div></div>';
+  }
+  // Reuse legal modal for rules
+  var modal = document.getElementById('legal-modal');
+  var titleEl = document.getElementById('legal-modal-title');
+  var bodyEl  = document.getElementById('legal-modal-body');
+  if (!modal) return;
+  titleEl.textContent = 'Community Rules';
+  bodyEl.innerHTML    = rulesHtml;
+  modal.style.display = 'block';
+  modal.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
 }
 </script>
 </body>
