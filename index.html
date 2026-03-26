@@ -11,22 +11,22 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fantasy PSL">
   <meta name="description" content="South Africa's #1 fantasy football game for the Betway Premiership. Pick your squad, earn points, compete with friends.">
-  <link rel="canonical" href="https://fantasy-psl.vercel.app/">
+  <link rel="canonical" href="https://www.fantasypsl.co.za/">
 
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="Fantasy PSL">
-  <meta property="og:url"         content="https://fantasy-psl.vercel.app/">
+  <meta property="og:url"         content="https://www.fantasypsl.co.za/">
   <meta property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
   <meta property="og:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
-  <meta property="og:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+  <meta property="og:image"       content="https://www.fantasypsl.co.za/icon-512.png">
   <meta property="og:locale"      content="en_ZA">
 
   <!-- Twitter/X card -->
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="Fantasy PSL — South Africa's Fantasy Football">
   <meta name="twitter:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
-  <meta name="twitter:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+  <meta name="twitter:image"       content="https://www.fantasypsl.co.za/icon-512.png">
 
   <!-- Google Search / structured data -->
   <script type="application/ld+json">
@@ -34,7 +34,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Fantasy PSL",
-    "url": "https://fantasy-psl.vercel.app",
+    "url": "https://www.fantasypsl.co.za",
     "description": "South Africa's fantasy football game for the Betway Premiership",
     "applicationCategory": "SportsApplication",
     "operatingSystem": "Web, iOS, Android",
@@ -42,15 +42,15 @@
     "publisher": {
       "@type": "Organization",
       "name": "Headway Projects (PTY) LTD",
-      "url": "https://fantasy-psl.vercel.app"
+      "url": "https://www.fantasypsl.co.za"
     },
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" }
   }
   </script>
   <meta id="og-title"       property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
   <meta id="og-description" property="og:description" content="Pick 15 PSL players, earn fantasy points from real matches.">
-  <meta id="og-url"         property="og:url"         content="https://fantasy-psl.vercel.app/">
-  <meta id="og-image"       property="og:image"       content="https://fantasy-psl.vercel.app/icon-512.png">
+  <meta id="og-url"         property="og:url"         content="https://www.fantasypsl.co.za/">
+  <meta id="og-image"       property="og:image"       content="https://www.fantasypsl.co.za/icon-512.png">
   <meta id="page-desc"      name="description"        content="South Africa's #1 fantasy football game for the Betway Premiership.">
 
   <!-- PWA Manifest -->
@@ -3327,14 +3327,14 @@ function openNewsPost(postOrIdx) {
 
   // Update URL and meta tags for SEO / sharing
   var slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  var shareUrl = 'https://fantasy-psl.vercel.app/news/' + slug;
+  var shareUrl = 'https://www.fantasypsl.co.za/news/' + slug;
   try { window.history.pushState({ newsSlug: slug }, post.title, shareUrl); } catch(e) {}
   // Update Open Graph meta for social sharing
   var setMeta = function(id, val) { var el = document.getElementById(id); if(el) el.setAttribute('content', val); };
   setMeta('og-title',       post.title + ' — Fantasy PSL');
   setMeta('og-description', post.summary || post.title);
   setMeta('og-url',         shareUrl);
-  setMeta('og-image',       post.image_url || 'https://fantasy-psl.vercel.app/icon-512.png');
+  setMeta('og-image',       post.image_url || 'https://www.fantasypsl.co.za/icon-512.png');
   setMeta('page-desc',      post.summary || post.title);
   try { document.title = post.title + ' — Fantasy PSL'; } catch(e) {}
 
@@ -3396,7 +3396,7 @@ function closeNewsOverlay() {
 function shareNewsPost(btn) {
   var slug  = btn ? btn.getAttribute('data-slug')  : '';
   var title = btn ? btn.getAttribute('data-title') : 'Fantasy PSL News';
-  var url = 'https://fantasy-psl.vercel.app/news/' + slug;
+  var url = 'https://www.fantasypsl.co.za/news/' + slug;
   if (navigator.share) {
     navigator.share({ title: title + ' — Fantasy PSL', text: title, url: url }).catch(function(){});
   } else {
