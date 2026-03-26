@@ -1,13 +1,13 @@
 // api/sitemap.js — Dynamic XML sitemap for Fantasy PSL
 // Reads published news articles from Supabase and generates a proper sitemap
-// Google indexes this at https://fantasy-psl.vercel.app/sitemap.xml
+// Google indexes this at https://www.fantasypsl.co.za/sitemap.xml
 //
 // STATIC PAGES always included:
 //   / (home), /news, /confirm
 // DYNAMIC PAGES pulled from Supabase:
 //   /news/{slug} for each published news article
 
-const BASE_URL = 'https://fantasy-psl.vercel.app';
+const BASE_URL = 'https://www.fantasypsl.co.za';
 const SB_URL   = process.env.SUPABASE_URL        || '';
 const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
