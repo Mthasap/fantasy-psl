@@ -27,7 +27,7 @@ const { getSeasonId }  = require('./season-helper');
 const TOKEN  = process.env.SPORTMONKS_TOKEN    || '';
 const SB_URL = process.env.SUPABASE_URL        || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const ADMIN  = process.env.ADMIN_SECRET        || 'fpsl-admin-2026';
+const ADMIN  = process.env.ADMIN_SECRET        || 'mzansi4sho';
 const BASE   = 'https://api.sportmonks.com/v3/football';
 const PSL_ID = 806;
 
