@@ -949,6 +949,10 @@
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <div id="xfer-badge" style="display:none;font-family:var(--font-ui);font-size:.7rem;font-weight:700;padding:.3rem .7rem;border-radius:6px;letter-spacing:.5px"></div>
           <button id="save-btn" class="btn-hero-primary" style="font-size:.8rem;padding:.6rem 1.2rem" onclick="saveSquad()">Save Squad</button>
+          <button onclick="openAutoSquadModal()" style="background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:800;padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.3px" title="Auto-create a squad for me">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Auto Squad
+          </button>
           <button onclick="shareSquad()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.7);font-family:var(--font-ui);font-size:.75rem;font-weight:700;padding:.6rem .9rem;cursor:pointer;display:flex;align-items:center;gap:.4rem" title="Share your squad">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             Share
@@ -6328,6 +6332,158 @@ function closeLegalModal() {
 }
 // Also close on Escape key (already handled by global keydown, but add specific check)
 
+// ══════════════════════════════════════════════════════════════════════
+// AUTO SQUAD — builds a valid 15-player squad automatically
+// Rules: 2 GK, 5 DEF, 5 MID, 3 FWD | R100M budget | max 3 per club
+// Styles: balanced | attack | defend | budget
+// ══════════════════════════════════════════════════════════════════════
+
+var AUTO_SQUAD_STYLE = 'balanced';
+
+function openAutoSquadModal() {
+  if (!ST.user) { openAuth('login'); return; }
+  if (!ST.allPlayers || !ST.allPlayers.length) {
+    showToast('Loading players... try again in a moment', 'info'); return;
+  }
+  var modal = document.getElementById('auto-squad-modal');
+  var warn  = document.getElementById('asq-warning');
+  if (warn) warn.style.display = ST.squad.length > 0 ? 'block' : 'none';
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeAutoSquadModal() {
+  var modal = document.getElementById('auto-squad-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function selectAutoStyle(btn, style) {
+  AUTO_SQUAD_STYLE = style;
+  document.querySelectorAll('.asq-opt').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function runAutoSquad() {
+  closeAutoSquadModal();
+
+  var players = (ST.allPlayers || []).filter(function(p) { return p.is_available !== false; });
+  if (!players.length) { showToast('No players available', 'warning'); return; }
+
+  // Sort pool by style
+  var scored = players.map(function(p) {
+    var pts   = p.total_points || 0;
+    var price = p.price || 5;
+    var value = pts / price; // points per million
+
+    var score;
+    if (AUTO_SQUAD_STYLE === 'attack') {
+      score = pts + (p.position === 'FWD' ? 30 : p.position === 'MID' ? 15 : 0)
+            + (p.goals || 0) * 10 + (p.assists || 0) * 5;
+    } else if (AUTO_SQUAD_STYLE === 'defend') {
+      score = pts + (p.position === 'DEF' ? 30 : p.position === 'GK' ? 25 : 0)
+            + (p.clean_sheets || 0) * 12;
+    } else if (AUTO_SQUAD_STYLE === 'budget') {
+      score = value * 20 + pts * 0.5; // heavily favour value
+    } else {
+      // balanced — pure points with slight value weighting
+      score = pts + value * 5;
+    }
+    return Object.assign({}, p, { _score: score });
+  });
+
+  scored.sort(function(a, b) { return b._score - a._score; });
+
+  // Formation: 2 GK, 5 DEF, 5 MID, 3 FWD
+  var need    = { GK:2, DEF:5, MID:5, FWD:3 };
+  var picked  = [];
+  var clubCount = {};
+  var budget  = 100;
+
+  // Greedy pick: iterate sorted players, pick if slot open + budget + club limit
+  ['GK','DEF','MID','FWD'].forEach(function(pos) {
+    var quota = need[pos];
+    var pool  = scored.filter(function(p) { return p.position === pos; });
+
+    for (var i = 0; i < pool.length && picked.filter(function(x){return x.position===pos;}).length < quota; i++) {
+      var p = pool[i];
+      var club = p.team || p.club || '';
+      var budgetUsed = picked.reduce(function(s,x){return s+(x.price||0);},0);
+      var remaining  = budget - budgetUsed;
+      var spotsLeft  = 15 - picked.length;
+      // Reserve minimum budget for remaining spots (cheapest placeholder = 4.0M each)
+      var minReserve = (spotsLeft - 1) * 4.0;
+
+      if ((p.price || 0) > remaining - minReserve) continue; // too expensive
+      if ((clubCount[club] || 0) >= 3) continue;             // club limit
+
+      picked.push(p);
+      clubCount[club] = (clubCount[club] || 0) + 1;
+    }
+  });
+
+  if (picked.length < 15) {
+    // Fallback: relax budget reserve and retry gaps
+    ['GK','DEF','MID','FWD'].forEach(function(pos) {
+      var quota   = need[pos];
+      var current = picked.filter(function(x){return x.position===pos;}).length;
+      if (current >= quota) return;
+      var pool = scored.filter(function(p) {
+        return p.position === pos && !picked.some(function(x){return x.id===p.id;});
+      });
+      for (var i = 0; i < pool.length && picked.filter(function(x){return x.position===pos;}).length < quota; i++) {
+        var p = pool[i];
+        var club = p.team || p.club || '';
+        var budgetUsed = picked.reduce(function(s,x){return s+(x.price||0);},0);
+        if ((p.price || 0) > budget - budgetUsed) continue;
+        if ((clubCount[club] || 0) >= 3) continue;
+        picked.push(p);
+        clubCount[club] = (clubCount[club] || 0) + 1;
+      }
+    });
+  }
+
+  if (picked.length < 15) {
+    showToast('Could not fill all 15 spots — not enough players in budget. Try a different style.', 'warning');
+    return;
+  }
+
+  // Assign bench/starter roles
+  // Starting XI: 1 GK, 4 DEF, 4 MID, 2 FWD
+  var starters = { GK:1, DEF:4, MID:4, FWD:2 };
+  var usedStarter = { GK:0, DEF:0, MID:0, FWD:0 };
+
+  picked.forEach(function(p) {
+    var onBench = usedStarter[p.position] >= starters[p.position];
+    p.onBench    = onBench;
+    p.benchOrder = onBench ? -1 : -1;
+    p.isCaptain  = false;
+    p.isVC       = false;
+    if (!onBench) usedStarter[p.position]++;
+  });
+
+  // Assign bench order
+  var benchPlayers = picked.filter(function(p){return p.onBench;});
+  benchPlayers.sort(function(a,b){return (b._score||0)-(a._score||0);});
+  benchPlayers.forEach(function(p,i){ p.benchOrder = i; });
+
+  // Captain = highest scoring starter
+  var starters11 = picked.filter(function(p){return !p.onBench;});
+  starters11.sort(function(a,b){return (b.total_points||0)-(a.total_points||0);});
+  if (starters11[0]) starters11[0].isCaptain = true;
+  if (starters11[1]) starters11[1].isVC = true;
+
+  // Apply to state
+  ST.squad = picked;
+  autoSaveLocal();
+  markUnsaved();
+  renderPitch();
+  renderBudget();
+  renderPlayerList();
+
+  var totalCost = picked.reduce(function(s,x){return s+(x.price||0);},0);
+  var styleName = { balanced:'Balanced', attack:'Attack', defend:'Defensive', budget:'Value Picks' }[AUTO_SQUAD_STYLE];
+  showToast('⚡ ' + styleName + ' squad generated! R' + totalCost.toFixed(1) + 'M used · Tap Save Squad when happy', 'success');
+}
+
 function showChatRules() {
   var modal  = document.getElementById('legal-modal');
   var bodyEl = document.getElementById('legal-modal-body');
@@ -6376,5 +6532,54 @@ function showChatRules() {
   document.body.style.overflow = 'hidden';
 }
 </script>
+<!-- ── Auto Squad Modal ──────────────────────────────────────── -->
+<div id="auto-squad-modal" style="display:none;position:fixed;inset:0;z-index:9400;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAutoSquadModal()">
+  <div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem;animation:slideUp .25s ease">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto .8rem"></div>
+    <div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:.3rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Auto Squad</div>
+    <div style="font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:1.4rem;line-height:1.5">Let us build a balanced squad for you. Pick a style and we'll fill all 15 spots within budget.</div>
+
+    <!-- Style options -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.2rem">
+      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(219,169,74,.15);border:2px solid #DBA94A;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
+        <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Balanced</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Best overall squad</div>
+      </button>
+      <button class="asq-opt" id="asq-attack" onclick="selectAutoStyle(this,'attack')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#D4274F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Attack</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">High-scoring forwards</div>
+      </button>
+      <button class="asq-opt" id="asq-defend" onclick="selectAutoStyle(this,'defend')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#22895A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Defensive</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Clean sheet heroes</div>
+      </button>
+      <button class="asq-opt" id="asq-budget" onclick="selectAutoStyle(this,'budget')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Value Picks</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Budget gems &amp; differentials</div>
+      </button>
+    </div>
+
+    <!-- Warning if squad already has players -->
+    <div id="asq-warning" style="display:none;background:rgba(219,169,74,.1);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#DBA94A;font-family:var(--font-ui);font-weight:700">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>This will replace your current squad
+    </div>
+
+    <button onclick="runAutoSquad()" style="width:100%;background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.9rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Generate My Squad
+    </button>
+    <button onclick="closeAutoSquadModal()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.7rem;cursor:pointer;margin-top:.3rem">Cancel</button>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.asq-opt.active { background:rgba(219,169,74,.15) !important; border-color:#DBA94A !important; }
+.asq-opt.active div:nth-child(2) { color:#DBA94A !important; }
+</style>
+
 </body>
 </html>
