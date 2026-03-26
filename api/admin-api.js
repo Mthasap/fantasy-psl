@@ -7,7 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ADMIN  = process.env.ADMIN_SECRET || 'fpsl-admin-2026';
+const ADMIN  = process.env.ADMIN_SECRET || 'mzansi4sho';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
