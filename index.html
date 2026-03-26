@@ -792,7 +792,7 @@
   </div>
 
   <!-- == MINI POLL MODAL ============================================ -->
-  <div id="mini-poll-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;align-items:center;justify-content:center;padding:1rem">
+  <div id="mini-poll-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9050;align-items:center;justify-content:center;padding:1rem">
     <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:380px;padding:1.5rem;position:relative">
       <button onclick="document.getElementById('mini-poll-modal').style.display='none'" style="position:absolute;top:.8rem;right:.8rem;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.75rem">✕</button>
       <div id="mini-poll-body"></div>
@@ -1253,7 +1253,7 @@ var ST = {
   watchlist:        []       // player IDs on watchlist
 };
 
-// Load watchlist from localStorage
+// Load watchlist from localStorage immediately (fast, works offline)
 (function() {
   try {
     var wl = localStorage.getItem('fpsl_watchlist');
@@ -1261,17 +1261,44 @@ var ST = {
   } catch(e) { ST.watchlist = []; }
 })();
 
+// Sync watchlist FROM Supabase after login
+// Ensures watchlist survives logout, app close, device switches, clearing browser storage
+function loadWatchlistFromDB() {
+  if (!ST.user) return;
+  db.from('profiles').select('watchlist_data').eq('id', ST.user.id).single()
+    .then(function(res) {
+      if (res.data && res.data.watchlist_data) {
+        try {
+          var dbWL = JSON.parse(res.data.watchlist_data);
+          if (Array.isArray(dbWL) && dbWL.length) {
+            ST.watchlist = dbWL;
+            try { localStorage.setItem('fpsl_watchlist', JSON.stringify(ST.watchlist)); } catch(e) {}
+            renderPlayerList();
+          }
+        } catch(e) {}
+      }
+    }).catch(function() {});
+}
+
+// Save watchlist to both localStorage (instant) and Supabase (persistent)
+function saveWatchlistToDB() {
+  try { localStorage.setItem('fpsl_watchlist', JSON.stringify(ST.watchlist)); } catch(e) {}
+  if (!ST.user) return;
+  db.from('profiles').update({ watchlist_data: JSON.stringify(ST.watchlist) })
+    .eq('id', ST.user.id).then(function(){}).catch(function(){});
+}
+
 function toggleWatchlist(id, event) {
   if (event) event.stopPropagation();
   var idx = ST.watchlist.indexOf(id);
   if (idx === -1) {
     ST.watchlist.push(id);
-    showToast('Added to watchlist', 'success');
+    showToast('Added to watchlist ❤️', 'success');
   } else {
     ST.watchlist.splice(idx, 1);
     showToast('Removed from watchlist', 'info');
   }
-  try { localStorage.setItem('fpsl_watchlist', JSON.stringify(ST.watchlist)); } catch(e) {}
+  saveWatchlistToDB(); // saves to localStorage + Supabase
   renderPlayerList();
 }
 
@@ -1337,6 +1364,7 @@ db.auth.onAuthStateChange(function(event, session) {
   updateAdVisibility();
   if (ST.user) {
     loadGW(function() { loadMySquad(); }); loadReactions();
+    loadWatchlistFromDB(); // restore watchlist from DB after login
   } else {
     ST.squad = [];
     renderPitch();
@@ -2017,6 +2045,13 @@ function applyDashboard(d) {
   renderPitch(); renderBudget(); renderPlayerList();
   if (d.profile) CACHE._profile = d.profile;
   if (d.leagues) CACHE.myLeagues = { data: d.leagues, ts: Date.now() };
+
+  // Squad already exists in DB — show "✓ Saved" not "Save Squad"
+  // markUnsaved() will flip it back only when the user makes an actual change
+  if (ST.squad.length > 0) {
+    var btn = document.getElementById('save-btn');
+    if (btn) { btn.textContent = '✓ Saved'; btn.classList.add('btn-saved'); btn.disabled = false; }
+  }
 
   // Load this user's GW points from gw_scores table (written by cron job)
   if (ST.user) loadUserGWPoints();
@@ -2893,12 +2928,14 @@ function checkDeadline() {
     // Hide lock banner
     var lb = document.getElementById('deadline-lock-banner');
     if (lb) lb.style.display = 'none';
-    // Re-enable save button
+    // Re-enable save button — keep "✓ Saved" if squad is already saved
     var saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
-      saveBtn.disabled    = false;
-      saveBtn.textContent = 'Save Squad';
+      saveBtn.disabled = false;
       saveBtn.style.opacity = '';
+      if (!saveBtn.classList.contains('btn-saved')) {
+        saveBtn.textContent = 'Save Squad';
+      }
     }
     // Clear any deadline countdown text
     var dlEl = document.getElementById('gw-deadline');
@@ -5287,42 +5324,76 @@ function openMiniPoll() {
   var body  = document.getElementById('mini-poll-body');
   if (!modal || !body) return;
   var key = 'fpsl_poll_' + poll.q.substring(0,20).replace(/\W/g,'');
-  var voted;
-  try { voted = localStorage.getItem(key); } catch(e) {}
-  var counts = {};
-  try { counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}'); } catch(e) {}
+  var voted; try { voted = localStorage.getItem(key); } catch(e) {}
+  var counts = {}; try { counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}'); } catch(e) {}
   var total = Object.values(counts).reduce(function(s,v){return s+(v||0);},0);
-  body.innerHTML =
-    '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A;margin-bottom:.7rem">📣 Fan Poll</div>' +
-    '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1.1rem;line-height:1.25">' + poll.q + '</div>' +
-    poll.opts.map(function(opt) {
-      var pct = total ? Math.round(((counts[opt]||0)/total)*100) : 0;
-      var isVoted = voted === opt;
-      if (voted) {
-        return '<div style="margin-bottom:.5rem">' +
-          '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#DBA94A':'rgba(255,255,255,.6)') + ';margin-bottom:.25rem">' +
-            '<span>' + (isVoted ? '✓ ' : '') + opt + '</span><span>' + pct + '%</span>' +
-          '</div>' +
-          '<div style="height:6px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden">' +
-            '<div style="height:100%;width:' + pct + '%;background:' + (isVoted?'#DBA94A':'rgba(255,255,255,.2)') + ';border-radius:3px;transition:width .6s"></div>' +
-          '</div>' +
-        '</div>';
-      }
-      return '<button onclick="castPoll(\'' + key + '\',\'' + opt.replace(/'/g,"\\'") + '\')" style="width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:.6rem .9rem;margin-bottom:.4rem;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.7);transition:all .15s" onmouseover="this.style.borderColor=\'rgba(201,150,58,.3)\';this.style.color=\'#fff\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.08)\';this.style.color=\'rgba(255,255,255,.7)\'">' + opt + '</button>';
-    }).join('') +
-    (total ? '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:.5rem;text-transform:uppercase">' + total + ' votes</div>' : '');
+
+  var html = '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A;margin-bottom:.7rem">📣 Fan Poll</div>';
+  html += '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1.1rem;line-height:1.3">' + poll.q + '</div>';
+  poll.opts.forEach(function(opt) {
+    var pct = total ? Math.round(((counts[opt]||0)/total)*100) : 0;
+    var isVoted = voted === opt;
+    if (voted) {
+      html += '<div style="margin-bottom:.55rem">';
+      html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#DBA94A':'rgba(255,255,255,.5)') + ';margin-bottom:.22rem">';
+      html += '<span>' + (isVoted?'✓ ':'') + opt + '</span><span data-opt-pct="' + opt + '">' + pct + '%</span></div>';
+      html += '<div style="height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden">';
+      html += '<div data-opt-bar="' + opt + '" style="height:100%;width:' + pct + '%;background:' + (isVoted?'#DBA94A':'rgba(255,255,255,.18)') + ';border-radius:4px;transition:width .5s ease"></div>';
+      html += '</div></div>';
+    } else {
+      html += '<button onclick="castPoll(\'' + key + '\',\'' + opt.replace(/'/g,"\\'") + '\')" style="width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.65rem .95rem;margin-bottom:.45rem;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.8);-webkit-tap-highlight-color:transparent;display:block">' + opt + '</button>';
+    }
+  });
+  html += '<div data-poll-total style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.28);letter-spacing:1px;margin-top:.6rem;text-transform:uppercase">' + (total ? total+' votes' : '') + '</div>';
+  body.innerHTML = html;
   modal.style.display = 'flex';
+  refreshPollFromDB(key, poll.opts);
 }
 
 function castPoll(key, opt) {
+  // Save locally for instant feedback
   try {
     localStorage.setItem(key, opt);
     var counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}');
     counts[opt] = (counts[opt] || 0) + 1;
     localStorage.setItem(key + '_counts', JSON.stringify(counts));
   } catch(e) {}
+  // Persist to Supabase so ALL users share the same live vote counts
+  db.from('fan_polls').select('votes').eq('poll_key', key).eq('option', opt).single()
+    .then(function(res) {
+      var v = (res.data && res.data.votes) ? res.data.votes : 0;
+      return db.from('fan_polls').upsert(
+        { poll_key: key, option: opt, votes: v + 1, updated_at: new Date().toISOString() },
+        { onConflict: 'poll_key,option' }
+      );
+    }).catch(function() {});
   openMiniPoll();
   showToast('Vote cast! 🎉', 'success');
+}
+
+// Fetch real shared vote counts from DB and update displayed bars live
+function refreshPollFromDB(key, opts) {
+  db.from('fan_polls').select('option,votes').eq('poll_key', key)
+    .then(function(res) {
+      if (!res.data || !res.data.length) return;
+      var counts = {};
+      res.data.forEach(function(r) { counts[r.option] = r.votes || 0; });
+      try { localStorage.setItem(key + '_counts', JSON.stringify(counts)); } catch(e) {}
+      var total = Object.values(counts).reduce(function(s,v){return s+(v||0);},0);
+      var body = document.getElementById('mini-poll-body');
+      if (!body) return;
+      var voted; try { voted = localStorage.getItem(key); } catch(e) {}
+      if (!voted) return;
+      opts.forEach(function(opt) {
+        var pct = total ? Math.round(((counts[opt]||0)/total)*100) : 0;
+        var bar   = body.querySelector('[data-opt-bar="'  + opt + '"]');
+        var pctEl = body.querySelector('[data-opt-pct="'  + opt + '"]');
+        if (bar)   bar.style.width    = pct + '%';
+        if (pctEl) pctEl.textContent  = pct + '%';
+      });
+      var totalEl = body.querySelector('[data-poll-total]');
+      if (totalEl) totalEl.textContent = total + ' votes';
+    }).catch(function() {});
 }
 
 // -- POTM -- Player of the Match -------------------------------
@@ -6089,9 +6160,10 @@ function openTermsModal(type) {
   var c = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
   titleEl.textContent = c.title;
   bodyEl.innerHTML    = c.html;
-  modal.style.display = 'block';
-  modal.scrollTop = 0;
+  modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  var bd = document.getElementById('legal-modal-body');
+  if (bd) bd.scrollTop = 0;
 }
 function closeLegalModal() {
   var modal = document.getElementById('legal-modal');
@@ -6128,9 +6200,10 @@ function showChatRules() {
   if (!modal) return;
   titleEl.textContent = 'Community Rules';
   bodyEl.innerHTML    = rulesHtml;
-  modal.style.display = 'block';
-  modal.scrollTop = 0;
+  modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  var bd2 = document.getElementById('legal-modal-body');
+  if (bd2) bd2.scrollTop = 0;
 }
 </script>
 </body>
