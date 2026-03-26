@@ -6024,12 +6024,13 @@ function deletePost(btn){
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
 <div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);flex-direction:column;overflow:hidden">
-  <!-- Header: flex-shrink:0 means it NEVER shrinks or scrolls away -->
-  <div style="flex-shrink:0;background:#0D1017;border-bottom:1px solid rgba(255,255,255,.1);padding:.9rem 1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem">
-    <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff;flex:1;min-width:0"></div>
-    <button onclick="closeLegalModal()" style="flex-shrink:0;width:42px;height:42px;min-width:42px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.1rem;-webkit-tap-highlight-color:transparent;touch-action:manipulation">✕</button>
+  <!-- Floating close button — position:fixed inside the modal, always in top-right corner -->
+  <button onclick="closeLegalModal()" id="legal-modal-close" style="position:fixed;top:16px;right:16px;z-index:9200;width:44px;height:44px;background:#B91C3A;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.3rem;font-weight:700;line-height:1;box-shadow:0 4px 16px rgba(0,0,0,.5);-webkit-tap-highlight-color:transparent;touch-action:manipulation">&#x2715;</button>
+  <!-- Title bar below the close button -->
+  <div style="flex-shrink:0;background:#0D1017;border-bottom:1px solid rgba(255,255,255,.1);padding:.85rem 4rem .85rem 1.1rem;min-height:56px;display:flex;align-items:center">
+    <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff"></div>
   </div>
-  <!-- Body: flex:1 fills remaining space, overflow-y:auto ONLY scrolls this part -->
+  <!-- Scrollable body ONLY -->
   <div id="legal-modal-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1.4rem 1.1rem 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.8;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
 </div>
 <script>
