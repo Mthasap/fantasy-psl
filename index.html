@@ -6045,17 +6045,9 @@ function deletePost(btn){
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
 <!-- Legal modal: single scrollable sheet, close bar sticky at top -->
-<div id="legal-modal" style="display:none;position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9200;background:#0D1017;flex-direction:column;overflow:hidden">
-
-  <!-- CLOSE BAR: flex-shrink:0 = never shrinks, always fully visible at top -->
-  <div style="flex-shrink:0;background:#B91C3A;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:54px;min-height:54px;box-shadow:0 3px 16px rgba(0,0,0,.5)">
-    <div id="legal-modal-title" style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;flex:1;padding-right:.5rem"></div>
-    <button onclick="closeLegalModal()" style="flex-shrink:0;width:44px;height:44px;min-width:44px;background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.5);border-radius:50%;color:#fff;font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;line-height:1">&#x2715;</button>
-  </div>
-
-  <!-- Scroll area: flex:1 fills all remaining space below the close bar -->
-  <div id="legal-modal-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1.4rem 1.1rem 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82;max-width:700px;width:100%;margin:0 auto;box-sizing:border-box"></div>
-
+<div id="legal-modal" style="display:none;position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+  <div id="legal-modal-title" style="display:none"></div>
+  <div id="legal-modal-body" style="padding:0 0 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82"></div>
 </div>
 <script>
 var LEGAL_CONTENT = {
@@ -6179,16 +6171,35 @@ var LEGAL_CONTENT = {
 };
 
 function openTermsModal(type) {
-  var modal   = document.getElementById('legal-modal');
-  var titleEl = document.getElementById('legal-modal-title');
-  var bodyEl  = document.getElementById('legal-modal-body');
+  var modal  = document.getElementById('legal-modal');
+  var bodyEl = document.getElementById('legal-modal-body');
   var ct = LEGAL_CONTENT[type] || LEGAL_CONTENT.terms;
-  titleEl.textContent = ct.title;
-  bodyEl.innerHTML    = ct.html;
-  modal.style.display = 'flex';
-  // Scroll body panel to top
-  var bd = document.getElementById('legal-modal-body');
-  if (bd) bd.scrollTop = 0;
+
+  // Build content: close bar first, then the actual text
+  // The close bar is a plain block element - no flex, no sticky, no tricks
+  var closebar =
+    '<div style="background:#B91C3A;padding:14px 16px;display:block;width:100%;box-sizing:border-box;' +
+    'margin-bottom:4px;-webkit-tap-highlight-color:transparent">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        '<td style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;vertical-align:middle">' +
+          ct.title +
+        '</td>' +
+        '<td width="50" style="text-align:right;vertical-align:middle">' +
+          '<button onclick="closeLegalModal()" style="width:46px;height:46px;background:rgba(0,0,0,.35);' +
+          'border:2px solid rgba(255,255,255,.6);border-radius:50%;color:#fff;font-size:1.5rem;' +
+          'font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;' +
+          'touch-action:manipulation;vertical-align:middle;line-height:46px;text-align:center;' +
+          'display:inline-block;padding:0">&#x2715;</button>' +
+        '</td>' +
+      '</tr></table>' +
+    '</div>';
+
+  bodyEl.innerHTML = closebar +
+    '<div style="padding:1.2rem 1.1rem 5rem;max-width:700px;margin:0 auto;box-sizing:border-box">' +
+    ct.html + '</div>';
+
+  modal.style.display = 'block';
+  modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
 function closeLegalModal() {
@@ -6199,19 +6210,39 @@ function closeLegalModal() {
 // Also close on Escape key (already handled by global keydown, but add specific check)
 
 function showChatRules() {
+  var modal  = document.getElementById('legal-modal');
+  var bodyEl = document.getElementById('legal-modal-body');
+  if (!modal || !bodyEl) return;
+
+  var closebar =
+    '<div style="background:#B91C3A;padding:14px 16px;display:block;width:100%;box-sizing:border-box;margin-bottom:4px">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        '<td style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;vertical-align:middle">' +
+          'Community Rules' +
+        '</td>' +
+        '<td width="50" style="text-align:right;vertical-align:middle">' +
+          '<button onclick="closeLegalModal()" style="width:46px;height:46px;background:rgba(0,0,0,.35);' +
+          'border:2px solid rgba(255,255,255,.6);border-radius:50%;color:#fff;font-size:1.5rem;' +
+          'font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;' +
+          'touch-action:manipulation;vertical-align:middle;line-height:46px;text-align:center;' +
+          'display:inline-block;padding:0">&#x2715;</button>' +
+        '</td>' +
+      '</tr></table>' +
+    '</div>';
+
   var rulesHtml = '<div style="padding:1.4rem 1.2rem;color:rgba(255,255,255,.75);font-family:var(--font-body);font-size:.88rem;line-height:1.75">' +
     '<h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:0 0 1rem">Diski Chat Community Rules</h2>' +
     '<p style="margin-bottom:.8rem">Diski Chat is for Fantasy PSL fans to discuss football, their squads and the Betway Premiership. Keep it fun and respectful.</p>' +
     '<div style="display:flex;flex-direction:column;gap:.6rem">' +
-      ruleItem('✅', 'Be Respectful', 'Debate the football, not the person. No insults, bullying or personal attacks.') +
-      ruleItem('✅', 'Keep it Football', 'This is a football community — keep discussions relevant to PSL, Fantasy PSL and the beautiful game.') +
-      ruleItem('✅', 'No Spam', 'No repeated posts, promotional content or off-topic advertising.') +
-      ruleItem('✅', 'No Hate Speech', 'Content that is racist, sexist, homophobic or otherwise hateful will result in an immediate ban.') +
-      ruleItem('✅', 'English or Zulu/Sotho', 'Post in any South African language — we are proudly local.') +
-      ruleItem('🚫', 'No Spoilers', 'Respect users who may not have watched the match yet — mark spoilers clearly.') +
-      ruleItem('🚫', 'No Impersonation', 'Do not pretend to be another user, club or public figure.') +
+      ruleItem('\u2705', 'Be Respectful', 'Debate the football, not the person. No insults, bullying or personal attacks.') +
+      ruleItem('\u2705', 'Keep it Football', 'Keep discussions relevant to PSL, Fantasy PSL and the beautiful game.') +
+      ruleItem('\u2705', 'No Spam', 'No repeated posts, promotional content or off-topic advertising.') +
+      ruleItem('\u2705', 'No Hate Speech', 'Content that is racist, sexist, or hateful will result in an immediate ban.') +
+      ruleItem('\u2705', 'South African Languages', 'Post in any South African language — we are proudly local.') +
+      ruleItem('\U0001f6ab', 'No Spoilers', 'Respect users who may not have watched the match yet.') +
+      ruleItem('\U0001f6ab', 'No Impersonation', 'Do not pretend to be another user, club or public figure.') +
     '</div>' +
-    '<p style="margin-top:1rem;font-size:.75rem;color:rgba(255,255,255,.35)">Violations may result in post removal or account suspension without notice. Report posts using the flag icon.</p>' +
+    '<p style="margin-top:1rem;font-size:.75rem;color:rgba(255,255,255,.35)">Violations may result in post removal or account suspension without notice.</p>' +
   '</div>';
   function ruleItem(icon, title, desc) {
     return '<div style="display:flex;gap:.75rem;padding:.6rem .8rem;background:rgba(255,255,255,.04);border-radius:8px">' +
@@ -6219,18 +6250,11 @@ function showChatRules() {
       '<div><div style="font-family:var(--font-ui);font-size:.82rem;font-weight:800;color:#fff">' + title + '</div>' +
       '<div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-top:2px">' + desc + '</div></div></div>';
   }
-  // Reuse legal modal for rules
-  var modal = document.getElementById('legal-modal');
-  var titleEl = document.getElementById('legal-modal-title');
-  var bodyEl  = document.getElementById('legal-modal-body');
-  if (!modal) return;
-  titleEl.textContent = 'Community Rules';
-  bodyEl.innerHTML    = rulesHtml;
-  modal.style.display = 'flex';
+
+  bodyEl.innerHTML = closebar + '<div style="padding:0 0 5rem">' + rulesHtml + '</div>';
+  modal.style.display = 'block';
   modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
-  var bd2 = document.getElementById('legal-modal-body');
-  if (bd2) bd2.scrollTop = 0;
 }
 </script>
 </body>
