@@ -2,8 +2,18 @@
   "routes": [
     { "src": "/admin",   "dest": "/admin.html"   },
     { "src": "/confirm", "dest": "/confirm.html" },
-    { "src": "/api/(.*)", "dest": "/api/$1"      },
-    { "src": "/(.*)",    "dest": "/$1"           }
+
+    { "src": "/api/live-matches",      "dest": "/api/sync?action=live"           },
+    { "src": "/api/psl-data",          "dest": "/api/sync?action=psl-data"       },
+    { "src": "/api/force-sync",        "dest": "/api/sync?action=force-sync"     },
+    { "src": "/api/sync-fixtures",     "dest": "/api/sync?action=force-sync"     },
+    { "src": "/api/import-players",    "dest": "/api/sync?action=import-players" },
+    { "src": "/api/sync-player-stats", "dest": "/api/sync?action=import-players" },
+    { "src": "/api/sportmonks-setup",  "dest": "/api/sync?action=setup"          },
+    { "src": "/api/sportmonks",        "dest": "/api/sync?action=proxy"          },
+
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)",     "dest": "/$1"     }
   ],
   "headers": [
     {
