@@ -1,63 +1,59 @@
-// api/points-cron.js — Fantasy PSL Points Engine (v3 — Sportmonks)
+// api/points-cron.js — Fantasy PSL Points Engine — API-Football Edition
 // Runs nightly via Vercel cron (vercel.json: "0 21 * * *")
 // Triggered manually from Admin Panel → Automation tab
 //
 // FLOW:
-//   1. Get current season ID
-//   2. Fetch all FT fixtures for season from Sportmonks
+//   1. Get current PSL season year from API-Football
+//   2. Fetch all FT fixtures for season
 //   3. For each NEW fixture: fetch lineups + events (goals, assists, cards, subs)
-//   4. Build per-player match stat rows with real minutes played
-//   5. Calculate fantasy points using position-aware scoring rules
-//   6. Update player_match_stats + players table + player_season_stats
-//   7. Recalculate profile total_points from squad selections
+//   4. Calculate fantasy points per player
+//   5. Update player_match_stats + players + profiles
+//
+// ENV VARS:
+//   APIFOOTBALL_KEY      — API-Football API key
+//   SUPABASE_URL         — Supabase project URL
+//   SUPABASE_SERVICE_KEY — Supabase service role key
+//   ADMIN_SECRET         — admin password
 
-const { createClient } = require('@supabase/supabase-js');
-const { getSeasonId }  = require('./season-helper');
+const { createClient }                        = require('@supabase/supabase-js');
+const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./season-helper');
 
-const TOKEN  = process.env.SPORTMONKS_TOKEN;
-const SB_URL = process.env.SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ADMIN  = process.env.ADMIN_SECRET || 'mzansi4sho';
-const BASE   = 'https://api.sportmonks.com/v3/football';
+const TOKEN  = process.env.APIFOOTBALL_KEY     || '';
+const SB_URL = process.env.SUPABASE_URL        || '';
+const SB_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const ADMIN  = process.env.ADMIN_SECRET        || 'mzansi4sho';
 
 // ── Fantasy scoring rules ─────────────────────────────────────────────────
 function calcPoints(s) {
   var pts = 0, breakdown = {};
   function add(k, v) { if (v) { breakdown[k] = v; pts += v; } }
-
   if (!s.minutes || s.minutes === 0) return { total: 0, breakdown: { dnp: 0 } };
-
   add('appearance', s.minutes >= 60 ? 2 : 1);
-
   if (s.goals > 0) {
-    var gPts = (s.pos === 'GK' || s.pos === 'DEF') ? 6
-             : s.pos === 'MID' ? 5 : 4;
+    var gPts = (s.pos === 'GK' || s.pos === 'DEF') ? 6 : s.pos === 'MID' ? 5 : 4;
     add('goals', s.goals * gPts);
   }
-  if (s.assists      > 0) add('assists',         s.assists      * 3);
+  if (s.assists > 0) add('assists', s.assists * 3);
   if (s.minutes >= 60 && s.goalsConceded === 0) {
     if (s.pos === 'GK' || s.pos === 'DEF') add('clean_sheet', 4);
     else if (s.pos === 'MID')              add('clean_sheet', 1);
   }
   if ((s.pos === 'GK' || s.pos === 'DEF') && s.goalsConceded >= 2)
     add('goals_conceded', -Math.floor(s.goalsConceded / 2));
-  if (s.pos === 'GK' && s.saves >= 3)
-    add('saves_bonus', Math.floor(s.saves / 3));
+  if (s.pos === 'GK' && s.saves >= 3) add('saves_bonus', Math.floor(s.saves / 3));
   if (s.penSaved  > 0) add('penalty_saved',  s.penSaved  *  5);
   if (s.penMissed > 0) add('penalty_missed', s.penMissed * -2);
-  if (s.yellowCards > 0) add('yellow_card', s.yellowCards * -1);
-  if (s.redCards    > 0) add('red_card',    s.redCards    * -3);
-
+  if (s.yellowCards > 0) add('yellow_card',  s.yellowCards * -1);
+  if (s.redCards    > 0) add('red_card',     s.redCards    * -3);
   return { total: pts, breakdown };
 }
 
 function normPos(raw) {
   if (!raw) return 'MID';
   var r = raw.toUpperCase().trim();
-  if (r === 'GK'  || r.includes('GOAL'))                       return 'GK';
-  if (r === 'DEF' || r === 'D' || r.includes('DEFEN'))         return 'DEF';
-  if (r === 'FWD' || r === 'F' || r === 'ST' ||
-      r.includes('ATTACK') || r.includes('FORW'))               return 'FWD';
+  if (r === 'G' || r === 'GK' || r.includes('GOAL'))                          return 'GK';
+  if (r === 'D' || r === 'DEF' || r.includes('BACK'))                         return 'DEF';
+  if (r === 'F' || r === 'FWD' || r.includes('FORWARD') || r.includes('ATTACK')) return 'FWD';
   return 'MID';
 }
 
@@ -71,50 +67,37 @@ module.exports = async (req, res) => {
   if (!isCron && adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
   if (!TOKEN || !SB_URL || !SB_KEY) {
-    return res.status(500).json({ error: 'Missing env vars: SPORTMONKS_TOKEN / SUPABASE_URL / SUPABASE_SERVICE_KEY' });
+    return res.status(500).json({ error: 'Missing env vars: APIFOOTBALL_KEY / SUPABASE_URL / SUPABASE_SERVICE_KEY' });
   }
 
-  // mode param from admin buttons: 'fixtures', 'results', 'points', 'all'
   var mode = (req.query && req.query.mode) || 'all';
-
-  var db  = createClient(SB_URL, SB_KEY);
-  var log = [];
+  var db   = createClient(SB_URL, SB_KEY);
+  var log  = [];
 
   try {
-    var seasonId = await getSeasonId(db, TOKEN);
-    log.push('Season: ' + seasonId);
+    var sy = await getSeasonYear(TOKEN);
+    log.push('Season: ' + sy);
 
-    // ── mode=fixtures: sync only upcoming NS fixtures to Supabase ──────
+    // ── Fixture sync modes ──────────────────────────────────────────────
     if (mode === 'fixtures') {
-      var count = await syncFixtures(db, seasonId, log, 'NS');
-      return res.json({ success: true, mode: 'fixtures', fixtures_synced: count, log });
+      var count = await syncFixtures(db, sy, log, 'NS');
+      return res.json({ success: true, mode, fixtures_synced: count, log });
     }
-
-    // ── mode=results: sync only FT results to Supabase ─────────────────
     if (mode === 'results') {
-      var count = await syncFixtures(db, seasonId, log, 'FT');
-      return res.json({ success: true, mode: 'results', results_updated: count, log });
+      var count = await syncFixtures(db, sy, log, 'FT');
+      return res.json({ success: true, mode, results_updated: count, log });
     }
 
-    // ── mode=points or mode=all: full scoring run ───────────────────────
-    // (fall through to existing scoring logic below)
+    // ── Full points pipeline ─────────────────────────────────────────────
     log.push('Mode: ' + mode + ' — running full scoring pipeline');
 
-    // ── 2. Fetch all FT fixtures ───────────────────────────────────────
-    var allFixtures = [];
-    for (var page = 1; page <= 15; page++) {
-      var fd = await smGet('/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:5' +
-        '&include=participants;scores&per_page=50&page=' + page);
-      var rows = fd.data || [];
-      if (!rows.length) break;
-      allFixtures = allFixtures.concat(rows);
-      if (!(fd.meta && fd.meta.pagination && fd.meta.pagination.has_next_page)) break;
-    }
+    // 2. Fetch all FT fixtures
+    var d1 = await apiFetch('/fixtures?league=' + PSL_LEAGUE + '&season=' + sy + '&status=FT', TOKEN);
+    var allFixtures = d1.response || [];
     log.push('FT fixtures: ' + allFixtures.length);
 
-    // ── 3. Load Supabase players (api_player_id → {id, position}) ─────
+    // 3. Load player map from Supabase
     var { data: dbPlayers } = await db.from('players').select('id, api_player_id, position');
     var playerMap = {};
     (dbPlayers || []).forEach(function(p) {
@@ -124,309 +107,211 @@ module.exports = async (req, res) => {
 
     var statsInserted = 0, statsSkipped = 0, fixtureErrors = 0;
 
-    // ── 4. Process each fixture ────────────────────────────────────────
+    // 4. Process each fixture
     for (var fi = 0; fi < allFixtures.length; fi++) {
-      var f = allFixtures[fi];
+      var f   = allFixtures[fi];
+      var fid = f.fixture && f.fixture.id;
+      if (!fid) continue;
       try {
-        // Skip if already processed
         var existing = await db.from('player_match_stats')
-          .select('id', { count: 'exact', head: true })
-          .eq('fixture_id', f.id);
+          .select('id', { count: 'exact', head: true }).eq('fixture_id', fid);
         if (existing.count > 0) { statsSkipped++; continue; }
 
-        // Fetch detail: lineups + events + scores
-        var detail = await smGet('/fixtures/' + f.id +
-          '?include=lineups.player.position;events;participants;scores');
-        var fx = detail.data || {};
+        // Fetch lineups + events from API-Football
+        var lineupsData = await apiFetch('/fixtures/lineups?fixture=' + fid, TOKEN);
+        var eventsData  = await apiFetch('/fixtures/events?fixture='  + fid, TOKEN);
+        var lineups     = lineupsData.response || [];
+        var events      = eventsData.response  || [];
 
-        // Parse final score per team (for goals conceded)
-        var teamGoals = { home: 0, away: 0 };
-        (fx.scores || []).forEach(function(s) {
-          var desc = (s.description || '').toUpperCase();
-          if (['CURRENT','FT','FULLTIME','2ND_HALF'].indexOf(desc) > -1 && s.score) {
-            teamGoals[s.score.participant] = s.score.goals || 0;
-          }
-        });
+        // Goals conceded per team
+        var goals = f.goals || {};
+        var teamGoals = {};
+        if (lineups.length >= 2) {
+          var homeId = lineups[0].team && lineups[0].team.id;
+          var awayId = lineups[1].team && lineups[1].team.id;
+          teamGoals[homeId] = goals.away || 0;
+          teamGoals[awayId] = goals.home || 0;
+        }
 
-        // Map team IDs to home/away
-        var parts  = fx.participants || [];
-        var homeId = null, awayId = null;
-        parts.forEach(function(p) {
-          if (p.meta && p.meta.location === 'home') homeId = p.id;
-          if (p.meta && p.meta.location === 'away') awayId = p.id;
-        });
-
-        // Build player stat objects from lineups
+        // Build player stats from lineups
         var fixtureStats = {};
+        lineups.forEach(function(team) {
+          var tid = team.team && team.team.id;
+          var conceded = teamGoals[tid] || 0;
 
-        (fx.lineups || []).forEach(function(entry) {
-          var pid = entry.player_id || (entry.player && entry.player.id);
-          if (!pid) return;
-          var pStr    = String(pid);
-          var rawPos  = (entry.player && entry.player.position && entry.player.position.name) || '';
-          var pos     = normPos(rawPos);
-          var isHome  = entry.team_id === homeId;
-          var conceded = isHome ? (teamGoals.away || 0) : (teamGoals.home || 0);
-          // type_id 11 = starter, 12 = bench
-          var isStarter = entry.type_id === 11;
-          var minutes   = isStarter ? 90 : 0; // subs get updated via subst events
-
-          fixtureStats[pStr] = {
-            sportmonks_id: pid, pos: pos,
-            team_id: entry.team_id, isHome: isHome,
-            minutes: minutes, goals: 0, assists: 0,
-            goalsConceded: conceded, saves: 0,
-            penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
-          };
+          (team.startXI || []).forEach(function(entry) {
+            var p = entry.player || {};
+            if (!p.id) return;
+            fixtureStats[String(p.id)] = {
+              api_player_id: p.id, team_id: tid,
+              pos: normPos(p.pos || ''), minutes: 90,
+              goals: 0, assists: 0, goalsConceded: conceded,
+              saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
+            };
+          });
+          (team.substitutes || []).forEach(function(entry) {
+            var p = entry.player || {};
+            if (!p.id) return;
+            fixtureStats[String(p.id)] = {
+              api_player_id: p.id, team_id: tid,
+              pos: normPos(p.pos || ''), minutes: 0,
+              goals: 0, assists: 0, goalsConceded: conceded,
+              saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
+            };
+          });
         });
 
         // Overlay events
-        (fx.events || []).forEach(function(e) {
-          var pid  = e.player_id; if (!pid) return;
-          var pStr = String(pid);
-          if (!fixtureStats[pStr]) {
-            fixtureStats[pStr] = {
-              sportmonks_id: pid, pos: 'MID', minutes: 90,
-              goals: 0, assists: 0, goalsConceded: 0,
+        events.forEach(function(e) {
+          var pid    = e.player && e.player.id ? String(e.player.id) : null;
+          var asstId = e.assist && e.assist.id ? String(e.assist.id) : null;
+          var type   = (e.type   || '').toLowerCase();
+          var detail = (e.detail || '').toLowerCase();
+          var time   = (e.time   && e.time.elapsed) || 0;
+
+          if (pid && !fixtureStats[pid]) {
+            fixtureStats[pid] = {
+              api_player_id: e.player.id, team_id: e.team && e.team.id,
+              pos: 'MID', minutes: 0, goals: 0, assists: 0, goalsConceded: 0,
               saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
             };
           }
-          var s    = fixtureStats[pStr];
-          var tid  = e.type_id || 0;
-          var type = (e.type || '').toLowerCase();
 
-          // Goals (type_id 14=goal, 16=penalty goal; 15=own goal — skip)
-          if ((tid === 14 || tid === 16) && !type.includes('own')) s.goals += 1;
-
-          // Assists via assist_player_id on goal events
-          if ((tid === 14 || tid === 16) && e.assist_player_id) {
-            var aStr = String(e.assist_player_id);
-            if (!fixtureStats[aStr]) {
-              fixtureStats[aStr] = {
-                sportmonks_id: e.assist_player_id, pos: 'MID', minutes: 90,
-                goals: 0, assists: 0, goalsConceded: 0,
-                saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
-              };
-            }
-            fixtureStats[aStr].assists += 1;
+          if (type === 'goal' && !detail.includes('own')) {
+            if (pid    && fixtureStats[pid])    fixtureStats[pid].goals   += 1;
+            if (asstId && fixtureStats[asstId]) fixtureStats[asstId].assists += 1;
           }
-
-          // Cards
-          if (tid === 83)                         s.yellowCards += 1;
-          if (tid === 84 || tid === 85)           s.redCards    += 1;
-
-          // GK saves (type_id 58)
-          if (tid === 58)                         s.saves += 1;
-
-          // Penalty saved/missed
-          if (type.includes('penalty') && type.includes('save'))  s.penSaved  += 1;
-          if (tid === 45 || (type.includes('penalty') && type.includes('miss'))) s.penMissed += 1;
-
-          // Substitution (type_id 18): update minutes
-          if (tid === 18) {
-            s.minutes = e.minute ? Math.min(e.minute, 90) : s.minutes; // player coming OFF
-            if (e.related_player_id) {
-              var onStr = String(e.related_player_id);
-              if (fixtureStats[onStr]) {
-                fixtureStats[onStr].minutes = e.minute ? (90 - e.minute) : 30;
-              }
-            }
+          if (type === 'goal' && detail.includes('missed penalty')) {
+            if (pid && fixtureStats[pid]) fixtureStats[pid].penMissed += 1;
+          }
+          if (type === 'card') {
+            if (detail.includes('yellow') && pid && fixtureStats[pid]) fixtureStats[pid].yellowCards += 1;
+            if (detail.includes('red')    && pid && fixtureStats[pid]) fixtureStats[pid].redCards    += 1;
+          }
+          if (type === 'subst') {
+            if (asstId && fixtureStats[asstId]) fixtureStats[asstId].minutes = Math.max(0, 90 - time);
+            if (pid    && fixtureStats[pid])    fixtureStats[pid].minutes    = Math.min(fixtureStats[pid].minutes, time);
           }
         });
 
-        // Write rows to Supabase
-        for (var pStr in fixtureStats) {
-          var st  = fixtureStats[pStr];
-          var dbP = playerMap[pStr];
-          var pts = calcPoints({
-            pos:           dbP ? normPos(dbP.position) : st.pos,
-            minutes:       st.minutes,
-            goals:         st.goals,
-            assists:       st.assists,
-            goalsConceded: st.goalsConceded,
-            saves:         st.saves,
-            penSaved:      st.penSaved,
-            penMissed:     st.penMissed,
-            yellowCards:   st.yellowCards,
-            redCards:      st.redCards
-          });
+        // Write to Supabase
+        for (var pidStr in fixtureStats) {
+          var st  = fixtureStats[pidStr];
+          var dbP = playerMap[pidStr];
+          var pts = calcPoints({ pos: dbP ? normPos(dbP.position) : st.pos,
+            minutes: st.minutes, goals: st.goals, assists: st.assists,
+            goalsConceded: st.goalsConceded, saves: st.saves,
+            penSaved: st.penSaved, penMissed: st.penMissed,
+            yellowCards: st.yellowCards, redCards: st.redCards });
 
           await db.from('player_match_stats').upsert({
-            fixture_id:       f.id,
-            player_id:        dbP ? dbP.id : null,
-            sportmonks_pid:   st.sportmonks_id,
-            minutes:          st.minutes,
-            goals:            st.goals,
-            assists:          st.assists,
-            goals_conceded:   st.goalsConceded,
-            saves:            st.saves,
-            yellow_cards:     st.yellowCards,
-            red_cards:        st.redCards,
-            fantasy_points:   pts.total,
-            points_breakdown: JSON.stringify(pts.breakdown),
-            updated_at:       new Date().toISOString()
-          }, { onConflict: 'fixture_id,sportmonks_pid' });
-
+            fixture_id: fid, player_id: dbP ? dbP.id : null,
+            api_player_id: String(st.api_player_id),
+            minutes: st.minutes, goals: st.goals, assists: st.assists,
+            goals_conceded: st.goalsConceded, saves: st.saves,
+            yellow_cards: st.yellowCards, red_cards: st.redCards,
+            fantasy_points: pts.total, points_breakdown: JSON.stringify(pts.breakdown),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'fixture_id,api_player_id' });
           statsInserted++;
         }
-
       } catch(fErr) {
-        log.push('Fixture ' + f.id + ' error: ' + fErr.message);
+        log.push('Fixture ' + fid + ' error: ' + fErr.message);
         fixtureErrors++;
       }
     }
+    log.push('Stats: inserted=' + statsInserted + ' skipped=' + statsSkipped + ' errors=' + fixtureErrors);
 
-    log.push('Stats inserted: ' + statsInserted + ' | skipped: ' + statsSkipped + ' | errors: ' + fixtureErrors);
-
-    // ── 5. Aggregate season stats per DB player ────────────────────────
-    var { data: matchStats } = await db
-      .from('player_match_stats')
-      .select('player_id, fantasy_points, minutes, goals, assists, yellow_cards, red_cards, goals_conceded');
-
+    // 5. Aggregate season stats
+    var { data: matchStats } = await db.from('player_match_stats')
+      .select('player_id,fantasy_points,minutes,goals,assists,yellow_cards,red_cards,goals_conceded');
     var seasonMap = {};
     (matchStats || []).forEach(function(s) {
       if (!s.player_id) return;
-      var key = String(s.player_id);
-      if (!seasonMap[key]) seasonMap[key] = {
-        player_id: s.player_id, total_points: 0, apps: 0,
-        goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, clean_sheets: 0
-      };
-      var agg = seasonMap[key];
-      agg.total_points += (s.fantasy_points || 0);
-      if ((s.minutes || 0) > 0) agg.apps += 1;
-      agg.goals        += (s.goals         || 0);
-      agg.assists      += (s.assists       || 0);
-      agg.yellow_cards += (s.yellow_cards  || 0);
-      agg.red_cards    += (s.red_cards     || 0);
-      if ((s.goals_conceded || 0) === 0 && (s.minutes || 0) >= 60) agg.clean_sheets += 1;
+      var k = String(s.player_id);
+      if (!seasonMap[k]) seasonMap[k] = { player_id: s.player_id, total_points: 0, apps: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, clean_sheets: 0 };
+      seasonMap[k].total_points += (s.fantasy_points || 0);
+      if ((s.minutes || 0) > 0) seasonMap[k].apps += 1;
+      seasonMap[k].goals        += (s.goals         || 0);
+      seasonMap[k].assists      += (s.assists       || 0);
+      seasonMap[k].yellow_cards += (s.yellow_cards  || 0);
+      seasonMap[k].red_cards    += (s.red_cards     || 0);
+      if ((s.goals_conceded || 0) === 0 && (s.minutes || 0) >= 60) seasonMap[k].clean_sheets += 1;
     });
 
     var playersSynced = 0;
-    for (var key in seasonMap) {
-      var agg = seasonMap[key];
+    for (var k in seasonMap) {
+      var agg = seasonMap[k];
       await db.from('players').update({
-        total_points: agg.total_points, apps: agg.apps,
-        goals: agg.goals, assists: agg.assists,
-        yellow_cards: agg.yellow_cards, red_cards: agg.red_cards,
+        total_points: agg.total_points, apps: agg.apps, goals: agg.goals,
+        assists: agg.assists, yellow_cards: agg.yellow_cards, red_cards: agg.red_cards,
         clean_sheets: agg.clean_sheets, updated_at: new Date().toISOString()
       }).eq('id', agg.player_id);
-
       await db.from('player_season_stats').upsert({
-        player_id: agg.player_id, total_points: agg.total_points,
-        apps: agg.apps, goals: agg.goals, assists: agg.assists,
-        updated_at: new Date().toISOString()
+        player_id: agg.player_id, total_points: agg.total_points, apps: agg.apps,
+        goals: agg.goals, assists: agg.assists, updated_at: new Date().toISOString()
       }, { onConflict: 'player_id' });
-
       playersSynced++;
     }
     log.push('Players synced: ' + playersSynced);
 
-    // ── 6. Recalculate profile total_points ───────────────────────────
-    var { data: squads } = await db.from('squads').select('user_id, player_id');
+    // 6. Recalculate profiles
+    var { data: squads } = await db.from('squads').select('user_id,player_id');
     var userSquads = {};
     (squads || []).forEach(function(sq) {
-      if (!userSquads[sq.user_id]) userSquads[sq.user_id] = [];
-      userSquads[sq.user_id].push(sq.player_id);
+      if (!sq.user_id || !sq.player_id) return;
+      if (!userSquads[sq.user_id]) userSquads[sq.user_id] = new Set();
+      userSquads[sq.user_id].add(sq.player_id);
     });
-
     var profilesUpdated = 0;
     for (var uid in userSquads) {
-      var pids = userSquads[uid];
+      var pids  = Array.from(userSquads[uid]);
       var { data: pts } = await db.from('players').select('total_points').in('id', pids);
       var total = (pts || []).reduce(function(acc, p) { return acc + (p.total_points || 0); }, 0);
-      await db.from('profiles').update({ total_points: total }).eq('id', uid);
+      await db.from('profiles').update({ total_points: total, squad_count: pids.length }).eq('id', uid);
       profilesUpdated++;
     }
     log.push('Profiles updated: ' + profilesUpdated);
 
     return res.json({
-      success: true,
-      season_id: seasonId,
+      success: true, season_year: sy,
       fixtures_fetched: allFixtures.length,
-      stats_inserted: statsInserted,
-      stats_skipped: statsSkipped,
-      players_synced: playersSynced,
-      profiles_updated: profilesUpdated,
-      log
+      stats_inserted: statsInserted, stats_skipped: statsSkipped,
+      players_synced: playersSynced, profiles_updated: profilesUpdated, log
     });
 
-  } catch (err) {
+  } catch(err) {
     console.error('[points-cron]', err.message);
     return res.status(500).json({ error: err.message, log });
   }
 };
 
-// ── syncFixtures: upsert NS or FT fixtures into Supabase ─────────────────
-// state: 'NS' (upcoming, fixtureState 1) or 'FT' (results, fixtureState 5)
-async function syncFixtures(db, seasonId, log, state) {
-  var stateCode  = state === 'NS' ? 1 : 5;
-  var sortedBy   = state === 'NS' ? 'asc' : 'desc'; // upcoming: soonest first; results: newest first
+// ── Sync fixtures to Supabase ─────────────────────────────────────────────
+async function syncFixtures(db, sy, log, statusFilter) {
+  var apiStatus = statusFilter === 'NS' ? 'NS' : 'FT';
+  var param     = statusFilter === 'NS' ? '&next=50' : '&last=50';
   var count = 0;
-  for (var page = 1; page <= 10; page++) {
-    var d = await smGet(
-      '/fixtures?filters=fixtureSeasons:' + seasonId + ';fixtureStates:' + stateCode +
-      '&include=participants;scores' +
-      '&orderBy=starting_at&sortedBy=' + sortedBy +
-      '&per_page=50&page=' + page
-    );
-    var rows = d.data || [];
-    if (!rows.length) break;
-    for (var i = 0; i < rows.length; i++) {
-      var f     = rows[i];
-      var parts = f.participants || [];
-      var scores = { home: null, away: null };
-      if (state === 'FT') {
-        (f.scores || []).forEach(function(s) {
-          var desc = (s.description || '').toUpperCase();
-          if (['CURRENT','FT','FULLTIME','2ND_HALF'].indexOf(desc) > -1 && s.score) {
-            scores[s.score.participant] = s.score.goals;
-          }
-        });
-      }
-      var home = parts.find(function(p){ return p.meta && p.meta.location === 'home'; }) || parts[0] || {};
-      var away = parts.find(function(p){ return p.meta && p.meta.location === 'away'; }) || parts[1] || {};
-      await db.from('fixtures').upsert({
-        sportmonks_id: f.id,
-        home_team:     home.name || 'TBD',
-        away_team:     away.name || 'TBD',
-        home_logo:     home.image_path || null,
-        away_logo:     away.image_path || null,
-        home_score:    scores.home,
-        away_score:    scores.away,
-        status:        state,
-        kickoff_at:    f.starting_at,
-        round:         (f.round && f.round.name) || null,
-        updated_at:    new Date().toISOString()
-      }, { onConflict: 'sportmonks_id' });
-      count++;
-    }
-    if (!(d.meta && d.meta.pagination && d.meta.pagination.has_next_page)) break;
+  var d = await apiFetch('/fixtures?league=' + PSL_LEAGUE + '&season=' + sy + '&status=' + apiStatus + param, process.env.APIFOOTBALL_KEY || '');
+  for (var i = 0; i < (d.response || []).length; i++) {
+    var f = d.response[i];
+    var fix = f.fixture || {}, teams = f.teams || {}, goals = f.goals || {}, league = f.league || {};
+    var fStatus = fix.status && fix.status.short || 'NS';
+    var isFT = ['FT','AET','PEN'].indexOf(fStatus) > -1;
+    await db.from('fixtures').upsert({
+      api_fixture_id: fix.id,
+      home_team: (teams.home && teams.home.name) || 'TBD',
+      away_team: (teams.away && teams.away.name) || 'TBD',
+      home_logo: (teams.home && teams.home.logo) || null,
+      away_logo: (teams.away && teams.away.logo) || null,
+      home_score: isFT ? goals.home : null,
+      away_score: isFT ? goals.away : null,
+      status: isFT ? 'FT' : 'NS',
+      kickoff_at: fix.date,
+      round: league.round || null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'api_fixture_id' });
+    count++;
   }
-  log.push(state + ' fixtures synced: ' + count);
+  log.push(statusFilter + ' fixtures synced: ' + count);
   return count;
-}
-
-async function smGet(path) {
-  var sep = path.indexOf('?') > -1 ? '&' : '?';
-  var url = BASE + path + sep + 'api_token=' + TOKEN;
-  var r   = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!r.ok) {
-    var b = await r.text().catch(function(){ return ''; });
-    throw new Error('Sportmonks ' + r.status + ': ' + b.substring(0, 300));
-  }
-  var json = await r.json();
-  if (json.errors) throw new Error('Sportmonks errors: ' + JSON.stringify(json.errors).substring(0, 300));
-  return json;
-}
-
-  var sep = path.indexOf('?') > -1 ? '&' : '?';
-  var url = BASE + path + sep + 'api_token=' + TOKEN;
-  var r   = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!r.ok) {
-    var b = await r.text().catch(function(){ return ''; });
-    throw new Error('Sportmonks ' + r.status + ': ' + b.substring(0, 300));
-  }
-  var json = await r.json();
-  if (json.errors) throw new Error('Sportmonks errors: ' + JSON.stringify(json.errors).substring(0, 300));
-  return json;
 }
