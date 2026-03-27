@@ -1571,31 +1571,57 @@
     logEl.textContent = '';
 
     try {
-      const res  = await fetch('/api/points-cron?mode=' + mode + '&admin_key=' + ADMIN_PASSWORD, { method: 'POST' });
-      const data = await res.json();
+      if (mode === 'points' || mode === 'all') {
+        // Run in batches to avoid Vercel 60s timeout
+        showStatus('cron-status', 'info', '⚙ Running batch 0…');
+        let allLog = [];
+        let batch = 0;
+        let totalBatches = null;
+        let totalInserted = 0, totalSkipped = 0;
 
-      if (data.fatal_error) {
-        showStatus('cron-status', 'error', '✗ Fatal error: ' + data.fatal_error);
+        while (true) {
+          const url = '/api/points-cron?mode=points&batch=' + batch + '&admin_key=' + ADMIN_PASSWORD;
+          showStatus('cron-status', 'info', '⚙ Processing batch ' + batch + (totalBatches ? '/' + (totalBatches-1) : '') + '…');
+          const res  = await fetch(url, { method: 'POST' });
+          const data = await res.json();
+
+          if (data.error) { showStatus('cron-status', 'error', '✗ Batch ' + batch + ' error: ' + data.error); break; }
+
+          totalInserted += (data.stats_inserted || 0);
+          totalSkipped  += (data.stats_skipped  || 0);
+          if (data.log) allLog = allLog.concat(data.log);
+          if (data.batch_total) totalBatches = data.batch_total;
+
+          logEl.style.display = 'block';
+          logEl.innerHTML = allLog.map(line => {
+            if (line.includes('ERROR')) return '<span class="log-error">' + escHtml(line) + '</span>';
+            if (line.includes('✓'))     return '<span class="log-ok">'    + escHtml(line) + '</span>';
+            return escHtml(line);
+          }).join('\n');
+          logEl.scrollTop = logEl.scrollHeight;
+
+          if (data.batch_done || data.next_batch === null) {
+            showStatus('cron-status', 'ok',
+              '✓ All ' + totalBatches + ' batches complete | Stats inserted: ' + totalInserted + ' | Skipped: ' + totalSkipped +
+              ' | Players: ' + (data.players_synced||0) + ' | Profiles: ' + (data.profiles_updated||0)
+            );
+            break;
+          }
+          batch = data.next_batch;
+        }
       } else {
-        const errs = data.errors && data.errors.length ? ' (' + data.errors.length + ' warnings)' : '';
-        showStatus('cron-status', 'ok',
-          '✓ Complete in ' + (data.duration_ms||'?') + 'ms' + errs +
-          ' | Fixtures: ' + (data.fixtures_synced||0) +
-          ' | Results: '  + (data.results_updated||0) +
-          ' | Users: '    + (data.users_updated||0)
-        );
-      }
-
-      if (data.log && data.log.length) {
-        logEl.style.display = 'block';
-        logEl.innerHTML = data.log.map(line => {
-          if (line.includes('━━'))    return '<span class="log-head">'  + escHtml(line) + '</span>';
-          if (line.includes('ERROR')) return '<span class="log-error">' + escHtml(line) + '</span>';
-          if (line.includes('WARN'))  return '<span class="log-warn">'  + escHtml(line) + '</span>';
-          if (line.includes('✓'))     return '<span class="log-ok">'    + escHtml(line) + '</span>';
-          return escHtml(line);
-        }).join('\n');
-        logEl.scrollTop = logEl.scrollHeight;
+        // Non-points modes (fixtures, results) — single request, fast
+        const res  = await fetch('/api/points-cron?mode=' + mode + '&admin_key=' + ADMIN_PASSWORD, { method: 'POST' });
+        const data = await res.json();
+        if (data.error) {
+          showStatus('cron-status', 'error', '✗ Error: ' + data.error);
+        } else {
+          showStatus('cron-status', 'ok', '✓ Done | ' + JSON.stringify(data).substring(0,120));
+        }
+        if (data.log && data.log.length) {
+          logEl.style.display = 'block';
+          logEl.innerHTML = data.log.map(line => escHtml(line)).join('\n');
+        }
       }
 
       await loadCurrentGW();
