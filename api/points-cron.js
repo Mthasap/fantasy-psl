@@ -107,9 +107,19 @@ module.exports = async (req, res) => {
 
     var statsInserted = 0, statsSkipped = 0, fixtureErrors = 0;
 
-    // 4. Process each fixture
-    for (var fi = 0; fi < allFixtures.length; fi++) {
-      var f   = allFixtures[fi];
+    // Batch mode: process N fixtures per run to avoid timeout
+    // Pass ?batch=0, ?batch=1 etc to process in chunks of 8
+    var BATCH_SIZE = 8;
+    var batchNum   = parseInt((req.query && req.query.batch) || '0', 10);
+    var batchStart = batchNum * BATCH_SIZE;
+    var batchEnd   = batchStart + BATCH_SIZE;
+    var batchFixtures = allFixtures.slice(batchStart, batchEnd);
+    var totalBatches  = Math.ceil(allFixtures.length / BATCH_SIZE);
+    log.push('Batch ' + batchNum + '/' + (totalBatches-1) + ' — processing fixtures ' + batchStart + '-' + Math.min(batchEnd, allFixtures.length) + ' of ' + allFixtures.length);
+
+    // 4. Process each fixture in this batch
+    for (var fi = 0; fi < batchFixtures.length; fi++) {
+      var f   = batchFixtures[fi];
       var fid = f.fixture && f.fixture.id;
       if (!fid) continue;
       try {
@@ -275,7 +285,11 @@ module.exports = async (req, res) => {
 
     return res.json({
       success: true, season_year: sy,
-      fixtures_fetched: allFixtures.length,
+      fixtures_total: allFixtures.length,
+      batch_current: batchNum,
+      batch_total: totalBatches,
+      batch_done: batchNum >= totalBatches - 1,
+      next_batch: batchNum < totalBatches - 1 ? batchNum + 1 : null,
       stats_inserted: statsInserted, stats_skipped: statsSkipped,
       players_synced: playersSynced, profiles_updated: profilesUpdated, log
     });
