@@ -301,21 +301,46 @@ module.exports = async (req, res) => {
     }
     log.push('Players synced: ' + playersSynced);
 
-    // 6. Recalculate profiles
-    var { data: squads } = await db.from('squads').select('user_id,player_id');
-    var userSquads = {};
-    (squads || []).forEach(function(sq) {
-      if (!sq.user_id || !sq.player_id) return;
-      if (!userSquads[sq.user_id]) userSquads[sq.user_id] = new Set();
-      userSquads[sq.user_id].add(sq.player_id);
-    });
+    // 6. Recalculate profiles — squads stored in profiles.squad_data as JSON array
+    var { data: profilesWithSquads } = await db.from('profiles')
+      .select('id, squad_data, squad_count')
+      .not('squad_data', 'is', null)
+      .gt('squad_count', 0);
+
     var profilesUpdated = 0;
-    for (var uid in userSquads) {
-      var pids  = Array.from(userSquads[uid]);
-      var { data: pts } = await db.from('players').select('total_points').in('id', pids);
-      var total = (pts || []).reduce(function(acc, p) { return acc + (p.total_points || 0); }, 0);
-      await db.from('profiles').update({ total_points: total, squad_count: pids.length }).eq('id', uid);
-      profilesUpdated++;
+    for (var pi = 0; pi < (profilesWithSquads || []).length; pi++) {
+      var prof = profilesWithSquads[pi];
+      try {
+        // Parse squad_data JSON — array of {id, name, position, ...}
+        var squadArr = typeof prof.squad_data === 'string'
+          ? JSON.parse(prof.squad_data)
+          : prof.squad_data;
+        if (!Array.isArray(squadArr) || !squadArr.length) continue;
+
+        // Extract player IDs — stored as numeric id in squad_data
+        var playerIds = squadArr.map(function(p) {
+          return String(p.id || p.player_id || '');
+        }).filter(Boolean);
+
+        if (!playerIds.length) continue;
+
+        // Get current total_points for each player
+        var { data: pts } = await db.from('players')
+          .select('id, total_points')
+          .in('id', playerIds);
+
+        var total = (pts || []).reduce(function(acc, p) {
+          return acc + (p.total_points || 0);
+        }, 0);
+
+        await db.from('profiles')
+          .update({ total_points: total, squad_count: squadArr.length })
+          .eq('id', prof.id);
+
+        profilesUpdated++;
+      } catch(pe) {
+        log.push('Profile ' + prof.id + ' error: ' + pe.message);
+      }
     }
     log.push('Profiles updated: ' + profilesUpdated);
 
