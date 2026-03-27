@@ -232,36 +232,72 @@ module.exports = async (req, res) => {
     }
     log.push('Stats: inserted=' + statsInserted + ' skipped=' + statsSkipped + ' errors=' + fixtureErrors);
 
-    // 5. Aggregate season stats
+    // 4b. Re-link player_id in player_match_stats where it's null
+    // This happens when a player was in match stats before being imported to DB
+    try {
+      var { data: unlinkd } = await db.from('player_match_stats')
+        .select('id, api_player_id').is('player_id', null).limit(500);
+      if (unlinkd && unlinkd.length) {
+        var relinked = 0;
+        for (var ri = 0; ri < unlinkd.length; ri++) {
+          var row = unlinkd[ri];
+          var dbMatch = playerMap[String(row.api_player_id)];
+          if (dbMatch) {
+            await db.from('player_match_stats').update({ player_id: dbMatch.id }).eq('id', row.id);
+            relinked++;
+          }
+        }
+        log.push('Re-linked ' + relinked + ' match stat rows to DB players');
+      }
+    } catch(e) { log.push('Re-link warning: ' + e.message); }
+
+    // 5. Aggregate season stats — keyed by api_player_id (more reliable than player_id)
     var { data: matchStats } = await db.from('player_match_stats')
-      .select('player_id,fantasy_points,minutes,goals,assists,yellow_cards,red_cards,goals_conceded');
+      .select('api_player_id,player_id,fantasy_points,minutes,goals,assists,yellow_cards,red_cards,goals_conceded');
     var seasonMap = {};
     (matchStats || []).forEach(function(s) {
-      if (!s.player_id) return;
-      var k = String(s.player_id);
-      if (!seasonMap[k]) seasonMap[k] = { player_id: s.player_id, total_points: 0, apps: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, clean_sheets: 0 };
-      seasonMap[k].total_points += (s.fantasy_points || 0);
-      if ((s.minutes || 0) > 0) seasonMap[k].apps += 1;
-      seasonMap[k].goals        += (s.goals         || 0);
-      seasonMap[k].assists      += (s.assists       || 0);
-      seasonMap[k].yellow_cards += (s.yellow_cards  || 0);
-      seasonMap[k].red_cards    += (s.red_cards     || 0);
-      if ((s.goals_conceded || 0) === 0 && (s.minutes || 0) >= 60) seasonMap[k].clean_sheets += 1;
+      // Use api_player_id as the key — always present
+      var key = String(s.api_player_id || s.player_id || '');
+      if (!key || key === 'null' || key === 'undefined') return;
+      if (!seasonMap[key]) seasonMap[key] = {
+        api_player_id: s.api_player_id, player_id: s.player_id,
+        total_points: 0, apps: 0, goals: 0, assists: 0,
+        yellow_cards: 0, red_cards: 0, clean_sheets: 0
+      };
+      seasonMap[key].total_points += (s.fantasy_points || 0);
+      if ((s.minutes || 0) > 0) seasonMap[key].apps += 1;
+      seasonMap[key].goals        += (s.goals         || 0);
+      seasonMap[key].assists      += (s.assists       || 0);
+      seasonMap[key].yellow_cards += (s.yellow_cards  || 0);
+      seasonMap[key].red_cards    += (s.red_cards     || 0);
+      if ((s.goals_conceded || 0) === 0 && (s.minutes || 0) >= 60) seasonMap[key].clean_sheets += 1;
     });
+    log.push('Unique players in match stats: ' + Object.keys(seasonMap).length);
 
     var playersSynced = 0;
     for (var k in seasonMap) {
       var agg = seasonMap[k];
-      await db.from('players').update({
+      var updateData = {
         total_points: agg.total_points, apps: agg.apps, goals: agg.goals,
         assists: agg.assists, yellow_cards: agg.yellow_cards, red_cards: agg.red_cards,
         clean_sheets: agg.clean_sheets, updated_at: new Date().toISOString()
-      }).eq('id', agg.player_id);
-      await db.from('player_season_stats').upsert({
-        player_id: agg.player_id, total_points: agg.total_points, apps: agg.apps,
-        goals: agg.goals, assists: agg.assists, updated_at: new Date().toISOString()
-      }, { onConflict: 'player_id' });
-      playersSynced++;
+      };
+
+      var updated = false;
+
+      // Try by DB player_id first (fastest)
+      if (agg.player_id) {
+        var r1 = await db.from('players').update(updateData).eq('id', agg.player_id);
+        if (!r1.error) updated = true;
+      }
+
+      // Fallback: match by api_player_id column in players table
+      if (!updated && agg.api_player_id) {
+        var r2 = await db.from('players').update(updateData).eq('api_player_id', String(agg.api_player_id));
+        if (!r2.error) updated = true;
+      }
+
+      if (updated) playersSynced++;
     }
     log.push('Players synced: ' + playersSynced);
 
