@@ -15,124 +15,6 @@
 const { createClient }                        = require('@supabase/supabase-js');
 const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./season-helper');
 
-// PSL_ROSTER ID map — links player names to hardcoded fantasy IDs
-// These IDs match what's stored in profiles.squad_data
-var PSL_ROSTER_IDS = {
-  'nkosinathi sibisi': 1002,
-  'deano van rooyen': 1003,
-  'olisa ndah': 1004,
-  'thabiso monyane': 1005,
-  'relebohile ratomo': 1006,
-  'oswin appollis': 1007,
-  'deon hotto': 1008,
-  'patrick maswanganyi': 1009,
-  'tshepang moremi': 1010,
-  'evidence makgopa': 1011,
-  'yamela mbuthuma': 1012,
-  'andre de jong': 1013,
-  'grant kekana': 2002,
-  'rushine de reuck': 2003,
-  'khuliso mudau': 2004,
-  'aubrey modiba': 2005,
-  'tashreeq matthews': 2006,
-  'arthur': 2007,
-  'marcelo allende': 2008,
-  'monnapule saleng': 2009,
-  'teboho mokoena': 2010,
-  'iqraam rayners': 2011,
-  'peter shalulile': 2012,
-  'brayan leon muniz': 2013,
-  'mfanuvela mafuleka': 3002,
-  'isaac cisse': 3003,
-  'philani kumalo': 3004,
-  'jerome karlese': 3005,
-  'thokozani khumalo': 3006,
-  'sede junior dion': 3007,
-  'siyanda mthanti': 3008,
-  'nhlanhla ngcobo': 4002,
-  'mxolisi macuphu': 4003,
-  'matlala keletso makgalwa': 4004,
-  'mokete mogaila': 4005,
-  'thabang monare': 4006,
-  'vusumuzi mncube': 4007,
-  'bradley grobler': 4008,
-  'nkosikhona radebe': 5002,
-  'andiswa sithole': 5003,
-  'tebogo masuku': 5004,
-  'hendrick ekstein': 5005,
-  'mondli mbanjwa': 5006,
-  'athini maqokola': 5007,
-  'thandolwenkosi ngwenya': 5008,
-  'kyle jurgens': 6002,
-  'haashim domingo': 6003,
-  'bokang mokwena': 6004,
-  'samkelo maseko': 6005,
-  'letsie koapeng': 6006,
-  'saziso magawana': 6007,
-  'edmilson dove': 7002,
-  'dillon solomons': 7003,
-  'bradley cross': 7004,
-  'mduduzi shabalala': 7005,
-  'leandro sirino': 7006,
-  'lebohang maboe': 7007,
-  'flavio silva': 7008,
-  'puleng dennis tlolane': 8002,
-  'banele mnguni': 8003,
-  'mokibelo ramabu': 8004,
-  'lebohang nkaki': 8005,
-  'thabelo tshikweta': 8006,
-  'bonginkosi dlamini': 8007,
-  'junior zindoga': 9002,
-  'mlungisi mbunjana': 9003,
-  'sphesihle maduna': 9004,
-  'nhlanhla mgaga': 9005,
-  'mory cheick keita': 9006,
-  'seluleko mahlambi': 9007,
-  'puso dithejane': 9008,
-  'siyabonga nzama': 10002,
-  'lungelo ngcongca': 10003,
-  'moses mthembu': 10004,
-  'lundi mahala': 10005,
-  'sanele barns': 10006,
-  'frank mhango': 10007,
-  'neo rapoo': 11002,
-  'tebogo potsane': 11003,
-  'vincent pule': 11004,
-  'justice figuareido': 11005,
-  'keenan cairns': 11006,
-  'siviwe magidigidi': 11007,
-  'fawaaz basadien': 12002,
-  'ibraheem jabaar': 12003,
-  'devon titus': 12004,
-  'junior mendieta': 12005,
-  'waseem isaacs': 12006,
-  'langelihle phili': 12007,
-  'katlego otladisa': 13002,
-  'khumbulani ncube': 13003,
-  'teboho motloung': 13004,
-  'christopher sekela': 13005,
-  'bheki mabuza': 13006,
-  'jaisen jaren clifford': 13007,
-  'bhekie cele': 14002,
-  'lethiwe mthembu': 14003,
-  'thuso moleleki': 14004,
-  'teboho makololo': 14005,
-  'mbulelo wagaba': 14006,
-  'justice figueredo': 15002,
-  'ayanda nkosi': 15003,
-  'keenan phillips': 15004,
-  'thabo cele': 15005,
-  'sinoxolo kwayiba': 15006,
-  'sibusiso hadebe': 16002,
-  'thabang sibanyoni': 16003,
-  'kgomotso mosadi': 16004,
-  'glody lilepo': 16005,
-  'rowan human': 16006,
-  'victor letsoalo': 16007,
-  'thabo molefe': 16011,
-  'lerato moerane': 16012,
-};
-
 const TOKEN  = process.env.APIFOOTBALL_KEY     || '';
 const SB_URL = process.env.SUPABASE_URL        || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -326,32 +208,7 @@ async function runImportPlayers() {
     else imported += chunk.length;
   }
 
-  // Name-match pass: assign psl_roster_id by fuzzy name matching
-  var matched = 0;
-  try {
-    var { data: allDbPlayers } = await db.from('players').select('id, display_name, api_player_id');
-    for (var mi = 0; mi < (allDbPlayers || []).length; mi++) {
-      var dp   = allDbPlayers[mi];
-      var norm = (dp.display_name || '').toLowerCase().replace(/-/g,' ').replace(/'/g,' ').trim();
-      // Try exact match first
-      var rosterId = PSL_ROSTER_IDS[norm];
-      // Try last-name match if no exact match
-      if (!rosterId) {
-        var parts = norm.split(' ');
-        var lastName = parts[parts.length - 1];
-        for (var rk in PSL_ROSTER_IDS) {
-          if (rk.includes(lastName) && lastName.length > 3) { rosterId = PSL_ROSTER_IDS[rk]; break; }
-        }
-      }
-      if (rosterId) {
-        await db.from('players').update({ psl_roster_id: rosterId }).eq('id', dp.id);
-        matched++;
-      }
-    }
-    errors.push && errors.length === 0 ? null : null;
-  } catch(me) { errors.push('Name-match error: ' + me.message); }
-
-  return { success: true, players_imported: imported, teams_processed: teams.length, season_year: sy, psl_roster_matched: matched, errors };
+  return { success: true, players_imported: imported, teams_processed: teams.length, season_year: sy, errors };
 }
 
 // ── STATUS / HEALTH ───────────────────────────────────────────────────────
@@ -379,6 +236,49 @@ async function getSeasons() {
     type: 'seasons',
     league: league && league.league && league.league.name,
     seasons: seasons.map(function(s) { return { year: s.year, current: s.current }; })
+  };
+}
+
+// ── TEST PLAYER STATS ─────────────────────────────────────────────────────
+async function testPlayerStats(playerId) {
+  var sy = await getSeasonYear(TOKEN);
+  // Test single player stats
+  var d1 = await apiFetch('/players?id=' + playerId + '&season=' + sy, TOKEN);
+  var player = (d1.response || [])[0];
+
+  // Test league-wide player stats page 1
+  var d2 = await apiFetch('/players?league=' + PSL_LEAGUE + '&season=' + sy + '&page=1', TOKEN);
+  var samplePlayers = (d2.response || []).slice(0, 3).map(function(r) {
+    var p    = r.player     || {};
+    var stat = (r.statistics || [])[0] || {};
+    return {
+      id:      p.id,
+      name:    p.name,
+      team:    stat.team && stat.team.name,
+      goals:   stat.goals && stat.goals.total,
+      assists: stat.goals && stat.goals.assists,
+      minutes: stat.games && stat.games.minutes,
+      apps:    stat.games && stat.games.appearences
+    };
+  });
+
+  return {
+    tested_player_id: playerId,
+    season: sy,
+    player_found: !!player,
+    player_name:  player && player.player && player.player.name,
+    player_stats: player && player.statistics && player.statistics[0] && {
+      team:    player.statistics[0].team && player.statistics[0].team.name,
+      goals:   player.statistics[0].goals && player.statistics[0].goals.total,
+      assists: player.statistics[0].goals && player.statistics[0].goals.assists,
+      minutes: player.statistics[0].games && player.statistics[0].games.minutes,
+      apps:    player.statistics[0].games && player.statistics[0].games.appearences,
+      yellow:  player.statistics[0].cards && player.statistics[0].cards.yellow,
+      red:     player.statistics[0].cards && player.statistics[0].cards.red
+    },
+    league_stats_available: d2.response && d2.response.length > 0,
+    league_total_pages: d2.paging && d2.paging.total,
+    sample_players: samplePlayers
   };
 }
 
