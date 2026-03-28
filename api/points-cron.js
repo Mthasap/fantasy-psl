@@ -127,51 +127,106 @@ module.exports = async (req, res) => {
           .select('id', { count: 'exact', head: true }).eq('fixture_id', fid);
         if (existing.count > 0) { statsSkipped++; continue; }
 
-        // Fetch lineups + events from API-Football
-        var lineupsData = await apiFetch('/fixtures/lineups?fixture=' + fid, TOKEN);
-        var eventsData  = await apiFetch('/fixtures/events?fixture='  + fid, TOKEN);
+        // Fetch lineups + events + player stats from API-Football
+        var lineupsData = await apiFetch('/fixtures/lineups?fixture='    + fid, TOKEN);
+        var eventsData  = await apiFetch('/fixtures/events?fixture='     + fid, TOKEN);
+        var statsData   = await apiFetch('/fixtures/players?fixture='    + fid, TOKEN);
         var lineups     = lineupsData.response || [];
         var events      = eventsData.response  || [];
+        var teamStats   = statsData.response   || [];
 
-        // Goals conceded per team
         var goals = f.goals || {};
         var teamGoals = {};
-        if (lineups.length >= 2) {
-          var homeId = lineups[0].team && lineups[0].team.id;
-          var awayId = lineups[1].team && lineups[1].team.id;
-          teamGoals[homeId] = goals.away || 0;
-          teamGoals[awayId] = goals.home || 0;
+        var fixtureStats = {};
+
+        // PRIMARY: Use player statistics endpoint (better PSL coverage than lineups)
+        if (teamStats.length) {
+          teamStats.forEach(function(teamData) {
+            var tid      = teamData.team && teamData.team.id;
+            var players  = teamData.players || [];
+            // Work out goals conceded = other team's goals
+            // We'll patch this after building both teams
+            players.forEach(function(entry) {
+              var p    = entry.player    || {};
+              var stat = (entry.statistics || [])[0] || {};
+              var games = stat.games || {};
+              var mins  = games.minutes || 0;
+              if (!p.id || mins === 0) return; // skip DNP
+              fixtureStats[String(p.id)] = {
+                api_player_id: p.id, team_id: tid,
+                pos:    normPos(games.position || ''),
+                minutes: mins,
+                goals:       (stat.goals  && stat.goals.total)    || 0,
+                assists:     (stat.goals  && stat.goals.assists)   || 0,
+                saves:       (stat.goals  && stat.goals.saves)     || 0,
+                yellowCards: (stat.cards  && stat.cards.yellow)    || 0,
+                redCards:    (stat.cards  && stat.cards.red)       || 0,
+                goalsConceded: 0, penSaved: 0, penMissed: 0
+              };
+            });
+          });
+
+          // Assign goals conceded per team
+          if (teamStats.length >= 2) {
+            var hid = teamStats[0].team && teamStats[0].team.id;
+            var aid = teamStats[1].team && teamStats[1].team.id;
+            teamGoals[hid] = goals.away || 0;
+            teamGoals[aid] = goals.home || 0;
+            for (var ps in fixtureStats) {
+              var tid2 = fixtureStats[ps].team_id;
+              fixtureStats[ps].goalsConceded = teamGoals[tid2] || 0;
+            }
+          }
         }
 
-        // Build player stats from lineups
-        var fixtureStats = {};
-        lineups.forEach(function(team) {
-          var tid = team.team && team.team.id;
-          var conceded = teamGoals[tid] || 0;
-
-          (team.startXI || []).forEach(function(entry) {
-            var p = entry.player || {};
-            if (!p.id) return;
-            fixtureStats[String(p.id)] = {
-              api_player_id: p.id, team_id: tid,
-              pos: normPos(p.pos || ''), minutes: 90,
-              goals: 0, assists: 0, goalsConceded: conceded,
-              saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
-            };
+        // FALLBACK: Use lineups if player stats empty
+        if (!Object.keys(fixtureStats).length && lineups.length) {
+          if (lineups.length >= 2) {
+            var homeId = lineups[0].team && lineups[0].team.id;
+            var awayId = lineups[1].team && lineups[1].team.id;
+            teamGoals[homeId] = goals.away || 0;
+            teamGoals[awayId] = goals.home || 0;
+          }
+          lineups.forEach(function(team) {
+            var tid = team.team && team.team.id;
+            var conceded = teamGoals[tid] || 0;
+            (team.startXI || []).forEach(function(entry) {
+              var p = entry.player || {};
+              if (!p.id) return;
+              fixtureStats[String(p.id)] = {
+                api_player_id: p.id, team_id: tid,
+                pos: normPos(p.pos || ''), minutes: 90,
+                goals: 0, assists: 0, goalsConceded: conceded,
+                saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
+              };
+            });
+            (team.substitutes || []).forEach(function(entry) {
+              var p = entry.player || {};
+              if (!p.id) return;
+              fixtureStats[String(p.id)] = {
+                api_player_id: p.id, team_id: tid,
+                pos: normPos(p.pos || ''), minutes: 0,
+                goals: 0, assists: 0, goalsConceded: conceded,
+                saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
+              };
+            });
           });
-          (team.substitutes || []).forEach(function(entry) {
-            var p = entry.player || {};
-            if (!p.id) return;
-            fixtureStats[String(p.id)] = {
-              api_player_id: p.id, team_id: tid,
-              pos: normPos(p.pos || ''), minutes: 0,
-              goals: 0, assists: 0, goalsConceded: conceded,
-              saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
-            };
-          });
-        });
+        }
 
-        // Overlay events
+        // If still empty — no data available for this fixture, mark with sentinel row
+        if (!Object.keys(fixtureStats).length) {
+          await db.from('player_match_stats').upsert({
+            fixture_id: fid, api_player_id: 'NO_DATA',
+            minutes: 0, goals: 0, assists: 0, goals_conceded: 0,
+            saves: 0, yellow_cards: 0, red_cards: 0,
+            fantasy_points: 0, points_breakdown: '{}',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'fixture_id,api_player_id' });
+          statsSkipped++;
+          continue;
+        }
+
+        // Overlay events (patch goals/assists/cards from events for accuracy)
         events.forEach(function(e) {
           var pid    = e.player && e.player.id ? String(e.player.id) : null;
           var asstId = e.assist && e.assist.id ? String(e.assist.id) : null;
@@ -179,26 +234,17 @@ module.exports = async (req, res) => {
           var detail = (e.detail || '').toLowerCase();
           var time   = (e.time   && e.time.elapsed) || 0;
 
-          if (pid && !fixtureStats[pid]) {
-            fixtureStats[pid] = {
-              api_player_id: e.player.id, team_id: e.team && e.team.id,
-              pos: 'MID', minutes: 0, goals: 0, assists: 0, goalsConceded: 0,
-              saves: 0, penSaved: 0, penMissed: 0, yellowCards: 0, redCards: 0
-            };
-          }
-
+          // Only overlay if we already have the player from stats/lineups
           if (type === 'goal' && !detail.includes('own')) {
-            if (pid    && fixtureStats[pid])    fixtureStats[pid].goals   += 1;
-            if (asstId && fixtureStats[asstId]) fixtureStats[asstId].assists += 1;
-          }
-          if (type === 'goal' && detail.includes('missed penalty')) {
-            if (pid && fixtureStats[pid]) fixtureStats[pid].penMissed += 1;
+            if (pid    && fixtureStats[pid])    fixtureStats[pid].goals   = (fixtureStats[pid].goals || 0) + 0; // stats API already has this
+            if (asstId && fixtureStats[asstId]) fixtureStats[asstId].assists = (fixtureStats[asstId].assists || 0) + 0;
           }
           if (type === 'card') {
-            if (detail.includes('yellow') && pid && fixtureStats[pid]) fixtureStats[pid].yellowCards += 1;
-            if (detail.includes('red')    && pid && fixtureStats[pid]) fixtureStats[pid].redCards    += 1;
+            if (detail.includes('yellow') && pid && fixtureStats[pid]) fixtureStats[pid].yellowCards = Math.max(fixtureStats[pid].yellowCards || 0, 1);
+            if (detail.includes('red')    && pid && fixtureStats[pid]) fixtureStats[pid].redCards    = Math.max(fixtureStats[pid].redCards    || 0, 1);
           }
-          if (type === 'subst') {
+          if (type === 'subst' && !teamStats.length) {
+            // Only adjust minutes from events if we used lineup fallback
             if (asstId && fixtureStats[asstId]) fixtureStats[asstId].minutes = Math.max(0, 90 - time);
             if (pid    && fixtureStats[pid])    fixtureStats[pid].minutes    = Math.min(fixtureStats[pid].minutes, time);
           }
@@ -301,19 +347,7 @@ module.exports = async (req, res) => {
     }
     log.push('Players synced: ' + playersSynced);
 
-    // 6. Recalculate profiles — squad_data stores PSL_ROSTER IDs, match via psl_roster_id
-    // Load all players with their psl_roster_id for fast lookup
-    var { data: rosterPlayers } = await db.from('players')
-      .select('id, psl_roster_id, display_name, total_points')
-      .not('psl_roster_id', 'is', null);
-
-    // Build map: psl_roster_id (int) → total_points
-    var rosterPtsMap = {};
-    (rosterPlayers || []).forEach(function(p) {
-      if (p.psl_roster_id) rosterPtsMap[p.psl_roster_id] = p.total_points || 0;
-    });
-    log.push('Roster players with points map: ' + Object.keys(rosterPtsMap).length);
-
+    // 6. Recalculate profiles — squads stored in profiles.squad_data as JSON array
     var { data: profilesWithSquads } = await db.from('profiles')
       .select('id, squad_data, squad_count')
       .not('squad_data', 'is', null)
@@ -323,22 +357,27 @@ module.exports = async (req, res) => {
     for (var pi = 0; pi < (profilesWithSquads || []).length; pi++) {
       var prof = profilesWithSquads[pi];
       try {
+        // Parse squad_data JSON — array of {id, name, position, ...}
         var squadArr = typeof prof.squad_data === 'string'
           ? JSON.parse(prof.squad_data)
           : prof.squad_data;
         if (!Array.isArray(squadArr) || !squadArr.length) continue;
 
-        // Sum points: squad_data.id = PSL_ROSTER ID → look up in rosterPtsMap
-        var total = 0;
-        squadArr.forEach(function(sp) {
-          var rosterId = parseInt(sp.id, 10);
-          if (rosterId && rosterPtsMap[rosterId] !== undefined) {
-            var pts = rosterPtsMap[rosterId];
-            // Captain gets double points
-            if (sp.isCaptain) total += pts * 2;
-            else total += pts;
-          }
-        });
+        // Extract player IDs — stored as numeric id in squad_data
+        var playerIds = squadArr.map(function(p) {
+          return String(p.id || p.player_id || '');
+        }).filter(Boolean);
+
+        if (!playerIds.length) continue;
+
+        // Get current total_points for each player
+        var { data: pts } = await db.from('players')
+          .select('id, total_points')
+          .in('id', playerIds);
+
+        var total = (pts || []).reduce(function(acc, p) {
+          return acc + (p.total_points || 0);
+        }, 0);
 
         await db.from('profiles')
           .update({ total_points: total, squad_count: squadArr.length })
