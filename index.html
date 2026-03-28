@@ -1794,32 +1794,59 @@ function renderPlayerList() {
     var inSquad  = !!pickedIds[p.id];
     var name     = playerName(p);
     var club     = p.clubs ? p.clubs.name : (p.club || '--');
-    var icon     = posIcon(p.position);
     var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
-    var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
-
     var btnStyle = inSquad ? 'background:#1A6B42;border-color:#1A6B42' : '';
-    var btnLabel = inSquad ? '✓' : '+';
+    var btnLabel = inSquad ? '\u2713' : '+';
     var priceChange = p.price_change || 0;
     var pcHtml = priceChange > 0
-      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">▲</span>'
+      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">\u25b2</span>'
       : priceChange < 0
-      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">▼</span>'
+      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">\u25bc</span>'
       : '';
     var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
-    var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
+
+    // Avatar: player photo > team logo > position letter (EPL Fantasy style)
+    var teamLogo   = getTeamLogo(club);
+    var playerPhoto = p.photo || null;
+    var posColors  = {GK:'#DBA94A',DEF:'#22895A',MID:'#E05C7A',FWD:'#6eaadd'};
+    var avatarInner;
+    if (playerPhoto) {
+      avatarInner =
+        '<img src="' + playerPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+        '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;' +
+          'font-family:var(--font-ui);font-size:.65rem;font-weight:800;color:' + (posColors[p.position]||'#fff') + '">' +
+          (p.position||'?') + '</div>' +
+        (teamLogo ? '<img src="' + teamLogo + '" style="position:absolute;bottom:-2px;right:-2px;width:15px;height:15px;' +
+          'object-fit:contain;background:#0D1017;border-radius:50%;border:1px solid rgba(255,255,255,.15)" ' +
+          'onerror="this.hidden=true">' : '');
+    } else if (teamLogo) {
+      avatarInner =
+        '<img src="' + teamLogo + '" style="width:22px;height:22px;object-fit:contain" onerror="this.hidden=true">';
+    } else {
+      avatarInner =
+        '<div style="font-family:var(--font-ui);font-size:.7rem;font-weight:800;color:' +
+          (posColors[p.position]||'rgba(255,255,255,.5)') + '">' + (p.position||'?') + '</div>';
+    }
+    var avatarBg = playerPhoto ? '' : (teamLogo ? 'background:rgba(255,255,255,.04)' : 'background:rgba(255,255,255,.06)');
+
     return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
-      '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
+      '<div class="pli-avatar" style="' + avatarBg + '">' + avatarInner + '</div>' +
       '<div class="pli-info">' +
         '<div class="pli-name">' + name + ownership + '</div>' +
         '<div class="pli-club">' + club + '</div>' +
       '</div>' +
       '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
       '<span class="pli-price">R' + (p.price || 0) + 'M' + pcHtml + '</span>' +
-      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 4px;color:' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
-        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" ' +
+        'style="background:none;border:none;cursor:pointer;padding:0 4px;color:' +
+        (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
+        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') +
+          '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px">' +
+          '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
       '</button>' +
-      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
+      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" ' +
+        'onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
         btnLabel +
       '</button>' +
     '</div>';
@@ -2937,19 +2964,29 @@ function renderChipBar() {
   if (!bar) return;
   if (!ST.squad.length) { bar.innerHTML = ''; return; }
   bar.innerHTML = Object.keys(CHIP_INFO).map(function(key) {
-    var chip = CHIP_INFO[key];
+    var chip    = CHIP_INFO[key];
     var isActive = ST.activeChip === key;
     var isUsed   = ST.usedChips.indexOf(key) !== -1;
-    var bg = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.06)';
+    var bg     = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.06)';
     var border = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.12)';
-    var color = isActive ? '#fff' : isUsed ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.65)';
-    var label = isActive ? chip.abbr + ' Active' : isUsed ? chip.abbr + ' Used' : chip.abbr;
-    return '<button onclick="' + (isUsed ? '' : 'activateChip(\'' + key + '\')') + '" ' +
-      'style="display:flex;align-items:center;gap:.3rem;background:' + bg + ';border:1px solid ' + border + ';border-radius:20px;padding:.3rem .7rem;cursor:' + (isUsed?'default':'pointer') + ';font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:' + color + ';letter-spacing:.5px;transition:all .2s" ' +
-      'title="' + chip.desc + '">' +
-      (isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
-      label +
-    '</button>';
+    var color  = isActive ? '#fff' : isUsed ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.65)';
+    var label  = isActive ? chip.abbr + ' Active' : isUsed ? chip.abbr + ' Used' : chip.abbr;
+    return '<div style="display:inline-flex;align-items:center;gap:.25rem">' +
+      '<button onclick="' + (isUsed ? '' : 'activateChip(\'' + key + '\')') + '" ' +
+        'style="display:flex;align-items:center;gap:.3rem;background:' + bg + ';border:1px solid ' + border +
+        ';border-radius:20px;padding:.3rem .7rem;cursor:' + (isUsed?'default':'pointer') +
+        ';font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:' + color +
+        ';letter-spacing:.5px;transition:all .2s" title="' + chip.desc + '">' +
+        (isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        label +
+      '</button>' +
+      // Info ! button
+      '<button onclick="event.stopPropagation();showChipInfo(\'' + key + '\')" ' +
+        'style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.12);border:none;' +
+        'color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.6rem;font-weight:900;' +
+        'cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
+        '-webkit-tap-highlight-color:transparent;line-height:1" title="Learn more">!</button>' +
+    '</div>';
   }).join('');
 }
 
@@ -2968,6 +3005,111 @@ function activateChip(key) {
   }
   renderChipBar();
   markUnsaved();
+}
+
+function showChipInfo(key) {
+  var chip = CHIP_INFO[key];
+  if (!chip) return;
+
+  // Full descriptions for each chip
+  var CHIP_DETAILS = {
+    wc: {
+      title: 'Wildcard',
+      color: '#B91C3A',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:28px;height:28px"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>',
+      what: 'Make unlimited free transfers in one gameweek.',
+      how:  'Activate before the deadline. All transfers that week cost 0 points — no hits taken.',
+      tip:  'Best used when your squad is badly affected by injuries or a blank gameweek.',
+      limit:'One per season. Once used, it is gone for the rest of the season.'
+    },
+    tc: {
+      title: 'Triple Captain',
+      color: '#DBA94A',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:28px;height:28px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+      what: 'Your captain scores 3× points instead of 2× for one gameweek.',
+      how:  'Activate and set your captain as normal. Their points are tripled automatically.',
+      tip:  'Pick it for a gameweek when your captain has an easy fixture and is in form.',
+      limit:'One per season.'
+    },
+    bb: {
+      title: 'Bench Boost',
+      color: '#22895A',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:28px;height:28px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+      what: 'All 15 players in your squad score points — not just your starting 11.',
+      how:  'Your 4 bench players also earn full points for that gameweek.',
+      tip:  'Use it in a double gameweek where many of your bench players have fixtures.',
+      limit:'One per season.'
+    },
+    fh: {
+      title: 'Free Hit',
+      color: '#6eaadd',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:28px;height:28px"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+      what: 'Make unlimited transfers for one gameweek — your squad reverts afterwards.',
+      how:  'Build a completely different squad for one week. Your original squad is restored the next GW.',
+      tip:  'Perfect for a blank gameweek where most of your players have no fixture.',
+      limit:'One per season.'
+    }
+  };
+
+  var detail = CHIP_DETAILS[key];
+  if (!detail) return;
+
+  // Create or reuse modal
+  var modal = document.getElementById('chip-info-modal') || (function() {
+    var m = document.createElement('div');
+    m.id = 'chip-info-modal';
+    m.style.cssText = 'display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center';
+    m.onclick = function(e) { if(e.target===m) closeChipInfo(); };
+    document.body.appendChild(m);
+    return m;
+  })();
+
+  modal.innerHTML =
+    '<div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;' +
+      'width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem">' +
+      '<div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto .8rem"></div>' +
+      // Header
+      '<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.3rem">' +
+        '<div style="width:52px;height:52px;border-radius:14px;background:' + detail.color + '22;border:1px solid ' + detail.color + '44;' +
+          'display:flex;align-items:center;justify-content:center;color:' + detail.color + ';flex-shrink:0">' +
+          detail.icon +
+        '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff">' + detail.title + '</div>' +
+          '<div style="font-size:.72rem;color:' + detail.color + ';font-family:var(--font-ui);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Power-Up Chip</div>' +
+        '</div>' +
+      '</div>' +
+      // Info rows
+      '<div style="display:flex;flex-direction:column;gap:.8rem;margin-bottom:1.3rem">' +
+        '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:.85rem 1rem">' +
+          '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.35rem">What it does</div>' +
+          '<div style="font-size:.88rem;color:#fff;line-height:1.5">' + detail.what + '</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:.85rem 1rem">' +
+          '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.35rem">How to use it</div>' +
+          '<div style="font-size:.88rem;color:#fff;line-height:1.5">' + detail.how + '</div>' +
+        '</div>' +
+        '<div style="background:rgba(219,169,74,.08);border:1px solid rgba(219,169,74,.2);border-radius:10px;padding:.85rem 1rem">' +
+          '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#DBA94A;margin-bottom:.35rem">Pro tip</div>' +
+          '<div style="font-size:.88rem;color:rgba(255,255,255,.85);line-height:1.5">' + detail.tip + '</div>' +
+        '</div>' +
+        '<div style="font-size:.75rem;color:rgba(255,255,255,.35);padding:0 .2rem">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+          detail.limit +
+        '</div>' +
+      '</div>' +
+      '<button onclick="closeChipInfo()" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);' +
+        'border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.85rem;font-weight:700;padding:.8rem;cursor:pointer">Got it</button>' +
+    '</div>';
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeChipInfo() {
+  var m = document.getElementById('chip-info-modal');
+  if (m) m.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 function renderTransferBadge() {
@@ -3214,17 +3356,17 @@ var CLUB_INFO = {
 };
 
 var REAL_TABLE = [
-  // Fallback standings (GW26, 28 Mar 2026) — verified from app screenshot
-  // Live data loads from API-Football standings, this is the fallback
-  { pos:1,  team:'Orlando Pirates',    p:26, w:16, d:3,  l:7,  gf:37, ga:14, gd:23,  pts:51, form:['W','L','W','W','D'] },
-  { pos:2,  team:'Mamelodi Sundowns',  p:28, w:15, d:5,  l:8,  gf:47, ga:15, gd:32,  pts:50, form:['W','D','W','W','W'] },
-  { pos:3,  team:'AmaZulu',            p:26, w:11, d:4,  l:11, gf:24, ga:22, gd:2,   pts:37, form:['L','W','D','W','L'] },
-  { pos:4,  team:'Kaizer Chiefs',      p:25, w:10, d:6,  l:9,  gf:22, ga:18, gd:4,   pts:36, form:['W','D','L','W','W'] },
+  // Fallback standings (GW26, 25 Mar 2026) — P values from Sportmonks live data (Image 3)
+  // Live data always loads first from Sportmonks standings API
+  { pos:1,  team:'Orlando Pirates',    p:26, w:16, d:4,  l:6,  gf:37, ga:14, gd:23,  pts:52, form:['W','L','W','W','D'] },
+  { pos:2,  team:'Mamelodi Sundowns',  p:28, w:18, d:7,  l:3,  gf:47, ga:15, gd:32,  pts:61, form:['W','D','W','W','W'] },
+  { pos:3,  team:'AmaZulu',            p:26, w:11, d:6,  l:9,  gf:24, ga:22, gd:2,   pts:39, form:['L','W','D','W','L'] },
+  { pos:4,  team:'Kaizer Chiefs',      p:25, w:11, d:7,  l:7,  gf:22, ga:18, gd:4,   pts:40, form:['W','D','L','W','W'] },
   { pos:5,  team:'Durban City',        p:25, w:10, d:5,  l:10, gf:22, ga:20, gd:2,   pts:35, form:['W','L','W','L','D'] },
-  { pos:6,  team:'Sekhukhune United',  p:25, w:10, d:4,  l:11, gf:24, ga:17, gd:7,   pts:34, form:['W','D','D','W','D'] },
-  { pos:7,  team:'Polokwane City',     p:25, w:8,  d:5,  l:12, gf:18, ga:17, gd:1,   pts:29, form:['D','D','W','D','L'] },
-  { pos:8,  team:'Golden Arrows',      p:25, w:7,  d:7,  l:11, gf:29, ga:29, gd:0,   pts:28, form:['L','W','L','W','L'] },
-  { pos:9,  team:'Stellenbosch',       p:26, w:7,  d:7,  l:12, gf:23, ga:25, gd:-2,  pts:28, form:['D','W','L','D','W'] },
+  { pos:6,  team:'Sekhukhune United',  p:25, w:10, d:8,  l:7,  gf:24, ga:17, gd:7,   pts:38, form:['W','D','D','W','D'] },
+  { pos:7,  team:'Polokwane City',     p:25, w:8,  d:9,  l:8,  gf:18, ga:17, gd:1,   pts:33, form:['D','D','W','D','L'] },
+  { pos:8,  team:'Golden Arrows',      p:25, w:8,  d:5,  l:12, gf:29, ga:29, gd:0,   pts:29, form:['L','W','L','W','L'] },
+  { pos:9,  team:'Stellenbosch',       p:26, w:9,  d:8,  l:9,  gf:23, ga:25, gd:-2,  pts:35, form:['D','W','L','D','W'] },
   { pos:10, team:'Siwelele',           p:24, w:6,  d:9,  l:9,  gf:14, ga:18, gd:-4,  pts:27, form:['D','D','L','D','W'] },
   { pos:11, team:'TS Galaxy',          p:25, w:7,  d:5,  l:13, gf:25, ga:27, gd:-2,  pts:26, form:['L','L','W','L','W'] },
   { pos:12, team:'Richards Bay',       p:25, w:6,  d:8,  l:11, gf:20, ga:28, gd:-8,  pts:26, form:['D','W','L','D','L'] },
@@ -3346,7 +3488,7 @@ function openNewsPost(postOrIdx) {
   var overlay = document.getElementById('news-overlay') || (function(){
     var el = document.createElement('div');
     el.id = 'news-overlay';
-    el.style.cssText = 'position:fixed;top:60px;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
     el.onclick = function(e){ if(e.target===el) closeNewsOverlay(); };
     document.body.appendChild(el);
     return el;
@@ -3356,96 +3498,41 @@ function openNewsPost(postOrIdx) {
   var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
   var readTime = post.body ? Math.max(1, Math.round(post.body.split(' ').length / 200)) + ' min read' : '';
 
-  // Image position: use post.image_position if set, else 'center'
-  var imgPos = post.image_position || 'center';
-  var bodyHtml = (post.body || post.summary || '');
-
-  // Split body in half to inject ad banner mid-article
-  var sentences = bodyHtml.split(/(?<=[.!?])\s+/);
-  var midPoint  = Math.floor(sentences.length / 2);
-  var bodyPart1 = sentences.slice(0, midPoint).join(' ');
-  var bodyPart2 = sentences.slice(midPoint).join(' ');
-
-  // Ad banner HTML (Google AdSense auto-format)
-  var adBanner = '<div style="margin:1.5rem 0;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);min-height:80px;display:flex;align-items:center;justify-content:center">' +
-    '<ins class="adsbygoogle" style="display:block;width:100%;min-height:80px" data-ad-client="ca-pub-6398135174637589" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>' +
-    '<script>(adsbygoogle=window.adsbygoogle||[]).push({});<\/script>' +
-    '</div>';
-
   overlay.innerHTML =
-    // Back bar — lively gradient accent
-    '<div style="background:linear-gradient(135deg,#1a0d12,#0D1017);border-bottom:1px solid rgba(185,28,58,.25);padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:1;backdrop-filter:blur(8px)">' +
-      '<button onclick="closeNewsOverlay()" style="background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.3);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.1rem;-webkit-tap-highlight-color:transparent;flex-shrink:0">&#8592;</button>' +
-      '<span style="font-family:var(--font-ui,sans-serif);font-size:.75rem;font-weight:800;color:rgba(255,255,255,.6);letter-spacing:1px;text-transform:uppercase">PSL News</span>' +
-      '<div style="margin-left:auto;display:flex;gap:.5rem">' +
-        '<button onclick="cycleImagePosition()" id="img-pos-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);font-family:var(--font-ui,sans-serif);font-size:.65rem;font-weight:700;padding:.3rem .6rem;cursor:pointer;display:' + (post.image_url ? 'flex' : 'none') + ';align-items:center;gap:.3rem">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Fit' +
-        '</button>' +
-      '</div>' +
+    // Back button bar — sticky at very top with safe area inset for notch/status bar
+    '<div style="background:#0D1017;border-bottom:1px solid rgba(255,255,255,.1);padding:calc(.75rem + env(safe-area-inset-top,0px)) 1rem .75rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:10">' +
+      '<button onclick="closeNewsOverlay()" style="background:#B91C3A;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.2rem;font-weight:700;-webkit-tap-highlight-color:transparent;flex-shrink:0;box-shadow:0 2px 12px rgba(185,28,58,.5)">&#8592;</button>' +
+      '<span style="font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:1px;text-transform:uppercase">PSL News</span>' +
     '</div>' +
-
-    // Cover image — full width, user-adjustable position
-    (post.image_url ?
-      '<div id="news-cover-wrap" style="width:100%;height:280px;overflow:hidden;position:relative">' +
-        '<img id="news-cover-img" src="' + post.image_url + '" style="width:100%;height:100%;object-fit:cover;object-position:' + imgPos + ';display:block;transition:object-position .3s">' +
-        // Category pill overlaid on image
-        '<div style="position:absolute;bottom:0;left:0;right:0;padding:1.2rem 1rem .8rem;background:linear-gradient(to top,rgba(13,16,23,.95),transparent)">' +
-          '<span style="font-size:.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fff;background:' + catColor + ';padding:3px 10px;border-radius:4px">' + (post.category||'News') + '</span>' +
-        '</div>' +
-      '</div>'
-    : '') +
-
-    // Article content — brighter background with subtle texture
-    '<div style="background:linear-gradient(180deg,#141820 0%,#0f1319 100%);min-height:100vh">' +
-      '<div style="padding:1.4rem 1.1rem 5rem;max-width:680px;margin:0 auto">' +
-        // Date + read time
-        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap">' +
-          '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">' + dateStr + '</span>' +
-          (readTime ? '<span style="font-size:.72rem;color:rgba(255,255,255,.3)">· ' + readTime + '</span>' : '') +
-        '</div>' +
-        // Title
-        '<h1 style="font-family:var(--font-display,sans-serif);font-size:1.55rem;font-weight:900;line-height:1.2;margin-bottom:.9rem;color:#fff;text-transform:uppercase;letter-spacing:-.3px">' + post.title + '</h1>' +
-        // Summary pullquote
-        (post.summary ? '<p style="font-size:.92rem;color:rgba(255,255,255,.55);line-height:1.65;margin-bottom:1.3rem;font-style:italic;border-left:3px solid ' + catColor + ';padding-left:.9rem">' + post.summary + '</p>' : '') +
-        // Body part 1
-        '<div style="font-size:.92rem;color:rgba(255,255,255,.82);line-height:1.9;white-space:pre-wrap">' + bodyPart1 + '</div>' +
-        // Ad banner (mid-article)
-        (bodyPart2 ? adBanner : '') +
-        // Body part 2
-        (bodyPart2 ? '<div style="font-size:.92rem;color:rgba(255,255,255,.82);line-height:1.9;white-space:pre-wrap">' + bodyPart2 + '</div>' : '') +
-        // Share + divider
-        '<div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:.8rem;flex-wrap:wrap">' +
-          '<button onclick="shareNewsPost(this)" data-slug="' + slug + '" data-title="' + post.title.replace(/"/g,'&quot;') + '" style="background:linear-gradient(135deg,rgba(185,28,58,.2),rgba(185,28,58,.1));border:1px solid rgba(185,28,58,.35);border-radius:10px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:700;padding:.65rem 1.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:.5rem">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
-            'Share Article' +
-          '</button>' +
-        '</div>' +
+    // Cover image
+    (post.image_url ? '<img src="' + post.image_url + '" style="width:100%;max-height:260px;object-fit:cover;display:block">' : '') +
+    // Article content
+    '<div style="padding:1.4rem 1.1rem 5rem;max-width:680px;margin:0 auto">' +
+      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">' +
+        '<span style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:' + catColor + ';padding:3px 9px;border-radius:4px">' + (post.category||'News') + '</span>' +
+        '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">' + dateStr + '</span>' +
+        (readTime ? '<span style="font-size:.72rem;color:rgba(255,255,255,.3)">· ' + readTime + '</span>' : '') +
+      '</div>' +
+      '<h1 style="font-family:var(--font-display,sans-serif);font-size:1.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem;color:#fff">' + post.title + '</h1>' +
+      '<p style="font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:1.2rem;font-style:italic;border-left:3px solid #B91C3A;padding-left:.8rem">' + (post.summary || '') + '</p>' +
+      '<div style="font-size:.9rem;color:rgba(255,255,255,.78);line-height:1.85;white-space:pre-wrap">' + (post.body || post.summary || '') + '</div>' +
+      // Share button — padded well above nav bar
+      '<div style="margin-top:2rem;padding-top:1.2rem;padding-bottom:calc(5rem + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08)">' +
+        '<button onclick="shareNewsPost(this)" data-slug="' + slug + '" data-title="' + post.title.replace(/"/g,'&quot;') + '" style="display:inline-flex;align-items:center;gap:.5rem;background:#B91C3A;border:none;border-radius:12px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.85rem;font-weight:800;padding:.75rem 1.5rem;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 16px rgba(185,28,58,.4);letter-spacing:.3px"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"width:16px;height:16px\"><circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/><line x1=\"8.59\" y1=\"13.51\" x2=\"15.42\" y2=\"17.49\"/><line x1=\"15.41\" y1=\"6.51\" x2=\"8.59\" y2=\"10.49\"/></svg>Share Article</button>' +
       '</div>' +
     '</div>';
 
   overlay.style.display = 'block';
   overlay.scrollTop = 0;
-  document.body.style.overflow = 'hidden';
-}
-
-// Cycle cover image position: center → top → bottom → center
-var _imgPositions = ['center','top','bottom'];
-var _imgPosIdx = 0;
-function cycleImagePosition() {
-  _imgPosIdx = (_imgPosIdx + 1) % _imgPositions.length;
-  var newPos = _imgPositions[_imgPosIdx];
-  var img = document.getElementById('news-cover-img');
-  if (img) img.style.objectPosition = newPos;
-  var btn = document.getElementById('img-pos-btn');
-  var labels = { center:'Center', top:'Top', bottom:'Bottom' };
-  if (btn) btn.lastChild.textContent = labels[newPos] || newPos;
+  // Don't set body overflow:hidden — it kills iOS momentum scroll inside overlay
+  // Instead the overlay itself handles scrolling via overflow-y:auto
+  document.documentElement.style.overflow = 'hidden'; // prevent background scroll on desktop only
 }
 
 function closeNewsOverlay() {
   var el = document.getElementById('news-overlay');
   if (el) el.style.display = 'none';
-  _imgPosIdx = 0; // reset image position for next article
-  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
   // Restore URL and title
   try { window.history.pushState({}, 'Fantasy PSL', '/'); } catch(e) {}
   try { document.title = 'Fantasy PSL'; } catch(e) {}
@@ -6215,16 +6302,10 @@ function reportPost(btn){
 function deletePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user||!confirm('Delete this post?'))return;
-  // Hard delete from DB so it never comes back
-  db.from('diski_posts').delete().match({id:pid,user_id:ST.user.id})
-    .then(function(res){
-      if(res.error){ showToast('Could not delete post','warning'); return; }
-      // Remove from local cache immediately
+  db.from('diski_posts').update({is_removed:true}).match({id:pid,user_id:ST.user.id})
+    .then(function(){
       CHAT.posts=CHAT.posts.filter(function(p){return p.id!==pid;});
-      // Also remove any reposts of this post from cache
-      CHAT.posts=CHAT.posts.filter(function(p){return p.repost_of!==pid;});
-      renderFeed();
-      showToast('Post deleted','info');
+      renderFeed();showToast('Post deleted','info');
     });
 }
 </script>
