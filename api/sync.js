@@ -45,6 +45,7 @@ module.exports = async (req, res) => {
     if (action === 'force-sync' || action === 'sync-fixtures') return res.json(await runForceSync());
     if (action === 'import-players' || action === 'sync-player-stats') return res.json(await runImportPlayers());
     if (action === 'status' || action === 'setup' || action === 'diagnose') return res.json(await getStatus());
+    if (action === 'test-stats') return res.json(await testPlayerStats(q.player_id || '414149'));
     if (action === 'proxy') return res.json(await runProxy(q.endpoint || ''));
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
