@@ -301,7 +301,19 @@ module.exports = async (req, res) => {
     }
     log.push('Players synced: ' + playersSynced);
 
-    // 6. Recalculate profiles — squads stored in profiles.squad_data as JSON array
+    // 6. Recalculate profiles — squad_data stores PSL_ROSTER IDs, match via psl_roster_id
+    // Load all players with their psl_roster_id for fast lookup
+    var { data: rosterPlayers } = await db.from('players')
+      .select('id, psl_roster_id, display_name, total_points')
+      .not('psl_roster_id', 'is', null);
+
+    // Build map: psl_roster_id (int) → total_points
+    var rosterPtsMap = {};
+    (rosterPlayers || []).forEach(function(p) {
+      if (p.psl_roster_id) rosterPtsMap[p.psl_roster_id] = p.total_points || 0;
+    });
+    log.push('Roster players with points map: ' + Object.keys(rosterPtsMap).length);
+
     var { data: profilesWithSquads } = await db.from('profiles')
       .select('id, squad_data, squad_count')
       .not('squad_data', 'is', null)
@@ -311,27 +323,22 @@ module.exports = async (req, res) => {
     for (var pi = 0; pi < (profilesWithSquads || []).length; pi++) {
       var prof = profilesWithSquads[pi];
       try {
-        // Parse squad_data JSON — array of {id, name, position, ...}
         var squadArr = typeof prof.squad_data === 'string'
           ? JSON.parse(prof.squad_data)
           : prof.squad_data;
         if (!Array.isArray(squadArr) || !squadArr.length) continue;
 
-        // Extract player IDs — stored as numeric id in squad_data
-        var playerIds = squadArr.map(function(p) {
-          return String(p.id || p.player_id || '');
-        }).filter(Boolean);
-
-        if (!playerIds.length) continue;
-
-        // Get current total_points for each player
-        var { data: pts } = await db.from('players')
-          .select('id, total_points')
-          .in('id', playerIds);
-
-        var total = (pts || []).reduce(function(acc, p) {
-          return acc + (p.total_points || 0);
-        }, 0);
+        // Sum points: squad_data.id = PSL_ROSTER ID → look up in rosterPtsMap
+        var total = 0;
+        squadArr.forEach(function(sp) {
+          var rosterId = parseInt(sp.id, 10);
+          if (rosterId && rosterPtsMap[rosterId] !== undefined) {
+            var pts = rosterPtsMap[rosterId];
+            // Captain gets double points
+            if (sp.isCaptain) total += pts * 2;
+            else total += pts;
+          }
+        });
 
         await db.from('profiles')
           .update({ total_points: total, squad_count: squadArr.length })
