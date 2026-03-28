@@ -1732,52 +1732,28 @@ function loadPlayers() {
   db.from('players')
     .select('*, clubs(name, short_name)')
     .order('total_points', { ascending: false })
-    .limit(600)
+    .limit(300)                // PSL has ~200-300 players, never load all unbounded
     .then(function(res) {
       var players = res.data || [];
-
-      // If DB has players, use them — but remap .id to psl_roster_id so squad_data matches
-      if (players.length) {
-        function normPos(pos) {
-          if (!pos) return 'MID';
-          var p = pos.toUpperCase();
-          if (p === 'GK'  || p === 'GOALKEEPER') return 'GK';
-          if (p === 'DEF' || p === 'DEFENDER')   return 'DEF';
-          if (p === 'MID' || p === 'MIDFIELDER')  return 'MID';
-          if (p === 'FWD' || p === 'FORWARD' || p === 'ATTACKER') return 'FWD';
-          return pos;
-        }
-        // Build a map from PSL_ROSTER by name for fallback stats
-        var rosterByName = {};
-        (PSL_ROSTER || []).forEach(function(r) {
-          rosterByName[r.display_name.toLowerCase()] = r;
-        });
-
-        players = players.map(function(p) {
-          var pos = normPos(p.position);
-          // Use psl_roster_id as the id if available — this is what squad_data stores
-          var pid = p.psl_roster_id || p.id;
-          // Merge with PSL_ROSTER data for any missing stats
-          var rEntry = rosterByName[(p.display_name || '').toLowerCase()];
-          var club = (p.clubs && p.clubs.name) || p.team || (rEntry && rEntry.club) || '';
-          return Object.assign({}, rEntry || {}, p, {
-            id:       pid,
-            db_id:    p.id,         // keep UUID for internal DB ops
-            position: pos,
-            club:     club,
-            clubs:    { name: club, short_name: club }
-          });
-        });
-
-        // Deduplicate: if psl_roster_id not set, player won't match squad — filter those out
-        // but keep them visible in the player list for new squad building
-      } else {
-        // Fallback to hardcoded PSL_ROSTER if DB is empty
+      // Merge with hardcoded PSL_ROSTER if DB is empty
+      if (!players.length && PSL_ROSTER.length) {
         players = PSL_ROSTER.map(function(p) {
           return Object.assign({}, p, { clubs: { name: p.club, short_name: p.club } });
         });
       }
-
+      // Normalise position values from DB to short codes
+      function normPos(pos) {
+        if (!pos) return 'MID';
+        var p = pos.toUpperCase();
+        if (p === 'GK' || p === 'GOALKEEPER') return 'GK';
+        if (p === 'DEF' || p === 'DEFENDER') return 'DEF';
+        if (p === 'MID' || p === 'MIDFIELDER') return 'MID';
+        if (p === 'FWD' || p === 'FORWARD' || p === 'ATTACKER') return 'FWD';
+        return pos;
+      }
+      players = players.map(function(p) {
+        return Object.assign({}, p, { position: normPos(p.position) });
+      });
       ST.allPlayers = players;
       ST.filtered   = players.slice();
       ST.playerPage = 0;
@@ -4167,7 +4143,7 @@ var PSL_ROSTER = [
   { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
   { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
   { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso Monyane',        price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Ratomo',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91, ownership:33 },
+  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91, ownership:33 },
   { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:19, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:3.8, total_points:76 },
   { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:14, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
   { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:15, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:88, ownership:35 },
@@ -6192,7 +6168,7 @@ function deletePost(btn){
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
 <!-- Legal modal: single scrollable sheet, close bar sticky at top -->
-<div id="legal-modal" style="display:none;position:fixed;top:calc(90px + env(safe-area-inset-top, 0px));left:0;right:0;bottom:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+<div id="legal-modal" style="display:none;position:fixed;top:calc(72px + env(safe-area-inset-top, 0px));left:0;right:0;bottom:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
   <div id="legal-modal-title" style="display:none"></div>
   <div id="legal-modal-body" style="padding:0 0 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82"></div>
 </div>
