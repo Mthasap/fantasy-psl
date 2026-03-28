@@ -245,7 +245,7 @@ body {
 .scoring-wrap { background:var(--bg-surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:5.5rem 2rem; }
 .scoring-inner { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:3.5rem; align-items:start; }
 table.pts-table { width:100%; border-collapse:collapse; margin-top:1.8rem; }
-table.pts-table th { text-align:left; padding:.6rem .9rem; font-family:var(--font-ui); font-size:.67rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); background:var(--bg-card); border-bottom:1px solid var(--red); }
+table.pts-table th { text-align:left; padding:.6rem .9rem; font-family:var(--font-ui); font-size:.67rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#fff; background:var(--bg-card); border-bottom:1px solid var(--red); }
 table.pts-table td { padding:.65rem .9rem; font-size:.84rem; border-bottom:1px solid var(--border); color:var(--text-secondary); transition:background .15s; }
 table.pts-table tr:hover td { background:rgba(232,237,244,.02); color:var(--text-primary); }
 table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92rem; text-align:right; }
@@ -260,7 +260,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
 .chip-name.tc { color:var(--gold-soft); }
 .chip-name.bb { color:var(--green-soft); }
 .chip-name.fh { color:#6eaadd; }
-.chip-desc { font-size:.78rem; line-height:1.55; color:var(--text-secondary); }
+.chip-desc { font-size:.78rem; line-height:1.55; color:#fff; opacity:.85; }
 .tip-box { margin-top:1rem; padding:1rem 1.1rem; background:rgba(185,28,58,.05); border:1px solid var(--red-border); border-radius:var(--radius); }
 .tip-label { font-family:var(--font-ui); font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--red-soft); margin-bottom:.35rem; }
 .tip-text { font-size:.8rem; color:var(--text-secondary); line-height:1.6; }
@@ -567,6 +567,18 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
 .pli-shirt.s4 { border-color:rgba(123,79,207,.5); background:rgba(74,40,130,.3); }
 .pli-shirt.s5 { border-color:rgba(200,146,0,.5);  background:rgba(139,96,0,.3); }
 .pli-shirt.s6 { border-color:rgba(0,122,140,.5);  background:rgba(0,77,92,.3); }
+
+/* EPL-style avatar — shows player photo or team logo */
+.pli-avatar {
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  border:1.5px solid rgba(255,255,255,.12);
+  background:var(--bg-surface);
+  overflow:hidden;
+  position:relative;
+}
+.pli-avatar img { display:block; }
 
 /* Name + club — allow to shrink, truncate gracefully */
 .pli-info { flex:1 1 0; min-width:0; overflow:hidden; }
