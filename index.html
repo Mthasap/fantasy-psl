@@ -1732,28 +1732,52 @@ function loadPlayers() {
   db.from('players')
     .select('*, clubs(name, short_name)')
     .order('total_points', { ascending: false })
-    .limit(300)                // PSL has ~200-300 players, never load all unbounded
+    .limit(600)
     .then(function(res) {
       var players = res.data || [];
-      // Merge with hardcoded PSL_ROSTER if DB is empty
-      if (!players.length && PSL_ROSTER.length) {
+
+      // If DB has players, use them — but remap .id to psl_roster_id so squad_data matches
+      if (players.length) {
+        function normPos(pos) {
+          if (!pos) return 'MID';
+          var p = pos.toUpperCase();
+          if (p === 'GK'  || p === 'GOALKEEPER') return 'GK';
+          if (p === 'DEF' || p === 'DEFENDER')   return 'DEF';
+          if (p === 'MID' || p === 'MIDFIELDER')  return 'MID';
+          if (p === 'FWD' || p === 'FORWARD' || p === 'ATTACKER') return 'FWD';
+          return pos;
+        }
+        // Build a map from PSL_ROSTER by name for fallback stats
+        var rosterByName = {};
+        (PSL_ROSTER || []).forEach(function(r) {
+          rosterByName[r.display_name.toLowerCase()] = r;
+        });
+
+        players = players.map(function(p) {
+          var pos = normPos(p.position);
+          // Use psl_roster_id as the id if available — this is what squad_data stores
+          var pid = p.psl_roster_id || p.id;
+          // Merge with PSL_ROSTER data for any missing stats
+          var rEntry = rosterByName[(p.display_name || '').toLowerCase()];
+          var club = (p.clubs && p.clubs.name) || p.team || (rEntry && rEntry.club) || '';
+          return Object.assign({}, rEntry || {}, p, {
+            id:       pid,
+            db_id:    p.id,         // keep UUID for internal DB ops
+            position: pos,
+            club:     club,
+            clubs:    { name: club, short_name: club }
+          });
+        });
+
+        // Deduplicate: if psl_roster_id not set, player won't match squad — filter those out
+        // but keep them visible in the player list for new squad building
+      } else {
+        // Fallback to hardcoded PSL_ROSTER if DB is empty
         players = PSL_ROSTER.map(function(p) {
           return Object.assign({}, p, { clubs: { name: p.club, short_name: p.club } });
         });
       }
-      // Normalise position values from DB to short codes
-      function normPos(pos) {
-        if (!pos) return 'MID';
-        var p = pos.toUpperCase();
-        if (p === 'GK' || p === 'GOALKEEPER') return 'GK';
-        if (p === 'DEF' || p === 'DEFENDER') return 'DEF';
-        if (p === 'MID' || p === 'MIDFIELDER') return 'MID';
-        if (p === 'FWD' || p === 'FORWARD' || p === 'ATTACKER') return 'FWD';
-        return pos;
-      }
-      players = players.map(function(p) {
-        return Object.assign({}, p, { position: normPos(p.position) });
-      });
+
       ST.allPlayers = players;
       ST.filtered   = players.slice();
       ST.playerPage = 0;
@@ -6168,7 +6192,7 @@ function deletePost(btn){
 
 <!-- ── Terms & Privacy Modal ──────────────────────────────────────── -->
 <!-- Legal modal: single scrollable sheet, close bar sticky at top -->
-<div id="legal-modal" style="display:none;position:fixed;top:calc(72px + env(safe-area-inset-top, 0px));left:0;right:0;bottom:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+<div id="legal-modal" style="display:none;position:fixed;top:calc(90px + env(safe-area-inset-top, 0px));left:0;right:0;bottom:0;z-index:9200;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
   <div id="legal-modal-title" style="display:none"></div>
   <div id="legal-modal-body" style="padding:0 0 5rem;color:rgba(255,255,255,.78);font-family:var(--font-body);font-size:.875rem;line-height:1.82"></div>
 </div>
