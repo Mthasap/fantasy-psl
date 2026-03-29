@@ -868,6 +868,10 @@
               <button class="btn btn-blue btn-full"  onclick="runCron('fixtures')">Sync Fixtures</button>
               <button class="btn btn-amber btn-full" onclick="runCron('results')">Sync Results</button>
               <button class="btn btn-ghost btn-full" onclick="runCron('points')">Calc Points</button>
+              <button class="btn btn-full" onclick="syncESPN()" style="background:linear-gradient(135deg,#c8001e,#8b0010);color:#fff;border:none" title="Fetch fresh stats from ESPN Africa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                ESPN Sync
+              </button>
             </div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -1632,6 +1636,36 @@
 
     btn.disabled = false;
     btn.innerHTML = '▶ Run Full Automation Now';
+  }
+
+  async function syncESPN(force = true) {
+    const logEl  = document.getElementById('cron-log');
+    const status = document.getElementById('cron-status');
+    showStatus('cron-status', 'info', '⚙ Fetching stats from ESPN Africa...');
+    if (logEl) { logEl.style.display = 'none'; logEl.textContent = ''; }
+    try {
+      const res  = await fetch('/api/espn-sync?admin_key=' + ADMIN_PASSWORD + (force ? '&force=true' : ''), { method: 'GET' });
+      const data = await res.json();
+      if (data.error) {
+        showStatus('cron-status', 'error', '✗ ESPN Sync error: ' + data.error);
+      } else if (data.skipped) {
+        showStatus('cron-status', 'info', '⏭ Skipped: ' + (data.log && data.log[0] || 'synced recently'));
+      } else {
+        showStatus('cron-status', 'ok',
+          '✓ ESPN Sync complete | Players: ' + (data.players_synced||0) +
+          ' | Profiles: ' + (data.profiles_updated||0) +
+          (data.top_scorer ? ' | Top scorer: ' + data.top_scorer.name + ' (' + data.top_scorer.pts + 'pts)' : '')
+        );
+      }
+      if (data.log && data.log.length) {
+        if (logEl) {
+          logEl.style.display = 'block';
+          logEl.innerHTML = data.log.map(line => escHtml(line)).join('\n');
+        }
+      }
+    } catch(e) {
+      showStatus('cron-status', 'error', '✗ ESPN Sync failed: ' + e.message);
+    }
   }
 
   async function clearCache(key) {
