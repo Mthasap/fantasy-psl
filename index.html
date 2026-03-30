@@ -701,10 +701,17 @@
       <div id="cp-glance" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem"></div>
     </div>
 
-    <!-- Form -->
+    <!-- Form + Next Fixtures row -->
     <div style="padding:.8rem 1.2rem">
       <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Last 5 Results</div>
-      <div id="cp-form" style="display:flex;gap:.4rem"></div>
+      <div id="cp-form" style="display:flex;gap:.4rem;margin-bottom:1.2rem"></div>
+      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Next 5 Fixtures</div>
+      <div id="cp-next5" style="display:flex;flex-direction:column;gap:.35rem"></div>
+    </div>
+    <!-- Recent Results (last 5 with scores) -->
+    <div style="padding:0 1.2rem .8rem">
+      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Recent Results</div>
+      <div id="cp-results5" style="display:flex;flex-direction:column;gap:.35rem"></div>
     </div>
 
     <!-- Attack / Defence / Discipline stats grid -->
@@ -2087,7 +2094,54 @@ function getUserDashboard(forceRefresh) {
     try {
       if (squadRaw && squadRaw.length) {
         savedSquad = squadRaw.map(function(s) {
-          var full = (PSL_ROSTER || []).find(function(p) { return p.id === s.id; });
+          var full = null;
+
+          // Tier 1: exact PSL_ROSTER integer id match (squad saved from PSL_ROSTER player)
+          if (typeof s.id === 'number' || (typeof s.id === 'string' && /^\d+$/.test(s.id))) {
+            full = (PSL_ROSTER || []).find(function(p) { return p.id === parseInt(s.id, 10); });
+          }
+
+          // Tier 2: DB UUID match — try ST.allPlayers which has the UUID ids from DB
+          if (!full && ST.allPlayers && ST.allPlayers.length) {
+            full = ST.allPlayers.find(function(p) { return p.id === s.id; });
+            // If found in allPlayers, also check if it has a psl_roster_id and prefer roster version
+            if (full && full.psl_roster_id) {
+              var rosterVer = (PSL_ROSTER || []).find(function(p) { return p.id === full.psl_roster_id; });
+              if (rosterVer) full = rosterVer;
+            }
+          }
+
+          // Tier 3: psl_roster_id field match (DB player with roster link)
+          if (!full && s.psl_roster_id) {
+            full = (PSL_ROSTER || []).find(function(p) { return p.id === parseInt(s.psl_roster_id, 10); });
+          }
+
+          // Tier 4: name + position fuzzy match (last resort for UUID-saved squads)
+          if (!full && s.name && s.position) {
+            var normSave = (s.name || '').toLowerCase().replace(/[^a-z]/g,'');
+            full = (PSL_ROSTER || []).find(function(p) {
+              return p.position === s.position &&
+                     (p.display_name || '').toLowerCase().replace(/[^a-z]/g,'').includes(normSave.slice(0,6));
+            });
+            // Also try allPlayers name match
+            if (!full && ST.allPlayers && ST.allPlayers.length) {
+              full = ST.allPlayers.find(function(p) {
+                return p.position === s.position &&
+                       (p.display_name || '').toLowerCase().replace(/[^a-z]/g,'').includes(normSave.slice(0,6));
+              });
+            }
+          }
+
+          // Tier 5: reconstruct minimal player object from saved squad data
+          if (!full && s.id && s.position) {
+            full = {
+              id: s.id, display_name: s.name || 'Player', position: s.position,
+              club: s.club || '', price: s.price || 5.0, total_points: 0,
+              goals: 0, assists: 0, apps: 0, clean_sheets: 0, yellow_cards: 0, red_cards: 0,
+              clubs: { name: s.club || '', short_name: s.club || '' }
+            };
+          }
+
           if (!full) return null;
           return Object.assign({}, full, {
             onBench:    s.onBench    || false,
@@ -3359,7 +3413,7 @@ function openNewsPost(postOrIdx) {
   var overlay = (function(){
     var el = document.createElement('div');
     el.id = 'news-overlay';
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9600;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
     el.onclick = function(e){ if(e.target===el) closeNewsOverlay(); };
     document.body.appendChild(el);
     return el;
@@ -5335,6 +5389,51 @@ function openClubProfile(teamName) {
     });
   });
   document.getElementById('cp-squad').innerHTML = squadHtml;
+
+  // ── Next 5 upcoming fixtures ────────────────────────────────────────
+  var _allNS   = (window.REAL_FIXTURES && REAL_FIXTURES.NS) || [];
+  var _next5   = _allNS.filter(function(f){ return f.home===teamName||f.away===teamName; }).slice(0,5);
+  var _fdrClr  = function(opp){ var t=REAL_TABLE.find(function(x){return x.team===opp;}); var pos=t?(REAL_TABLE.indexOf(t)+1):8; return pos<=3?'#E0294F':pos<=6?'#e8732a':pos<=10?'#F0B840':pos<=13?'#88c541':'#22A05A'; };
+  var _n5el    = document.getElementById('cp-next5');
+  if (_n5el) {
+    _n5el.innerHTML = _next5.length ? _next5.map(function(f){
+      var isH=f.home===teamName, opp=isH?f.away:f.home;
+      var oLogo=f[isH?'away_logo':'home_logo']||getTeamLogo(opp);
+      var ds=f.kickoff_at||f.date||'', dl=ds?new Date(ds).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}):'--';
+      var tl=ds?new Date(ds).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):'';
+      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.55rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">'+
+        '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;width:22px;text-align:center;color:'+(isH?'#22A05A':'#9BAAB8')+'">'+(isH?'H':'A')+'</span>'+
+        (oLogo?'<img src="'+oLogo+'" style="width:24px;height:24px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">':'<div style="width:24px"></div>')+
+        '<span style="flex:1;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">'+opp+'</span>'+
+        '<span style="font-size:.68rem;color:rgba(255,255,255,.4)">'+dl+'</span>'+
+        (tl?'<span style="font-size:.68rem;color:rgba(255,255,255,.3)">'+tl+'</span>':'')+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+_fdrClr(opp)+';flex-shrink:0"></div>'+
+      '</div>';
+    }).join('') : '<div style="color:rgba(255,255,255,.3);font-size:.8rem;padding:.3rem 0">No upcoming fixtures loaded yet</div>';
+  }
+
+  // ── Recent Results (last 5 FT) ───────────────────────────────────────
+  var _allFT   = (window.REAL_FIXTURES && REAL_FIXTURES.FT) || [];
+  var _res5    = _allFT.filter(function(f){ return f.home===teamName||f.away===teamName; }).slice(-5).reverse();
+  var _r5el    = document.getElementById('cp-results5');
+  if (_r5el) {
+    _r5el.innerHTML = _res5.length ? _res5.map(function(f){
+      var isH=f.home===teamName, opp=isH?f.away:f.home;
+      var oLogo=f[isH?'away_logo':'home_logo']||getTeamLogo(opp);
+      var myG=isH?(f.hg!==undefined?f.hg:f.home_score):(f.ag!==undefined?f.ag:f.away_score);
+      var opG=isH?(f.ag!==undefined?f.ag:f.away_score):(f.hg!==undefined?f.hg:f.home_score);
+      var res=myG>opG?'W':myG<opG?'L':'D', rc=res==='W'?'#22A05A':res==='L'?'#E0294F':'#F0B840';
+      var ds=f.kickoff_at||f.date||'', dl=ds?new Date(ds).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}):'';
+      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.55rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">'+
+        '<div style="width:22px;height:22px;border-radius:4px;background:'+rc+';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.72rem;font-weight:900;color:#fff;flex-shrink:0">'+res+'</div>'+
+        (oLogo?'<img src="'+oLogo+'" style="width:24px;height:24px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">':'<div style="width:24px"></div>')+
+        '<span style="flex:1;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">'+opp+'</span>'+
+        '<span style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff">'+myG+' - '+opG+'</span>'+
+        (dl?'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+dl+'</span>':'')+
+      '</div>';
+    }).join('') : '<div style="color:rgba(255,255,255,.3);font-size:.8rem;padding:.3rem 0">No recent results loaded yet</div>';
+  }
+
 
   // Show modal
   modal.style.display = 'block';
