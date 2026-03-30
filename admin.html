@@ -593,6 +593,7 @@
     <button class="tab-btn" onclick="switchTab('users')">Users</button>
     <button class="tab-btn" onclick="switchTab('announcements')">Announcements</button>
     <button class="tab-btn" onclick="switchTab('news')">📰 News</button>
+    <button class="tab-btn" onclick="switchTab('squad-import')" style="color:#f59e0b">⬇ Squad Import</button>
   </div>
 
   <main>
@@ -1095,6 +1096,75 @@
       </div>
 
     </div><!-- end tab-news -->
+
+    <!-- ══════════════════ SQUAD IMPORT TAB ══════════════════ -->
+    <div id="tab-squad-import" class="tab-page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:#f59e0b"></span>PSL Squad Import</div>
+          <div style="font-size:12px;color:var(--muted)">Fetch all registered PSL players from API-Football · approve new ones to add to your roster</div>
+        </div>
+        <div class="card-body">
+
+          <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,.75);line-height:1.7">
+            <strong style="color:#f59e0b">How this works:</strong><br>
+            1. Click <strong>Fetch All Squads</strong> — pulls every registered player from API-Football for all 16 PSL clubs.<br>
+            2. Players already in your roster show in <span style="color:#22c55e;font-weight:700">green ✓ Known</span>. New players not yet in your roster show in <span style="color:#f59e0b;font-weight:700">amber + New</span>.<br>
+            3. For each new player — verify position, set price, click <strong>Approve</strong> to add them to the DB.<br>
+            4. Or click <strong>Approve All New</strong> to add everyone at once with default prices.
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <select id="si-club-filter" style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px">
+              <option value="">All 16 clubs</option>
+              <option>Orlando Pirates</option><option>Mamelodi Sundowns</option>
+              <option>AmaZulu FC</option><option>Kaizer Chiefs</option>
+              <option>Durban City</option><option>Sekhukhune United</option>
+              <option>Polokwane City</option><option>Golden Arrows</option>
+              <option>Stellenbosch FC</option><option>Siwelele FC</option>
+              <option>TS Galaxy</option><option>Richards Bay</option>
+              <option>Chippa United</option><option>Marumo Gallants FC</option>
+              <option>Magesi FC</option><option>Orbit College FC</option>
+            </select>
+            <button class="btn btn-amber" id="si-fetch-btn" onclick="fetchSquads()" style="padding:8px 20px;font-weight:700;font-size:13px">
+              ⬇ Fetch All Squads
+            </button>
+            <button class="btn btn-green" onclick="approveAllNew()" id="si-approve-all-btn" style="padding:8px 20px;display:none">
+              ✓ Approve All New
+            </button>
+            <button class="btn btn-ghost" onclick="toggleNewOnly()" id="si-filter-btn" style="padding:8px 14px;display:none">
+              Show New Only
+            </button>
+          </div>
+
+          <div id="si-status" class="status-msg" style="margin-bottom:10px"></div>
+
+          <div id="si-summary" style="display:none;margin-bottom:16px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:10px 16px;text-align:center;min-width:100px">
+                <div style="font-size:1.5rem;font-weight:900;color:#22c55e" id="si-known-count">0</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Already in roster</div>
+              </div>
+              <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 16px;text-align:center;min-width:100px">
+                <div style="font-size:1.5rem;font-weight:900;color:#f59e0b" id="si-new-count">0</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">New players</div>
+              </div>
+              <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 16px;text-align:center;min-width:100px">
+                <div style="font-size:1.5rem;font-weight:900;color:#ef4444" id="si-dupe-count">0</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Dupes removed</div>
+              </div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 16px;text-align:center;min-width:100px">
+                <div style="font-size:1.5rem;font-weight:900;color:#fff" id="si-total-count">0</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Total unique</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="si-results" style="overflow-x:auto"></div>
+
+        </div>
+      </div>
+    </div>
 
   </main>
 </div>
@@ -2205,6 +2275,249 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     } else {
       showStatus('bulk-stats-status', 'ok', '✓ ' + saved + ' players updated successfully');
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // SQUAD IMPORT — Fetch PSL squads from API-Football, approve new players
+  // ══════════════════════════════════════════════════════════════════
+  let siData       = null;   // last fetch result
+  let siShowNewOnly = false; // filter toggle
+  let siApproved   = new Set(); // api_player_ids already approved this session
+
+  async function fetchSquads() {
+    const btn  = document.getElementById('si-fetch-btn');
+    const stat = document.getElementById('si-status');
+    const club = document.getElementById('si-club-filter').value;
+
+    btn.disabled = true;
+    btn.textContent = 'Fetching... (may take 30s)';
+    stat.textContent = 'Calling API-Football for all PSL squad data...';
+    stat.className = 'status-msg info';
+
+    try {
+      let url = '/api/squad-import?admin_key=' + ADMIN_PASSWORD;
+      if (club) url += '&club=' + encodeURIComponent(club);
+
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok || data.error) throw new Error(data.error || 'Fetch failed');
+
+      siData = data;
+      renderSquadImport(data);
+
+    } catch(e) {
+      stat.textContent = 'Error: ' + e.message;
+      stat.className = 'status-msg error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬇ Fetch All Squads';
+    }
+  }
+
+  function renderSquadImport(data) {
+    const stat    = document.getElementById('si-status');
+    const summary = document.getElementById('si-summary');
+    const results = document.getElementById('si-results');
+    const approveBtn = document.getElementById('si-approve-all-btn');
+    const filterBtn  = document.getElementById('si-filter-btn');
+
+    // Update summary tiles
+    document.getElementById('si-known-count').textContent = data.known_count  || 0;
+    document.getElementById('si-new-count').textContent   = data.new_count    || 0;
+    document.getElementById('si-dupe-count').textContent  = data.dupe_count   || 0;
+    document.getElementById('si-total-count').textContent = data.deduped_total|| 0;
+    summary.style.display = 'block';
+
+    if (data.new_count > 0) {
+      approveBtn.style.display = 'inline-flex';
+      filterBtn.style.display  = 'inline-flex';
+    }
+
+    stat.textContent = 'Fetched ' + (data.deduped_total||0) + ' unique players · '
+      + (data.new_count||0) + ' new · ' + (data.known_count||0) + ' already in roster';
+    stat.className = 'status-msg ok';
+
+    renderSquadTable(data);
+  }
+
+  function renderSquadTable(data) {
+    const results = document.getElementById('si-results');
+    const all = [...(data.new_players||[]), ...(data.known||[])];
+
+    // Sort: new first, then by team, then position order
+    const posOrder = {GK:0,DEF:1,MID:2,FWD:3};
+    all.sort((a,b) => {
+      if (a.status==='new' && b.status!=='new') return -1;
+      if (a.status!=='new' && b.status==='new') return  1;
+      if (a.team !== b.team) return a.team.localeCompare(b.team);
+      return (posOrder[a.position]||9) - (posOrder[b.position]||9);
+    });
+
+    const filtered = siShowNewOnly ? all.filter(p => p.status === 'new') : all;
+
+    if (!filtered.length) {
+      results.innerHTML = '<div style="color:var(--muted);padding:12px">No players to show.</div>';
+      return;
+    }
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">'
+      + '<thead><tr style="background:var(--bg3)">'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:left">Status</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:left">Player Name (API-Football)</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:left">Club</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:center">Pos</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:center">Price</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:center">API ID</th>'
+      + '<th style="padding:8px 6px;color:var(--muted);text-align:center">Action</th>'
+      + '</tr></thead><tbody>';
+
+    filtered.forEach(function(p) {
+      const isNew      = p.status === 'new';
+      const isApproved = siApproved.has(p.api_player_id);
+      const rowBg      = isApproved ? 'rgba(34,197,94,.05)'
+                       : isNew      ? 'rgba(245,158,11,.04)' : '';
+      const badge      = isApproved
+        ? '<span style="background:#22c55e;color:#000;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700">✓ Added</span>'
+        : isNew
+        ? '<span style="background:rgba(245,158,11,.2);color:#f59e0b;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700">+ New</span>'
+        : '<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700">✓ Known</span>';
+
+      const posOpts = ['GK','DEF','MID','FWD'].map(po =>
+        '<option value="'+po+'"' + (p.position===po?' selected':'') + '>'+po+'</option>'
+      ).join('');
+
+      html += '<tr style="border-bottom:1px solid var(--border);background:'+rowBg+'" id="si-row-'+p.api_player_id+'">'
+        + '<td style="padding:6px 6px">' + badge + '</td>'
+        + '<td style="padding:6px">'
+        +   '<div style="font-weight:700;color:#fff">' + (p.display_name||'') + '</div>'
+        +   '<div style="font-size:10px;color:var(--muted)">' + (p.api_football_name||'') + ' · API-ID: ' + (p.api_player_id||'') + '</div>'
+        +   (p.note ? '<div style="font-size:10px;color:#f59e0b">⚠ ' + p.note + '</div>' : '')
+        + '</td>'
+        + '<td style="padding:6px;color:var(--muted);font-size:12px">' + (p.team||'') + '</td>'
+        + '<td style="padding:4px;text-align:center">'
+        +   '<select id="si-pos-'+p.api_player_id+'" style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 4px;font-size:11px">'
+        +   posOpts + '</select>'
+        + '</td>'
+        + '<td style="padding:4px;text-align:center">'
+        +   '<input type="number" id="si-price-'+p.api_player_id+'" value="'+(p.price||5.5)+'" min="3.5" max="15" step="0.5" style="width:55px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 4px;font-size:11px;text-align:center">'
+        + '</td>'
+        + '<td style="padding:6px;text-align:center;color:var(--muted);font-size:11px">' + (p.suggested_psl_id||p.psl_roster_id||'—') + '</td>'
+        + '<td style="padding:4px;text-align:center">'
+        + (isNew && !isApproved
+            ? '<button onclick="approvePlayer('+JSON.stringify(JSON.stringify(p))+')" style="background:#f59e0b;border:none;border-radius:5px;color:#000;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer">Approve</button>'
+            : isApproved
+            ? '<span style="color:#22c55e;font-size:11px">Added ✓</span>'
+            : '<span style="color:var(--muted);font-size:11px">—</span>'
+          )
+        + '</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    results.innerHTML = html;
+  }
+
+  function toggleNewOnly() {
+    siShowNewOnly = !siShowNewOnly;
+    const btn = document.getElementById('si-filter-btn');
+    btn.textContent = siShowNewOnly ? 'Show All Players' : 'Show New Only';
+    if (siData) renderSquadTable(siData);
+  }
+
+  async function approvePlayer(jsonStr) {
+    const p = JSON.parse(jsonStr);
+    const pos   = document.getElementById('si-pos-'+p.api_player_id)?.value   || p.position;
+    const price = parseFloat(document.getElementById('si-price-'+p.api_player_id)?.value) || p.price;
+
+    // Generate next psl_roster_id: max existing + 1
+    let pslId = p.suggested_psl_id || 20001;
+
+    const payload = {
+      display_name:     p.display_name,
+      api_football_name: p.api_football_name,
+      team:             p.team,
+      position:         pos,
+      psl_roster_id:    pslId,
+      api_player_id:    p.api_player_id,
+      price,
+      is_available:     true,
+      goals: 0, assists: 0, apps: 0, clean_sheets: 0,
+      yellow_cards: 0, red_cards: 0, saves: 0,
+      total_points: 0, gw_points: 0,
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      await sbWrite('upsert', 'players', [payload], null, { onConflict: 'psl_roster_id' });
+      siApproved.add(p.api_player_id);
+
+      const row = document.getElementById('si-row-'+p.api_player_id);
+      if (row) {
+        row.style.background = 'rgba(34,197,94,.08)';
+        const cells = row.querySelectorAll('td');
+        if (cells[0]) cells[0].innerHTML = '<span style="background:#22c55e;color:#000;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700">✓ Added</span>';
+        if (cells[6]) cells[6].innerHTML = '<span style="color:#22c55e;font-size:11px">Added ✓</span>';
+      }
+
+      // Update counts
+      const newCountEl = document.getElementById('si-new-count');
+      const knownCountEl = document.getElementById('si-known-count');
+      if (newCountEl) newCountEl.textContent = Math.max(0, parseInt(newCountEl.textContent||0) - 1);
+      if (knownCountEl) knownCountEl.textContent = parseInt(knownCountEl.textContent||0) + 1;
+
+      showStatus('si-status', 'ok', '✓ ' + p.display_name + ' added to roster (ID ' + pslId + ')');
+    } catch(e) {
+      showStatus('si-status', 'error', 'Failed to add ' + p.display_name + ': ' + e.message);
+    }
+  }
+
+  async function approveAllNew() {
+    if (!siData || !siData.new_players || !siData.new_players.length) {
+      showStatus('si-status', 'error', 'No new players to approve. Fetch squads first.');
+      return;
+    }
+
+    const toAdd = siData.new_players.filter(p => !siApproved.has(p.api_player_id));
+    if (!toAdd.length) { showStatus('si-status', 'ok', 'All new players already approved.'); return; }
+
+    showStatus('si-status', 'info', 'Adding ' + toAdd.length + ' players...');
+
+    const payloads = toAdd.map(p => {
+      const pos   = document.getElementById('si-pos-'+p.api_player_id)?.value   || p.position;
+      const price = parseFloat(document.getElementById('si-price-'+p.api_player_id)?.value) || p.price;
+      return {
+        display_name:      p.display_name,
+        api_football_name: p.api_football_name,
+        team:              p.team,
+        position:          pos,
+        psl_roster_id:     p.suggested_psl_id,
+        api_player_id:     p.api_player_id,
+        price,
+        is_available:      true,
+        goals: 0, assists: 0, apps: 0, clean_sheets: 0,
+        yellow_cards: 0, red_cards: 0, saves: 0,
+        total_points: 0, gw_points: 0,
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    // Batch in chunks of 50
+    let added = 0;
+    for (let i = 0; i < payloads.length; i += 50) {
+      const chunk = payloads.slice(i, i + 50);
+      try {
+        await sbWrite('upsert', 'players', chunk, null, { onConflict: 'psl_roster_id' });
+        chunk.forEach(p => siApproved.add(p.api_player_id));
+        added += chunk.length;
+      } catch(e) {
+        showStatus('si-status', 'error', 'Batch error: ' + e.message);
+        return;
+      }
+    }
+
+    showStatus('si-status', 'ok', '✓ Added ' + added + ' new players to roster. Run ESPN Sync to populate their stats.');
+    if (siData) renderSquadTable(siData);
   }
 </script>
 </body>
