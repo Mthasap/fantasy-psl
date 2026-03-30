@@ -848,6 +848,39 @@
           </div>
         </div>
 
+        <!-- ══ BULK STATS EDITOR ══ -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot dot-green"></span>Bulk Stats Editor</div>
+            <div style="font-size:12px;color:var(--muted)">Edit all players at once — filter by club or position</div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <select id="bulk-club-filter" onchange="loadBulkStats()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px">
+                <option value="">All Clubs</option>
+                <option>Orlando Pirates</option><option>Mamelodi Sundowns</option>
+                <option>AmaZulu FC</option><option>Kaizer Chiefs</option>
+                <option>Durban City</option><option>Sekhukhune United</option>
+                <option>Polokwane City</option><option>Golden Arrows</option>
+                <option>Stellenbosch FC</option><option>Siwelele FC</option>
+                <option>TS Galaxy</option><option>Richards Bay</option>
+                <option>Chippa United</option><option>Marumo Gallants FC</option>
+                <option>Magesi FC</option><option>Orbit College</option>
+              </select>
+              <select id="bulk-pos-filter" onchange="loadBulkStats()" style="flex:1;min-width:100px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px">
+                <option value="">All Positions</option>
+                <option>GK</option><option>DEF</option><option>MID</option><option>FWD</option>
+              </select>
+              <button class="btn btn-green" onclick="loadBulkStats()" style="padding:7px 14px;font-size:12px">Load Players</button>
+              <button class="btn btn-blue" onclick="saveAllBulkStats()" style="padding:7px 14px;font-size:12px">💾 Save All Changes</button>
+            </div>
+            <div id="bulk-stats-status" class="status-msg" style="margin-bottom:8px"></div>
+            <div id="bulk-stats-wrap" style="overflow-x:auto">
+              <div style="color:var(--muted);font-size:13px;padding:12px 0">Select a club or position above and click Load Players.</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -868,10 +901,6 @@
               <button class="btn btn-blue btn-full"  onclick="runCron('fixtures')">Sync Fixtures</button>
               <button class="btn btn-amber btn-full" onclick="runCron('results')">Sync Results</button>
               <button class="btn btn-ghost btn-full" onclick="runCron('points')">Calc Points</button>
-              <button class="btn btn-full" onclick="syncESPN()" style="background:linear-gradient(135deg,#c8001e,#8b0010);color:#fff;border:none" title="Fetch fresh stats from ESPN Africa">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                ESPN Sync
-              </button>
             </div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -1638,36 +1667,6 @@
     btn.innerHTML = '▶ Run Full Automation Now';
   }
 
-  async function syncESPN(force = true) {
-    const logEl  = document.getElementById('cron-log');
-    const status = document.getElementById('cron-status');
-    showStatus('cron-status', 'info', '⚙ Fetching stats from ESPN Africa...');
-    if (logEl) { logEl.style.display = 'none'; logEl.textContent = ''; }
-    try {
-      const res  = await fetch('/api/espn-sync?admin_key=' + ADMIN_PASSWORD + (force ? '&force=true' : ''), { method: 'GET' });
-      const data = await res.json();
-      if (data.error) {
-        showStatus('cron-status', 'error', '✗ ESPN Sync error: ' + data.error);
-      } else if (data.skipped) {
-        showStatus('cron-status', 'info', '⏭ Skipped: ' + (data.log && data.log[0] || 'synced recently'));
-      } else {
-        showStatus('cron-status', 'ok',
-          '✓ ESPN Sync complete | Players: ' + (data.players_synced||0) +
-          ' | Profiles: ' + (data.profiles_updated||0) +
-          (data.top_scorer ? ' | Top scorer: ' + data.top_scorer.name + ' (' + data.top_scorer.pts + 'pts)' : '')
-        );
-      }
-      if (data.log && data.log.length) {
-        if (logEl) {
-          logEl.style.display = 'block';
-          logEl.innerHTML = data.log.map(line => escHtml(line)).join('\n');
-        }
-      }
-    } catch(e) {
-      showStatus('cron-status', 'error', '✗ ESPN Sync failed: ' + e.message);
-    }
-  }
-
   async function clearCache(key) {
     try {
       await sbWrite('delete', 'api_cache', null, { key: key });
@@ -2078,6 +2077,135 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     }
   }
 
+
+  // ══════════════════════════════════════════════════════════════════
+  // BULK STATS EDITOR
+  // ══════════════════════════════════════════════════════════════════
+  let bulkPlayers = [];
+
+  async function loadBulkStats() {
+    const club = document.getElementById('bulk-club-filter').value;
+    const pos  = document.getElementById('bulk-pos-filter').value;
+    const wrap = document.getElementById('bulk-stats-wrap');
+    wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Loading…</div>';
+
+    try {
+      let query = 'select=id,display_name,position,team,goals,assists,clean_sheets,yellow_cards,red_cards,apps,total_points&order=display_name.asc&limit=200';
+      if (club) query += '&team=eq.' + encodeURIComponent(club);
+      if (pos)  query += '&position=eq.' + encodeURIComponent(pos);
+      bulkPlayers = await sb('GET', 'players', null, query);
+
+      if (!bulkPlayers.length) {
+        wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">No players found</div>';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:680px">
+          <thead>
+            <tr style="background:var(--bg3);text-align:left">
+              <th style="padding:8px 6px;color:var(--muted);font-weight:600;min-width:160px">Player</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">POS</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Apps</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#22c55e">G</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#60a5fa">A</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#a78bfa">CS</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#fbbf24">YC</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#f87171">RC</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Pts</th>
+            </tr>
+          </thead>
+          <tbody id="bulk-tbody">
+            ${bulkPlayers.map((p, i) => `
+              <tr style="border-bottom:1px solid var(--border)" data-idx="${i}">
+                <td style="padding:6px">${p.display_name}</td>
+                <td style="padding:6px 4px;text-align:center;color:var(--muted)">${p.position||''}</td>
+                <td style="padding:4px"><input type="number" min="0" max="40" value="${p.apps||0}" data-field="apps" data-id="${p.id}" style="width:46px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 4px;font-size:12px" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" max="60" value="${p.goals||0}" data-field="goals" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#22c55e;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" max="60" value="${p.assists||0}" data-field="assists" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#60a5fa;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" max="40" value="${p.clean_sheets||0}" data-field="cs" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#a78bfa;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" max="20" value="${p.yellow_cards||0}" data-field="yc" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#fbbf24;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" max="5" value="${p.red_cards||0}" data-field="rc" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#f87171;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:6px 4px;text-align:center;color:var(--amber);font-weight:700;font-size:13px" id="bulk-pts-${p.id}">${p.total_points||0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+
+      showStatus('bulk-stats-status', 'info', bulkPlayers.length + ' players loaded — edit values then click Save All Changes');
+    } catch(e) {
+      wrap.innerHTML = '<div style="color:var(--red);font-size:13px;padding:8px">Error: ' + e.message + '</div>';
+    }
+  }
+
+  function markBulkDirty(input) {
+    input.style.borderColor = '#f59e0b';
+    input.style.background  = 'rgba(245,158,11,.1)';
+    // Live-recalc points for the row
+    const id  = input.getAttribute('data-id');
+    const row = input.closest('tr');
+    if (!row) return;
+    const get = (field) => parseInt(row.querySelector('[data-field="' + field + '"]').value) || 0;
+    const p   = bulkPlayers.find(x => String(x.id) === String(id));
+    const pos = p ? (p.position||'MID') : 'MID';
+    const gPts = (pos==='GK'||pos==='DEF') ? 6 : pos==='MID' ? 5 : 4;
+    const csPts = (pos==='GK'||pos==='DEF') ? 4 : pos==='MID' ? 1 : 0;
+    const pts = get('apps')*2 + get('goals')*gPts + get('assists')*3 +
+                get('cs')*csPts - get('yc') - get('rc')*3;
+    const ptsEl = document.getElementById('bulk-pts-' + id);
+    if (ptsEl) { ptsEl.textContent = Math.max(0, pts); ptsEl.style.color = '#f59e0b'; }
+  }
+
+  async function saveAllBulkStats() {
+    const inputs = document.querySelectorAll('#bulk-tbody input[data-id]');
+    if (!inputs.length) { showStatus('bulk-stats-status', 'error', 'Load players first'); return; }
+
+    showStatus('bulk-stats-status', 'info', 'Saving…');
+
+    // Group inputs by player ID
+    const byId = {};
+    inputs.forEach(inp => {
+      const id    = inp.getAttribute('data-id');
+      const field = inp.getAttribute('data-field');
+      if (!byId[id]) {
+        const p = bulkPlayers.find(x => String(x.id) === String(id));
+        byId[id] = { pos: p ? (p.position||'MID') : 'MID' };
+      }
+      byId[id][field] = parseInt(inp.value) || 0;
+    });
+
+    let saved = 0, failed = 0;
+    for (const id in byId) {
+      const d   = byId[id];
+      const pos = d.pos;
+      const gPts  = (pos==='GK'||pos==='DEF') ? 6 : pos==='MID' ? 5 : 4;
+      const csPts = (pos==='GK'||pos==='DEF') ? 4 : pos==='MID' ? 1 : 0;
+      const pts   = Math.max(0, (d.apps||0)*2 + (d.goals||0)*gPts + (d.assists||0)*3 +
+                    (d.cs||0)*csPts - (d.yc||0) - (d.rc||0)*3);
+      try {
+        await sbWrite('update', 'players', {
+          goals: d.goals||0, assists: d.assists||0, clean_sheets: d.cs||0,
+          yellow_cards: d.yc||0, red_cards: d.rc||0, apps: d.apps||0,
+          total_points: pts
+        }, { id: parseInt(id) });
+        saved++;
+      } catch(e) { failed++; console.error('bulk save error', id, e.message); }
+    }
+
+    // Reset dirty styles
+    document.querySelectorAll('#bulk-tbody input').forEach(inp => {
+      inp.style.borderColor = ''; inp.style.background = '';
+    });
+    document.querySelectorAll('#bulk-tbody td[id^="bulk-pts-"]').forEach(el => {
+      el.style.color = '';
+    });
+
+    if (failed) {
+      showStatus('bulk-stats-status', 'error', 'Saved ' + saved + ' | Failed ' + failed + ' — check console');
+    } else {
+      showStatus('bulk-stats-status', 'ok', '✓ ' + saved + ' players updated successfully');
+    }
+  }
 </script>
 </body>
 </html>
