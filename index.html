@@ -1794,59 +1794,32 @@ function renderPlayerList() {
     var inSquad  = !!pickedIds[p.id];
     var name     = playerName(p);
     var club     = p.clubs ? p.clubs.name : (p.club || '--');
+    var icon     = posIcon(p.position);
     var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
+    var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
+
     var btnStyle = inSquad ? 'background:#1A6B42;border-color:#1A6B42' : '';
-    var btnLabel = inSquad ? '\u2713' : '+';
+    var btnLabel = inSquad ? '✓' : '+';
     var priceChange = p.price_change || 0;
     var pcHtml = priceChange > 0
-      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">\u25b2</span>'
+      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">▲</span>'
       : priceChange < 0
-      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">\u25bc</span>'
+      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">▼</span>'
       : '';
     var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
-
-    // Avatar: player photo > team logo > position letter (EPL Fantasy style)
-    var teamLogo    = getTeamLogo(club);
-    var playerPhoto = p.photo || null;
-    var posColors   = {GK:'#DBA94A',DEF:'#22895A',MID:'#E05C7A',FWD:'#6eaadd'};
-    var avatarInner, avatarBg;
-    if (playerPhoto) {
-      avatarBg = '';
-      avatarInner =
-        '<img src="' + playerPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" ' +
-          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-        '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;' +
-          'font-family:var(--font-ui);font-size:.65rem;font-weight:800;color:' + (posColors[p.position]||'#fff') + '">' +
-          (p.position||'?') + '</div>' +
-        (teamLogo ? '<img src="' + teamLogo + '" style="position:absolute;bottom:-2px;right:-2px;width:15px;height:15px;' +
-          'object-fit:contain;background:#0D1017;border-radius:50%;border:1px solid rgba(255,255,255,.15)" ' +
-          'onerror="this.hidden=true">' : '');
-    } else if (teamLogo) {
-      avatarBg = 'background:rgba(255,255,255,.04)';
-      avatarInner = '<img src="' + teamLogo + '" style="width:22px;height:22px;object-fit:contain" onerror="this.hidden=true">';
-    } else {
-      avatarBg = 'background:rgba(255,255,255,.06)';
-      avatarInner = '<div style="font-family:var(--font-ui);font-size:.7rem;font-weight:800;color:' +
-        (posColors[p.position]||'rgba(255,255,255,.5)') + '">' + (p.position||'?') + '</div>';
-    }
-
+    var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
     return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
-      '<div class="pli-avatar" style="' + avatarBg + '">' + avatarInner + '</div>' +
+      '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
       '<div class="pli-info">' +
         '<div class="pli-name">' + name + ownership + '</div>' +
         '<div class="pli-club">' + club + '</div>' +
       '</div>' +
       '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
       '<span class="pli-price">R' + (p.price || 0) + 'M' + pcHtml + '</span>' +
-      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" ' +
-        'style="background:none;border:none;cursor:pointer;padding:0 4px;color:' +
-        (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
-        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') +
-          '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px">' +
-          '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 4px;color:' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
+        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
       '</button>' +
-      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" ' +
-        'onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
+      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
         btnLabel +
       '</button>' +
     '</div>';
@@ -2085,6 +2058,10 @@ function getUserDashboard(forceRefresh) {
   if (rateLimited()) return;
   if (!forceRefresh && cacheValid('dashboard')) { applyDashboard(CACHE.dashboard.data); return; }
 
+  // Ensure profile row exists before loading (prevents silent save failures)
+  db.from('profiles').upsert({ id: ST.user.id }, { onConflict: 'id', ignoreDuplicates: true })
+    .then(function(){}).catch(function(){});
+
   Promise.all([
     db.from('profiles').select('*').eq('id', ST.user.id).single(),
     db.from('league_members').select('leagues(*)').eq('user_id', ST.user.id).limit(20)
@@ -2110,18 +2087,7 @@ function getUserDashboard(forceRefresh) {
     try {
       if (squadRaw && squadRaw.length) {
         savedSquad = squadRaw.map(function(s) {
-          // Match from PSL_ROSTER first (always available)
           var full = (PSL_ROSTER || []).find(function(p) { return p.id === s.id; });
-          // Fallback: match from allPlayers (DB players with psl_roster_id mapped as .id)
-          if (!full && ST.allPlayers && ST.allPlayers.length) {
-            full = ST.allPlayers.find(function(p) { return p.id === s.id || p.psl_roster_id === s.id; });
-          }
-          // Last fallback: reconstruct from squad_data itself (has name, position, club, price)
-          if (!full && s.id && s.position) {
-            full = { id: s.id, display_name: s.name || 'Player', position: s.position,
-                     club: s.club || '', price: s.price || 5.0, total_points: 0,
-                     clubs: { name: s.club || '', short_name: s.club || '' } };
-          }
           if (!full) return null;
           return Object.assign({}, full, {
             onBench:    s.onBench    || false,
@@ -2157,6 +2123,9 @@ function getUserDashboard(forceRefresh) {
 
 function applyDashboard(d) {
   ST.squad = d.squad || [];
+  // Always clear pending transfers on load — they are per-session only
+  ST.pendingTransfers = [];
+  ST.xferOut = null;
   renderPitch(); renderBudget(); renderPlayerList();
   if (d.profile) CACHE._profile = d.profile;
   if (d.leagues) CACHE.myLeagues = { data: d.leagues, ts: Date.now() };
@@ -2426,14 +2395,17 @@ function saveSquad() {
     updated_at:        new Date().toISOString()
   };
 
+  // Always upsert — plain .update() silently saves nothing if profile row is missing
+  var upsertPayload = Object.assign({ id: ST.user.id }, updatePayload);
   db.from('profiles')
-    .update(updatePayload)
-    .eq('id', ST.user.id)
+    .upsert(upsertPayload, { onConflict: 'id' })
     .then(function(res) {
       if (res.error) {
+        // Last resort: try insert (profile row truly missing)
         db.from('profiles')
-          .upsert(Object.assign({ id: ST.user.id }, updatePayload), { onConflict: 'id' })
-          .then(function(r2) { onSaveDone(r2.error || null); });
+          .insert(upsertPayload)
+          .then(function(r2) { onSaveDone(r2.error || null); })
+          .catch(function(e) { onSaveDone(e); });
       } else {
         onSaveDone(null);
       }
@@ -2599,35 +2571,11 @@ function renderPitch() {
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
       else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
       var bottomLabel = (typeof p.gwPoints !== 'undefined') ? p.gwPoints + ' pts' : (p.price ? 'R' + p.price + 'M' : '');
-      // Pitch card avatar: player photo > team logo > position icon
-      var pClub = p.clubs ? p.clubs.name : (p.club || '');
-      var pLogo = getTeamLogo(pClub);
-      var pPhoto = p.photo || null;
-      var pcAvatarContent;
-      if (pPhoto) {
-        pcAvatarContent =
-          '<img src="' + pPhoto + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" ' +
-            'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-          '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center">' +
-            (pLogo ? '<img src="' + pLogo + '" style="width:22px;height:22px;object-fit:contain">' : posIcon(pos)) +
-          '</div>' +
-          (p.isCaptain ? '<div class="cap-badge">C</div>' : '') +
-          (p.isVC      ? '<div class="vc-badge">V</div>'  : '');
-      } else if (pLogo) {
-        pcAvatarContent =
-          '<img src="' + pLogo + '" style="width:22px;height:22px;object-fit:contain" onerror="this.hidden=true">' +
-          (p.isCaptain ? '<div class="cap-badge">C</div>' : '') +
-          (p.isVC      ? '<div class="vc-badge">V</div>'  : '');
-      } else {
-        pcAvatarContent =
+      return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
+        '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
           posIcon(pos) +
           (p.isCaptain ? '<div class="cap-badge">C</div>' : '') +
-          (p.isVC      ? '<div class="vc-badge">V</div>'  : '');
-      }
-      var pcBg = pPhoto ? '' : (pLogo ? 'background:rgba(255,255,255,.06)' : '');
-      return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
-        '<div class="pc-shirt" style="position:relative;overflow:' + (pPhoto?'hidden':'visible') + ';' + outStyle + (pcBg?';'+pcBg:'') + '">' +
-          pcAvatarContent +
+          (p.isVC      ? '<div class="vc-badge">V</div>'  : '') +
         '</div>' +
         '<div class="pc-name">' + shortName + '</div>' +
         '<div class="pc-pts">' + bottomLabel + '</div>' +
@@ -2999,28 +2947,19 @@ function renderChipBar() {
   if (!bar) return;
   if (!ST.squad.length) { bar.innerHTML = ''; return; }
   bar.innerHTML = Object.keys(CHIP_INFO).map(function(key) {
-    var chip    = CHIP_INFO[key];
+    var chip = CHIP_INFO[key];
     var isActive = ST.activeChip === key;
     var isUsed   = ST.usedChips.indexOf(key) !== -1;
-    var bg     = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.06)';
+    var bg = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.06)';
     var border = isActive ? chip.color : isUsed ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.12)';
-    var color  = isActive ? '#fff' : isUsed ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.65)';
-    var label  = isActive ? chip.abbr + ' Active' : isUsed ? chip.abbr + ' Used' : chip.abbr;
-    return '<div style="display:inline-flex;align-items:center;gap:.25rem">' +
-      '<button onclick="' + (isUsed ? '' : 'activateChip(\'' + key + '\')') + '" ' +
-        'style="display:flex;align-items:center;gap:.3rem;background:' + bg + ';border:1px solid ' + border +
-        ';border-radius:20px;padding:.3rem .7rem;cursor:' + (isUsed?'default':'pointer') +
-        ';font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:' + color +
-        ';letter-spacing:.5px;transition:all .2s" title="' + chip.desc + '">' +
-        (isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
-        label +
-      '</button>' +
-      '<button onclick="event.stopPropagation();showChipInfo(\'' + key + '\')" ' +
-        'style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.12);border:none;' +
-        'color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.6rem;font-weight:900;' +
-        'cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
-        '-webkit-tap-highlight-color:transparent;line-height:1" title="Learn more">!</button>' +
-    '</div>';
+    var color = isActive ? '#fff' : isUsed ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.65)';
+    var label = isActive ? chip.abbr + ' Active' : isUsed ? chip.abbr + ' Used' : chip.abbr;
+    return '<button onclick="' + (isUsed ? '' : 'activateChip(\'' + key + '\')') + '" ' +
+      'style="display:flex;align-items:center;gap:.3rem;background:' + bg + ';border:1px solid ' + border + ';border-radius:20px;padding:.3rem .7rem;cursor:' + (isUsed?'default':'pointer') + ';font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:' + color + ';letter-spacing:.5px;transition:all .2s" ' +
+      'title="' + chip.desc + '">' +
+      (isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+      label +
+    '</button>';
   }).join('');
 }
 
@@ -3039,66 +2978,6 @@ function activateChip(key) {
   }
   renderChipBar();
   markUnsaved();
-}
-
-function showChipInfo(key) {
-  var CHIP_DETAILS = {
-    wc: { title:'Wildcard', color:'#B91C3A',
-          what:'Make unlimited free transfers in one gameweek.',
-          how:'Activate before the deadline. All transfers cost 0 points — no hits taken.',
-          tip:'Best used when your squad is badly hit by injuries or a blank gameweek.',
-          limit:'One per season. Once used, gone for the rest of the season.' },
-    tc: { title:'Triple Captain', color:'#DBA94A',
-          what:'Your captain scores 3× points instead of 2× for one gameweek.',
-          how:'Activate and set your captain normally. Their points are tripled automatically.',
-          tip:'Pick a gameweek when your captain has an easy fixture and is in form.',
-          limit:'One per season.' },
-    bb: { title:'Bench Boost', color:'#22895A',
-          what:'All 15 players in your squad score points — not just your starting 11.',
-          how:'Your 4 bench players also earn full points for that gameweek.',
-          tip:'Use it in a double gameweek where many bench players have fixtures.',
-          limit:'One per season.' },
-    fh: { title:'Free Hit', color:'#6eaadd',
-          what:'Make unlimited transfers for one gameweek — your squad reverts afterwards.',
-          how:'Build a completely different squad for one week. Your original squad is restored next GW.',
-          tip:'Perfect for a blank gameweek where most of your players have no fixture.',
-          limit:'One per season.' }
-  };
-  var d = CHIP_DETAILS[key]; if (!d) return;
-  var modal = document.getElementById('chip-info-modal') || (function() {
-    var m = document.createElement('div');
-    m.id = 'chip-info-modal';
-    m.style.cssText = 'display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center';
-    m.onclick = function(e) { if(e.target===m) closeChipInfo(); };
-    document.body.appendChild(m);
-    return m;
-  })();
-  modal.innerHTML =
-    '<div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem">' +
-      '<div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto .8rem"></div>' +
-      '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:1rem;text-align:center">' + d.title + '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:.7rem;margin-bottom:1.2rem">' +
-        '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:.8rem 1rem">' +
-          '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.3rem">What it does</div>' +
-          '<div style="font-size:.88rem;color:#fff;line-height:1.5">' + d.what + '</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:.8rem 1rem">' +
-          '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.3rem">How to use</div>' +
-          '<div style="font-size:.88rem;color:#fff;line-height:1.5">' + d.how + '</div>' +
-        '</div>' +
-        '<div style="background:rgba(219,169,74,.08);border:1px solid rgba(219,169,74,.2);border-radius:10px;padding:.8rem 1rem">' +
-          '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#DBA94A;margin-bottom:.3rem">Pro tip</div>' +
-          '<div style="font-size:.88rem;color:rgba(255,255,255,.85);line-height:1.5">' + d.tip + '</div>' +
-        '</div>' +
-        '<div style="font-size:.75rem;color:rgba(255,255,255,.35);padding:0 .2rem">' + d.limit + '</div>' +
-      '</div>' +
-      '<button onclick="closeChipInfo()" style="width:100%;background:' + d.color + ';border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.85rem;font-weight:700;padding:.8rem;cursor:pointer">Got it</button>' +
-    '</div>';
-  modal.style.display = 'flex';
-}
-function closeChipInfo() {
-  var m = document.getElementById('chip-info-modal');
-  if (m) m.style.display = 'none';
 }
 
 function renderTransferBadge() {
@@ -3474,7 +3353,10 @@ function openNewsPost(postOrIdx) {
   try { document.title = post.title + ' — Fantasy PSL'; } catch(e) {}
 
   // Build overlay
-  var overlay = document.getElementById('news-overlay') || (function(){
+  // Always remove stale overlay so CSS is never cached with wrong top value
+  var _oldOv = document.getElementById('news-overlay');
+  if (_oldOv) _oldOv.parentNode.removeChild(_oldOv);
+  var overlay = (function(){
     var el = document.createElement('div');
     el.id = 'news-overlay';
     el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
@@ -3488,10 +3370,17 @@ function openNewsPost(postOrIdx) {
   var readTime = post.body ? Math.max(1, Math.round(post.body.split(' ').length / 200)) + ' min read' : '';
 
   overlay.innerHTML =
-    // Back button bar — full safe area, prominent red button
-    '<div style="background:#0D1017;border-bottom:1px solid rgba(185,28,58,.2);padding:calc(.8rem + env(safe-area-inset-top,0px)) 1rem .8rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:10">' +
-      '<button onclick="closeNewsOverlay()" style="background:#B91C3A;border:none;border-radius:50%;width:42px;height:42px;min-width:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1.3rem;font-weight:700;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 12px rgba(185,28,58,.5)">&#8592;</button>' +
-      '<span style="font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:1px;text-transform:uppercase">PSL News</span>' +
+    // Back button bar — full screen from top:0, safe-area aware
+    '<div style="background:#0D1017;border-bottom:1px solid rgba(185,28,58,.25);' +
+      'padding-top:calc(.8rem + env(safe-area-inset-top,0px));padding-bottom:.8rem;padding-left:1rem;padding-right:1rem;' +
+      'display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:10;min-height:calc(56px + env(safe-area-inset-top,0px))">' +
+      '<button onclick="closeNewsOverlay()" ' +
+        'style="background:#B91C3A;border:none;border-radius:50%;width:42px;height:42px;min-width:42px;min-height:42px;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;' +
+        'font-size:1.3rem;font-weight:700;-webkit-tap-highlight-color:transparent;flex-shrink:0;' +
+        'box-shadow:0 2px 12px rgba(185,28,58,.6);touch-action:manipulation">&#8592;</button>' +
+      '<span style="font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:800;' +
+        'color:rgba(255,255,255,.7);letter-spacing:1px;text-transform:uppercase">PSL News</span>' +
     '</div>' +
     // Cover image
     (post.image_url ? '<img src="' + post.image_url + '" style="width:100%;max-height:260px;object-fit:cover;display:block">' : '') +
@@ -3505,22 +3394,28 @@ function openNewsPost(postOrIdx) {
       '<h1 style="font-family:var(--font-display,sans-serif);font-size:1.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem;color:#fff">' + post.title + '</h1>' +
       '<p style="font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:1.2rem;font-style:italic;border-left:3px solid #B91C3A;padding-left:.8rem">' + (post.summary || '') + '</p>' +
       '<div style="font-size:.9rem;color:rgba(255,255,255,.78);line-height:1.85;white-space:pre-wrap">' + (post.body || post.summary || '') + '</div>' +
-      // Share button
-      '<div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.08)">' +
-        '<div style="margin-top:2rem;padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);padding-top:1.2rem">' +
-        '<button onclick="shareNewsPost(this)" data-slug="' + slug + '" data-title="' + post.title.replace(/"/g,'&quot;') + '" style="display:inline-flex;align-items:center;gap:.5rem;background:#B91C3A;border:none;border-radius:12px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.85rem;font-weight:800;padding:.75rem 1.5rem;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 16px rgba(185,28,58,.4);letter-spacing:.3px"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"width:16px;height:16px\"><circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/><line x1=\"8.59\" y1=\"13.51\" x2=\"15.42\" y2=\"17.49\"/><line x1=\"15.41\" y1=\"6.51\" x2=\"8.59\" y2=\"10.49\"/></svg>Share Article</button>' +
-        '</div>' +
+      // Share button — padded above nav bar + solid red
+      '<div style="margin-top:2rem;padding-top:1.2rem;padding-bottom:calc(6rem + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08)">' +
+        '<button onclick="shareNewsPost(this)" data-slug="' + slug + '" data-title="' + post.title.replace(/"/g,'&quot;') + '" ' +
+          'style="display:inline-flex;align-items:center;gap:.5rem;background:#B91C3A;border:none;border-radius:12px;color:#fff;' +
+          'font-family:var(--font-ui,sans-serif);font-size:.85rem;font-weight:800;padding:.75rem 1.5rem;cursor:pointer;' +
+          '-webkit-tap-highlight-color:transparent;box-shadow:0 4px 14px rgba(185,28,58,.4);touch-action:manipulation">' +
+          '<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"width:16px;height:16px\">' +
+          '<circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/>' +
+          '<line x1=\"8.59\" y1=\"13.51\" x2=\"15.42\" y2=\"17.49\"/>' +
+          '<line x1=\"15.41\" y1=\"6.51\" x2=\"8.59\" y2=\"10.49\"/></svg>' +
+          'Share Article</button>' +
       '</div>' +
     '</div>';
 
   overlay.style.display = 'block';
   overlay.scrollTop = 0;
-  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
 }
 
 function closeNewsOverlay() {
   var el = document.getElementById('news-overlay');
-  if (el) el.style.display = 'none';
+  if (el) { el.parentNode && el.parentNode.removeChild(el); }
   document.documentElement.style.overflow = '';
   // Restore URL and title
   try { window.history.pushState({}, 'Fantasy PSL', '/'); } catch(e) {}
@@ -4276,11 +4171,11 @@ var PSL_ROSTER = [
   { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
   { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
   { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso Monyane',        price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:16, goals:4, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.2, xa:4.5, total_points:91, ownership:33 },
-  { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:19, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:3.8, total_points:76 },
+  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:19, goals:7, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.2, xa:4.5, total_points:115, ownership:33 },
+  { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:22, goals:4, assists:6, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:5.5, total_points:100 },
   { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:14, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
-  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:15, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:88, ownership:35 },
-  { id:1010, club:'Orlando Pirates', position:'MID', display_name:'Tshepang Moremi',        price:7.5,  apps:19, goals:3, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.4, xa:1.8, total_points:61 },
+  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:18, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:94, ownership:35 },
+  { id:1010, club:'Orlando Pirates', position:'MID', display_name:'Tshepang Moremi',        price:7.5,  apps:22, goals:5, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:4.5, xa:1.8, total_points:83 },
   { id:1011, club:'Orlando Pirates', position:'FWD', display_name:'Evidence Makgopa',       price:9.0,  apps:16, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.9, xa:2.8, total_points:76 },
   { id:1012, club:'Orlando Pirates', position:'FWD', display_name:'Yamela Mbuthuma',        price:8.0,  apps:13, goals:4, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.6, xa:0.4, total_points:63 },
   { id:1013, club:'Orlando Pirates', position:'FWD', display_name:'Andre De Jong',          price:7.0,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.6, total_points:53 },
@@ -4291,12 +4186,12 @@ var PSL_ROSTER = [
   { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',     price:5.5,  apps:11, goals:0, assists:0, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.1, total_points:44, ownership:15 },
   { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Khuliso Mudau',        price:5.5,  apps:13, goals:0, assists:1, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.9, total_points:46 },
   { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Aubrey Modiba',        price:7.0,  apps:17, goals:1, assists:3, clean_sheets:6,  yellow_cards:5, red_cards:0, xg:0.8, xa:2.5, total_points:63 },
-  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:19, goals:4, assists:4, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:3.5, xa:3.8, total_points:79, ownership:20 },
+  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:21, goals:4, assists:4, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:3.5, xa:3.8, total_points:87, ownership:20 },
   { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Arthur',               price:8.0,  apps:16, goals:3, assists:3, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:2.8, total_points:69 },
   { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Marcelo Allende',      price:7.5,  apps:18, goals:3, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:1, xg:2.6, xa:1.8, total_points:56 },
   { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Monnapule Saleng',     price:8.0,  apps:12, goals:1, assists:4, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.0, xa:3.5, total_points:52 },
   { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',       price:8.5,  apps:14, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.8, xa:1.8, total_points:56 },
-  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:15, goals:9, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:8.2, xa:1.8, total_points:113, ownership:38 },
+  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:17, goals:10,assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:2.8, total_points:127, ownership:38 },
   { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',      price:9.0,  apps:10, goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
   { id:2013, club:'Mamelodi Sundowns', position:'FWD', display_name:'Brayan Leon Muniz',    price:9.0,  apps:6,  goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:3.8, xa:0.8, total_points:59 },
 
@@ -4307,8 +4202,8 @@ var PSL_ROSTER = [
   { id:3004, club:'Golden Arrows', position:'MID', display_name:'Philani Kumalo',           price:8.0,  apps:12, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:66 },
   { id:3005, club:'Golden Arrows', position:'MID', display_name:'Jerome Karlese',           price:6.5,  apps:12, goals:1, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:2.6, total_points:48 },
   { id:3006, club:'Golden Arrows', position:'MID', display_name:'Thokozani Khumalo',        price:7.0,  apps:7,  goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.6, xa:1.8, total_points:55 },
-  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:17, goals:10,assists:1, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:0.9, total_points:124, ownership:42 },
-  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:3.8, xa:4.8, total_points:93, ownership:21 },
+  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:20, goals:12,assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:11.5, xa:0.9, total_points:148, ownership:42 },
+  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.8, xa:4.8, total_points:98, ownership:21 },
 
   // -- SEKHUKHUNE UNITED  GP16 W7 D5 L4 GF16 GA10 │ 35YC 1RC -----------
   { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',      price:5.5,  apps:15, goals:0, assists:0, clean_sheets:6,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
@@ -4328,7 +4223,7 @@ var PSL_ROSTER = [
   { id:5005, club:'AmaZulu FC', position:'MID', display_name:'Hendrick Ekstein',            price:9.0,  apps:19, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:2.8, total_points:80, ownership:18 },
   { id:5006, club:'AmaZulu FC', position:'MID', display_name:'Mondli Mbanjwa',              price:6.5,  apps:17, goals:2, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:0.9, total_points:46 },
   { id:5007, club:'AmaZulu FC', position:'MID', display_name:'Athini Maqokola',             price:7.0,  apps:15, goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.5, xa:1.8, total_points:56 },
-  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:5.5, xa:0.9, total_points:82, ownership:22 },
+  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:5.5, xa:0.9, total_points:85, ownership:22 },
 
   // -- DURBAN CITY  GP16 W7 D4 L5 GF15 GA11 │ 27YC 1RC ------------------
   { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:20, goals:0, assists:1, clean_sheets:6,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57, ownership:17 },
@@ -4586,7 +4481,39 @@ function renderFixtureList(c, matches) {
     c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No fixtures to show</div>';
     return;
   }
-  c.innerHTML = matches.map(function(f, idx) {
+  // Deduplicate: some sources return both Supabase + API-Football copies of same fixture
+  var seen = {};
+  matches = matches.filter(function(f) {
+    // Build a canonical key: home + away + date (first 10 chars) + status
+    var key = (f.home||'').toLowerCase().replace(/\s/g,'').slice(0,8) + '_' +
+              (f.away||'').toLowerCase().replace(/\s/g,'').slice(0,8) + '_' +
+              ((f.kickoff_at||f.date||'').slice(0,10));
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+  // Group fixtures by date for cleaner display (like goal.com)
+  var grouped = {};
+  var groupOrder = [];
+  matches.forEach(function(f) {
+    var raw = f.kickoff_at || f.date || '';
+    var dateKey = raw ? raw.slice(0,10) : 'Unknown';
+    if (!grouped[dateKey]) { grouped[dateKey] = []; groupOrder.push(dateKey); }
+    grouped[dateKey].push(f);
+  });
+
+  var html = '';
+  groupOrder.forEach(function(dateKey) {
+    var dateLabel = 'Unknown Date';
+    if (dateKey !== 'Unknown') {
+      var d = new Date(dateKey + 'T12:00:00');
+      dateLabel = d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    }
+    html += '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:800;letter-spacing:2px;' +
+            'text-transform:uppercase;color:rgba(255,255,255,.35);padding:.6rem 1rem .4rem;' +
+            'border-bottom:1px solid rgba(255,255,255,.05)">' + dateLabel + '</div>';
+
+    html += grouped[dateKey].map(function(f, idx) {
     var fid    = f.fixture_id || f.sportmonks_id || ('f'+idx);
     var isLive = f.is_live || f.status === 'LIVE' || f.status === '1H' || f.status === '2H' || f.status === 'HT';
     var isFT   = f.status === 'FT';
@@ -4621,7 +4548,9 @@ function renderFixtureList(c, matches) {
       '</div>'+
       '<div id="fd-'+fidStr+'" style="max-height:0;overflow:hidden;transition:max-height .3s ease"></div>'+
     '</div>';
-  }).join('');
+    }).join('');
+  });
+  c.innerHTML = html;
 }
 
 var FIX_EXPANDED = {};
@@ -4906,34 +4835,39 @@ function loadStats() {
   var c = document.getElementById('stats-body'); if (!c) return;
   c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
 
-  // Render immediately from PSL_ROSTER — always the accurate verified source
-  // Never use LIVE_STATS for player stats (causes duplicates + short names)
-  // LIVE_STATS is only used for the standings table
-  if (!LIVE_STATS) LIVE_STATS = {};
-  // Clear any stale topScorers from API that caused duplicates
-  LIVE_STATS.topScorers = null;
-  LIVE_STATS.topAssists = null;
-  LIVE_STATS.topYellow  = null;
-  LIVE_STATS.topRed     = null;
+  // 1. Render immediately from PSL_ROSTER (instant fallback)
   renderStats();
 
-  // Fetch standings only (for the table in fixtures page)
+  // 2. Fetch full data bundle (standings + fixtures + top scorers/assists/cards)
   fetchPSLData(function(fullData) {
-    if (fullData && fullData.table && fullData.table.length) {
-      LIVE_STATS.table = fullData.table;
+    if (fullData) {
+      if (!LIVE_STATS) LIVE_STATS = {};
+      if (fullData.table && fullData.table.length)         LIVE_STATS.table      = fullData.table;
+      if (fullData.topScorers && fullData.topScorers.length) LIVE_STATS.topScorers = fullData.topScorers;
+      if (fullData.topAssists && fullData.topAssists.length) LIVE_STATS.topAssists = fullData.topAssists;
+      if (fullData.topYellow && fullData.topYellow.length)   LIVE_STATS.topYellow  = fullData.topYellow;
+      if (fullData.topRed && fullData.topRed.length)         LIVE_STATS.topRed     = fullData.topRed;
     }
-    // Re-render — still uses PSL_ROSTER for player stats, LIVE_STATS only for table
-    renderStats();
+    // 3. Also fetch dedicated player stats endpoint (more complete player data)
+    fetchPlayerStats(function() {
+      renderStats(); // Re-render with best available data
+    });
   });
 }
 
 function renderStats() {
   var c = document.getElementById('stats-body'); if (!c) return;
 
-  // PSL_ROSTER is always the source of truth for player stats.
-  // API-Football does not have reliable PSL player stats.
-  // useLive = false always — prevents duplicates from API short names.
-  var useLive = false;
+  // IMPORTANT: PSL_ROSTER is the primary source of truth for stats.
+  // It has manually-verified full-season data (goals, apps, positions etc).
+  // API data (LIVE_STATS) is only used if it has MORE goals than PSL_ROSTER max,
+  // meaning the season has progressed beyond what PSL_ROSTER records.
+  var rosterMaxGoals = PSL_ROSTER.reduce(function(m,p){ return Math.max(m, p.goals||0); }, 0);
+  var apiMaxGoals    = (LIVE_STATS && LIVE_STATS.topScorers && LIVE_STATS.topScorers.length)
+    ? LIVE_STATS.topScorers.reduce(function(m,p){ return Math.max(m, p.goals||0); }, 0) : 0;
+
+  // Use API only if it clearly has fresher/more complete data
+  var useLive = apiMaxGoals > rosterMaxGoals;
 
   if (STAT_TAB === 'goals')   { renderStatGoals(c, useLive ? LIVE_STATS : null); return; }
   if (STAT_TAB === 'assists') { renderStatAssists(c, useLive ? LIVE_STATS : null); return; }
@@ -5161,46 +5095,54 @@ function loadTable() {
   var c = document.getElementById('table-body');
   if (!c) return;
   if (!TABLE_VIEW) TABLE_VIEW = 'short';
-  renderRealTable(c); // show REAL_TABLE immediately — no glitch
-
+  renderRealTable(c); // show fallback immediately
   fetch('/api/football?type=standings')
     .then(function(r){ return r.json(); })
     .then(function(data){
       var rows = data && data.standings ? data.standings : [];
+      // Need at least 10 teams with real names
       var namedRows = rows.filter(function(s){ return s.team && s.team !== 'Unknown'; });
-      if (namedRows.length < 10) return; // not enough data — keep REAL_TABLE
-
-      // Only update pts, pos, logo and form from API — keep P/W/D/L/GF/GA from REAL_TABLE
-      // This prevents the glitch where API returns different points to what REAL_TABLE has
-      namedRows.forEach(function(s) {
-        var ex = REAL_TABLE.find(function(r){ return r.team === s.team; });
-        if (!ex) ex = REAL_TABLE.find(function(r){
-          return r.team.toLowerCase().replace(/\s+fc$/i,'').trim() ===
-                 s.team.toLowerCase().replace(/\s+fc$/i,'').trim();
+      if (namedRows.length >= 10) {
+        // Merge live Sportmonks data (position, points, logo) with
+        // REAL_TABLE (played, won, drawn, lost, gf, ga, gd, form)
+        // because Sportmonks standings endpoint doesn't include played stats
+        // without extra includes that cost more API credits
+        REAL_TABLE = namedRows.map(function(s, i) {
+          // Robust team name match — try exact first, then partial
+          var ex = REAL_TABLE.find(function(r){ return r.team === s.team; });
+          if (!ex) ex = REAL_TABLE.find(function(r){
+            return r.team.toLowerCase().replace(/\s+fc$/i,'').trim() ===
+                   s.team.toLowerCase().replace(/\s+fc$/i,'').trim();
+          });
+          if (!ex) ex = REAL_TABLE.find(function(r){
+            return r.team.toLowerCase().includes(s.team.toLowerCase().split(' ')[0]) ||
+                   s.team.toLowerCase().includes(r.team.toLowerCase().split(' ')[0]);
+          });
+          var formRaw = s.form || '';
+          var formArr = Array.isArray(formRaw) ? formRaw
+                      : formRaw ? formRaw.split(',').filter(Boolean) : [];
+          if (!formArr.length && ex) formArr = ex.form || [];
+          return {
+            pos:  s.pos  || i + 1,
+            team: s.team,
+            logo: s.logo || getTeamLogo(s.team),
+            // Sportmonks gives accurate live points and position
+            pts:  s.pts  || (ex ? ex.pts : 0),
+            // Always use REAL_TABLE for played/won/drawn/lost/gf/ga/gd
+            // Sportmonks standings endpoint doesn't return these without paid includes
+            p:    ex ? ex.p  : (s.p  || 0),
+            w:    ex ? ex.w  : (s.w  || 0),
+            d:    ex ? ex.d  : (s.d  || 0),
+            l:    ex ? ex.l  : (s.l  || 0),
+            gf:   ex ? ex.gf : (s.gf || 0),
+            ga:   ex ? ex.ga : (s.ga || 0),
+            gd:   ex ? ex.gd : (s.gd || 0),
+            form: formArr
+          };
         });
-        if (!ex) ex = REAL_TABLE.find(function(r){
-          return r.team.toLowerCase().includes(s.team.toLowerCase().split(' ')[0]) ||
-                 s.team.toLowerCase().includes(r.team.toLowerCase().split(' ')[0]);
-        });
-        if (!ex) return; // no match — skip
-
-        // Only update live fields — keep hardcoded P/W/D/L intact
-        if (s.pts)  ex.pts  = s.pts;
-        if (s.pos)  ex.pos  = s.pos;
-        if (s.logo) ex.logo = s.logo;
-        if (s.p && s.p > 0)  ex.p = s.p;   // update played if API has it
-        if (s.gf && s.gf > 0) ex.gf = s.gf;
-        if (s.ga && s.ga > 0) ex.ga = s.ga;
-        var formRaw = s.form || '';
-        var formArr = Array.isArray(formRaw) ? formRaw : formRaw ? formRaw.split(',').filter(Boolean) : [];
-        if (formArr.length) ex.form = formArr;
-      });
-
-      // Re-sort by points descending
-      REAL_TABLE.sort(function(a,b){ return (b.pts||0)-(a.pts||0); });
-      REAL_TABLE.forEach(function(t,i){ t.pos = i+1; });
-
-      renderRealTable(c);
+        renderRealTable(c);
+      }
+      // else: keep REAL_TABLE as-is (already rendered above)
     })
     .catch(function(){});
 }
