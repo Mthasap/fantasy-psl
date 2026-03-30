@@ -115,11 +115,21 @@ async function getFixtures() {
   if (SB_URL && SB_KEY) {
     try {
       var res = await db().from('fixtures').select('*')
-        .eq('status', 'NS').order('kickoff_at', { ascending: true }).limit(50);
+        .eq('status', 'NS').order('kickoff_at', { ascending: true }).limit(200);
       if (!res.error && res.data && res.data.length) {
+        // Dedup by home+away+date in case of duplicate rows in Supabase
+        var seen = {};
+        var deduped = res.data.filter(function(f) {
+          var key = (f.home_team||'').toLowerCase().slice(0,8) + '_' +
+                    (f.away_team||'').toLowerCase().slice(0,8) + '_' +
+                    ((f.kickoff_at||f.date||'').slice(0,10));
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
         return toCache('fixtures', {
           type: 'fixtures',
-          fixtures: res.data.map(formatSupabaseFixture),
+          fixtures: deduped.map(formatSupabaseFixture),
           source: 'supabase',
           fetched_at: new Date().toISOString()
         });
