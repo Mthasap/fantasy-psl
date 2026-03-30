@@ -1316,7 +1316,8 @@ var ST = {
   // -- Bench ordering -----------------------------------
   benchReorder:     false,   // true when user is reordering bench
   benchPickFirst:   null,    // first bench player selected for swap
-  watchlist:        []       // player IDs on watchlist
+  watchlist:        [],      // player IDs on watchlist
+  entryGW:          null     // GW when user first registered squad (points counted from here)
 };
 
 // Load watchlist from localStorage immediately (fast, works offline)
@@ -1429,7 +1430,16 @@ db.auth.onAuthStateChange(function(event, session) {
   // Show/hide ad banner based on login state
   updateAdVisibility();
   if (ST.user) {
-    loadGW(function() { loadMySquad(); }); loadReactions();
+    loadGW(function() {
+      // Wait for players to be loaded before restoring squad
+      // Prevents race condition where allPlayers is empty during restore
+      if (ST.allPlayers && ST.allPlayers.length) {
+        loadMySquad();
+      } else {
+        window._squadPendingPlayers = true;
+        loadPlayers();
+      }
+    }); loadReactions();
     loadWatchlistFromDB(); // restore watchlist from DB after login
   } else {
     ST.squad = [];
@@ -1759,6 +1769,11 @@ function loadPlayers() {
       ST.playerPage = 0;
       CACHE.players = { data: players, ts: Date.now() };
       renderPlayerList();
+      // If squad restore was waiting for players, trigger it now
+      if (window._squadPendingPlayers) {
+        window._squadPendingPlayers = false;
+        loadMySquad();
+      }
     });
 }
 
@@ -1808,6 +1823,7 @@ function renderPlayerList() {
       : '';
     var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
     var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
+    var ptsDisplay = p.total_points ? p.total_points + ' pts' : '—';
     return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
       '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
       '<div class="pli-info">' +
@@ -1815,6 +1831,7 @@ function renderPlayerList() {
         '<div class="pli-club">' + club + '</div>' +
       '</div>' +
       '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
+      '<span style="font-family:var(--font-display);font-size:.78rem;font-weight:900;color:#DBA94A;min-width:44px;text-align:right">' + ptsDisplay + '</span>' +
       '<span class="pli-price">R' + (p.price || 0) + 'M' + pcHtml + '</span>' +
       '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 4px;color:' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
         '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
@@ -2087,7 +2104,69 @@ function getUserDashboard(forceRefresh) {
     try {
       if (squadRaw && squadRaw.length) {
         savedSquad = squadRaw.map(function(s) {
-          var full = (PSL_ROSTER || []).find(function(p) { return p.id === s.id; });
+          var full = null;
+
+          // Tier 1: PSL_ROSTER integer id match (most common case)
+          if (!full) {
+            var intId = parseInt(s.id, 10);
+            if (!isNaN(intId) && intId > 0) {
+              full = (PSL_ROSTER || []).find(function(p) { return p.id === intId; });
+            }
+          }
+
+          // Tier 2: UUID match in allPlayers (DB players saved by UUID)
+          if (!full && ST.allPlayers && ST.allPlayers.length) {
+            full = ST.allPlayers.find(function(p) { return p.id === s.id; });
+            // If found in allPlayers and has psl_roster_id, prefer roster version for stats
+            if (full && full.psl_roster_id) {
+              var rosterVer = (PSL_ROSTER || []).find(function(p) {
+                return p.id === parseInt(full.psl_roster_id, 10);
+              });
+              if (rosterVer) full = rosterVer;
+            }
+          }
+
+          // Tier 3: psl_roster_id field on the saved squad entry
+          if (!full && s.psl_roster_id) {
+            full = (PSL_ROSTER || []).find(function(p) {
+              return p.id === parseInt(s.psl_roster_id, 10);
+            });
+          }
+
+          // Tier 4: name + position fuzzy match (last resort for corrupted saves)
+          if (!full && s.name && s.position) {
+            var normSaved = (s.name || '').toLowerCase().replace(/[^a-z]/g, '');
+            var surname   = normSaved.slice(-6); // last 6 chars of normalised name
+            full = (PSL_ROSTER || []).find(function(p) {
+              if (p.position !== s.position) return false;
+              var normRoster = (p.display_name || '').toLowerCase().replace(/[^a-z]/g, '');
+              return normRoster.indexOf(surname) !== -1;
+            });
+            // Also try allPlayers
+            if (!full && ST.allPlayers && ST.allPlayers.length) {
+              full = ST.allPlayers.find(function(p) {
+                if (p.position !== s.position) return false;
+                var normP = (p.display_name || '').toLowerCase().replace(/[^a-z]/g, '');
+                return normP.indexOf(surname) !== -1;
+              });
+            }
+          }
+
+          // Tier 5: reconstruct minimal object so squad is never silently empty
+          if (!full && s.position) {
+            full = {
+              id:           s.id,
+              display_name: s.name || 'Unknown Player',
+              position:     s.position,
+              club:         s.club  || '',
+              price:        s.price || 5.0,
+              total_points: 0,
+              goals: 0, assists: 0, apps: 0,
+              clean_sheets: 0, yellow_cards: 0, red_cards: 0,
+              clubs: { name: s.club || '', short_name: s.club || '' }
+            };
+          }
+
           if (!full) return null;
           return Object.assign({}, full, {
             onBench:    s.onBench    || false,
@@ -2110,6 +2189,8 @@ function getUserDashboard(forceRefresh) {
     if (profile.free_transfers !== undefined) ST.freeTransfers    = profile.free_transfers    || 1;
     if (profile.transfers_this_gw !== undefined) ST.transfersMade = profile.transfers_this_gw || 0;
     ST.squadRegistered = !!(profile.squad_registered);
+    // Entry GW — when this user first registered a full squad
+    if (profile.entry_gw) ST.entryGW = profile.entry_gw;
     if (profile.active_chip !== undefined) ST.activeChip = profile.active_chip || null;
     if (profile.used_chips) {
       try { ST.usedChips = JSON.parse(profile.used_chips) || []; } catch(e) {}
@@ -2345,22 +2426,35 @@ function saveSquad() {
   var bench    = ST.squad.filter(function(p) { return p.onBench; });
 
   var squadData = starters.concat(bench).map(function(p, idx) {
+    // ALWAYS save the PSL_ROSTER integer id as the canonical id.
+    // DB players have psl_roster_id set. PSL_ROSTER players already have integer id.
+    // This ensures restore always works via Tier 1 (parseInt match) regardless of
+    // whether the player came from DB (UUID) or PSL_ROSTER (integer).
+    var canonicalId = p.psl_roster_id
+      ? parseInt(p.psl_roster_id, 10)   // DB player — use integer roster id
+      : (typeof p.id === 'number' ? p.id : parseInt(p.id, 10) || p.id); // PSL_ROSTER or fallback
+
     return {
-      id:         p.id,
+      id:         canonicalId,
       name:       playerName(p),
       position:   p.position,
       club:       p.clubs ? p.clubs.name : (p.club || ''),
       price:      p.price,
       onBench:    p.onBench || false,
-      benchOrder: p.onBench ? bench.indexOf(p) : -1,  // 0-3 for bench priority
+      benchOrder: p.onBench ? bench.indexOf(p) : -1,
       isCaptain:  p.isCaptain  || false,
       isVC:       p.isVC       || false
     };
   });
 
   // Mark squad as registered once full 15 saved for the first time
-  if (isFullSquad && !ST.squadRegistered) {
+  var isFirstRegistration = isFullSquad && !ST.squadRegistered;
+  if (isFirstRegistration) {
     ST.squadRegistered = true;
+    // Record which GW the user entered — points ONLY count from this GW forward
+    if (!ST.entryGW && ST.gw && ST.gw.number) {
+      ST.entryGW = ST.gw.number;
+    }
   }
 
   var squadJson = JSON.stringify(squadData);
@@ -2394,6 +2488,14 @@ function saveSquad() {
     active_chip:       ST.activeChip || null,
     updated_at:        new Date().toISOString()
   };
+
+  // On first registration: lock in entry_gw and timestamp — NEVER overwrite after that
+  if (isFirstRegistration && ST.entryGW) {
+    updatePayload.entry_gw             = ST.entryGW;
+    updatePayload.squad_registered_at  = new Date().toISOString();
+    updatePayload.total_points         = 0; // start from zero on entry
+    updatePayload.gw_points            = 0;
+  }
 
   // Always upsert — plain .update() silently saves nothing if profile row is missing
   var upsertPayload = Object.assign({ id: ST.user.id }, updatePayload);
@@ -2570,7 +2672,15 @@ function renderPitch() {
       else if (mode === 'transfer') { clickFn = 'onclick="removePlayer(' + p.id + ')"'; titleTxt = 'Transfer OUT'; }
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
       else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
-      var bottomLabel = (typeof p.gwPoints !== 'undefined') ? p.gwPoints + ' pts' : (p.price ? 'R' + p.price + 'M' : '');
+      // Show GW points if available, else season total_points, else price
+      var bottomLabel;
+      if (typeof p.gwPoints !== 'undefined' && p.gwPoints !== null) {
+        bottomLabel = p.gwPoints + ' pts';
+      } else if (p.total_points && p.total_points > 0) {
+        bottomLabel = p.total_points + ' pts';
+      } else {
+        bottomLabel = p.price ? 'R' + p.price + 'M' : '';
+      }
       return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
         '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
           posIcon(pos) +
@@ -3359,7 +3469,7 @@ function openNewsPost(postOrIdx) {
   var overlay = (function(){
     var el = document.createElement('div');
     el.id = 'news-overlay';
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9300;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9600;background:#0D1017;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain';
     el.onclick = function(e){ if(e.target===el) closeNewsOverlay(); };
     document.body.appendChild(el);
     return el;
@@ -6594,6 +6704,29 @@ function showChatRules() {
   document.body.style.overflow = 'hidden';
 }
 </script>
+<script>
+// ── Privacy consent banner ────────────────────────────────────────────────
+(function() {
+  try {
+    var _accepted = localStorage.getItem('fpsl_consent_v1');
+    if (!_accepted) {
+      var _banner = document.getElementById('consent-banner');
+      if (_banner) _banner.style.display = 'block';
+    }
+  } catch(e) {}
+})();
+
+function acceptConsent() {
+  try { localStorage.setItem('fpsl_consent_v1', '1'); } catch(e) {}
+  closeBanner();
+}
+
+function closeBanner() {
+  var _b = document.getElementById('consent-banner');
+  if (_b) _b.style.display = 'none';
+}
+</script>
+
 <!-- ── Auto Squad Modal ──────────────────────────────────────── -->
 <div id="auto-squad-modal" style="display:none;position:fixed;inset:0;z-index:9400;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAutoSquadModal()">
   <div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem;animation:slideUp .25s ease">
@@ -6642,6 +6775,42 @@ function showChatRules() {
 .asq-opt.active { background:rgba(219,169,74,.15) !important; border-color:#DBA94A !important; }
 .asq-opt.active div:nth-child(2) { color:#DBA94A !important; }
 </style>
+
+
+<!-- ══ PRIVACY / DATA CONSENT BANNER ══════════════════════════════════════ -->
+<!-- Shown ONCE on first visit. Stored in localStorage. POPIA compliant.     -->
+<div id="consent-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;
+  background:#0E1219;border-top:2px solid #C41B38;padding:1rem 1.2rem;
+  box-shadow:0 -4px 24px rgba(0,0,0,.6)">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:2px;
+      text-transform:uppercase;color:#C41B38;margin-bottom:.4rem">Privacy & Data Notice</div>
+    <p style="font-family:'DM Sans',sans-serif;font-size:.78rem;color:rgba(240,244,250,.75);
+      line-height:1.55;margin-bottom:.8rem">
+      Fantasy PSL collects your email address and squad data to run the fantasy game.
+      We store this securely in Supabase (EU servers). We do not sell your data, show ads,
+      or share your information with third parties. Your data is used only to calculate
+      fantasy points and display leaderboards. You can delete your account at any time
+      from your Profile page. By continuing you agree to these terms.
+      <a href="#" onclick="goPage('profile');closeBanner();return false;"
+        style="color:#F0B840;text-decoration:underline">View full privacy policy</a>
+    </p>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <button onclick="acceptConsent()"
+        style="background:#C41B38;border:none;border-radius:8px;color:#fff;
+          font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;
+          letter-spacing:1px;padding:.55rem 1.4rem;cursor:pointer">
+        I Understand — Continue
+      </button>
+      <button onclick="closeBanner()"
+        style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+          border-radius:8px;color:rgba(255,255,255,.5);font-family:'Rajdhani',sans-serif;
+          font-size:.78rem;font-weight:600;padding:.55rem 1rem;cursor:pointer">
+        Dismiss
+      </button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
