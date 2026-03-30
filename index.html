@@ -770,25 +770,22 @@
 <div id="page-home" class="page active">
   <section class="hero">
     <div class="hero-bg"><div class="hero-glow"></div></div>
-    <div class="hero-eyebrow">
-      <div class="hero-eyebrow-pulse"></div>
-      Betway Premiership 2025/26 &nbsp;·&nbsp; GW <span id="gw-hero">--</span>
-    </div>
-    <h1 class="hero-title">
-      <span class="line-white">SA'S FANTASY</span>
-      <span class="line-gold">FOOTBALL GAME</span>
+    <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">--</span></div>
+    <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
+      South Africa's Greatest<br>Fantasy Football Game<br>
+      <span style="color:#C9963A">Is Here</span>
     </h1>
-    <p class="hero-sub">Pick 15 players from all 16 Betway Premiership clubs, earn points every matchday, and compete with fans across South Africa.</p>
+    <p class="hero-sub">Pick 15 players from all 16 Betway Premiership clubs, earn points every matchday, and compete with football fans across South Africa.</p>
     <div class="hero-cta-row">
-      <button class="btn-hero-primary" onclick="goPage('squad')">Build Your Squad — Free</button>
+      <button class="btn-hero-primary" onclick="goPage('squad')">Build Your Squad -- Free</button>
       <button class="btn-hero-outline" onclick="goPage('fixtures')">View Fixtures</button>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-label">PSL Clubs</div></div>
       <div class="hero-stat"><div class="hero-stat-num">R100M</div><div class="hero-stat-label">Budget</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">30</div><div class="hero-stat-label">Gameweeks</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">30</div><div class="hero-stat-label">Game<br>weeks</div></div>
       <div class="hero-stat"><div class="hero-stat-num">15</div><div class="hero-stat-label">Players</div></div>
-      <div class="hero-stat" style="border-right:none"><div class="hero-stat-num">Free</div><div class="hero-stat-label">To Play</div></div>
+      <div class="hero-stat" style="border-right:none"><div class="hero-stat-num">4</div><div class="hero-stat-label">Chips</div></div>
     </div>
   </section>
 
@@ -919,24 +916,11 @@
 <!-- == SQUAD == -->
 <div id="page-squad" class="page">
   <div class="page-section">
-    <!-- Squad header banner — EPL Fantasy style -->
-    <div style="background:linear-gradient(135deg,#0B3D1D 0%,#1a2235 60%,#0E1219 100%);border:1px solid rgba(34,160,90,.2);border-radius:var(--radius-xl);padding:1rem 1.2rem;margin-bottom:1rem;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold-soft),var(--green-soft))"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem">
-        <div>
-          <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--green-soft);margin-bottom:.2rem">Betway Premiership Fantasy</div>
-          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">My Squad</div>
-          <div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.2rem">GW <span id="gw-squad">--</span> &nbsp;·&nbsp; Deadline: <span id="gw-deadline">--</span></div>
-        </div>
-        <div id="squad-pts-banner" style="text-align:right;display:none">
-          <div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4)">GW Points</div>
-          <div style="font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--gold-soft);line-height:1" id="gw-pts-big">--</div>
-          <div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.35)" id="total-pts-sub">Total: --</div>
-        </div>
-      </div>
-    </div>
     <div class="page-head">
       <div>
+        <span class="eyebrow">Gameweek <span id="gw-squad">--</span> . Deadline <span id="gw-deadline">--</span></span>
+        <h1 class="section-title" style="margin-bottom:0">My Squad</h1>
+      </div>
       <div class="meta-strip" style="flex-wrap:wrap;gap:.5rem">
         <div class="meta-pill">
           <div class="meta-pill-label">In The Bank</div>
@@ -2506,13 +2490,6 @@ function renderBudget() {
     if (totalEl) totalEl.textContent = totalPts;
     if (gwPill)    gwPill.style.display    = '';
     if (totalPill) totalPill.style.display = '';
-    // Update squad banner
-    var _bigEl = document.getElementById('gw-pts-big');
-    var _subEl = document.getElementById('total-pts-sub');
-    var _banEl = document.getElementById('squad-pts-banner');
-    if (_bigEl) _bigEl.textContent = gwPts;
-    if (_subEl) _subEl.textContent = 'Total: ' + totalPts + ' pts';
-    if (_banEl && (gwPts > 0 || totalPts > 0)) _banEl.style.display = 'block';
     // Rank pill
     var rkPill = document.getElementById('rank-pts-pill');
     var rkEl   = document.getElementById('rank-pts-display');
