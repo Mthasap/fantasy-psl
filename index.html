@@ -1424,23 +1424,78 @@ function cacheValid(key) {
 // ====================================================
 //  BOOT
 // ====================================================
+// ── GUARANTEED LOAD ORDER ─────────────────────────────────────────────
+// Squad restore REQUIRES ST.allPlayers to be populated first.
+// ensurePlayersLoaded() guarantees this before any restore attempt.
+// This prevents the race condition that caused empty squad on login.
+function ensurePlayersLoaded(cb) {
+  // Already populated — fire immediately
+  if (ST.allPlayers && ST.allPlayers.length > 0) { cb(); return; }
+
+  // Cache hit — use it immediately
+  if (cacheValid('players') && CACHE.players.data && CACHE.players.data.length) {
+    ST.allPlayers = CACHE.players.data;
+    ST.filtered   = ST.allPlayers.slice();
+    cb();
+    return;
+  }
+
+  // Must fetch — callback fires only after DB responds
+  db.from('players')
+    .select('*, clubs(name, short_name)')
+    .order('total_points', { ascending: false })
+    .limit(300)
+    .then(function(res) {
+      var players = res.data || [];
+      if (!players.length) {
+        // DB empty — use PSL_ROSTER as guaranteed fallback
+        players = (PSL_ROSTER || []).map(function(p) {
+          return Object.assign({}, p, { clubs: { name: p.club, short_name: p.club } });
+        });
+      }
+      function normPos(pos) {
+        if (!pos) return 'MID';
+        var r = pos.toUpperCase();
+        if (r === 'GK' || r === 'GOALKEEPER') return 'GK';
+        if (r === 'DEF' || r === 'DEFENDER')  return 'DEF';
+        if (r === 'MID' || r === 'MIDFIELDER') return 'MID';
+        if (r === 'FWD' || r === 'FORWARD' || r === 'ATTACKER') return 'FWD';
+        return pos;
+      }
+      players = players.map(function(p) {
+        return Object.assign({}, p, { position: normPos(p.position) });
+      });
+      ST.allPlayers = players;
+      ST.filtered   = players.slice();
+      ST.playerPage = 0;
+      CACHE.players = { data: players, ts: Date.now() };
+      renderPlayerList();
+      cb();
+    })
+    .catch(function() {
+      // Network error — use PSL_ROSTER so restore can still work
+      if (!ST.allPlayers || !ST.allPlayers.length) {
+        ST.allPlayers = (PSL_ROSTER || []).map(function(p) {
+          return Object.assign({}, p, { clubs: { name: p.club, short_name: p.club } });
+        });
+      }
+      cb();
+    });
+}
+
 db.auth.onAuthStateChange(function(event, session) {
   ST.user = session ? session.user : null;
   syncNav();
-  // Show/hide ad banner based on login state
   updateAdVisibility();
   if (ST.user) {
+    // GUARANTEED ORDER: GW first, then players, then squad restore
     loadGW(function() {
-      // Wait for players to be loaded before restoring squad
-      // Prevents race condition where allPlayers is empty during restore
-      if (ST.allPlayers && ST.allPlayers.length) {
+      ensurePlayersLoaded(function() {
         loadMySquad();
-      } else {
-        window._squadPendingPlayers = true;
-        loadPlayers();
-      }
-    }); loadReactions();
-    loadWatchlistFromDB(); // restore watchlist from DB after login
+      });
+    });
+    loadReactions();
+    loadWatchlistFromDB();
   } else {
     ST.squad = [];
     renderPitch();
@@ -1467,7 +1522,10 @@ document.addEventListener('DOMContentLoaded', function() {
   imgs.forEach(function(img) { img.src = LOGO_PATH; });
 
   loadGW(function() {});
-  loadPlayers();
+  // Use ensurePlayersLoaded (not bare loadPlayers) so the cache/callback
+  // mechanism is consistent with the auth handler. Prevents any future
+  // case where onAuthStateChange fires before DOMContentLoaded finishes.
+  ensurePlayersLoaded(function() { /* players ready at startup */ });
   loadTickerData();
   setTimeout(loadPOTMHomeCard, 1500); // load after DB connection settles
 
@@ -1769,11 +1827,6 @@ function loadPlayers() {
       ST.playerPage = 0;
       CACHE.players = { data: players, ts: Date.now() };
       renderPlayerList();
-      // If squad restore was waiting for players, trigger it now
-      if (window._squadPendingPlayers) {
-        window._squadPendingPlayers = false;
-        loadMySquad();
-      }
     });
 }
 
@@ -2196,6 +2249,50 @@ function getUserDashboard(forceRefresh) {
       try { ST.usedChips = JSON.parse(profile.used_chips) || []; } catch(e) {}
     }
     console.log('[FPSL] Squad loaded from:', squadSource, '--', savedSquad.length, 'players | Free transfers:', ST.freeTransfers);
+
+    // SAFETY NET: If we had raw squad data but got 0 players back,
+    // force a fresh player load and retry restore ONCE.
+    // This catches DB rebuilds, network delays, or any other edge case.
+    if (squadRaw && squadRaw.length > 0 && savedSquad.length === 0) {
+      console.warn('[FPSL] Squad restore got 0 players despite ' + squadRaw.length + ' raw entries — retrying after fresh player load');
+      CACHE.players = null; // force fresh fetch
+      ensurePlayersLoaded(function() {
+        // Re-run restore with fresh player data
+        var retrySquad = squadRaw.map(function(s) {
+          var full = null;
+          var intId = parseInt(s.id, 10);
+          if (!isNaN(intId) && intId > 0)
+            full = (PSL_ROSTER || []).find(function(p) { return p.id === intId; });
+          if (!full && ST.allPlayers && ST.allPlayers.length)
+            full = ST.allPlayers.find(function(p) { return p.id === s.id; });
+          if (!full && s.psl_roster_id)
+            full = (PSL_ROSTER || []).find(function(p) { return p.id === parseInt(s.psl_roster_id, 10); });
+          if (!full && s.name && s.position) {
+            var ns = (s.name || '').toLowerCase().replace(/[^a-z]/g, '');
+            var sur = ns.slice(-6);
+            full = (PSL_ROSTER || []).find(function(p) {
+              return p.position === s.position && (p.display_name||'').toLowerCase().replace(/[^a-z]/g,'').indexOf(sur) !== -1;
+            });
+          }
+          if (!full && s.position) {
+            full = { id: s.id, display_name: s.name || 'Unknown Player', position: s.position,
+                     club: s.club||'', price: s.price||5.0, total_points:0, goals:0, assists:0,
+                     apps:0, clean_sheets:0, yellow_cards:0, red_cards:0,
+                     clubs:{ name: s.club||'', short_name: s.club||'' } };
+          }
+          if (!full) return null;
+          return Object.assign({}, full, { onBench: s.onBench||false,
+            benchOrder: s.benchOrder !== undefined ? s.benchOrder : -1,
+            isCaptain: s.isCaptain||false, isVC: s.isVC||false });
+        }).filter(Boolean);
+        console.log('[FPSL] Retry restore result:', retrySquad.length, 'players');
+        var retryDash = { profile: profile, squad: retrySquad, leagues: leagues };
+        CACHE.dashboard = { data: retryDash, ts: Date.now() };
+        applyDashboard(retryDash);
+      });
+      return; // skip normal applyDashboard below
+    }
+
     var dashboard = { profile: profile, squad: savedSquad, leagues: leagues };
     CACHE.dashboard = { data: dashboard, ts: Date.now() };
     applyDashboard(dashboard);
@@ -2203,7 +2300,20 @@ function getUserDashboard(forceRefresh) {
 }
 
 function applyDashboard(d) {
-  ST.squad = d.squad || [];
+  var incomingSquad = d.squad || [];
+
+  // GUARD: If incoming squad is empty but we already have players loaded,
+  // something went wrong — keep the existing squad and log clearly.
+  // This prevents a bad restore from silently wiping a working squad.
+  if (incomingSquad.length === 0 && ST.squad && ST.squad.length > 0) {
+    console.warn('[FPSL] applyDashboard received empty squad but ST.squad has', ST.squad.length, 'players — keeping existing squad');
+    // Invalidate dashboard cache so next call retries fresh
+    CACHE.dashboard = null;
+    renderPitch(); renderBudget(); renderPlayerList();
+    return;
+  }
+
+  ST.squad = incomingSquad;
   // Always clear pending transfers on load — they are per-session only
   ST.pendingTransfers = [];
   ST.xferOut = null;
@@ -2426,24 +2536,22 @@ function saveSquad() {
   var bench    = ST.squad.filter(function(p) { return p.onBench; });
 
   var squadData = starters.concat(bench).map(function(p, idx) {
-    // ALWAYS save the PSL_ROSTER integer id as the canonical id.
-    // DB players have psl_roster_id set. PSL_ROSTER players already have integer id.
-    // This ensures restore always works via Tier 1 (parseInt match) regardless of
-    // whether the player came from DB (UUID) or PSL_ROSTER (integer).
+    // Always save the PSL_ROSTER integer id so restore works across all scenarios.
+    // If player came from DB (UUID id), use psl_roster_id. Otherwise use integer id directly.
     var canonicalId = p.psl_roster_id
-      ? parseInt(p.psl_roster_id, 10)   // DB player — use integer roster id
-      : (typeof p.id === 'number' ? p.id : parseInt(p.id, 10) || p.id); // PSL_ROSTER or fallback
-
+      ? parseInt(p.psl_roster_id, 10)
+      : (typeof p.id === 'number' ? p.id : parseInt(p.id, 10) || p.id);
     return {
-      id:         canonicalId,
-      name:       playerName(p),
-      position:   p.position,
-      club:       p.clubs ? p.clubs.name : (p.club || ''),
-      price:      p.price,
-      onBench:    p.onBench || false,
-      benchOrder: p.onBench ? bench.indexOf(p) : -1,
-      isCaptain:  p.isCaptain  || false,
-      isVC:       p.isVC       || false
+      id:            canonicalId,
+      psl_roster_id: typeof canonicalId === 'number' ? canonicalId : null,
+      name:          playerName(p),
+      position:      p.position,
+      club:          p.clubs ? p.clubs.name : (p.club || ''),
+      price:         p.price,
+      onBench:       p.onBench || false,
+      benchOrder:    p.onBench ? bench.indexOf(p) : -1,
+      isCaptain:     p.isCaptain  || false,
+      isVC:          p.isVC       || false
     };
   });
 
