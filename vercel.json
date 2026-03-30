@@ -6,14 +6,8 @@
     "api/espn-sync.js": {
       "maxDuration": 60
     },
-    "api/news-render.js": {
-      "maxDuration": 10
-    },
-    "api/admin-api.js": {
-      "maxDuration": 15
-    },
-    "api/sync.js": {
-      "maxDuration": 30
+    "api/squad-import.js": {
+      "maxDuration": 60
     }
   },
   "routes": [
@@ -35,7 +29,7 @@
     },
     {
       "src": "/news/(.*)",
-      "dest": "/api/news-render?_path=/news/$1"
+      "dest": "/index.html"
     },
     {
       "src": "/api/live-matches",
@@ -70,6 +64,10 @@
       "dest": "/api/sync?action=proxy"
     },
     {
+      "src": "/api/squad-import",
+      "dest": "/api/squad-import"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
@@ -93,22 +91,6 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "geolocation=(), microphone=(), camera=()"
         }
       ]
     },
@@ -127,15 +109,6 @@
         {
           "key": "Cache-Control",
           "value": "s-maxage=3600, stale-while-revalidate=600"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.(?:js|css|png|jpg|jpeg|gif|ico|webp|woff2?))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
