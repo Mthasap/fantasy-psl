@@ -322,10 +322,16 @@
   .stat-table td, .stat-table th { padding: 6px 8px; }
 
   /* Player list */
-  .pli { padding: 8px 10px; }
-  .pli-name { font-size: .82rem; }
-  .pli-club { font-size: .68rem; }
-  .add-btn { min-width: 28px; min-height: 28px; font-size: .9rem; }
+  .pli { padding: 8px 10px; width: 100%; box-sizing: border-box; overflow: hidden; }
+  .pli-name { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+  .pli-club { font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .add-btn { min-width: 28px; min-height: 28px; font-size: .9rem; flex-shrink: 0; }
+  .pli-info { flex: 1; min-width: 0; overflow: hidden; }
+  .pli-price { flex-shrink: 0; white-space: nowrap; }
+  .pli-pos { flex-shrink: 0; }
+  #page-squad { overflow-x: hidden !important; }
+  .player-panel { overflow-x: hidden !important; width: 100% !important; box-sizing: border-box !important; }
+  #player-list { width: 100% !important; overflow-x: hidden !important; box-sizing: border-box !important; }
 
   /* News grid */
   .news-grid { display: grid; grid-template-columns: 1fr; gap: .8rem; }
