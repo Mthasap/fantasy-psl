@@ -3,9 +3,6 @@
     "api/points-cron.js": {
       "maxDuration": 60
     },
-    "api/espn-sync.js": {
-      "maxDuration": 60
-    },
     "api/squad-import.js": {
       "maxDuration": 60
     },
