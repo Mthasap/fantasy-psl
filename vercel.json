@@ -8,6 +8,9 @@
     },
     "api/squad-import.js": {
       "maxDuration": 60
+    },
+    "api/apifootball-sync.js": {
+      "maxDuration": 60
     }
   },
   "routes": [
@@ -119,8 +122,8 @@
       "schedule": "0 21 * * *"
     },
     {
-      "path": "/api/espn-sync",
-      "schedule": "0 22 */2 * *"
+      "path": "/api/apifootball-sync",
+      "schedule": "0 2 * * *"
     }
   ]
 }
