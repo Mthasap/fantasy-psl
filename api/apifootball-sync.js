@@ -60,11 +60,11 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
   const breakdown = {};
   let points = 0;
 
-  const mins    = stats.games?.minutes ?? 0;
-  const isGK    = position === 'G';
-  const isDEF   = position === 'D';
-  const isMID   = position === 'M';
-  const isFWD   = position === 'F';
+  const mins     = stats.games?.minutes ?? 0;
+  const isGK     = position === 'G';
+  const isDEF    = position === 'D';
+  const isMID    = position === 'M';
+  const isFWD    = position === 'F';
   const played60 = mins >= 60;
 
   // ── Appearance ──────────────────────────────────────────────────────────
@@ -98,8 +98,8 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
 
   // ── Clean Sheet ──────────────────────────────────────────────────────────
   // Team kept a clean sheet if the opposing team scored 0
-  const isHome    = teamId === homeTeamId;
-  const oppScore  = isHome ? awayScore : homeScore;
+  const isHome     = teamId === homeTeamId;
+  const oppScore   = isHome ? awayScore : homeScore;
   const cleanSheet = oppScore === 0 && played60;
 
   if (cleanSheet) {
@@ -240,17 +240,16 @@ async function syncFixtures(log) {
   const gwRows = rounds.map(round => {
     const gwNumber = parseGwNumber(round);
     if (!gwNumber) return null;
-    // Find first and last match dates for this round
     const roundFixtures = fixtures.filter(f => f.league?.round === round);
     const dates = roundFixtures.map(f => f.fixture?.date).filter(Boolean).sort();
     const finishedCount = roundFixtures.filter(f => f.fixture?.status?.short === 'FT').length;
     return {
-      season:       PSL_SEASON,
-      gw_number:    gwNumber,
-      api_round:    round,
-      start_date:   dates[0] ?? null,
-      end_date:     dates[dates.length - 1] ?? null,
-      is_finished:  finishedCount === roundFixtures.length,
+      season:      PSL_SEASON,
+      gw_number:   gwNumber,
+      api_round:   round,
+      start_date:  dates[0] ?? null,
+      end_date:    dates[dates.length - 1] ?? null,
+      is_finished: finishedCount === roundFixtures.length,
     };
   }).filter(Boolean);
 
@@ -280,7 +279,7 @@ async function syncMatchStats(log, options = {}) {
     .eq('stats_synced', false)
     .not('home_score', 'is', null);
 
-  if (options.gw) query = query.eq('gw_number', options.gw);
+  if (options.gw)      query = query.eq('gw_number', options.gw);
   if (options.fixture) query = query.eq('apifootball_fixture_id', options.fixture);
 
   const { data: pendingFixtures, error } = await query;
@@ -302,6 +301,11 @@ async function syncMatchStats(log, options = {}) {
 
       if (teams.length === 0) {
         log.push(`    ⚠️  No player stats returned for fixture ${fixture.apifootball_fixture_id}`);
+        // Mark as synced to avoid retrying endlessly
+        await supabase
+          .from('fixtures')
+          .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
+          .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
         continue;
       }
 
@@ -311,10 +315,10 @@ async function syncMatchStats(log, options = {}) {
         const teamId = team.team?.id;
 
         for (const playerData of (team.players ?? [])) {
-          const stats    = playerData.statistics?.[0];
+          const stats = playerData.statistics?.[0];
           if (!stats) continue;
 
-          const mins     = stats.games?.minutes ?? 0;
+          const mins = stats.games?.minutes ?? 0;
           if (mins === 0 && !stats.games?.substitute) continue; // skip truly unused
 
           const position = stats.games?.position?.charAt(0) ?? 'M'; // G, D, M, F
@@ -371,16 +375,26 @@ async function syncMatchStats(log, options = {}) {
         }
       }
 
+      // ── Deduplicate by player ID ──────────────────────────────────────────
+      // API-Football sometimes returns the same player twice in one fixture
+      const seen = new Set();
+      const dedupedRows = statRows.filter(row => {
+        const key = `${row.apifootball_fixture_id}_${row.apifootball_player_id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       // Upsert all player stats for this fixture
-      if (statRows.length > 0) {
+      if (dedupedRows.length > 0) {
         const { error: statsError } = await supabase
           .from('match_player_stats')
-          .upsert(statRows, {
+          .upsert(dedupedRows, {
             onConflict: 'apifootball_fixture_id,apifootball_player_id'
           });
         if (statsError) throw new Error('Stats upsert error: ' + statsError.message);
-        totalPlayers += statRows.length;
-        log.push(`    ✅ ${statRows.length} player stats saved`);
+        totalPlayers += dedupedRows.length;
+        log.push(`    ✅ ${dedupedRows.length} player stats saved`);
       }
 
       // Mark fixture as synced
@@ -490,7 +504,6 @@ async function recalculateTotals(log) {
   log.push(`  ✅ Updated ${updated} player season totals`);
 
   // Recalculate profile points
-  // Fetch all profiles with squad_data
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('id, squad_data');
@@ -503,7 +516,6 @@ async function recalculateTotals(log) {
   let profilesUpdated = 0;
   for (const profile of (profiles ?? [])) {
     try {
-      // Extract player IDs from squad_data — adjust this to your actual structure
       const squadData = profile.squad_data;
       if (!squadData) continue;
 
@@ -568,27 +580,27 @@ module.exports = async (req, res) => {
 
   const startTime = Date.now();
   const log = [];
-  const phase = req.query.phase ? parseInt(req.query.phase) : 'all';
-  const gwFilter = req.query.gw ? parseInt(req.query.gw) : null;
+  const phase         = req.query.phase   ? parseInt(req.query.phase)   : 'all';
+  const gwFilter      = req.query.gw      ? parseInt(req.query.gw)      : null;
   const fixtureFilter = req.query.fixture ? parseInt(req.query.fixture) : null;
 
   log.push(`Starting sync at ${new Date().toISOString()}`);
   log.push(`Phase: ${phase} | GW: ${gwFilter ?? 'all'} | Fixture: ${fixtureFilter ?? 'all'}`);
 
   let fixturesProcessed = 0;
-  let playersUpdated = 0;
+  let playersUpdated    = 0;
   let errorsEncountered = 0;
-  let status = 'success';
+  let status            = 'success';
 
   // Log to sync_log table
   const { data: syncLogRow } = await supabase
     .from('sync_log')
     .insert({
       sync_type: phase === 'all' ? 'full' : `phase_${phase}`,
-      season: PSL_SEASON,
+      season:    PSL_SEASON,
       gw_number: gwFilter,
-      status: 'running',
-      log: [],
+      status:    'running',
+      log:       [],
     })
     .select('id')
     .single();
@@ -602,10 +614,10 @@ module.exports = async (req, res) => {
 
     if (phase === 'all' || phase === 2) {
       const result = await syncMatchStats(log, {
-        gw: gwFilter,
+        gw:      gwFilter,
         fixture: fixtureFilter,
       });
-      playersUpdated = result.totalPlayers;
+      playersUpdated    = result.totalPlayers;
       errorsEncountered = result.totalErrors;
     }
 
@@ -639,7 +651,7 @@ module.exports = async (req, res) => {
 
   return res.status(200).json({
     status,
-    duration: `${duration}s`,
+    duration:           `${duration}s`,
     fixtures_processed: fixturesProcessed,
     players_updated:    playersUpdated,
     errors_encountered: errorsEncountered,
