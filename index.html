@@ -6920,5 +6920,435 @@ function closeBanner() {
   </div>
 </div>
 
+
+<!-- ══ FANTASY PSL FIX PATCH ══════════════════════════════════════════════ -->
+<!-- Fixes: squad empty, team names "--", fixtures stale, pitch alignment,  -->
+<!-- GW number "--". Must stay at bottom of body, after all other scripts.  -->
+<script>
+(function() {
+'use strict';
+
+function onReady(fn) {
+  if (document.readyState === 'complete') fn();
+  else window.addEventListener('load', fn);
+}
+
+onReady(function() {
+
+  // ── FIX 1: SQUAD RESTORE — prioritise DB players (allPlayers) over PSL_ROSTER
+  window.getUserDashboard = function(forceRefresh) {
+    if (!window.ST || !ST.user || !ST.gw) return;
+    if (!forceRefresh && window.cacheValid && cacheValid('dashboard')) {
+      window.applyDashboard(CACHE.dashboard.data); return;
+    }
+    if (window.rateLimited && rateLimited()) return;
+
+    db.from('profiles').upsert({ id: ST.user.id }, { onConflict: 'id', ignoreDuplicates: true })
+      .then(function(){}).catch(function(){});
+
+    Promise.all([
+      db.from('profiles').select('*').eq('id', ST.user.id).single(),
+      db.from('league_members').select('leagues(*)').eq('user_id', ST.user.id).limit(20)
+    ]).then(function(results) {
+      var profile = results[0].data || {};
+      var leagues = (results[1].data || []).map(function(r) { return r.leagues; }).filter(Boolean);
+      var savedSquad = [];
+      var squadRaw = null;
+      var squadSource = 'none';
+
+      try {
+        if (profile.squad_data) { squadRaw = JSON.parse(profile.squad_data); squadSource = 'cloud'; }
+      } catch(e) {}
+      if (!squadRaw || !squadRaw.length) {
+        try {
+          var ls = localStorage.getItem('fpsl_squad_' + ST.user.id);
+          if (ls) { squadRaw = JSON.parse(ls); squadSource = 'local'; }
+        } catch(e) {}
+      }
+
+      try {
+        if (squadRaw && squadRaw.length) {
+          savedSquad = squadRaw.map(function(s) {
+            var full = null;
+
+            // Tier 1: Match by DB id in allPlayers (primary fix for empty squad)
+            if (!full && ST.allPlayers && ST.allPlayers.length) {
+              full = ST.allPlayers.find(function(p) {
+                return p.id === s.id || String(p.id) === String(s.id);
+              });
+            }
+            // Tier 2: psl_roster_id match in allPlayers
+            if (!full && s.psl_roster_id && ST.allPlayers && ST.allPlayers.length) {
+              full = ST.allPlayers.find(function(p) {
+                return p.psl_roster_id === parseInt(s.psl_roster_id, 10) ||
+                       p.id === parseInt(s.psl_roster_id, 10);
+              });
+            }
+            // Tier 3: PSL_ROSTER integer id match
+            if (!full && window.PSL_ROSTER) {
+              var intId = parseInt(s.id, 10);
+              if (!isNaN(intId) && intId > 0) {
+                var rp = PSL_ROSTER.find(function(p) { return p.id === intId; });
+                if (rp) {
+                  var dbMatch = ST.allPlayers ? ST.allPlayers.find(function(p) {
+                    return (p.display_name||'').toLowerCase() === (rp.display_name||'').toLowerCase();
+                  }) : null;
+                  full = dbMatch || rp;
+                }
+              }
+            }
+            // Tier 4: name + position fuzzy match
+            if (!full && s.name && s.position && ST.allPlayers && ST.allPlayers.length) {
+              var normSaved = (s.name||'').toLowerCase().replace(/[^a-z]/g,'');
+              var surname = normSaved.slice(-6);
+              full = ST.allPlayers.find(function(p) {
+                if (p.position !== s.position) return false;
+                return (p.display_name||'').toLowerCase().replace(/[^a-z]/g,'').indexOf(surname) !== -1;
+              });
+            }
+            // Tier 5: minimal fallback object
+            if (!full && s.position) {
+              full = { id:s.id, display_name:s.name||'Unknown Player', position:s.position,
+                       club:s.club||'', team:s.club||'', price:s.price||5.0, total_points:0,
+                       goals:0, assists:0, apps:0, clean_sheets:0, yellow_cards:0, red_cards:0,
+                       clubs:{name:s.club||'', short_name:s.club||''} };
+            }
+            if (!full) return null;
+            if (!full.clubs) full = Object.assign({}, full, {clubs:{name:full.team||full.club||'',short_name:full.team||full.club||''}});
+            return Object.assign({}, full, {
+              onBench:s.onBench||false, benchOrder:s.benchOrder!==undefined?s.benchOrder:-1,
+              isCaptain:s.isCaptain||false, isVC:s.isVC||false
+            });
+          }).filter(Boolean);
+
+          savedSquad.sort(function(a,b) {
+            if (!a.onBench && b.onBench) return -1;
+            if (a.onBench && !b.onBench) return 1;
+            if (a.onBench && b.onBench) return (a.benchOrder||0)-(b.benchOrder||0);
+            return 0;
+          });
+        }
+      } catch(e) { console.error('[FIX1]', e); }
+
+      if (profile.free_transfers !== undefined) ST.freeTransfers = profile.free_transfers || 1;
+      if (profile.transfers_this_gw !== undefined) ST.transfersMade = profile.transfers_this_gw || 0;
+      ST.squadRegistered = !!(profile.squad_registered);
+      if (profile.entry_gw) ST.entryGW = profile.entry_gw;
+      if (profile.active_chip !== undefined) ST.activeChip = profile.active_chip || null;
+      if (profile.used_chips) { try { ST.usedChips = JSON.parse(profile.used_chips)||[]; } catch(e) {} }
+
+      console.log('[FPSL] Squad restored:', savedSquad.length, 'players from', squadSource);
+
+      if (squadRaw && squadRaw.length > 0 && savedSquad.length === 0) {
+        console.warn('[FPSL] Retry restore — 0 from', squadRaw.length, 'entries');
+        CACHE.players = null;
+        window.ensurePlayersLoaded(function() { window.getUserDashboard(true); });
+        return;
+      }
+
+      var dashboard = { profile:profile, squad:savedSquad, leagues:leagues };
+      CACHE.dashboard = { data:dashboard, ts:Date.now() };
+      window.applyDashboard(dashboard);
+    }).catch(function(err) { console.error('[Dashboard]', err); });
+  };
+
+  // ── FIX 2: TEAM NAMES — always populate clubs from team field
+  window.ensurePlayersLoaded = function(cb) {
+    if (window.cacheValid && cacheValid('players') && CACHE.players && CACHE.players.data && CACHE.players.data.length) {
+      ST.allPlayers = CACHE.players.data;
+      ST.filtered = ST.allPlayers.slice();
+      ST.playerPage = 0;
+      if (typeof window.renderPlayerList === 'function') window.renderPlayerList();
+      if (cb) cb();
+      return;
+    }
+    if (window.rateLimited && rateLimited()) { if (cb) cb(); return; }
+
+    function normPos(pos) {
+      if (!pos) return 'MID';
+      var r = pos.toUpperCase();
+      if (r==='GK'||r==='GOALKEEPER') return 'GK';
+      if (r==='DEF'||r==='DEFENDER') return 'DEF';
+      if (r==='MID'||r==='MIDFIELDER') return 'MID';
+      if (r==='FWD'||r==='FORWARD'||r==='ATTACKER') return 'FWD';
+      return pos;
+    }
+    var ABBRS = {
+      'Orlando Pirates':'ORL','Mamelodi Sundowns':'SUN','Kaizer Chiefs':'KAI',
+      'AmaZulu FC':'AMA','AmaZulu':'AMA','Golden Arrows':'ARR','Chippa United':'CHI',
+      'Stellenbosch FC':'STE','Stellenbosch':'STE','TS Galaxy':'TSG','Richards Bay':'RBF',
+      'Sekhukhune United':'SEK','Polokwane City':'POL','Marumo Gallants':'MAR',
+      'Marumo Gallants FC':'MAR','Magesi FC':'MAG','Magesi':'MAG','Siwelele FC':'SIW',
+      'Durban City':'DUR','Orbit College FC':'ORB','Orbit College':'ORB'
+    };
+    function sn(name) { return ABBRS[name] || (name||'').substring(0,3).toUpperCase(); }
+
+    db.from('players')
+      .select('id,psl_roster_id,apifootball_id,display_name,position,team,photo,price,is_available,goals,assists,yellow_cards,red_cards,clean_sheets,apps,appearances,total_points,avg_rating,saves,minutes_played,updated_at')
+      .order('total_points', {ascending:false})
+      .limit(400)
+      .then(function(res) {
+        var players = res.data || [];
+        if (players.length) {
+          players = players.map(function(p) {
+            var teamName = p.team || '';
+            return Object.assign({}, p, {
+              position:     normPos(p.position),
+              club:         teamName,
+              clubs:        {name:teamName, short_name:sn(teamName)},
+              is_available: p.is_available !== false,
+              apps:         p.apps || p.appearances || 0
+            });
+          });
+        } else if (window.PSL_ROSTER) {
+          players = PSL_ROSTER.map(function(p) {
+            return Object.assign({}, p, {clubs:{name:p.club,short_name:sn(p.club)},is_available:true});
+          });
+        }
+        ST.allPlayers = players;
+        ST.filtered   = players.slice();
+        ST.playerPage = 0;
+        CACHE.players = {data:players, ts:Date.now()};
+        if (typeof window.renderPlayerList === 'function') window.renderPlayerList();
+        if (cb) cb();
+      })
+      .catch(function(err) {
+        console.warn('[FIX2] DB error:', err && err.message);
+        if (window.PSL_ROSTER) {
+          var fallback = PSL_ROSTER.map(function(p) {
+            return Object.assign({}, p, {clubs:{name:p.club,short_name:sn(p.club)},is_available:true});
+          });
+          ST.allPlayers = fallback; ST.filtered = fallback.slice(); ST.playerPage = 0;
+          if (typeof window.renderPlayerList === 'function') window.renderPlayerList();
+        }
+        if (cb) cb();
+      });
+  };
+
+  // ── FIX 3: FIXTURES — read from new table with correct column names
+  window.loadFixtures = function() {
+    var c = document.getElementById('fix-list'); if (!c) return;
+    var tab = ST.fixTab || 'NS';
+    c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
+
+    if (tab === 'LIVE' || tab === 'live') {
+      fetch('/api/football?type=live')
+        .then(function(r){return r.json();})
+        .then(function(data) {
+          var matches = data.matches || data.fixtures || [];
+          LAST_MATCHES = matches;
+          if (matches.length) window.renderFixtureList(c, matches);
+          else c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem">No live matches right now</div>';
+        })
+        .catch(function() { c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem">Could not load live scores</div>'; });
+      return;
+    }
+
+    var isFTTab = (tab === 'FT' || tab === 'results');
+    var query = db.from('fixtures')
+      .select('apifootball_fixture_id,home_team_name,away_team_name,home_team_logo,away_team_logo,home_score,away_score,home_score_ht,away_score_ht,kickoff_time,status,elapsed_minutes,gw_number,api_round,venue_name,stats_synced,home_team_id,away_team_id')
+      .eq('season', 2025)
+      .order('kickoff_time', {ascending: !isFTTab});
+
+    if (isFTTab) query = query.eq('status','FT').limit(80);
+    else query = query.in('status',['NS','TBD','PST']).limit(80);
+
+    query.then(function(res) {
+      var rows = res.data || [];
+      if (!rows.length) {
+        fetch('/api/football?type=' + (isFTTab ? 'results' : 'fixtures'))
+          .then(function(r){return r.json();})
+          .then(function(data) {
+            var m = data.results || data.fixtures || [];
+            LAST_MATCHES = m; window.renderFixtureList(c, m);
+          })
+          .catch(function() { c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem">No fixtures available</div>'; });
+        return;
+      }
+      var matches = rows.map(function(f) {
+        var isLive = ['1H','HT','2H','ET','BT','P'].indexOf(f.status) > -1;
+        var isFT   = f.status === 'FT';
+        return {
+          fixture_id:f.apifootball_fixture_id, api_fixture_id:f.apifootball_fixture_id,
+          status:f.status||'NS', date:f.kickoff_time, kickoff_at:f.kickoff_time,
+          home:f.home_team_name||'', away:f.away_team_name||'',
+          home_logo:f.home_team_logo||null, away_logo:f.away_team_logo||null,
+          hg:(isFT||isLive)?f.home_score:null, ag:(isFT||isLive)?f.away_score:null,
+          is_live:isLive, is_finished:isFT, is_ft:isFT,
+          elapsed:f.elapsed_minutes||null, round:f.api_round||null,
+          gw_number:f.gw_number||null, venue:f.venue_name||null,
+          stats_synced:f.stats_synced||false,
+          _raw:f
+        };
+      });
+      LAST_MATCHES = matches;
+      window.renderFixtureList(c, matches);
+    }).catch(function(err) {
+      console.warn('[FIX3]', err && err.message);
+      fetch('/api/football?type=' + (isFTTab ? 'results' : 'fixtures'))
+        .then(function(r){return r.json();})
+        .then(function(data) { var m=data.results||data.fixtures||[]; LAST_MATCHES=m; window.renderFixtureList(c,m); })
+        .catch(function() { c.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem">Could not load fixtures</div>'; });
+    });
+  };
+
+  // ── FIX 3B: FIXTURE EXPAND — load player stats from match_player_stats
+  window.buildFixDetail = function(f) {
+    var base = 'font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.8);';
+    var out  = '<div style="background:rgba(255,255,255,.025);border-top:1px solid rgba(255,255,255,.06);padding:.5rem 0 .75rem">';
+    if (!f) return out+'<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.35);text-align:center">No match data</div></div>';
+
+    var isFT   = f.status==='FT'||f.is_ft||f.is_finished;
+    var isLive = f.is_live;
+    var fid    = f.fixture_id||f.api_fixture_id;
+
+    if (f.venue||f.round) {
+      out += '<div style="text-align:center;padding:.3rem 1rem;'+base+'color:rgba(255,255,255,.35);font-size:.65rem">';
+      if (f.round) out += f.round;
+      if (f.venue) out += (f.round?' · ':'')+' 📍 '+f.venue;
+      out += '</div>';
+    }
+    if (isFT||isLive) {
+      var pm = {'1H':'First Half','HT':'Half Time','2H':'Second Half','FT':'Full Time','ET':'Extra Time'};
+      out += '<div style="text-align:center;padding:.2rem 1rem;'+base+'color:'+(isLive?'#D4274F':'#DBA94A')+';font-weight:700;font-size:.7rem;letter-spacing:1px;text-transform:uppercase">'+(pm[f.status]||(isFT?'Full Time':'Live'))+'</div>';
+    }
+
+    if (isFT && fid) {
+      out += '<div id="mps-'+fid+'" style="padding:.4rem 1rem"><div style="'+base+'color:rgba(255,255,255,.3);text-align:center;font-size:.7rem">Loading player stats...</div></div>';
+      out += '</div>';
+      setTimeout(function() {
+        var el = document.getElementById('mps-'+fid); if (!el) return;
+        db.from('match_player_stats')
+          .select('player_name,position,minutes_played,goals,assists,saves,clean_sheet,yellow_cards,red_cards,rating,fantasy_points,points_breakdown,apifootball_team_id,is_substitute,is_captain')
+          .eq('apifootball_fixture_id', fid).eq('season',2025)
+          .order('fantasy_points',{ascending:false})
+          .then(function(res) {
+            var stats = res.data||[];
+            if (!stats.length) { el.innerHTML='<div style="'+base+'color:rgba(255,255,255,.3);text-align:center;padding:.5rem">No player stats available</div>'; return; }
+            var teamIds=[]; stats.forEach(function(s){if(teamIds.indexOf(s.apifootball_team_id)===-1)teamIds.push(s.apifootball_team_id);});
+            var raw = f._raw||{};
+            var htid = raw.home_team_id||teamIds[0];
+            var homeStats = stats.filter(function(s){return s.apifootball_team_id===htid;});
+            var awayStats = stats.filter(function(s){return s.apifootball_team_id!==htid;});
+            function posL(p){return {G:'GK',D:'DEF',M:'MID',F:'FWD'}[p]||p;}
+            function rc(r){if(!r)return'#888';if(r>=8)return'#2ecc71';if(r>=7)return'#f39c12';if(r>=6)return'#e67e22';return'#e74c3c';}
+            function bldTeam(players,tName) {
+              if(!players.length)return'';
+              return '<div style="margin-bottom:.3rem">'+
+                '<div style="padding:.3rem .8rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);background:rgba(255,255,255,.03)">'+tName+'</div>'+
+                players.map(function(p){
+                  var bd=p.points_breakdown||{};
+                  var tips=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
+                  return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.7':'')+'">' +
+                    '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.6);min-width:26px;text-align:center">'+posL(p.position)+'</span>'+
+                    '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.player_name+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
+                    '<span style="font-size:.65rem;color:rgba(255,255,255,.35)">'+p.minutes_played+"'</span>"+
+                    (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
+                    (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
+                    (p.clean_sheet?'<span style="font-size:.7rem">🛡️</span>':'')+
+                    (p.saves>0?'<span style="font-size:.7rem">🧤'+p.saves+'</span>':'')+
+                    (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
+                    (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
+                    (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rc(p.rating)+'">'+p.rating+'</span>':'')+
+                    '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:32px;text-align:right" title="'+tips+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+                  '</div>';
+                }).join('')+
+              '</div>';
+            }
+            var html='<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:.4rem .8rem .2rem">Player Stats</div>';
+            html+=bldTeam(homeStats,f.home||'Home')+bldTeam(awayStats,f.away||'Away');
+            el.innerHTML=html;
+          })
+          .catch(function(){
+            var el2=document.getElementById('mps-'+fid);
+            if(el2) el2.innerHTML='<div style="'+base+'color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Stats unavailable</div>';
+          });
+      }, 120);
+      return out;
+    }
+
+    if (!isFT && !isLive) {
+      var d=f.date||f.kickoff_at;
+      var ts=d?new Date(d).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'}):'';
+      var ds=d?new Date(d).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}):'';
+      out+='<div style="text-align:center;padding:.8rem;'+base+'"><div style="font-size:.9rem;font-weight:900;color:#fff">'+ts+'</div><div style="font-size:.7rem;color:rgba(255,255,255,.4)">'+ds+' · Kick-off</div></div>';
+    } else {
+      out+='<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.35);text-align:center;font-size:.72rem">Stats sync pending...</div>';
+    }
+    return out+'</div>';
+  };
+
+  // ── FIX 4: PITCH ALIGNMENT CSS
+  var s = document.createElement('style');
+  s.textContent =
+    '.squad-pitch-wrap{width:100%!important;max-width:480px!important;margin:0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;padding:8px 4px!important;box-sizing:border-box!important}' +
+    '.prow{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;align-items:flex-start!important;width:100%!important;gap:4px!important;margin-bottom:4px!important}' +
+    '.pc{display:flex!important;flex-direction:column!important;align-items:center!important;cursor:pointer!important;min-width:52px!important;max-width:70px!important;flex:0 0 auto!important;-webkit-tap-highlight-color:transparent!important}' +
+    '.pc-shirt{width:44px!important;height:44px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;flex-shrink:0!important}' +
+    '.pc-name{font-family:var(--font-ui)!important;font-size:.58rem!important;font-weight:700!important;color:#fff!important;margin-top:3px!important;text-align:center!important;max-width:62px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:1.2!important}' +
+    '.pc-pts{font-family:var(--font-display)!important;font-size:.6rem!important;font-weight:900!important;color:#DBA94A!important;text-align:center!important;line-height:1!important;margin-top:1px!important}' +
+    '.bench-strip{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.5rem .25rem!important;width:100%!important;max-width:480px!important;margin:0 auto!important}' +
+    '.squad-body-grid{display:flex!important;flex-direction:column!important;width:100%!important}' +
+    '#p-bench{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.4rem!important}';
+  document.head.appendChild(s);
+
+  // ── FIX 5: GW — support gw_number column (new table) and number column (old)
+  window.loadGW = function(cb) {
+    db.from('gameweeks')
+      .select('*').eq('is_current',true).eq('season',2025).limit(1)
+      .then(function(res) {
+        var gwData = res.data && res.data[0] ? res.data[0] : null;
+        if (gwData) {
+          var n = gwData.number || gwData.gw_number;
+          ST.gw = Object.assign({}, gwData, {number:n});
+          ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id){
+            var el=document.getElementById(id); if(el) el.textContent=n||'--';
+          });
+          var dl=document.getElementById('gw-deadline');
+          if (dl) {
+            var d=gwData.deadline_at||gwData.deadline||gwData.start_date;
+            if(d){dl.textContent=new Date(d).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+            else dl.textContent='TBC';
+          }
+        } else {
+          db.from('gameweeks').select('*').eq('season',2025).eq('is_finished',true).order('gw_number',{ascending:false}).limit(1)
+            .then(function(r2){
+              var gw2=r2.data&&r2.data[0]?r2.data[0]:null;
+              if(gw2){var n2=gw2.gw_number||gw2.number;ST.gw=Object.assign({},gw2,{number:n2,is_current:false});['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=n2;});}
+              else{ST.gw=null;['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='--';});}
+              var dl2=document.getElementById('gw-deadline');if(dl2)dl2.textContent='Set by admin';
+              ST.deadlinePassed=false;if(typeof window.checkDeadline==='function')window.checkDeadline();if(cb)cb();
+            }).catch(function(){if(cb)cb();});
+          return;
+        }
+        ST.deadlinePassed=false;
+        if(typeof window.checkDeadline==='function')window.checkDeadline();
+        if(cb)cb();
+      })
+      .catch(function(err){
+        console.warn('[FIX5-GW]',err&&err.message);
+        ST.gw=null;
+        ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='--';});
+        var dl=document.getElementById('gw-deadline');if(dl)dl.textContent='Unavailable';
+        if(cb)cb();
+      });
+  };
+
+  // ── TRIGGER: reload with fixes if user already logged in
+  if (window.ST && ST.user) {
+    CACHE.players=null; CACHE.dashboard=null;
+    window.loadGW(function() {
+      window.ensurePlayersLoaded(function() {
+        window.getUserDashboard(true);
+      });
+    });
+  }
+
+  console.log('[FPSL] Fix patch v1.0 applied — squad, teams, fixtures, pitch, GW');
+});
+
+})();
+</script>
+
 </body>
 </html>
