@@ -1416,7 +1416,7 @@
     try {
       const data = await sb('GET', 'gameweeks', null, 'is_current=eq.true&select=*&limit=1');
       if (data && data[0]) {
-        STATE.gw = data[0].number;
+        STATE.gw = data[0].gw_number || data[0].number;
         document.getElementById('gw-num').textContent          = STATE.gw;
         document.getElementById('current-gw-badge').textContent = 'GW ' + STATE.gw;
         document.getElementById('jump-gw').value               = STATE.gw;
@@ -1440,12 +1440,12 @@
     if (!confirm('Set GW' + gw + ' as current? All other GWs will be deactivated.')) return;
     try {
       // Use server-side endpoint with service key to bypass RLS
-      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { number: gw } });
-      const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + gw + '&select=number&limit=1');
+      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { gw_number: gw } });
+      const existing = await sb('GET', 'gameweeks', null, 'gw_number=eq.' + gw + '&select=gw_number&limit=1');
       if (existing && existing.length) {
-        await sbWrite('update', 'gameweeks', { is_current: true }, { number: String(gw) });
+        await sbWrite('update', 'gameweeks', { is_current: true }, { gw_number: String(gw) });
       } else {
-        await sbWrite('insert', 'gameweeks', { number: gw, name: 'Gameweek ' + gw, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { gw_number: gw, number: gw, name: 'Gameweek ' + gw, season: 2025, is_current: true, is_finished: false });
       }
       STATE.gw = gw;
       showStatus('gw-status', 'ok', '✓ GW' + gw + ' is now active — app updates within 5 min');
@@ -1462,15 +1462,15 @@
     const localDate = new Date(val);
     const utcDate   = new Date(localDate.getTime() - 2 * 60 * 60 * 1000);
     try {
-      await sbWrite('update', 'gameweeks', { deadline_at: utcDate.toISOString() }, { number: String(STATE.gw) });
+      await sbWrite('update', 'gameweeks', { deadline_at: utcDate.toISOString() }, { gw_number: String(STATE.gw) });
       showStatus('gw-status', 'ok', '✓ Deadline set for GW' + STATE.gw + ' → ' + val + ' SAST');
     } catch(e) { showStatus('gw-status', 'error', '✗ ' + e.message); }
   }
 
   async function forceCloseGW() {
-    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '? This will mark GW' + currentGW + ' as finished and set GW' + nextGW + ' as current. Users will see GW' + nextGW + ' immediately.')) return;
+    if (!confirm('Close GW' + STATE.gw + '? This marks it as finished.')) return;
     try {
-      await sbWrite('update', 'gameweeks', { is_current: false, is_finished: true }, { number: String(STATE.gw) });
+      await sbWrite('update', 'gameweeks', { is_current: false, is_finished: true }, { gw_number: String(STATE.gw) });
       showStatus('gw-close-status', 'ok', '✓ GW' + STATE.gw + ' closed and marked finished');
       await loadCurrentGW();
     } catch(e) { showStatus('gw-close-status', 'error', '✗ ' + e.message); }
@@ -1478,14 +1478,14 @@
 
   async function forceOpenNextGW() {
     const next = (STATE.gw || 23) + 1;
-    if (!confirm('Open GW' + next + '?\n\nMake sure GW' + STATE.gw + ' is closed first.')) return;
+    if (!confirm('Open GW' + next + '? Make sure GW' + STATE.gw + ' is closed first.')) return;
     try {
-      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { number: next } });
-      const existing = await sb('GET', 'gameweeks', null, 'number=eq.' + next + '&select=number&limit=1');
+      await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { gw_number: next } });
+      const existing = await sb('GET', 'gameweeks', null, 'gw_number=eq.' + next + '&select=gw_number&limit=1');
       if (existing && existing.length) {
-        await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { number: String(next) });
+        await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { gw_number: String(next) });
       } else {
-        await sbWrite('insert', 'gameweeks', { number: next, name: 'Gameweek ' + next, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { gw_number: next, number: next, name: 'Gameweek ' + next, season: 2025, is_current: true, is_finished: false });
       }
       showStatus('gw-close-status', 'ok', '✓ GW' + next + ' is now active');
       STATE.gw = next;
@@ -1501,7 +1501,7 @@
     if (!STATE.gw) await loadCurrentGW();
     const gw = STATE.gw || 23;
     try {
-      const data = await sb('GET', 'fixtures', null, 'gameweek=eq.' + gw + '&select=*&order=kickoff_at.asc');
+      const data = await sb('GET', 'fixtures', null, 'gw_number=eq.' + gw + '&season=eq.2025&select=*&order=kickoff_time.asc');
       STATE.fixtures = data || [];
 
       const total     = STATE.fixtures.length;
@@ -1524,8 +1524,8 @@
   function renderFixturesHTML(fixtures) {
     if (!fixtures.length) return '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No fixtures for this gameweek</td></tr>';
     return fixtures.map(f => {
-      const kickoff  = f.kickoff_at
-        ? new Date(f.kickoff_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'short', timeStyle: 'short' })
+      const kickoff  = f.kickoff_time
+        ? new Date(f.kickoff_time).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'short', timeStyle: 'short' })
         : '—';
       const score    = (f.status === 'FT' || f.status === 'AET')
         ? '<span class="score-badge">' + f.home_score + ' – ' + f.away_score + '</span>'
@@ -1537,12 +1537,12 @@
           : '<span class="status-live">● LIVE</span>';
 
       return '<tr>' +
-        '<td>' + f.home_team + '</td>' +
+        '<td>' + f.home_team_name + '</td>' +
         '<td style="text-align:center">' + score + '</td>' +
-        '<td>' + f.away_team + '</td>' +
+        '<td>' + f.away_team_name + '</td>' +
         '<td style="color:var(--muted)">' + kickoff + '</td>' +
         '<td>' + statusEl + '</td>' +
-        '<td><button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="quickEditResult(\'' + f.home_team + '\',\'' + f.away_team + '\')">Edit</button></td>' +
+        '<td><button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="quickEditResult(\'' + f.home_team_name + '\',\'' + f.away_team_name + '\')">Edit</button></td>' +
       '</tr>';
     }).join('');
   }
@@ -1572,7 +1572,7 @@
     const localDate  = new Date(kickoff);
     const kickoffUTC = new Date(localDate.getTime() - 2 * 60 * 60 * 1000).toISOString();
     try {
-      await sbWrite('insert', 'fixtures', { gameweek: gw, home_team: home, away_team: away, kickoff_at: kickoffUTC, status: 'NS' });
+      await sbWrite('insert', 'fixtures', { gw_number: gw, home_team_name: home, away_team_name: away, kickoff_time: kickoffUTC, status: 'NS', season: 2025 });
       showStatus('fixture-status', 'ok', '✓ Fixture added: ' + home + ' vs ' + away + ' — GW' + gw);
       document.getElementById('fix-gw').value = '';
       document.getElementById('fix-kickoff').value = '';
@@ -2696,46 +2696,33 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
   async function runGWStep3() {
     const btn = document.getElementById('btn-advance-gw');
 
-    // Get current GW first
-    const { data: gwData } = await supabase
-      .from('gameweeks')
-      .select('gw_number, number')
-      .eq('is_current', true)
-      .eq('season', 2025)
-      .limit(1)
-      .single();
+    // Get current GW using existing sb() helper
+    if (!STATE.gw) await loadCurrentGW();
+    const currentGW = STATE.gw;
 
-    const currentGW = gwData ? (gwData.gw_number || gwData.number) : null;
     if (!currentGW) {
       showStepStatus('step3-status', 'error', '❌ No current GW found — set one first in the Gameweek tab');
       return;
     }
     const nextGW = currentGW + 1;
 
-    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '? Marks GW' + currentGW + ' finished and opens GW' + nextGW + ' for users.')) return;
+    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '? Marks GW' + currentGW + ' finished and opens GW' + nextGW + ' as current.')) return;
 
     btn.disabled = true;
     btn.textContent = '⏳ Advancing...';
     showStepStatus('step3-status', 'info', 'Closing GW' + currentGW + ' and opening GW' + nextGW + '...');
 
     try {
-      // Close current GW
-      const { error: closeErr } = await supabase
-        .from('gameweeks')
-        .update({ is_current: false, is_finished: true })
-        .eq('season', 2025)
-        .eq('is_current', true);
-
-      if (closeErr) throw new Error('Close GW error: ' + closeErr.message);
+      // Close current GW using sbWrite helper
+      await sbWrite('update', 'gameweeks', { is_current: false, is_finished: true }, { gw_number: String(currentGW) });
 
       // Open next GW
-      const { error: openErr } = await supabase
-        .from('gameweeks')
-        .update({ is_current: true })
-        .eq('season', 2025)
-        .eq('gw_number', nextGW);
-
-      if (openErr) throw new Error('Open GW error: ' + openErr.message);
+      const existing = await sb('GET', 'gameweeks', null, 'gw_number=eq.' + nextGW + '&select=gw_number&limit=1');
+      if (existing && existing.length) {
+        await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { gw_number: String(nextGW) });
+      } else {
+        await sbWrite('insert', 'gameweeks', { gw_number: nextGW, number: nextGW, name: 'Gameweek ' + nextGW, season: 2025, is_current: true, is_finished: false });
+      }
 
       showStepStatus('step3-status', 'ok',
         '✅ GW' + currentGW + ' closed · GW' + nextGW + ' is now active — users see GW' + nextGW + ' in the app');
