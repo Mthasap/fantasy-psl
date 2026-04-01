@@ -539,7 +539,7 @@
     Publisher ID from adsense.google.com once your site is approved.
     Remove the HTML comment markers to activate.
   =============================================================== -->
-  <!-- AdSense already loaded at top of <head> — no duplicate needed -->
+  <!-- AdSense loaded at top of head — no duplicate needed -->
 </head>
 <body style="background:#0C0F14;color:#ffffff;">
 
@@ -912,7 +912,7 @@
 </div>
 
 <!-- == SQUAD == -->
-<div id="page-squad" class="page">
+<div id="page-squad" class="page" style="overflow-x:hidden">
   <div class="page-section">
     <div class="page-head">
       <div>
@@ -978,8 +978,8 @@
     </div>
 
     <div class="squad-body-grid">
-      <div>
-        <div class="squad-pitch-wrap" id="squad-pitch">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:480px;margin:0 auto">
           <div id="p-fwd" class="prow"></div>
           <div id="p-mid" class="prow"></div>
           <div id="p-def" class="prow"></div>
@@ -1058,11 +1058,7 @@
 <div id="page-news" class="page">
   <div class="page-section" style="max-width:1000px">
     <span class="eyebrow">2025/26 Season</span>
-    <h1 class="section-title">PSL News &amp; Injuries</h1>
-    <div style="margin-bottom:2rem">
-      <span class="eyebrow">Injury Updates</span>
-      <div id="injury-list" style="margin-top:.8rem"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
-    </div>
+    <h1 class="section-title">PSL News</h1>
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
       <div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>
@@ -1556,7 +1552,7 @@ function goPage(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (id === 'fixtures') { loadFixtures(); loadTable(); }
-  if (id === 'news')     { loadNews(); loadInjuries(); }
+  if (id === 'news')     { loadNews(); }
   if (id === 'chat')     { if(typeof loadDiskiChat==='function') loadDiskiChat(); }
   if (id === 'stats')    loadStats();
   if (id === 'leagues')  loadLeagues();
@@ -3511,50 +3507,25 @@ var NEWS_CAT_COLORS = {
 };
 
 function renderNews(grid, posts) {
-  if (!posts.length) {
-    grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">No news yet.</div>';
-    return;
-  }
+  if (!posts.length) { grid.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">No news yet.</div>'; return; }
   window._newsPosts = posts;
   if (window._pendingNewsSlug) {
-    var slug = window._pendingNewsSlug; window._pendingNewsSlug = null;
-    var mi = posts.findIndex(function(p){ var ps=p.slug||p.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); return ps===slug; });
-    if (mi > -1) { setTimeout(function(){ openNewsPost(mi); }, 300); }
+    var slug=window._pendingNewsSlug; window._pendingNewsSlug=null;
+    var mi=posts.findIndex(function(p){var ps=p.slug||p.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return ps===slug;});
+    if(mi>-1){setTimeout(function(){openNewsPost(mi);},300);}
   }
-  function fmtDate(d) { if(!d)return''; return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}); }
-  function catPill(cat) {
-    var color = NEWS_CAT_COLORS[cat]||NEWS_CAT_COLORS['default'];
-    return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+color+';padding:2px 8px;border-radius:3px">'+(cat||'News')+'</span>';
-  }
-  var featured = posts[0];
-  var featImg = featured.image_url
-    ? '<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">'
-    : '<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
-  var featHtml =
-    '<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+
-      featImg+
-      '<div style="padding:.9rem 1rem 1.1rem">'+
-        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div>'+
-        '<div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div>'+
-        '<div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div>'+
-      '</div>'+
-    '</div>';
-  var gridCards = posts.slice(1).map(function(post,i) {
+  function fmtDate(d){if(!d)return'';return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});}
+  function catPill(cat){var color=NEWS_CAT_COLORS[cat]||NEWS_CAT_COLORS['default'];return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+color+';padding:2px 8px;border-radius:3px">'+(cat||'News')+'</span>';}
+  var featured=posts[0];
+  var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
+  var featHtml='<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+featImg+'<div style="padding:.9rem 1rem 1.1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div><div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div></div></div>';
+  var gridCards=posts.slice(1).map(function(post,i){
     var idx=i+1;
-    var cardImg = post.image_url
-      ? '<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">'
-      : '<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
-    return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+
-      cardImg+
-      '<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem">'+
-        '<div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div>'+
-        '<div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div>'+
-        '<div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div>'+
-      '</div>'+
-    '</div>';
+    var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
+    return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+cardImg+'<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem"><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div><div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div></div></div>';
   }).join('');
-  grid.style.display='block'; grid.style.gridTemplateColumns=''; grid.style.gap='';
-  grid.innerHTML = featHtml + (posts.length>1 ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">'+gridCards+'</div>' : '');
+  grid.style.display='block';grid.style.gridTemplateColumns='';grid.style.gap='';
+  grid.innerHTML=featHtml+(posts.length>1?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">'+gridCards+'</div>':'');
 }
 function openNewsPost(postOrIdx) {
   // Accept either an index into window._newsPosts or a post object directly
@@ -4405,12 +4376,12 @@ var PSL_ROSTER = [
   { id:1013, club:'Orlando Pirates', position:'FWD', display_name:'Andre De Jong',          price:7.0,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.6, total_points:53 },
 
   // -- MAMELODI SUNDOWNS  GP15 W9 D5 L1 GF24 GA7 │ 48YC 2RC -----------
-  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:14, goals:0, assists:0, clean_sheets:11, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97, ownership:28 },
+  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:14, goals:0, assists:0, clean_sheets:9, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97, ownership:28 },
   { id:2002, club:'Mamelodi Sundowns', position:'DEF', display_name:'Grant Kekana',         price:5.5,  apps:13, goals:0, assists:0, clean_sheets:8,  yellow_cards:6, red_cards:0, xg:0.2, xa:0.3, total_points:51 },
   { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',     price:5.5,  apps:11, goals:0, assists:0, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.1, total_points:44, ownership:15 },
   { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Khuliso Mudau',        price:5.5,  apps:13, goals:0, assists:1, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.9, total_points:46 },
   { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Aubrey Modiba',        price:7.0,  apps:17, goals:1, assists:3, clean_sheets:6,  yellow_cards:5, red_cards:0, xg:0.8, xa:2.5, total_points:63 },
-  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:21, goals:4, assists:4, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:3.5, xa:3.8, total_points:87, ownership:20 },
+  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:21, goals:4, assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:3.8, total_points:87, ownership:20 },
   { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Arthur',               price:8.0,  apps:16, goals:3, assists:3, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:2.8, total_points:69 },
   { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Marcelo Allende',      price:7.5,  apps:18, goals:3, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:1, xg:2.6, xa:1.8, total_points:56 },
   { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Monnapule Saleng',     price:8.0,  apps:12, goals:1, assists:4, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.0, xa:3.5, total_points:52 },
@@ -5079,27 +5050,26 @@ function loadStats() {
   });
 }
 
-// ============================================================
-//  STATS — source priority:
-//  1. ST.allPlayers (DB — updated by API-Football Phase 3 sync)
-//  2. PSL_ROSTER (hardcoded fallback if DB not loaded yet)
-//  xG/xA only available in PSL_ROSTER (not in API-Football)
-// ============================================================
-
 function renderStats() {
   var c = document.getElementById('stats-body'); if (!c) return;
-  // Always use DB players if loaded — they have real API-Football season totals
-  // Fall back to PSL_ROSTER only if ST.allPlayers is empty
-  var src = (ST.allPlayers && ST.allPlayers.length >= 10) ? ST.allPlayers : PSL_ROSTER;
-  if (STAT_TAB === 'goals')   { renderStatGoals(c, src); return; }
-  if (STAT_TAB === 'assists') { renderStatAssists(c, src); return; }
-  if (STAT_TAB === 'cs')      { renderStatCS(c, src); return; }
-  if (STAT_TAB === 'gi')      { renderStatGI(c, src); return; }
-  if (STAT_TAB === 'xg')      { renderStatXG(c, src); return; }
-  if (STAT_TAB === 'cards')   { renderStatCards(c, src); return; }
+  // Stats are manually maintained in PSL_ROSTER below.
+  // Update PSL_ROSTER figures in the code to refresh stats — no auto-sync.
+  if (STAT_TAB === 'goals')   { renderStatGoals(c, null); return; }
+  if (STAT_TAB === 'assists') { renderStatAssists(c, null); return; }
+  if (STAT_TAB === 'cs')      { renderStatCS(c, PSL_ROSTER.slice()); return; }
+  if (STAT_TAB === 'gi')      { renderStatGI(c, null); return; }
+  if (STAT_TAB === 'xg')      { renderStatXG(c, null); return; }
+  if (STAT_TAB === 'cards')   { renderStatCards(c, null); return; }
 }
 
-// -- Shared stat list renderer ---------------------------------
+// -- Shared stat list renderer --------------------------------
+// ==========================================================
+//  STAT RENDER FUNCTIONS
+//  data = LIVE_STATS object (from API) or null (use PSL_ROSTER)
+//  Each function builds rows using a unified statRow() builder
+// ==========================================================
+
+// -- Shared: build a player stat row --------------------------
 function statRow(rank, name, club, clubLogo, val, valLabel, sub) {
   var logo = clubLogo || getTeamLogo(club);
   var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':(rank+'.');
@@ -5127,6 +5097,7 @@ function statSection(title, icon, rows, noData) {
     '</div>' + body + '</div>';
 }
 
+// -- ICONS -----------------------------------------------------
 var SVG = {
   goals:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>',
   assists: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:16px;height:16px"><path d="M5 12h14"/><path d="M15 7l5 5-5 5"/><path d="M5 7c0 0 2 2 2 5s-2 5-2 5"/></svg>',
@@ -5137,39 +5108,34 @@ var SVG = {
   star:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:16px;height:16px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
 };
 
-// Helper: normalise player display name + club from either DB or PSL_ROSTER shape
-function pName(p) { return p.display_name || p.name || ''; }
-function pClub(p) { return (p.clubs && p.clubs.name) || p.club || p.team || ''; }
-
-// Helper: sort source by key descending, filter, slice
-function topN(src, key, n, extraFilter) {
-  var arr = src.slice().filter(function(p) {
-    return (p[key]||0) > 0 && (!extraFilter || extraFilter(p));
-  });
-  arr.sort(function(a,b){ return (b[key]||0)-(a[key]||0); });
-  return arr.slice(0, n||15);
-}
-
-// Legacy helper still used by xG (PSL_ROSTER only has xg/xa)
+// -- Roster fallback helpers -----------------------------------
 function rosterTopN(key, n, filter) {
   var arr = PSL_ROSTER.slice();
   if (filter) arr = arr.filter(filter);
   return arr.sort(function(a,b){ return (b[key]||0)-(a[key]||0); }).slice(0, n||10);
 }
 
-// -- GOALS -------------------------------------------------------
-function renderStatGoals(c, src) {
-  var scorerRows = topN(src, 'goals', 15).map(function(p,i) {
-    var club = pClub(p);
-    var apps = p.apps || p.appearances || 0;
-    var sub  = club + ' · ' + (p.position||'') + ' · ' + apps + ' apps';
-    return statRow(i+1, pName(p), club, null, p.goals||0, 'Goals', sub);
-  }).join('');
+// -- GOALS -----------------------------------------------------
+function renderStatGoals(c, live) {
+  var scorerRows = '';
+  if (live && live.topScorers && live.topScorers.length) {
+    scorerRows = live.topScorers.slice(0,15).map(function(p,i) {
+      var sub = p.club + ' . ' + p.apps + ' apps' + (p.assists ? ' . ' + p.assists + 'A' : '');
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.goals, 'Goals', sub);
+    }).join('');
+  } else {
+    scorerRows = rosterTopN('goals', 15, function(p){ return p.goals > 0; }).map(function(p,i) {
+      var posLabel = p.position || 'MID';
+      var sub = p.club + ' · ' + posLabel + ' · ' + (p.apps||0) + ' apps';
+      return statRow(i+1, p.display_name, p.club, null, p.goals, 'Goals', sub);
+    }).join('');
+  }
 
   // Club goals from table
-  var tableData = (LIVE_STATS && LIVE_STATS.table && LIVE_STATS.table.length ? LIVE_STATS.table : REAL_TABLE).slice();
+  var clubGoalsRows = '';
+  var tableData = (live && live.table && live.table.length ? live.table : REAL_TABLE).slice();
   tableData.sort(function(a,b){ return (b.gf||0)-(a.gf||0); });
-  var clubGoalsRows = tableData.slice(0,8).map(function(t,i) {
+  clubGoalsRows = tableData.slice(0,8).map(function(t,i) {
     return statRow(i+1, t.team, t.team, getTeamLogo(t.team), t.gf||'--', 'Team Goals', (t.ga !== undefined ? t.ga + ' conceded' : ''));
   }).join('');
 
@@ -5177,95 +5143,140 @@ function renderStatGoals(c, src) {
                 statSection('Goals by Club', SVG.goals, clubGoalsRows);
 }
 
-// -- ASSISTS -----------------------------------------------------
-function renderStatAssists(c, src) {
-  var rows = topN(src, 'assists', 15).map(function(p,i) {
-    var club = pClub(p);
-    var apps = p.apps || p.appearances || 0;
-    var sub  = club + ' · ' + (p.position||'') + ' · ' + apps + ' apps';
-    return statRow(i+1, pName(p), club, null, p.assists||0, 'Assists', sub);
-  }).join('');
+// -- ASSISTS ---------------------------------------------------
+function renderStatAssists(c, live) {
+  var rows = '';
+  if (live && live.topAssists && live.topAssists.length) {
+    rows = live.topAssists.slice(0,15).map(function(p,i) {
+      var sub = p.club + ' . ' + p.apps + ' apps' + (p.keyPasses ? ' . ' + p.keyPasses + ' key passes' : '');
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.assists, 'Assists', sub);
+    }).join('');
+  } else {
+    rows = rosterTopN('assists', 15, function(p){ return p.assists > 0; }).map(function(p,i) {
+      var sub = p.club + ' · ' + (p.position||'MID') + ' · ' + (p.apps||0) + ' apps';
+      return statRow(i+1, p.display_name, p.club, null, p.assists, 'Assists', sub);
+    }).join('');
+  }
   c.innerHTML = statSection('Most Assists', SVG.assists, rows);
 }
 
-// -- CLEAN SHEETS ------------------------------------------------
-function renderStatCS(c, src) {
-  var gkRows = topN(src, 'clean_sheets', 10, function(p){ return p.position==='GK'; }).map(function(p,i) {
-    var club = pClub(p);
-    var apps = p.apps || p.appearances || 0;
-    return statRow(i+1, pName(p), club, null, p.clean_sheets||0, 'Clean Sheets', 'GK · ' + apps + ' apps');
+// -- CLEAN SHEETS (always from roster -- API clean sheets by player need extra call) --
+function renderStatCS(c, players) {
+  var gkRows = rosterTopN('clean_sheets', 10, function(p){ return p.position==='GK' && p.clean_sheets>0; }).map(function(p,i) {
+    return statRow(i+1, p.display_name, p.club, null, p.clean_sheets, 'Clean Sheets', 'GK . ' + p.apps + ' apps');
   }).join('');
-  var defRows = topN(src, 'clean_sheets', 10, function(p){ return p.position==='DEF'; }).map(function(p,i) {
-    var club = pClub(p);
-    var apps = p.apps || p.appearances || 0;
-    return statRow(i+1, pName(p), club, null, p.clean_sheets||0, 'Clean Sheets', 'DEF · ' + apps + ' apps');
+  var defRows = rosterTopN('clean_sheets', 10, function(p){ return p.position==='DEF' && p.clean_sheets>0; }).map(function(p,i) {
+    return statRow(i+1, p.display_name, p.club, null, p.clean_sheets, 'Clean Sheets', 'DEF . ' + p.apps + ' apps');
   }).join('');
 
-  // Club clean sheets — find best GK per team
-  var teams = {};
-  src.filter(function(p){ return p.position==='GK'; }).forEach(function(p) {
-    var club = pClub(p);
-    if (!teams[club] || (p.clean_sheets||0) > (teams[club].clean_sheets||0)) teams[club] = p;
-  });
-  var clubRows = Object.keys(teams)
-    .map(function(club){ return { team:club, cs: teams[club].clean_sheets||0 }; })
-    .filter(function(t){ return t.cs > 0; })
-    .sort(function(a,b){ return b.cs - a.cs; })
-    .slice(0,8)
-    .map(function(t,i) { return statRow(i+1, t.team, t.team, getTeamLogo(t.team), t.cs, 'Clean Sheets', ''); })
-    .join('');
+  // Club clean sheets from standings table
+  var tableData = (LIVE_STATS && LIVE_STATS.table && LIVE_STATS.table.length ? LIVE_STATS.table : REAL_TABLE).slice();
+  var clubCS = tableData.map(function(t) {
+    var gk = PSL_ROSTER.find(function(p){ return p.club===t.team && p.position==='GK' && p.apps>3; });
+    return { team:t.team, cs: gk ? gk.clean_sheets : 0 };
+  }).sort(function(a,b){ return b.cs-a.cs; });
+  var clubRows = clubCS.slice(0,8).map(function(t,i) {
+    return statRow(i+1, t.team, t.team, getTeamLogo(t.team), t.cs, 'Clean Sheets', '');
+  }).join('');
 
   c.innerHTML = statSection('Goalkeeper Clean Sheets', SVG.shield, gkRows) +
                 statSection('Defender Clean Sheets', SVG.shield, defRows) +
                 statSection('Club Clean Sheets', SVG.shield, clubRows);
 }
 
-// -- GOAL INVOLVEMENTS ------------------------------------------
-function renderStatGI(c, src) {
-  var rows = src.slice()
-    .map(function(p){ return Object.assign({}, p, { gi: (p.goals||0)+(p.assists||0) }); })
-    .filter(function(p){ return p.gi > 0; })
-    .sort(function(a,b){ return b.gi - a.gi; })
-    .slice(0,15)
-    .map(function(p,i) {
-      var club = pClub(p);
-      return statRow(i+1, pName(p), club, null, p.gi, 'G+A', (p.goals||0) + ' goals · ' + (p.assists||0) + ' assists');
-    }).join('');
+// -- GOAL INVOLVEMENTS -----------------------------------------
+function renderStatGI(c, live) {
+  var rows = '';
+  if (live && live.topScorers && live.topScorers.length) {
+    // Merge scorers + assists to get combined ranking
+    var merged = {};
+    (live.topScorers||[]).concat(live.topAssists||[]).forEach(function(p) {
+      var key = p.id || p.name;
+      if (!merged[key]) merged[key] = Object.assign({}, p, {gi: 0});
+      merged[key].gi = (merged[key].goals||0) + (merged[key].assists||0);
+    });
+    // Re-compute each player's gi
+    Object.values(merged).forEach(function(p) {
+      p.gi = (p.goals||0) + (p.assists||0);
+    });
+    rows = Object.values(merged)
+      .filter(function(p){ return p.gi > 0; })
+      .sort(function(a,b){ return b.gi-a.gi; })
+      .slice(0,15)
+      .map(function(p,i) {
+        return statRow(i+1, p.name, p.club, p.clubLogo, p.gi, 'G+A', p.goals + ' goals . ' + p.assists + ' assists');
+      }).join('');
+  } else {
+    rows = PSL_ROSTER.slice()
+      .map(function(p){ return Object.assign({}, p, { gi: (p.goals||0)+(p.assists||0) }); })
+      .filter(function(p){ return p.gi > 0; })
+      .sort(function(a,b){ return b.gi-a.gi; })
+      .slice(0,15)
+      .map(function(p,i) {
+        return statRow(i+1, p.display_name, p.club, null, p.gi, 'G+A', p.goals + ' goals . ' + p.assists + ' assists');
+      }).join('');
+  }
   c.innerHTML = statSection('Goal Involvements (Goals + Assists)', SVG.bolt, rows);
 }
 
-// -- xG / xA ----------------------------------------------------
-// xG/xA not available from API-Football — always use PSL_ROSTER for this tab
-function renderStatXG(c, src) {
-  var xgRows = rosterTopN('xg', 10, function(p){ return (p.xg||0) > 0; }).map(function(p,i) {
-    var diff    = ((p.goals||0) - (p.xg||0)).toFixed(1);
-    var diffStr = parseFloat(diff) >= 0 ? '+' + diff : diff;
-    return statRow(i+1, p.display_name, p.club, null, (p.xg||0).toFixed(1), 'xG', 'Actual: ' + (p.goals||0) + 'G (' + diffStr + ')');
-  }).join('');
-  var xaRows = rosterTopN('xa', 10, function(p){ return (p.xa||0) > 0; }).map(function(p,i) {
-    return statRow(i+1, p.display_name, p.club, null, (p.xa||0).toFixed(1), 'xA', 'Actual: ' + (p.assists||0) + 'A');
-  }).join('');
+// -- xG / xA ---------------------------------------------------
+function renderStatXG(c, live) {
+  var xgRows = '', xaRows = '';
+  if (live && live.topScorers && live.topScorers.length) {
+    var xgList = (live.topScorers||[]).filter(function(p){ return p.xg > 0; }).sort(function(a,b){ return b.xg-a.xg; });
+    xgRows = xgList.slice(0,10).map(function(p,i) {
+      var diff = (p.goals - p.xg).toFixed(1);
+      var diffStr = diff >= 0 ? '+' + diff : '' + diff;
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.xg.toFixed(1), 'xG', 'Actual: ' + p.goals + 'G (' + diffStr + ')');
+    }).join('');
+    var xaList = (live.topAssists||[]).filter(function(p){ return p.xg > 0; }).sort(function(a,b){ return b.xg-a.xg; });
+    xaRows = xaList.slice(0,10).map(function(p,i) {
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.xg.toFixed(1), 'xA', 'Actual: ' + p.assists + 'A');
+    }).join('');
+  } else {
+    xgRows = rosterTopN('xg', 10, function(p){ return p.xg > 0; }).map(function(p,i) {
+      var diff = ((p.goals||0) - p.xg).toFixed(1);
+      var diffStr = diff >= 0 ? '+' + diff : '' + diff;
+      return statRow(i+1, p.display_name, p.club, null, p.xg.toFixed(1), 'xG', 'Actual: ' + p.goals + 'G (' + diffStr + ')');
+    }).join('');
+    xaRows = rosterTopN('xa', 10, function(p){ return p.xa > 0; }).map(function(p,i) {
+      return statRow(i+1, p.display_name, p.club, null, p.xa.toFixed(1), 'xA', 'Actual: ' + p.assists + 'A');
+    }).join('');
+  }
   c.innerHTML = statSection('Expected Goals (xG)', SVG.bars, xgRows) +
                 statSection('Expected Assists (xA)', SVG.bars, xaRows);
 }
 
-// -- CARDS -------------------------------------------------------
-function renderStatCards(c, src) {
-  var yellRows = topN(src, 'yellow_cards', 15).map(function(p,i) {
-    var club = pClub(p);
-    return statRow(i+1, pName(p), club, null, p.yellow_cards||0, 'Yellow', (p.position||'') + ' · ' + club);
-  }).join('');
-  var redList = topN(src, 'red_cards', 10);
-  var redRows = redList.length
-    ? redList.map(function(p,i) {
-        var club = pClub(p);
-        return statRow(i+1, pName(p), club, null, p.red_cards||0, 'Red', (p.position||'') + ' · ' + club);
-      }).join('')
-    : '<div style="padding:1.2rem;color:rgba(255,255,255,.3);text-align:center;font-size:.82rem">No red cards this season</div>';
+// -- CARDS -----------------------------------------------------
+function renderStatCards(c, live) {
+  var yellRows = '', redRows = '';
+  if (live && live.topYellow && live.topYellow.length) {
+    yellRows = live.topYellow.slice(0,15).map(function(p,i) {
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.yellowCards, 'Yellow', p.club + ' . ' + p.position);
+    }).join('');
+    var reds = live.topRed && live.topRed.length ? live.topRed : [];
+    redRows = reds.length
+      ? reds.slice(0,10).map(function(p,i) {
+          return statRow(i+1, p.name, p.club, p.clubLogo, p.redCards, 'Red', p.club);
+        }).join('')
+      : '<div style="padding:1.2rem;color:rgba(255,255,255,.3);text-align:center;font-size:.82rem">No red cards issued this season</div>';
+  } else {
+    var cardSrc = (ST.allPlayers && ST.allPlayers.length) ? ST.allPlayers : PSL_ROSTER;
+    yellRows = cardSrc.slice().filter(function(p){return(p.yellow_cards||0)>0;}).sort(function(a,b){return(b.yellow_cards||0)-(a.yellow_cards||0);}).slice(0,15).map(function(p,i){
+      var club=(p.clubs&&p.clubs.name)||(p.club||p.team||'');
+      return statRow(i+1,p.display_name||p.name,club,null,p.yellow_cards||0,'Yellow',(p.position||'')+' · '+club);
+    }).join('');
+    var rosterReds = cardSrc.slice().filter(function(p){return(p.red_cards||0)>0;}).sort(function(a,b){return(b.red_cards||0)-(a.red_cards||0);});
+    redRows = rosterReds.length
+      ? rosterReds.map(function(p,i){
+          var club=(p.clubs&&p.clubs.name)||(p.club||p.team||'');
+          return statRow(i+1,p.display_name||p.name,club,null,p.red_cards||0,'Red',(p.position||'')+' · '+club);
+        }).join('')
+      : '<div style="padding:1.2rem;color:rgba(255,255,255,.3);text-align:center;font-size:.82rem">No red cards this season</div>';
+  }
   c.innerHTML = statSection('Yellow Cards', SVG.card, yellRows) +
                 statSection('Red Cards', SVG.card, redRows);
 }
-
 
 // -- loadTable: try live API, fallback to REAL_TABLE --
 function loadTable() {
@@ -7110,7 +7121,7 @@ onReady(function() {
       .order('kickoff_time', {ascending: !isFTTab});
 
     if (isFTTab) {
-      query = query.eq('status','FT').limit(80);
+      query = query.eq('status','FT').order('kickoff_time',{ascending:false}).limit(80);
     } else {
       var today = new Date(); today.setHours(0,0,0,0);
       if (ST.gw && ST.gw.number) {
@@ -7222,16 +7233,13 @@ onReady(function() {
                 }).join('')+
               '</div>';
             }
-            window['_mpsData_'+fid] = {home:homeStats, away:awayStats, f:f, bldTeam:bldTeam};
-            function buildMpsTabs(active) {
-              var on = function(w){ return active===w; };
-              var bs = function(w){ return 'flex:1;padding:.4rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.5)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer'; };
-              return '<div style="display:flex;gap:6px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.06)">' +
-                '<button onclick="mpsTab(''+fid+'','home')" style="'+bs('home')+'">'+(f.home||'Home')+'</button>' +
-                '<button onclick="mpsTab(''+fid+'','away')" style="'+bs('away')+'">'+(f.away||'Away')+'</button>' +
-              '</div>' + bldTeam(active==='home'?homeStats:awayStats, active==='home'?(f.home||'Home'):(f.away||'Away'));
+            window['_mpsData_'+fid]={home:homeStats,away:awayStats,f:f,bldTeam:bldTeam};
+            function buildMpsTabs(active){
+              var on=function(w){return active===w;};
+              var bs=function(w){return 'flex:1;padding:.4rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.5)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
+              return '<div style="display:flex;gap:6px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.06)">'+'<button onclick="mpsTab(\''+fid+'\',\'home\')" style="'+bs('home')+'">'+(f.home||'Home')+'</button>'+'<button onclick="mpsTab(\''+fid+'\',\'away\')" style="'+bs('away')+'">'+(f.away||'Away')+'</button>'+'</div>'+bldTeam(active==='home'?homeStats:awayStats,active==='home'?(f.home||'Home'):(f.away||'Away'));
             }
-            el.innerHTML = buildMpsTabs('home');
+            el.innerHTML=buildMpsTabs('home');
           })
           .catch(function(){
             var el2=document.getElementById('mps-'+fid);
@@ -7255,18 +7263,18 @@ onReady(function() {
   // ── FIX 4: PITCH ALIGNMENT CSS
   var s = document.createElement('style');
   s.textContent =
-    '.squad-pitch-wrap{width:100%!important;max-width:480px!important;margin:0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;padding:8px 4px!important;box-sizing:border-box!important}' +
+    '.squad-pitch-wrap{width:100%!important;max-width:420px!important;margin:0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;padding:8px 4px!important;box-sizing:border-box!important;align-self:center!important}' +
     '.prow{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;align-items:flex-start!important;width:100%!important;gap:4px!important;margin-bottom:4px!important}' +
     '.pc{display:flex!important;flex-direction:column!important;align-items:center!important;cursor:pointer!important;min-width:52px!important;max-width:70px!important;flex:0 0 auto!important;-webkit-tap-highlight-color:transparent!important}' +
     '.pc-shirt{width:44px!important;height:44px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;flex-shrink:0!important}' +
     '.pc-name{font-family:var(--font-ui)!important;font-size:.58rem!important;font-weight:700!important;color:#fff!important;margin-top:3px!important;text-align:center!important;max-width:62px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:1.2!important}' +
     '.pc-pts{font-family:var(--font-display)!important;font-size:.6rem!important;font-weight:900!important;color:#DBA94A!important;text-align:center!important;line-height:1!important;margin-top:1px!important}' +
     '.bench-strip{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.5rem .25rem!important;width:100%!important;max-width:480px!important;margin:0 auto!important}' +
-    '.squad-body-grid{display:flex!important;flex-direction:column!important;width:100%!important}' +
+    '.squad-body-grid{display:flex!important;flex-direction:column!important;width:100%!important;align-items:center!important}' +
     '#p-bench{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.4rem!important}';
   document.head.appendChild(s);
 
-  // GW fix applied directly in main loadGW above
+  // GW fix in main loadGW above
 
   // ── TRIGGER: reload with fixes if user already logged in
   if (window.ST && ST.user) {
@@ -7278,23 +7286,21 @@ onReady(function() {
     });
   }
 
-  window.mpsTab = function(fid, which) {
-    var el = document.getElementById('mps-'+fid);
-    var d  = window['_mpsData_'+fid];
-    if (!el || !d) return;
-    var players = which==='home' ? d.home : d.away;
-    var tName   = which==='home' ? (d.f.home||'Home') : (d.f.away||'Away');
-    el.querySelectorAll('button').forEach(function(b) {
-      var isOn = (b.getAttribute('onclick')||'').indexOf("'"+which+"'") > -1;
-      b.style.borderColor = isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)';
-      b.style.background  = isOn?'rgba(219,169,74,.1)':'transparent';
-      b.style.color       = isOn?'#DBA94A':'rgba(255,255,255,.5)';
+  window.mpsTab=function(fid,which){
+    var el=document.getElementById('mps-'+fid);
+    var d=window['_mpsData_'+fid];
+    if(!el||!d)return;
+    el.querySelectorAll('button').forEach(function(b){
+      var isOn=(b.getAttribute('onclick')||'').indexOf("'"+which+"'")>-1;
+      b.style.borderColor=isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)';
+      b.style.background=isOn?'rgba(219,169,74,.1)':'transparent';
+      b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.5)';
     });
-    var teamDiv = el.querySelector('div[style*="margin-bottom:.3rem"]');
-    if (teamDiv) teamDiv.outerHTML = d.bldTeam(players, tName);
-    else el.insertAdjacentHTML('beforeend', d.bldTeam(players, tName));
+    var teamDiv=el.querySelector('div[style*="margin-bottom:.3rem"]');
+    if(teamDiv)teamDiv.outerHTML=d.bldTeam(which==='home'?d.home:d.away,which==='home'?(d.f.home||'Home'):(d.f.away||'Away'));
+    else el.insertAdjacentHTML('beforeend',d.bldTeam(which==='home'?d.home:d.away,which==='home'?(d.f.home||'Home'):(d.f.away||'Away')));
   };
-  console.log('[FPSL] Fix patch v1.0 applied — stats DB, news, ads, fixtures, GW');
+  console.log('[FPSL] Fix patch applied — match stats, no injuries, pitch centred, manual stats');
 });
 
 })();
