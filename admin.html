@@ -888,10 +888,99 @@
     <!-- ══════════════════ AUTOMATION TAB ══════════════════ -->
     <div id="tab-automation" class="tab-page">
 
+      <!-- ══ END OF GAMEWEEK WIZARD ══ -->
+      <div class="card" style="border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.03)">
+        <div class="card-header" style="border-bottom-color:rgba(0,230,118,.2)">
+          <div class="card-title"><span class="dot dot-green"></span>🏁 End of Gameweek — One-Click Wizard</div>
+          <div style="font-size:12px;color:var(--muted)">Run after the last match of each GW</div>
+        </div>
+        <div class="card-body">
+
+          <!-- Info box -->
+          <div style="background:rgba(41,121,255,.08);border:1px solid rgba(41,121,255,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.7">
+            Run these <strong style="color:#60A5FA">3 steps in order</strong> after the last match of each gameweek.<br>
+            Steps 1 and 2 can be run multiple times safely — they are idempotent.<br>
+            Step 3 advances the GW counter visible to all users.
+          </div>
+
+          <!-- Step 1 -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+              <div>
+                <div style="font-weight:700;color:#fff;font-size:14px;">Sync Match Stats</div>
+                <div style="font-size:12px;color:var(--muted);">Fetches per-player stats from API-Football for all finished matches</div>
+              </div>
+              <button class="btn btn-blue" id="btn-sync-stats" onclick="runGWStep1()" style="margin-left:auto;white-space:nowrap;">
+                ▶ Run Phase 2
+              </button>
+            </div>
+            <div class="status-msg" id="step1-status"></div>
+            <div class="cron-log" id="step1-log"></div>
+          </div>
+
+          <!-- Step 2 -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--amber);color:#000;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+              <div>
+                <div style="font-weight:700;color:#fff;font-size:14px;">Score All Users</div>
+                <div style="font-size:12px;color:var(--muted);">Calculates GW points for every user's squad, applies chips & captain multipliers</div>
+              </div>
+              <button class="btn btn-amber" id="btn-score-users" onclick="runGWStep2()" style="margin-left:auto;white-space:nowrap;">
+                ▶ Calculate Points
+              </button>
+            </div>
+            <div class="status-msg" id="step2-status"></div>
+            <div class="cron-log" id="step2-log"></div>
+          </div>
+
+          <!-- Step 3 -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--green);color:#000;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+              <div>
+                <div style="font-weight:700;color:#fff;font-size:14px;">Advance Gameweek</div>
+                <div style="font-size:12px;color:var(--muted);">Closes current GW and opens the next one — users will see the new GW number immediately</div>
+              </div>
+              <button class="btn btn-green" id="btn-advance-gw" onclick="runGWStep3()" style="margin-left:auto;white-space:nowrap;">
+                ▶ Close GW &amp; Open Next
+              </button>
+            </div>
+            <div class="status-msg" id="step3-status"></div>
+          </div>
+
+          <!-- Run All 3 -->
+          <button class="btn btn-green btn-full" id="btn-run-all-gw" onclick="runAllGWSteps()" style="font-size:15px;padding:14px;margin-top:4px;">
+            ⚡ Run All 3 Steps Automatically
+          </button>
+          <div class="status-msg" id="all-steps-status" style="margin-top:10px;"></div>
+
+        </div>
+      </div>
+
+      <!-- ══ API-FOOTBALL SYNC ══ -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><span class="dot dot-green"></span>Automation Control</div>
-          <div style="font-size:12px;color:var(--muted)">Runs automatically at 01:00 SAST daily</div>
+          <div class="card-title"><span class="dot dot-blue"></span>API-Football Sync</div>
+          <div style="font-size:12px;color:var(--muted)">Runs automatically at 02:00 SAST daily</div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-blue" onclick="runAPISync('1')">📅 Sync Fixtures (Phase 1)</button>
+            <button class="btn btn-amber" onclick="runAPISync('2')">📊 Sync Match Stats (Phase 2)</button>
+            <button class="btn btn-teal" onclick="runAPISync('3')">🔢 Recalculate Totals (Phase 3)</button>
+          </div>
+          <div class="status-msg" id="apisync-status"></div>
+          <div class="cron-log" id="apisync-log"></div>
+        </div>
+      </div>
+
+      <!-- ══ LEGACY AUTOMATION ══ -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot dot-green"></span>Legacy Automation Control</div>
+          <div style="font-size:12px;color:var(--muted)">Old sync buttons — kept for reference</div>
         </div>
         <div class="card-body">
           <div class="row" style="margin-bottom:12px;">
@@ -2519,6 +2608,209 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     showStatus('si-status', 'ok', '✓ Added ' + added + ' new players to roster. Run ESPN Sync to populate their stats.');
     if (siData) renderSquadTable(siData);
   }
+
+  // ══════════════════════════════════════════════════════
+  //  END OF GAMEWEEK WIZARD
+  // ══════════════════════════════════════════════════════
+
+  const SYNC_SECRET = 'mzansi4show';
+  const BASE_URL    = '';  // empty = same domain
+
+  function showStepStatus(elId, type, msg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.style.display = 'block';
+    el.className = 'status-msg status-' + type;
+    el.textContent = msg;
+  }
+
+  function showStepLog(elId, lines) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.style.display = 'block';
+    el.innerHTML = lines.map(function(l) {
+      if (l.includes('✅') || l.includes('success')) return '<span class="log-ok">' + l + '</span>';
+      if (l.includes('❌') || l.includes('error') || l.includes('Error')) return '<span class="log-error">' + l + '</span>';
+      if (l.includes('⚠️') || l.includes('warn')) return '<span class="log-warn">' + l + '</span>';
+      if (l.startsWith('===') || l.startsWith('Phase')) return '<span class="log-head">' + l + '</span>';
+      return l;
+    }).join('\n');
+  }
+
+  // Step 1: Sync match stats (Phase 2 of apifootball-sync)
+  async function runGWStep1() {
+    const btn = document.getElementById('btn-sync-stats');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running...';
+    showStepStatus('step1-status', 'info', 'Fetching match player stats from API-Football...');
+    document.getElementById('step1-log').style.display = 'none';
+
+    try {
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=2');
+      const data = await res.json();
+
+      if (data.status === 'success' || data.errors_encountered === 0) {
+        showStepStatus('step1-status', 'ok',
+          '✅ Done — ' + (data.players_updated || 0) + ' player stats synced · ' + (data.duration || ''));
+      } else {
+        showStepStatus('step1-status', 'error', '⚠ Completed with errors — see log below');
+      }
+      if (data.log) showStepLog('step1-log', data.log);
+    } catch(e) {
+      showStepStatus('step1-status', 'error', '❌ Request failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Run Phase 2';
+    }
+  }
+
+  // Step 2: Score all users (points-cron)
+  async function runGWStep2() {
+    const btn = document.getElementById('btn-score-users');
+    btn.disabled = true;
+    btn.textContent = '⏳ Scoring...';
+    showStepStatus('step2-status', 'info', 'Calculating points for all user squads...');
+    document.getElementById('step2-log').style.display = 'none';
+
+    try {
+      const res  = await fetch(BASE_URL + '/api/points-cron?secret=' + SYNC_SECRET);
+      const data = await res.json();
+
+      if (data.success || data.profiles_updated >= 0) {
+        showStepStatus('step2-status', 'ok',
+          '✅ Done — ' + (data.profiles_updated || 0) + ' users scored · GW' + (data.current_gw || '') +
+          ' · ' + (data.gw_players_found || 0) + ' players with stats');
+      } else {
+        showStepStatus('step2-status', 'error', '❌ ' + (data.error || 'Unknown error'));
+      }
+      if (data.log) showStepLog('step2-log', data.log);
+    } catch(e) {
+      showStepStatus('step2-status', 'error', '❌ Request failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Calculate Points';
+    }
+  }
+
+  // Step 3: Advance gameweek (close current, open next)
+  async function runGWStep3() {
+    const btn = document.getElementById('btn-advance-gw');
+
+    // Get current GW first
+    const { data: gwData } = await supabase
+      .from('gameweeks')
+      .select('gw_number, number')
+      .eq('is_current', true)
+      .eq('season', 2025)
+      .limit(1)
+      .single();
+
+    const currentGW = gwData ? (gwData.gw_number || gwData.number) : null;
+    if (!currentGW) {
+      showStepStatus('step3-status', 'error', '❌ No current GW found — set one first in the Gameweek tab');
+      return;
+    }
+    const nextGW = currentGW + 1;
+
+    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '?
+
+This will:
+• Mark GW' + currentGW + ' as finished
+• Set GW' + nextGW + ' as current
+• Users will see GW' + nextGW + ' immediately')) return;
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Advancing...';
+    showStepStatus('step3-status', 'info', 'Closing GW' + currentGW + ' and opening GW' + nextGW + '...');
+
+    try {
+      // Close current GW
+      const { error: closeErr } = await supabase
+        .from('gameweeks')
+        .update({ is_current: false, is_finished: true })
+        .eq('season', 2025)
+        .eq('is_current', true);
+
+      if (closeErr) throw new Error('Close GW error: ' + closeErr.message);
+
+      // Open next GW
+      const { error: openErr } = await supabase
+        .from('gameweeks')
+        .update({ is_current: true })
+        .eq('season', 2025)
+        .eq('gw_number', nextGW);
+
+      if (openErr) throw new Error('Open GW error: ' + openErr.message);
+
+      showStepStatus('step3-status', 'ok',
+        '✅ GW' + currentGW + ' closed · GW' + nextGW + ' is now active — users see GW' + nextGW + ' in the app');
+
+      // Refresh the GW badge in the header
+      await loadCurrentGW();
+
+    } catch(e) {
+      showStepStatus('step3-status', 'error', '❌ ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Close GW & Open Next';
+    }
+  }
+
+  // Run all 3 steps automatically in sequence
+  async function runAllGWSteps() {
+    const btn = document.getElementById('btn-run-all-gw');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running all steps...';
+    showStepStatus('all-steps-status', 'info', 'Starting Step 1 of 3...');
+
+    try {
+      // Step 1
+      showStepStatus('all-steps-status', 'info', '⏳ Step 1/3 — Syncing match stats...');
+      await runGWStep1();
+
+      // Step 2
+      showStepStatus('all-steps-status', 'info', '⏳ Step 2/3 — Scoring all users...');
+      await runGWStep2();
+
+      // Step 3
+      showStepStatus('all-steps-status', 'info', '⏳ Step 3/3 — Advancing gameweek...');
+      await runGWStep3();
+
+      showStepStatus('all-steps-status', 'ok', '🎉 All 3 steps complete! GW advanced, all users scored.');
+    } catch(e) {
+      showStepStatus('all-steps-status', 'error', '❌ Stopped at error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⚡ Run All 3 Steps Automatically';
+    }
+  }
+
+  // API-Football individual phase sync buttons
+  async function runAPISync(phase) {
+    const statusEl = document.getElementById('apisync-status');
+    const logEl    = document.getElementById('apisync-log');
+    statusEl.style.display = 'block';
+    statusEl.className = 'status-msg status-info';
+    statusEl.textContent = '⏳ Running Phase ' + phase + '...';
+    logEl.style.display = 'none';
+
+    try {
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=' + phase);
+      const data = await res.json();
+
+      statusEl.className = 'status-msg status-' + (data.errors_encountered > 0 ? 'error' : 'ok');
+      statusEl.textContent = (data.errors_encountered > 0 ? '⚠ ' : '✅ ') +
+        'Phase ' + phase + ' · ' + (data.duration || '') +
+        ' · Fixtures: ' + (data.fixtures_processed || 0) +
+        ' · Players: ' + (data.players_updated || 0);
+
+      if (data.log) showStepLog('apisync-log', data.log);
+    } catch(e) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.textContent = '❌ ' + e.message;
+    }
+  }
+
 </script>
 </body>
 </html>
