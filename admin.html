@@ -1468,7 +1468,7 @@
   }
 
   async function forceCloseGW() {
-    if (!confirm('Close GW' + STATE.gw + '? This marks it as finished.')) return;
+    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '? This will mark GW' + currentGW + ' as finished and set GW' + nextGW + ' as current. Users will see GW' + nextGW + ' immediately.')) return;
     try {
       await sbWrite('update', 'gameweeks', { is_current: false, is_finished: true }, { number: String(STATE.gw) });
       showStatus('gw-close-status', 'ok', '✓ GW' + STATE.gw + ' closed and marked finished');
@@ -2712,12 +2712,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     }
     const nextGW = currentGW + 1;
 
-    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '?
-
-This will:
-• Mark GW' + currentGW + ' as finished
-• Set GW' + nextGW + ' as current
-• Users will see GW' + nextGW + ' immediately')) return;
+    if (!confirm('Close GW' + currentGW + ' and open GW' + nextGW + '? Marks GW' + currentGW + ' finished and opens GW' + nextGW + ' for users.')) return;
 
     btn.disabled = true;
     btn.textContent = '⏳ Advancing...';
