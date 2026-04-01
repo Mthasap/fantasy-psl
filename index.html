@@ -539,9 +539,7 @@
     Publisher ID from adsense.google.com once your site is approved.
     Remove the HTML comment markers to activate.
   =============================================================== -->
-  <!--
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
-  -->
+  <!-- AdSense already loaded at top of <head> — no duplicate needed -->
 </head>
 <body style="background:#0C0F14;color:#ffffff;">
 
@@ -3517,9 +3515,9 @@ function renderNews(grid, posts) {
     grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">No news yet.</div>';
     return;
   }
-  // Store posts in global cache so onclick can reference by index (avoids JSON escaping issues)
   window._newsPosts = posts;
-  // Auto-open article if user arrived via a /news/slug URL (e.g. from Google)
+
+  // Auto-open pending slug
   if (window._pendingNewsSlug) {
     var slug = window._pendingNewsSlug;
     window._pendingNewsSlug = null;
@@ -3529,29 +3527,74 @@ function renderNews(grid, posts) {
     });
     if (matchIdx > -1) { setTimeout(function(){ openNewsPost(matchIdx); }, 300); }
   }
-  grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(280px,1fr))';
-  grid.style.gap = '.9rem';
-  grid.innerHTML = posts.map(function(post, idx) {
-    var catColor = NEWS_CAT_COLORS[post.category] || NEWS_CAT_COLORS['default'];
-    var dateStr  = post.published_at ? new Date(post.published_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : '';
-    var isFeatured = idx === 0;
-    var imgHtml = post.image_url
-      ? '<img src="' + post.image_url + '" style="width:100%;height:' + (isFeatured?'180px':'130px') + ';object-fit:cover;border-radius:10px 10px 0 0;display:block" onerror=\'this.style.display=\\"none\\"\'>'
-      : '<div style="width:100%;height:' + (isFeatured?'100px':'70px') + ';background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:' + (isFeatured?'2.5rem':'1.8rem') + '">' + (post.category==='Tips'?'💡':post.category==='Injury'?'⚕️':'📰') + '</div>';
-    // Use index-based onclick — no JSON serialisation needed
-    return '<div onclick="openNewsPost(' + idx + ')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;' + (isFeatured?'grid-column:1/-1;':'') + '">' +
-      imgHtml +
-      '<div style="padding:.9rem 1rem 1rem">' +
-        '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem">' +
-          '<span style="font-family:var(--font-ui,sans-serif);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:' + catColor + ';padding:2px 7px;border-radius:4px">' + (post.category || 'News') + '</span>' +
-          '<span style="font-size:.7rem;color:rgba(255,255,255,.35)">' + dateStr + '</span>' +
+
+  function fmtDate(d) {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  function catPill(cat) {
+    var color = NEWS_CAT_COLORS[cat] || NEWS_CAT_COLORS['default'];
+    return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;' +
+           'color:#fff;background:' + color + ';padding:2px 8px;border-radius:3px">' + (cat||'News') + '</span>';
+  }
+
+  // ── FEATURED (index 0) ──────────────────────────────────────────
+  var featured = posts[0];
+  var featImg = featured.image_url
+    ? '<img src="' + featured.image_url + '" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">'
+    : '<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));' +
+      'border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
+
+  var featHtml =
+    '<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);' +
+    'border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">' +
+      featImg +
+      '<div style="padding:.9rem 1rem 1.1rem">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">' +
+          catPill(featured.category) +
+          '<span style="font-size:.68rem;color:rgba(255,255,255,.35)">' + fmtDate(featured.published_at) + '</span>' +
         '</div>' +
-        '<div style="font-family:var(--font-display,sans-serif);font-size:' + (isFeatured?'1.05rem':'.9rem') + ';font-weight:900;line-height:1.3;margin-bottom:.4rem;color:#fff">' + post.title + '</div>' +
-        '<div style="font-size:.78rem;color:rgba(255,255,255,.5);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (post.summary || '') + '</div>' +
+        '<div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;' +
+        'color:#fff;margin-bottom:.45rem">' + featured.title + '</div>' +
+        '<div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;' +
+        'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (featured.summary||'') + '</div>' +
       '</div>' +
     '</div>';
+
+  // ── GRID CARDS (index 1+) ──────────────────────────────────────
+  var gridCards = posts.slice(1).map(function(post, i) {
+    var idx = i + 1;
+    var cardImg = post.image_url
+      ? '<img src="' + post.image_url + '" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">'
+      : '<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));' +
+        'display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
+
+    return '<div onclick="openNewsPost(' + idx + ')" style="background:var(--bg-card,#191C25);' +
+      'border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;' +
+      '-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">' +
+        cardImg +
+        '<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem">' +
+          '<div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">' +
+            catPill(post.category) +
+            '<span style="font-size:.6rem;color:rgba(255,255,255,.32)">' + fmtDate(post.published_at) + '</span>' +
+          '</div>' +
+          '<div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;' +
+          'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + post.title + '</div>' +
+          '<div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;' +
+          'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (post.summary||'') + '</div>' +
+        '</div>' +
+      '</div>';
   }).join('');
+
+  // ── RENDER ──────────────────────────────────────────────────────
+  grid.style.display = 'block';
+  grid.style.gridTemplateColumns = '';
+  grid.style.gap = '';
+  grid.innerHTML = featHtml +
+    (posts.length > 1
+      ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">' + gridCards + '</div>'
+      : '');
 }
 function openNewsPost(postOrIdx) {
   // Accept either an index into window._newsPosts or a post object directly
@@ -5297,7 +5340,6 @@ function renderStatCards(c, live) {
         }).join('')
       : '<div style="padding:1.2rem;color:rgba(255,255,255,.3);text-align:center;font-size:.82rem">No red cards issued this season</div>';
   } else {
-    // Use DB players for cards — PSL_ROSTER card data was estimated, not real API data
     var cardSource = (ST.allPlayers && ST.allPlayers.length) ? ST.allPlayers : PSL_ROSTER;
     yellRows = cardSource.slice()
       .filter(function(p){ return (p.yellow_cards||0) > 0; })
@@ -5590,7 +5632,7 @@ function updateAdVisibility() {
   if (!banner) return;
   try {
     var dismissed = sessionStorage.getItem('ad_dismissed');
-    if (ST.user || dismissed) {
+    if (dismissed) {
       banner.style.display = 'none';
     } else {
       banner.style.display = 'flex';
@@ -7166,20 +7208,11 @@ onReady(function() {
     if (isFTTab) {
       query = query.eq('status','FT').limit(80);
     } else {
-      // Upcoming: only show current GW fixtures
-      // If no current GW set, fallback to today-onwards across all GWs
-      var today = new Date();
-      today.setHours(0,0,0,0);
+      var today = new Date(); today.setHours(0,0,0,0);
       if (ST.gw && ST.gw.number) {
-        query = query
-          .eq('gw_number', ST.gw.number)
-          .in('status', ['NS','TBD','PST'])
-          .limit(80);
+        query = query.eq('gw_number', ST.gw.number).in('status',['NS','TBD','PST']).limit(80);
       } else {
-        query = query
-          .in('status', ['NS','TBD','PST'])
-          .gte('kickoff_time', today.toISOString())
-          .limit(80);
+        query = query.in('status',['NS','TBD','PST']).gte('kickoff_time', today.toISOString()).limit(80);
       }
     }
 
@@ -7288,7 +7321,7 @@ onReady(function() {
             window['_mpsData_'+fid] = {home:homeStats, away:awayStats, f:f, bldTeam:bldTeam};
             function buildMpsTabs(active) {
               var on = function(w){ return active===w; };
-              var bs = function(w){ return 'flex:1;padding:.4rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.5)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'; };
+              var bs = function(w){ return 'flex:1;padding:.4rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.5)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer'; };
               return '<div style="display:flex;gap:6px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.06)">' +
                 '<button onclick="mpsTab(''+fid+'','home')" style="'+bs('home')+'">'+(f.home||'Home')+'</button>' +
                 '<button onclick="mpsTab(''+fid+'','away')" style="'+bs('away')+'">'+(f.away||'Away')+'</button>' +
@@ -7329,7 +7362,7 @@ onReady(function() {
     '#p-bench{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.4rem!important}';
   document.head.appendChild(s);
 
-  // GW fix already applied in main loadGW function above
+  // GW fix in main loadGW function above
 
 
   // ── TRIGGER: reload with fixes if user already logged in
@@ -7342,27 +7375,25 @@ onReady(function() {
     });
   }
 
-  // mpsTab: switch home/away team in fixture expand
   window.mpsTab = function(fid, which) {
     var el = document.getElementById('mps-'+fid);
     var d  = window['_mpsData_'+fid];
     if (!el || !d) return;
     var players = which==='home' ? d.home : d.away;
     var tName   = which==='home' ? (d.f.home||'Home') : (d.f.away||'Away');
-    var btns = el.querySelectorAll('button');
-    btns.forEach(function(b) {
-      var isOn = b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'"+which+"'") > -1;
-      b.style.borderColor = isOn ? 'rgba(219,169,74,.5)' : 'rgba(255,255,255,.1)';
-      b.style.background  = isOn ? 'rgba(219,169,74,.1)' : 'transparent';
-      b.style.color       = isOn ? '#DBA94A' : 'rgba(255,255,255,.5)';
+    el.querySelectorAll('button').forEach(function(b) {
+      var isOn = (b.getAttribute('onclick')||'').indexOf("'"+which+"'") > -1;
+      b.style.borderColor = isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)';
+      b.style.background  = isOn?'rgba(219,169,74,.1)':'transparent';
+      b.style.color       = isOn?'#DBA94A':'rgba(255,255,255,.5)';
     });
     var teamDiv = el.querySelector('div[style*="margin-bottom:.3rem"]');
     if (teamDiv) teamDiv.outerHTML = d.bldTeam(players, tName);
     else el.insertAdjacentHTML('beforeend', d.bldTeam(players, tName));
   };
 
-  // loadGW already fixed in main code — no override needed
-  console.log('[FPSL] Fix patch v1.0 applied — squad, teams, fixtures, pitch, GW');
+  // loadGW fix applied directly in main function above
+  console.log('[FPSL] Fix patch v1.0 applied — squad, teams, fixtures, pitch, GW, news, ads');
 });
 
 })();
