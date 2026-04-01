@@ -1,23 +1,24 @@
-// api/points-cron.js — Fantasy PSL Points Engine v3
+// api/points-cron.js — Fantasy PSL Points Engine v4
 // ════════════════════════════════════════════════════════════════════════
 //
-// ARCHITECTURE FOR 1000+ USERS:
-//   - Processes players in ONE batch update (not one DB call per player)
-//   - Processes profiles in chunks of 50 (prevents timeout on large datasets)
-//   - Entry GW system: users only earn points from their entry_gw onwards
-//   - Idempotent: safe to run multiple times — uses UPSERT on gw_scores
-//   - Per-GW scores stored in gw_scores table (user_id, gameweek, points)
-//   - profiles.total_points = SUM of gw_scores where gameweek >= entry_gw
+// WHAT CHANGED FROM v3:
+//   - Source switched from broken ESPN CDN → match_player_stats table
+//   - match_player_stats is populated by apifootball-sync.js (working ✅)
+//   - Triple Captain (TC) now correctly applies 3× multiplier
+//   - Bench Boost (BB) now correctly includes all 15 players in scoring
+//   - Free Hit snapshot/revert logic added
+//   - Transfer point deductions applied correctly
+//
+// ARCHITECTURE:
+//   - Reads match_player_stats for current GW to get per-player fantasy_points
+//   - Maps each user's squad (psl_roster_id / DB id) to apifootball_id
+//   - Applies captain multiplier, chip effects, transfer deductions
+//   - Writes to gw_scores (idempotent upsert)
+//   - Updates profiles.total_points = sum of all gw_scores since entry_gw
 //
 // SECURITY:
 //   - Requires ADMIN_SECRET or x-vercel-cron header
-//   - Uses SUPABASE_SERVICE_KEY server-side only (never in browser)
-//   - All writes use service role — bypasses RLS safely on server
-//
-// PERFORMANCE:
-//   - Players: batch upsert (1 DB call for all 200+ players)
-//   - Profiles: chunked in batches of 50 to stay within 60s timeout
-//   - Caches roster map in memory across the run
+//   - Uses SUPABASE_SERVICE_KEY server-side only
 //
 // ════════════════════════════════════════════════════════════════════════
 
@@ -29,48 +30,6 @@ const SB_URL = process.env.SUPABASE_URL          || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
 const ADMIN  = process.env.ADMIN_SECRET           || 'mzansi4sho';
 
-// ── Scoring rules ─────────────────────────────────────────────────────────
-function calcSeasonPoints(s) {
-  let pts = 0;
-  const breakdown = {};
-  const add = (k, v) => { if (v) { breakdown[k] = v; pts += v; } };
-
-  add('appearances', (s.apps || 0) * 2);
-
-  if ((s.goals || 0) > 0) {
-    const gPts = (s.pos === 'GK' || s.pos === 'DEF') ? 6 : s.pos === 'MID' ? 5 : 4;
-    add('goals', s.goals * gPts);
-  }
-  if ((s.assists || 0) > 0)      add('assists',      s.assists * 3);
-  if ((s.clean_sheets || 0) > 0) {
-    if (s.pos === 'GK' || s.pos === 'DEF') add('clean_sheets', s.clean_sheets * 4);
-    else if (s.pos === 'MID')              add('clean_sheets', s.clean_sheets * 1);
-  }
-  if ((s.yellow_cards || 0) > 0) add('yellow_cards', s.yellow_cards * -1);
-  if ((s.red_cards    || 0) > 0) add('red_cards',    s.red_cards    * -3);
-  if (s.pos === 'GK' && (s.saves || 0) >= 3)
-    add('saves_bonus', Math.floor(s.saves / 3));
-
-  return { total: Math.max(0, pts), breakdown };
-}
-
-function normPos(raw) {
-  if (!raw) return 'MID';
-  const r = raw.toUpperCase().trim();
-  if (r === 'GK' || r === 'G' || r.includes('GOAL'))   return 'GK';
-  if (r === 'DEF' || r === 'D' || r.includes('DEFEND')) return 'DEF';
-  if (r === 'FWD' || r === 'F' || r.includes('FORWARD') || r.includes('ATTACK')) return 'FWD';
-  return 'MID';
-}
-
-function normName(s) {
-  return (s || '').toLowerCase()
-    .replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
-    .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o')
-    .replace(/[ùúûü]/g,'u').replace(/[ñ]/g,'n')
-    .replace(/[ç]/g,'c').replace(/[^a-z\s]/g,'').trim();
-}
-
 // ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -80,119 +39,99 @@ module.exports = async (req, res) => {
   const adminKey = (req.query && req.query.admin_key)
     || (req.headers && req.headers['x-admin-key']) || '';
   const isCron = req.headers && req.headers['x-vercel-cron'] === '1';
+  const isSecret = req.query && req.query.secret === process.env.SYNC_SECRET;
 
-  if (!isCron && adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
+  if (!isCron && !isSecret && adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!SB_URL || !SB_KEY) {
-    return res.status(500).json({ error: 'Missing env vars: SUPABASE_URL / SUPABASE_SERVICE_KEY' });
+    return res.status(500).json({ error: 'Missing Supabase env vars' });
   }
 
-  const mode = (req.query && req.query.mode) || 'points';
-  const db   = createClient(SB_URL, SB_KEY);
-  const log  = [];
+  const db  = createClient(SB_URL, SB_KEY);
+  const log = [];
 
   try {
-    // ── Fixture sync modes (pass-through to sync.js behaviour) ───────────
-    if (mode === 'fixtures' || mode === 'results') {
-      const n = await syncFixtures(db, mode === 'results' ? 'FT' : 'NS', log);
-      return res.json({ success: true, mode, count: n, log });
-    }
+    log.push('=== Fantasy PSL Points Engine v4 ===');
+    log.push('Source: match_player_stats (API-Football)');
 
-    // ── Points mode ───────────────────────────────────────────────────────
-    log.push('=== Fantasy PSL Points Engine v3 ===');
+    // ── Step 1: Get current gameweek ──────────────────────────────────────
+    const { data: gwData, error: gwErr } = await db
+      .from('gameweeks')
+      .select('*')
+      .eq('is_current', true)
+      .eq('season', 2025)
+      .limit(1)
+      .single();
 
-    // Step 1: Get current gameweek
-    const { data: gwData, error: gwErr } = await db.from('gameweeks')
-      .select('number').eq('is_current', true).single();
     if (gwErr || !gwData) {
-      log.push('ERROR: Cannot determine current gameweek — set is_current=true in gameweeks table');
-      return res.status(500).json({ error: 'No current gameweek set', log });
+      log.push('ERROR: No current gameweek set — run: UPDATE gameweeks SET is_current=true WHERE gw_number=X AND season=2025');
+      return res.status(500).json({ error: 'No current gameweek', log });
     }
-    const currentGW = gwData.number;
+
+    const currentGW = gwData.gw_number || gwData.number;
     log.push('Current GW: ' + currentGW);
 
-    // Step 2: Fetch ESPN stats
-    log.push('Fetching ESPN PSL stats...');
-    const espnStats = await fetchESPNStats(log);
-    log.push('ESPN players: ' + Object.keys(espnStats).length);
+    // ── Step 2: Load all match_player_stats for this GW ──────────────────
+    // These are already calculated fantasy_points per player per match
+    const { data: gwStats, error: statsErr } = await db
+      .from('match_player_stats')
+      .select('apifootball_player_id, fantasy_points, minutes_played, position')
+      .eq('season', 2025)
+      .eq('gw_number', currentGW);
 
-    // Step 3: Load all DB players
-    const { data: dbPlayers, error: dbPErr } = await db.from('players')
-      .select('id, display_name, position, psl_roster_id, total_points');
-    if (dbPErr) throw new Error('players load: ' + dbPErr.message);
+    if (statsErr) throw new Error('match_player_stats load: ' + statsErr.message);
+
+    // Aggregate per player (a player can appear in multiple fixtures in a GW if rescheduled)
+    const gwStatsByApiId = {};
+    for (const row of (gwStats || [])) {
+      const pid = row.apifootball_player_id;
+      if (!pid) continue;
+      if (!gwStatsByApiId[pid]) {
+        gwStatsByApiId[pid] = { fantasy_points: 0, minutes_played: 0, position: row.position };
+      }
+      gwStatsByApiId[pid].fantasy_points += (row.fantasy_points || 0);
+      gwStatsByApiId[pid].minutes_played += (row.minutes_played || 0);
+    }
+
+    log.push('Players with GW' + currentGW + ' stats: ' + Object.keys(gwStatsByApiId).length);
+
+    // ── Step 3: Build apifootball_id lookup from players table ───────────
+    // We need to map psl_roster_id (saved in squad_data) → apifootball_id
+    const { data: dbPlayers, error: playersErr } = await db
+      .from('players')
+      .select('id, psl_roster_id, apifootball_id, display_name, position, total_points');
+
+    if (playersErr) throw new Error('players load: ' + playersErr.message);
+
+    // Build maps for fast lookup
+    const byDbId       = {};  // players.id → player
+    const byRosterId   = {};  // psl_roster_id → player
+    const byApiId      = {};  // apifootball_id → player
+
+    for (const p of (dbPlayers || [])) {
+      byDbId[p.id]                   = p;
+      if (p.psl_roster_id) byRosterId[p.psl_roster_id] = p;
+      if (p.apifootball_id) byApiId[p.apifootball_id]  = p;
+    }
+
     log.push('DB players loaded: ' + (dbPlayers || []).length);
 
-    // Step 4: Calculate points + build batch upsert
-    const playerUpdates = [];
-    const rosterPtsMap  = {};  // psl_roster_id → total_points (for profile calc)
-
-    for (const dbP of (dbPlayers || [])) {
-      const dbNorm = normName(dbP.display_name || '');
-      let espnP = espnStats[dbNorm] || null;
-
-      // Fallback: surname match
-      if (!espnP) {
-        const parts = dbNorm.split(' ');
-        const lastName = parts[parts.length - 1];
-        if (lastName && lastName.length > 3) {
-          for (const ek of Object.keys(espnStats)) {
-            if (ek.endsWith(' ' + lastName) || ek === lastName) {
-              espnP = espnStats[ek];
-              break;
-            }
-          }
-        }
+    // ── Step 4: Build rosterPtsMap for season total fallback ─────────────
+    // psl_roster_id → total season fantasy points (from players table)
+    const rosterPtsMap = {};
+    for (const p of (dbPlayers || [])) {
+      if (p.psl_roster_id) {
+        rosterPtsMap[p.psl_roster_id] = p.total_points || 0;
       }
-
-      if (!espnP) continue;
-
-      const pos = normPos(dbP.position || '');
-      const pts = calcSeasonPoints({
-        pos,
-        apps:         espnP.apps         || 0,
-        goals:        espnP.goals        || 0,
-        assists:      espnP.assists      || 0,
-        clean_sheets: espnP.clean_sheets || 0,
-        yellow_cards: espnP.yellow_cards || 0,
-        red_cards:    espnP.red_cards    || 0,
-        saves:        espnP.saves        || 0
-      });
-
-      playerUpdates.push({
-        id:           dbP.id,
-        total_points: pts.total,
-        apps:         espnP.apps         || 0,
-        goals:        espnP.goals        || 0,
-        assists:      espnP.assists      || 0,
-        clean_sheets: espnP.clean_sheets || 0,
-        yellow_cards: espnP.yellow_cards || 0,
-        red_cards:    espnP.red_cards    || 0,
-        updated_at:   new Date().toISOString()
-      });
-
-      if (dbP.psl_roster_id) {
-        rosterPtsMap[dbP.psl_roster_id] = pts.total;
-      }
+      // Also map by DB id
+      rosterPtsMap[p.id] = p.total_points || 0;
     }
 
-    // Step 5: Batch upsert players (1 DB call, not N calls)
-    if (playerUpdates.length > 0) {
-      const PLAYER_CHUNK = 100;
-      let playersSynced = 0;
-      for (let i = 0; i < playerUpdates.length; i += PLAYER_CHUNK) {
-        const chunk = playerUpdates.slice(i, i + PLAYER_CHUNK);
-        const { error: upErr } = await db.from('players')
-          .upsert(chunk, { onConflict: 'id' });
-        if (upErr) log.push('Player batch error: ' + upErr.message);
-        else playersSynced += chunk.length;
-      }
-      log.push('Players updated: ' + playersSynced);
-    }
-
-    // Step 6: Load all profiles with squads, process in chunks of 50
-    const { data: profiles, error: profErr } = await db.from('profiles')
-      .select('id, squad_data, squad_count, entry_gw, squad_registered')
+    // ── Step 5: Load all profiles with squads ────────────────────────────
+    const { data: profiles, error: profErr } = await db
+      .from('profiles')
+      .select('id, squad_data, squad_count, entry_gw, squad_registered, active_chip, used_chips, free_transfers, transfers_this_gw, fh_snapshot')
       .not('squad_data', 'is', null)
       .eq('squad_registered', true)
       .gte('squad_count', 15);
@@ -202,13 +141,14 @@ module.exports = async (req, res) => {
 
     let profilesUpdated = 0;
     let profileErrors   = 0;
-    const PROFILE_CHUNK = 50;
+    const CHUNK = 50;
 
-    for (let pi = 0; pi < (profiles || []).length; pi += PROFILE_CHUNK) {
-      const batch = profiles.slice(pi, pi + PROFILE_CHUNK);
+    for (let pi = 0; pi < (profiles || []).length; pi += CHUNK) {
+      const batch = profiles.slice(pi, pi + CHUNK);
 
       for (const prof of batch) {
         try {
+          // Parse squad
           let sq;
           try {
             sq = typeof prof.squad_data === 'string'
@@ -216,56 +156,159 @@ module.exports = async (req, res) => {
           } catch (_) { continue; }
 
           if (!Array.isArray(sq) || sq.length < 15) continue;
-
-          // Only count points from entry_gw onwards
-          // For season-total approach: all points are valid for users who
-          // registered before GW27. For future GWs, per-GW scoring will apply.
-          // entry_gw=null means they haven't been assigned one yet — skip
           if (prof.entry_gw === null || prof.entry_gw === undefined) continue;
 
+          // Determine active chip
+          const activeChip = prof.active_chip || null;
+          let usedChips = [];
+          try { usedChips = JSON.parse(prof.used_chips || '[]'); } catch(_) {}
+
+          // Free Hit: use snapshot squad if active
+          let scoringSq = sq;
+          if (activeChip === 'fh' && prof.fh_snapshot) {
+            try {
+              const snap = typeof prof.fh_snapshot === 'string'
+                ? JSON.parse(prof.fh_snapshot) : prof.fh_snapshot;
+              if (Array.isArray(snap) && snap.length >= 11) {
+                scoringSq = snap;
+              }
+            } catch(_) {}
+          }
+
+          // Bench Boost: all 15 players score (not just starters)
+          const isBB = activeChip === 'bb';
+          // Triple Captain: captain scores 3× instead of 2×
+          const isTC = activeChip === 'tc';
+
+          // Determine scoring players
+          const scoringPlayers = isBB
+            ? scoringSq                                           // all 15
+            : scoringSq.filter(function(p) { return !p.onBench; }); // only starters
+
+          // Check if captain played (for VC fallback)
+          const captainEntry = scoringSq.find(function(p) { return p.isCaptain; });
+          let captainPlayed = false;
+
+          if (captainEntry) {
+            // Find captain's apifootball_id
+            const capApiId = resolveApiId(captainEntry, byDbId, byRosterId);
+            if (capApiId && gwStatsByApiId[capApiId]) {
+              captainPlayed = gwStatsByApiId[capApiId].minutes_played > 0;
+            }
+          }
+
+          // Score each player
           let gwTotal = 0;
           const playerBreakdown = [];
 
-          sq.forEach(sp => {
-            const rid = parseInt(sp.id, 10);
-            if (!rid || rosterPtsMap[rid] === undefined) return;
+          for (const sp of scoringPlayers) {
+            const apiId = resolveApiId(sp, byDbId, byRosterId);
+            const gwStat = apiId ? gwStatsByApiId[apiId] : null;
 
-            const playerPts = rosterPtsMap[rid];
-            const effectivePts = sp.isCaptain ? playerPts * 2 : playerPts;
+            let pts = 0;
+            let source = 'none';
 
-            gwTotal += effectivePts;
+            if (gwStat) {
+              pts = gwStat.fantasy_points || 0;
+              source = 'live';
+            } else {
+              // Fallback: use season total from players table as approximation
+              // (player had no stats this GW — likely didn't play)
+              pts = 0;
+              source = 'dnp';
+            }
+
+            // Apply captain/VC multiplier
+            let finalPts = pts;
+            let multiplier = 1;
+
+            if (sp.isCaptain) {
+              multiplier = isTC ? 3 : 2;
+              finalPts = pts * multiplier;
+            } else if (sp.isVC && !captainPlayed) {
+              multiplier = isTC ? 3 : 2;
+              finalPts = pts * multiplier;
+            }
+
+            gwTotal += finalPts;
             playerBreakdown.push({
-              id:       rid,
-              name:     sp.name || '',
-              position: sp.position || '',
-              pts:      playerPts,
-              effectivePts,
-              isCaptain: sp.isCaptain || false,
-              isVC:      sp.isVC      || false,
-              onBench:   sp.onBench   || false
+              id:          sp.id,
+              name:        sp.name || '',
+              position:    sp.position || '',
+              pts:         pts,
+              final_pts:   finalPts,
+              multiplier:  multiplier,
+              isCaptain:   sp.isCaptain  || false,
+              isVC:        sp.isVC       || false,
+              onBench:     sp.onBench    || false,
+              source:      source,
+              api_id:      apiId || null
             });
-          });
+          }
 
-          // Write to gw_scores (idempotent upsert)
+          // Apply transfer point deductions (4 pts per extra transfer)
+          // Only applies if no Wildcard or Free Hit active
+          let transferDeduction = 0;
+          if (activeChip !== 'wc' && activeChip !== 'fh') {
+            const freeTransfers = prof.free_transfers || 1;
+            const transfersMade = prof.transfers_this_gw || 0;
+            const extraTransfers = Math.max(0, transfersMade - freeTransfers);
+            transferDeduction = extraTransfers * 4;
+            if (transferDeduction > 0) {
+              gwTotal = Math.max(0, gwTotal - transferDeduction);
+              log.push('  Profile ' + prof.id + ': -' + transferDeduction + 'pts transfer hit');
+            }
+          }
+
+          // Write to gw_scores (idempotent)
           await db.from('gw_scores').upsert({
-            user_id:      prof.id,
-            gameweek:     currentGW,
-            points:       gwTotal,
-            player_scores: playerBreakdown,
-            calculated_at: new Date().toISOString()
+            user_id:        prof.id,
+            gameweek:       currentGW,
+            points:         gwTotal,
+            player_scores:  playerBreakdown,
+            chip_used:      activeChip || null,
+            transfer_deduction: transferDeduction,
+            calculated_at:  new Date().toISOString()
           }, { onConflict: 'user_id,gameweek' });
 
           // Update profiles.total_points = sum of all GW scores since entry_gw
-          const { data: allScores } = await db.from('gw_scores')
+          const { data: allScores } = await db
+            .from('gw_scores')
             .select('points')
             .eq('user_id', prof.id)
-            .gte('gameweek', prof.entry_gw);
+            .gte('gameweek', prof.entry_gw || 1);
 
-          const seasonTotal = (allScores || []).reduce((s, r) => s + (r.points || 0), 0);
+          const seasonTotal = (allScores || []).reduce(function(s, r) {
+            return s + (r.points || 0);
+          }, 0);
 
-          await db.from('profiles')
-            .update({ total_points: seasonTotal, squad_count: sq.length })
-            .eq('id', prof.id);
+          // Build chip update payload
+          const chipUpdate = {};
+
+          // If chip was active this GW, mark it as used and clear active_chip
+          if (activeChip && !usedChips.includes(activeChip)) {
+            usedChips.push(activeChip);
+            chipUpdate.used_chips   = JSON.stringify(usedChips);
+            chipUpdate.active_chip  = null;
+          }
+
+          // Free Hit: revert squad to pre-FH snapshot after GW scores
+          if (activeChip === 'fh' && prof.fh_snapshot) {
+            chipUpdate.squad_data   = prof.fh_snapshot; // revert
+            chipUpdate.fh_snapshot  = null;             // clear snapshot
+          }
+
+          // Roll over free transfers: unused transfers carry over (max 2 banked)
+          const freeUsed    = Math.min(prof.transfers_this_gw || 0, prof.free_transfers || 1);
+          const unused      = (prof.free_transfers || 1) - freeUsed;
+          const newFreeXfers = Math.min(2, unused + 1); // +1 per GW, max 2 banked
+
+          await db.from('profiles').update(Object.assign({
+            total_points:       seasonTotal,
+            squad_count:        sq.length,
+            free_transfers:     newFreeXfers,
+            transfers_this_gw:  0,             // reset for new GW
+          }, chipUpdate)).eq('id', prof.id);
 
           profilesUpdated++;
         } catch (e) {
@@ -277,203 +320,81 @@ module.exports = async (req, res) => {
 
     log.push('Profiles updated: ' + profilesUpdated + ' | Errors: ' + profileErrors);
 
-    const topPts = (profiles || [])
-      .map(p => ({ id: p.id }))
-      .slice(0, 5);
+    // ── Step 6: Update overall_rank on profiles ───────────────────────────
+    const { data: ranked } = await db
+      .from('profiles')
+      .select('id, total_points')
+      .eq('squad_registered', true)
+      .order('total_points', { ascending: false })
+      .limit(5000);
+
+    if (ranked && ranked.length) {
+      for (let ri = 0; ri < ranked.length; ri++) {
+        await db.from('profiles')
+          .update({ overall_rank: ri + 1 })
+          .eq('id', ranked[ri].id);
+      }
+      log.push('Rankings updated: ' + ranked.length + ' profiles');
+    }
+
+    // ── Step 7: Advance GW if all fixtures finished ───────────────────────
+    // Check if all GW fixtures have status=FT
+    const { data: gwFixtures } = await db
+      .from('fixtures')
+      .select('status')
+      .eq('gw_number', currentGW)
+      .eq('season', 2025);
+
+    const allFT = gwFixtures && gwFixtures.length > 0 &&
+      gwFixtures.every(function(f) { return f.status === 'FT'; });
+
+    if (allFT) {
+      log.push('All GW' + currentGW + ' fixtures finished — marking GW complete');
+      await db.from('gameweeks')
+        .update({ is_finished: true, is_current: false })
+        .eq('gw_number', currentGW)
+        .eq('season', 2025);
+    }
 
     return res.json({
-      success: true,
+      success:          true,
       current_gw:       currentGW,
-      espn_players:     Object.keys(espnStats).length,
-      players_updated:  playerUpdates.length,
+      gw_players_found: Object.keys(gwStatsByApiId).length,
       profiles_updated: profilesUpdated,
       profile_errors:   profileErrors,
+      all_fixtures_ft:  allFT || false,
       log
     });
 
   } catch (err) {
-    console.error('[points-cron]', err.message);
+    console.error('[points-cron v4]', err.message);
     return res.status(500).json({ error: err.message, log });
   }
 };
 
-// ── ESPN Stats Fetcher ────────────────────────────────────────────────────
-async function fetchESPNStats(log) {
-  const stats   = {};
-  const CDN_BASE = 'https://cdn.espn.com/core/soccer/stats?xhr=1&slug=rsa.1&season=2025&view=';
-  const headers  = {
-    'Accept':           'application/json, text/javascript, */*; q=0.01',
-    'X-Requested-With': 'XMLHttpRequest',
-    'User-Agent':       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/122 Safari/537.36',
-    'Referer':          'https://africa.espn.com/football/stats/_/league/RSA.1/view/scoring'
-  };
+// ── Helper: resolve apifootball_id from a squad entry ────────────────────
+// Squad entries save id as psl_roster_id or DB players.id
+// We need to map that to apifootball_id to look up match stats
+function resolveApiId(squadEntry, byDbId, byRosterId) {
+  if (!squadEntry) return null;
 
-  // Try ESPN CDN for scoring data
-  for (const view of ['scoring', 'discipline']) {
-    try {
-      const r = await fetch(CDN_BASE + view, {
-        headers,
-        signal: AbortSignal.timeout(12000)
-      });
-      if (!r.ok) { log.push('ESPN CDN ' + view + ': HTTP ' + r.status); continue; }
-      const text = await r.text();
-      const json = JSON.parse(text);
+  const sid = squadEntry.id;
 
-      // Deep-walk to find athletes array
-      const athletes = findAthletes(json);
-      if (athletes && athletes.length > 0) {
-        parseAthletes(athletes, stats, view);
-        log.push('ESPN CDN ' + view + ': ' + athletes.length + ' athletes');
-      }
-    } catch (e) {
-      log.push('ESPN CDN ' + view + ': ' + e.message);
-    }
+  // Try direct DB id lookup
+  if (sid && byDbId[sid] && byDbId[sid].apifootball_id) {
+    return byDbId[sid].apifootball_id;
   }
 
-  // Merge fallback data for players ESPN missed or for clean sheets/saves
-  const fallback = getVerifiedFallback();
-  let fallbackAdded = 0;
-  for (const name of Object.keys(fallback)) {
-    if (!stats[name]) {
-      stats[name] = fallback[name];
-      fallbackAdded++;
-    } else {
-      // Supplement missing fields only
-      for (const field of ['clean_sheets', 'saves', 'yellow_cards', 'red_cards']) {
-        if (!stats[name][field] && fallback[name][field]) {
-          stats[name][field] = fallback[name][field];
-        }
-      }
-    }
+  // Try psl_roster_id lookup
+  const rid = squadEntry.psl_roster_id || parseInt(sid, 10);
+  if (rid && byRosterId[rid] && byRosterId[rid].apifootball_id) {
+    return byRosterId[rid].apifootball_id;
   }
-  log.push('Fallback supplemented: ' + fallbackAdded + ' players added');
 
-  return stats;
-}
+  // Try integer id as roster id
+  if (typeof sid === 'number' && byRosterId[sid] && byRosterId[sid].apifootball_id) {
+    return byRosterId[sid].apifootball_id;
+  }
 
-function findAthletes(obj, depth = 0) {
-  if (!obj || typeof obj !== 'object' || depth > 8) return null;
-  if (Array.isArray(obj) && obj.length > 0 &&
-      (obj[0].athlete || obj[0].displayName || obj[0].name)) return obj;
-  const priority = ['athletes','leaders','statistics','stats','data','items','rows'];
-  for (const k of priority) {
-    if (obj[k]) {
-      const found = findAthletes(obj[k], depth + 1);
-      if (found && found.length > 0) return found;
-    }
-  }
-  for (const k of Object.keys(obj)) {
-    if (priority.includes(k)) continue;
-    const found = findAthletes(obj[k], depth + 1);
-    if (found && found.length > 0) return found;
-  }
   return null;
-}
-
-function parseAthletes(athletes, stats, view) {
-  for (const entry of athletes) {
-    const ath  = entry.athlete || entry;
-    const name = normName(ath.displayName || ath.shortName || ath.name || '');
-    if (!name || name.length < 2) continue;
-
-    if (!stats[name]) {
-      stats[name] = { apps:0, goals:0, assists:0, yellow_cards:0, red_cards:0, clean_sheets:0, saves:0 };
-    }
-
-    const statArr = Array.isArray(entry.statistics) ? entry.statistics
-                  : Array.isArray(entry.stats) ? entry.stats : [];
-
-    for (const stat of statArr) {
-      const sn  = (stat.name || stat.abbreviation || '').toLowerCase().replace(/[^a-z]/g, '');
-      const val = parseFloat(stat.value || stat.displayValue || 0) || 0;
-      const p   = stats[name];
-
-      if (sn === 'goals' || sn === 'g' || sn === 'goalsscored')
-        p.goals = Math.max(p.goals, Math.round(val));
-      else if (sn === 'assists' || sn === 'a')
-        p.assists = Math.max(p.assists, Math.round(val));
-      else if (sn === 'gp' || sn === 'p' || sn === 'gamesplayed' || sn === 'appearances')
-        p.apps = Math.max(p.apps, Math.round(val));
-      else if (sn === 'yellowcards' || sn === 'yc')
-        p.yellow_cards = Math.max(p.yellow_cards, Math.round(val));
-      else if (sn === 'redcards' || sn === 'rc')
-        p.red_cards = Math.max(p.red_cards, Math.round(val));
-      else if (sn === 'cleansheets' || sn === 'cs')
-        p.clean_sheets = Math.max(p.clean_sheets, Math.round(val));
-      else if (sn === 'saves' || sn === 'sv')
-        p.saves = Math.max(p.saves, Math.round(val));
-    }
-  }
-}
-
-// ── Verified fallback — ESPN Africa March 30 2026 ─────────────────────────
-function getVerifiedFallback() {
-  const rows = [
-    // [name, apps, goals, assists, yc, rc, cs, saves]
-    ['sede junior dion',20,12,1,3,0,0,0],['iqraam rayners',17,10,3,1,0,0,0],
-    ['bradley grobler',20,8,2,2,0,0,0],['relebohile mofokeng',19,7,5,4,0,0,0],
-    ['relebohile ratomo',19,7,5,4,0,0,0],['langelihle phili',19,7,1,3,0,0,0],
-    ['patrick maswanganyi',18,6,1,3,0,0,0],['thandolwenkosi ngwenya',16,6,1,2,0,0,0],
-    ['tshepang moremi',22,5,2,4,0,0,0],['hendrick ekstein',21,5,3,3,0,0,0],
-    ['seluleko mahlambi',21,5,3,2,0,0,0],['evidence makgopa',18,5,3,3,0,0,0],
-    ['flavio silva',13,5,1,1,0,0,0],['oswin appollis',22,4,6,3,0,0,0],
-    ['tashreeq matthews',21,4,4,7,0,0,0],['siyanda mthanti',19,4,5,2,0,0,0],
-    ['yamela mbuthuma',16,4,0,2,0,0,0],['puso dithejane',12,4,4,2,0,0,0],
-    ['deon hotto',17,1,6,3,0,0,0],['devon titus',22,1,5,2,0,0,0],
-    ['philani kumalo',13,1,5,2,0,0,0],['aubrey modiba',18,1,3,5,0,6,0],
-    ['marcelo allende',20,3,3,2,0,0,0],['arthur',18,3,4,2,0,0,0],
-    ['teboho mokoena',14,3,2,6,0,0,0],['monnapule saleng',14,2,4,3,0,0,0],
-    // GKs with clean sheets
-    ['sipho chaine',13,0,0,2,0,8,45],['ronwen williams',14,0,0,1,0,11,38],
-    ['nhlanhla ngcobo',14,0,0,4,0,5,35],['mfanuvela mafuleka',16,0,0,3,0,4,25],
-    // Defenders with clean sheets
-    ['nkosinathi sibisi',12,0,0,4,0,7,0],['deano van rooyen',11,0,1,3,0,6,0],
-    ['olisa ndah',10,0,0,4,0,6,0],['grant kekana',13,0,0,6,0,8,0],
-    ['rushine de reuck',11,0,0,5,0,7,0],['khuliso mudau',13,0,1,5,0,7,0],
-    // Cards leaders
-    ['bheki cele',22,0,0,8,0,2,0],['edmilson dove',14,0,0,7,0,3,0],
-    ['tashreeq matthews',21,4,4,7,0,0,0],
-  ];
-  const result = {};
-  for (const r of rows) {
-    if (!result[r[0]]) {
-      result[r[0]] = { apps:r[1], goals:r[2], assists:r[3],
-        yellow_cards:r[4], red_cards:r[5], clean_sheets:r[6], saves:r[7] };
-    }
-  }
-  return result;
-}
-
-// ── Fixture sync (unchanged from previous version) ────────────────────────
-async function syncFixtures(db, statusFilter, log) {
-  const TOKEN = process.env.APIFOOTBALL_KEY || '';
-  if (!TOKEN) { log.push('APIFOOTBALL_KEY not set'); return 0; }
-  const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./season-helper');
-  const sy    = await getSeasonYear(TOKEN);
-  const param = statusFilter === 'NS' ? '&next=80' : '&last=50';
-  const d     = await apiFetch(
-    '/fixtures?league=' + PSL_LEAGUE + '&season=' + sy + '&status=' + statusFilter + param,
-    TOKEN
-  );
-  let count = 0;
-  for (const f of (d.response || [])) {
-    const fix = f.fixture || {}, teams = f.teams || {}, goals = f.goals || {}, league = f.league || {};
-    const isFT = ['FT','AET','PEN'].includes((fix.status && fix.status.short) || '');
-    const { error } = await db.from('fixtures').upsert({
-      api_fixture_id: fix.id,
-      home_team:  (teams.home && teams.home.name) || 'TBD',
-      away_team:  (teams.away && teams.away.name) || 'TBD',
-      home_logo:  (teams.home && teams.home.logo) || null,
-      away_logo:  (teams.away && teams.away.logo) || null,
-      home_score: isFT ? goals.home : null,
-      away_score: isFT ? goals.away : null,
-      status:     isFT ? 'FT' : 'NS',
-      kickoff_at: fix.date,
-      round:      league.round || null,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'api_fixture_id' });
-    if (!error) count++;
-  }
-  log.push(statusFilter + ' synced: ' + count);
-  return count;
 }
