@@ -3194,11 +3194,29 @@ function activateChip(key) {
   if (ST.activeChip === key) {
     // Deactivate
     ST.activeChip = null;
-    showToast(CHIP_INFO[key].name + ' deactivated', 'info');
+    // If deactivating Free Hit, restore the snapshot squad
+    if (key === 'fh' && ST._fhSnapshot && ST._fhSnapshot.length) {
+      ST.squad = ST._fhSnapshot.slice();
+      ST._fhSnapshot = null;
+      renderPitch(); renderBudget(); renderPlayerList();
+      showToast('Free Hit cancelled — original squad restored', 'info');
+    } else {
+      showToast(CHIP_INFO[key].name + ' deactivated', 'info');
+    }
   } else {
     if (ST.activeChip) { showToast('Deactivate ' + CHIP_INFO[ST.activeChip].name + ' first', 'warning'); return; }
     ST.activeChip = key;
-    showToast(CHIP_INFO[key].name + ' activated! Save your squad to confirm.', 'success');
+    // Free Hit: save a snapshot of the current squad before any transfers
+    if (key === 'fh') {
+      ST._fhSnapshot = ST.squad.map(function(p) { return Object.assign({}, p); });
+      ST.freeTransfers = 999; // unlimited transfers this GW
+      showToast('Free Hit activated! Make unlimited transfers — squad reverts after this GW.', 'success');
+    } else if (key === 'wc') {
+      ST.freeTransfers = 999;
+      showToast('Wildcard activated! Unlimited transfers this GW at no cost.', 'success');
+    } else {
+      showToast(CHIP_INFO[key].name + ' activated! Save your squad to confirm.', 'success');
+    }
   }
   renderChipBar();
   markUnsaved();
@@ -4216,9 +4234,10 @@ function calculateUserPointsFromStats(playerStatsList) {
     captainPlayed = !!(capStats && capStats.minutes_played > 0);
   }
 
-  // Score each starter (not bench players unless bench boost active)
-  // For now: only starters score (bench boost chip to be added later)
-  var scoringPlayers = ST.squad.filter(function(p) { return !p.onBench; });
+  // Bench Boost: all 15 players score. Otherwise only starters.
+  var scoringPlayers = (ST.activeChip === 'bb')
+    ? ST.squad.slice()
+    : ST.squad.filter(function(p) { return !p.onBench; });
 
   scoringPlayers.forEach(function(squadPlayer) {
     var stats = matchPlayerToStats(squadPlayer, playerStatsList);
@@ -4226,13 +4245,15 @@ function calculateUserPointsFromStats(playerStatsList) {
 
     var pts = stats.fantasy_points || 0;
 
-    // Captain gets 2× points
+    // Triple Captain = 3×, normal Captain = 2×
+    var capMultiplier = (ST.activeChip === 'tc') ? 3 : 2;
+
     if (squadPlayer.isCaptain) {
-      pts = pts * 2;
+      pts = pts * capMultiplier;
     }
-    // Vice-captain gets 2× ONLY if captain didn't play this match
+    // Vice-captain gets same multiplier ONLY if captain didn't play this match
     else if (squadPlayer.isVC && !captainPlayed) {
-      pts = pts * 2;
+      pts = pts * capMultiplier;
     }
 
     gwTotal += pts;
