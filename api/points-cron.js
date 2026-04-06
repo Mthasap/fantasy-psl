@@ -55,22 +55,33 @@ module.exports = async (req, res) => {
     log.push('=== Fantasy PSL Points Engine v4 ===');
     log.push('Source: match_player_stats (API-Football)');
 
-    // ── Step 1: Get current gameweek ──────────────────────────────────────
-    const { data: gwData, error: gwErr } = await db
-      .from('gameweeks')
-      .select('*')
-      .eq('is_current', true)
-      .eq('season', 2025)
-      .limit(1)
-      .single();
+    // ── Step 1: Get gameweek to score ────────────────────────────────────
+    // Supports ?gw=X override to score any specific GW (e.g. games in hand)
+    const gwOverride = req.query && req.query.gw ? parseInt(req.query.gw, 10) : null;
+    let currentGW;
 
-    if (gwErr || !gwData) {
-      log.push('ERROR: No current gameweek set — run: UPDATE gameweeks SET is_current=true WHERE gw_number=X AND season=2025');
-      return res.status(500).json({ error: 'No current gameweek', log });
+    if (gwOverride && !isNaN(gwOverride)) {
+      // Manual GW override — score stats from this specific GW
+      currentGW = gwOverride;
+      log.push('GW OVERRIDE: Scoring GW' + currentGW + ' (manually specified)');
+    } else {
+      // Default: use the current active gameweek
+      const { data: gwData, error: gwErr } = await db
+        .from('gameweeks')
+        .select('*')
+        .eq('is_current', true)
+        .eq('season', 2025)
+        .limit(1)
+        .single();
+
+      if (gwErr || !gwData) {
+        log.push('ERROR: No current gameweek set — run: UPDATE gameweeks SET is_current=true WHERE gw_number=X AND season=2025');
+        return res.status(500).json({ error: 'No current gameweek', log });
+      }
+
+      currentGW = gwData.gw_number || gwData.number;
+      log.push('Current GW: ' + currentGW);
     }
-
-    const currentGW = gwData.gw_number || gwData.number;
-    log.push('Current GW: ' + currentGW);
 
     // ── Step 2: Load all match_player_stats for this GW ──────────────────
     // These are already calculated fantasy_points per player per match
@@ -260,7 +271,25 @@ module.exports = async (req, res) => {
             }
           }
 
-          // Write to gw_scores (idempotent)
+          // Write to gw_scores
+          // If GW override is active (game in hand), ADD to existing score
+          // so users accumulate points from multiple matches in the same GW
+          if (gwOverride) {
+            // Fetch existing score for this GW if any
+            const { data: existing } = await db.from('gw_scores')
+              .select('points, player_scores')
+              .eq('user_id', prof.id)
+              .eq('gameweek', currentGW)
+              .single();
+
+            if (existing) {
+              // Add game-in-hand points to existing GW total
+              gwTotal = gwTotal + (existing.points || 0);
+              const existingBreakdown = existing.player_scores || [];
+              playerBreakdown.push(...existingBreakdown);
+            }
+          }
+
           await db.from('gw_scores').upsert({
             user_id:        prof.id,
             gameweek:       currentGW,
