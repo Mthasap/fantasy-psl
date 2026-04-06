@@ -2777,15 +2777,17 @@ function renderPitch() {
       else if (mode === 'transfer') { clickFn = 'onclick="removePlayer(' + p.id + ')"'; titleTxt = 'Transfer OUT'; }
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
       else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
-      // Show GW points if available, else season total_points, else price
+      // Show GW points if available (gameweek active), else always show price
       var bottomLabel;
       if (typeof p.gwPoints !== 'undefined' && p.gwPoints !== null) {
         bottomLabel = p.gwPoints + ' pts';
-      } else if (p.total_points && p.total_points > 0) {
-        bottomLabel = p.total_points + ' pts';
       } else {
         bottomLabel = p.price ? 'R' + p.price + 'M' : '';
       }
+      var clubShort = p.clubs ? (p.clubs.short_name || p.clubs.name || '') : (p.club || p.team || '');
+      // Shorten club name to 3 chars for pitch display
+      var clubAbbr = clubShort.length > 6 ? clubShort.substring(0,3).toUpperCase() : clubShort;
+      var priceLabel = p.price ? 'R' + p.price + 'M' : '';
       return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
         '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
           posIcon(pos) +
@@ -2793,6 +2795,7 @@ function renderPitch() {
           (p.isVC      ? '<div class="vc-badge">V</div>'  : '') +
         '</div>' +
         '<div class="pc-name">' + shortName + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.5rem;color:rgba(255,255,255,.45);text-align:center;line-height:1;margin-top:1px">' + clubAbbr + '</div>' +
         '<div class="pc-pts">' + bottomLabel + '</div>' +
       '</div>';
     }).join('');
