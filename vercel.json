@@ -11,116 +11,65 @@
     }
   },
   "routes": [
-    {
-      "src": "/admin",
-      "dest": "/admin.html"
-    },
-    {
-      "src": "/confirm",
-      "dest": "/confirm.html"
-    },
-    {
-      "src": "/sitemap.xml",
-      "dest": "/api/sitemap"
-    },
-    {
-      "src": "/robots.txt",
-      "dest": "/api/robots"
-    },
-    {
-      "src": "/news/(.*)",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/api/live-matches",
-      "dest": "/api/sync?action=live"
-    },
-    {
-      "src": "/api/psl-data",
-      "dest": "/api/sync?action=psl-data"
-    },
-    {
-      "src": "/api/force-sync",
-      "dest": "/api/sync?action=force-sync"
-    },
-    {
-      "src": "/api/sync-fixtures",
-      "dest": "/api/sync?action=force-sync"
-    },
-    {
-      "src": "/api/import-players",
-      "dest": "/api/sync?action=import-players"
-    },
-    {
-      "src": "/api/sync-player-stats",
-      "dest": "/api/sync?action=import-players"
-    },
-    {
-      "src": "/api/sportmonks-setup",
-      "dest": "/api/sync?action=status"
-    },
-    {
-      "src": "/api/sportmonks",
-      "dest": "/api/sync?action=proxy"
-    },
-    {
-      "src": "/api/squad-import",
-      "dest": "/api/squad-import"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/confirm", "dest": "/confirm.html" },
+    { "src": "/sitemap.xml", "dest": "/api/sitemap" },
+    { "src": "/robots.txt", "dest": "/api/robots" },
+    { "src": "/news/(.*)", "dest": "/index.html" },
+    { "src": "/api/live-matches", "dest": "/api/sync?action=live" },
+    { "src": "/api/psl-data", "dest": "/api/sync?action=psl-data" },
+    { "src": "/api/force-sync", "dest": "/api/sync?action=force-sync" },
+    { "src": "/api/sync-fixtures", "dest": "/api/sync?action=force-sync" },
+    { "src": "/api/import-players", "dest": "/api/sync?action=import-players" },
+    { "src": "/api/sync-player-stats", "dest": "/api/sync?action=import-players" },
+    { "src": "/api/sportmonks-setup", "dest": "/api/sync?action=status" },
+    { "src": "/api/sportmonks", "dest": "/api/sync?action=proxy" },
+    { "src": "/api/squad-import", "dest": "/api/squad-import" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     },
     {
       "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "s-maxage=60, stale-while-revalidate=30"
-        }
+        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=30" }
       ]
     },
     {
       "source": "/sitemap.xml",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "s-maxage=3600, stale-while-revalidate=600"
-        }
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=600" }
       ]
     }
   ],
   "crons": [
     {
-      "path": "/api/points-cron",
-      "schedule": "0 21 * * *"
+      "path": "/api/apifootball-sync?phase=1",
+      "schedule": "0 0 * * *",
+      "comment": "Midnight SAST — update fixture scores and statuses"
     },
     {
-      "path": "/api/apifootball-sync",
-      "schedule": "0 2 * * *"
+      "path": "/api/apifootball-sync?phase=2",
+      "schedule": "30 21 * * *",
+      "comment": "11:30pm SAST — sync player match stats after evening matches"
+    },
+    {
+      "path": "/api/apifootball-sync?phase=3",
+      "schedule": "0 22 * * *",
+      "comment": "Midnight SAST — recalculate season totals after stats sync"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 22 * * *",
+      "comment": "00:30am SAST — score all user squads after stats are updated"
     }
   ]
 }
