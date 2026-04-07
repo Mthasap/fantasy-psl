@@ -52,24 +52,20 @@
   ],
   "crons": [
     {
-      "path": "/api/apifootball-sync?phase=1",
-      "schedule": "0 0 * * *",
-      "comment": "Midnight SAST — update fixture scores and statuses"
+      "path": "/api/apifootball-sync?phase=1&secret=mzansi4show",
+      "schedule": "0 22 * * *"
     },
     {
-      "path": "/api/apifootball-sync?phase=2",
-      "schedule": "30 21 * * *",
-      "comment": "11:30pm SAST — sync player match stats after evening matches"
+      "path": "/api/apifootball-sync?phase=2&secret=mzansi4show",
+      "schedule": "30 21 * * *"
     },
     {
-      "path": "/api/apifootball-sync?phase=3",
-      "schedule": "0 22 * * *",
-      "comment": "Midnight SAST — recalculate season totals after stats sync"
+      "path": "/api/apifootball-sync?phase=3&secret=mzansi4show",
+      "schedule": "0 22 * * *"
     },
     {
-      "path": "/api/points-cron",
-      "schedule": "30 22 * * *",
-      "comment": "00:30am SAST — score all user squads after stats are updated"
+      "path": "/api/points-cron?secret=mzansi4show",
+      "schedule": "30 22 * * *"
     }
   ]
 }
