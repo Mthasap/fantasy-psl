@@ -1272,7 +1272,8 @@ var LOGOS = {
   'Magesi FC':           'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
   'Magesi':              'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
   'Cape Town Spurs':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d2/Cape_Town_Spurs_FC.png&w=80&output=webp&we',
-  'Cape Town City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Cape_Town_City_FC_logo.png&w=80&output=webp&we'
+  'Cape Town City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Cape_Town_City_FC_logo.png&w=80&output=webp&we',
+  'SuperSport United':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d5/SuperSport_United_FC_logo.svg&w=80&output=webp&we'
 };
 
 // -- Logo path (served from same folder) -------------
@@ -4308,6 +4309,84 @@ function saveGWPointsToSupabase(additionalPts) {
     });
 }
 
+
+// ── DISPOSABLE MATCH CHAT ─────────────────────────────────────────────────────
+var _matchChats = {};
+
+function initMatchChat(fixtureId) {
+  var key = String(fixtureId);
+  if (_matchChats[key]) return;
+  var msgs = [];
+  _matchChats[key] = { channel: null, msgs: msgs };
+  if (!db || !ST.user) return;
+  try {
+    var ch = db.channel('mc-' + key, { config: { broadcast: { self: true } } });
+    ch.on('broadcast', { event: 'mc_msg' }, function(payload) {
+      if (!payload || !payload.payload) return;
+      _matchChats[key].msgs.push(payload.payload);
+      renderMatchChatMsgs(key);
+    }).subscribe(function(status) {
+      if (status === 'SUBSCRIBED') {
+        var el = document.getElementById('mc-chat-count-' + key);
+        if (el) el.textContent = '● Live';
+      }
+    });
+    _matchChats[key].channel = ch;
+  } catch(e) { console.warn('[MatchChat]', e.message); }
+}
+
+function sendMatchChatMsg(fixtureId) {
+  var key = String(fixtureId);
+  var inp = document.getElementById('mc-chat-inp-' + key);
+  if (!inp) return;
+  var txt = (inp.value || '').trim();
+  if (!txt) return;
+  inp.value = ''; inp.style.height = 'auto';
+  var payload = {
+    user: (ST.user && ST.user.user_metadata && ST.user.user_metadata.username) || 'Fan',
+    gwPts: (CACHE._profile && CACHE._profile.total_points) || null,
+    text: txt.substring(0, 280),
+    t: (function() { var d=new Date(),h=d.getHours(),m=d.getMinutes();return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; })()
+  };
+  if (_matchChats[key] && _matchChats[key].channel) {
+    _matchChats[key].channel.send({ type:'broadcast', event:'mc_msg', payload:payload });
+  } else {
+    if (!_matchChats[key]) _matchChats[key] = { channel:null, msgs:[] };
+    _matchChats[key].msgs.push(payload);
+    renderMatchChatMsgs(key);
+  }
+}
+
+function renderMatchChatMsgs(key) {
+  var el = document.getElementById('mc-chat-msgs-' + key);
+  if (!el) return;
+  var msgs = (_matchChats[key] && _matchChats[key].msgs) || [];
+  if (!msgs.length) { el.innerHTML='<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.25)">Be the first to comment</div>'; return; }
+  el.innerHTML = msgs.map(function(m) {
+    return '<div class="mc-chat-msg"><div class="mc-chat-msg-meta"><span class="mc-chat-msg-user">'+escHtml(m.user||'Fan')+'</span>'+(m.gwPts?'<span class="mc-chat-msg-pts">'+m.gwPts+' pts</span>':'')+'<span class="mc-chat-msg-time">'+(m.t||'')+'</span></div><div class="mc-chat-msg-text">'+escHtml(m.text||'')+'</div></div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function destroyMatchChat(fixtureId) {
+  var key = String(fixtureId);
+  if (_matchChats[key]) {
+    try { if (_matchChats[key].channel) db.removeChannel(_matchChats[key].channel); } catch(e){}
+    delete _matchChats[key];
+  }
+}
+
+function mcSwitchTab(fixtureId, tabName) {
+  var key = String(fixtureId);
+  document.querySelectorAll('.mc-tab[data-fix="'+key+'"]').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tabName);});
+  document.querySelectorAll('.mc-tab-body[data-fix="'+key+'"]').forEach(function(b){b.classList.toggle('show',b.dataset.tab===tabName);});
+  if (tabName==='chat') initMatchChat(fixtureId);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // -- Auto-check for newly finished matches --------------------------------
 // Called every 60 seconds while the app is open.
 // If a match just went FT in the last 15 minutes, fetch its stats.
@@ -4368,7 +4447,7 @@ var PSL_ROSTER = [
   { id:1002, club:'Orlando Pirates', position:'DEF', display_name:'Nkosinathi Sibisi',      price:5.5,  apps:12, goals:0, assists:0, clean_sheets:7,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.2, total_points:49 },
   { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
   { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso Monyane',        price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
+  { id:1005, club:'Orlando Pirates', position:'DEF', display_name:'Thabiso James Monyane',   apifootball_id:127435, espn_id:287484, price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
   { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:19, goals:7, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.2, xa:4.5, total_points:115, ownership:33 },
   { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:22, goals:4, assists:6, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:5.5, total_points:100 },
   { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:17, goals:1, assists:6, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
@@ -4377,6 +4456,8 @@ var PSL_ROSTER = [
   { id:1011, club:'Orlando Pirates', position:'FWD', display_name:'Evidence Makgopa',       price:9.0,  apps:18, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.9, xa:2.8, total_points:76 },
   { id:1012, club:'Orlando Pirates', position:'FWD', display_name:'Yamela Mbuthuma',        price:8.0,  apps:13, goals:4, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.6, xa:0.4, total_points:63 },
   { id:1013, club:'Orlando Pirates', position:'FWD', display_name:'Andre De Jong',          price:7.0,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.6, total_points:53 },
+  { id:1014, club:'Orlando Pirates', position:'FWD', display_name:'Wandile Duba',                apifootball_id:400281, espn_id:354725, price:7.5,  apps:16, goals:4, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:1.8, total_points:64 },
+  { id:1015, club:'Orlando Pirates', position:'MID', display_name:'Kwenzokuhle Nkanyiso Shinga',  apifootball_id:287578, espn_id:408446, price:6.5,  apps:14, goals:1, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:0.9, xa:1.8, total_points:40 },
 
   // -- MAMELODI SUNDOWNS  GP15 W9 D5 L1 GF24 GA7 │ 48YC 2RC -----------
   { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:20, goals:0, assists:0, clean_sheets:9, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97, ownership:28 },
@@ -4392,6 +4473,9 @@ var PSL_ROSTER = [
   { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:17, goals:10,assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:2.8, total_points:127, ownership:38 },
   { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',      price:9.0,  apps:10, goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
   { id:2013, club:'Mamelodi Sundowns', position:'FWD', display_name:'Brayan Leon Muniz',    price:9.0,  apps:6,  goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:3.8, xa:0.8, total_points:59 },
+  { id:2014, club:'Mamelodi Sundowns', position:'MID', display_name:'Siphesihle Ndlovu',           apifootball_id:46634,  espn_id:262589, price:7.0,  apps:16, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:51 },
+  { id:2015, club:'Mamelodi Sundowns', position:'MID', display_name:'Nkosingiphile Nhlakanipho Ngcobo', apifootball_id:182307, espn_id:277026, price:7.5,  apps:13, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.8, total_points:48 },
+  { id:2016, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushwin Wayne Dortley',        apifootball_id:295979, espn_id:314743, price:6.5,  apps:18, goals:0, assists:2, clean_sheets:8,  yellow_cards:3, red_cards:0, xg:0.2, xa:1.8, total_points:43 },
 
   // -- GOLDEN ARROWS  GP16 W5 D2 L9 GF21 GA22 │ 28YC 2RC ---------------
   { id:3001, club:'Golden Arrows', position:'GK',  display_name:'Maximilian Mbaeva',        price:5.0,  apps:15, goals:0, assists:0, clean_sheets:3,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:27 },
@@ -4402,6 +4486,7 @@ var PSL_ROSTER = [
   { id:3006, club:'Golden Arrows', position:'MID', display_name:'Thokozani Khumalo',        price:7.0,  apps:7,  goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.6, xa:1.8, total_points:55 },
   { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:20, goals:12,assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:11.5, xa:0.9, total_points:148, ownership:42 },
   { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.8, xa:4.8, total_points:98, ownership:21 },
+  { id:3009, club:'Golden Arrows', position:'FWD', display_name:'Asenele Velebayi',              apifootball_id:205627, espn_id:313782, price:7.0,  apps:15, goals:3, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.6, xa:2.7, total_points:57 },
 
   // -- SEKHUKHUNE UNITED  GP16 W7 D5 L4 GF16 GA10 │ 35YC 1RC -----------
   { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',      price:5.5,  apps:15, goals:0, assists:0, clean_sheets:6,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
@@ -4412,6 +4497,8 @@ var PSL_ROSTER = [
   { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Thabang Monare',       price:6.5,  apps:19, goals:2, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.5, xa:1.6, total_points:52 },
   { id:4007, club:'Sekhukhune United', position:'MID', display_name:'Vusumuzi Mncube',      price:7.0,  apps:20, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.4, xa:1.8, total_points:59 },
   { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:10.5, apps:18, goals:8, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:7.2, xa:1.8, total_points:103, ownership:30 },
+  { id:4009, club:'Sekhukhune United', position:'DEF', display_name:'Spiwe Given Msimango',          apifootball_id:46404,  espn_id:276774, price:5.0,  apps:15, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:30 },
+  { id:4010, club:'Sekhukhune United', position:'MID', display_name:'Lehlogonolo George Matlou',     apifootball_id:141360, espn_id:324943, price:6.0,  apps:16, goals:2, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.5, xa:1.8, total_points:45 },
 
   // -- AMAZULU  GP15 W8 D3 L4 GF18 GA14 │ 26YC 3RC ----------------------
   { id:5001, club:'AmaZulu FC', position:'GK',  display_name:'Darren Johnson',              price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:44 },
@@ -4422,6 +4509,10 @@ var PSL_ROSTER = [
   { id:5006, club:'AmaZulu FC', position:'MID', display_name:'Mondli Mbanjwa',              price:6.5,  apps:17, goals:2, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:0.9, total_points:46 },
   { id:5007, club:'AmaZulu FC', position:'MID', display_name:'Athini Maqokola',             price:7.0,  apps:15, goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.5, xa:1.8, total_points:56 },
   { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:5.5, xa:0.9, total_points:85, ownership:22 },
+  { id:5009, club:'AmaZulu FC', position:'FWD', display_name:'Etiosa Godspower Ighodaro',    apifootball_id:341864, espn_id:347401, price:8.5,  apps:18, goals:7, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:6.2, xa:1.8, total_points:82 },
+  { id:5010, club:'AmaZulu FC', position:'GK',  display_name:'Brandon Peterson',              espn_id:186119, price:6.5,  apps:19, goals:0, assists:0, clean_sheets:8,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:52 },
+  { id:5011, club:'AmaZulu FC', position:'MID', display_name:'Sabelo Thabo Cele',             apifootball_id:210062, espn_id:256690, price:6.5,  apps:17, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:49 },
+  { id:5012, club:'AmaZulu FC', position:'MID', display_name:'Aiden McCarthy',                apifootball_id:349345, espn_id:332563, price:7.0,  apps:15, goals:2, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:1.6, xa:2.7, total_points:52 },
 
   // -- DURBAN CITY  GP16 W7 D4 L5 GF15 GA11 │ 27YC 1RC ------------------
   { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:22, goals:0, assists:1, clean_sheets:12,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57, ownership:17 },
@@ -4431,16 +4522,23 @@ var PSL_ROSTER = [
   { id:6005, club:'Durban City', position:'MID', display_name:'Samkelo Maseko',             price:7.0,  apps:19, goals:3, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.5, xa:0.9, total_points:60 },
   { id:6006, club:'Durban City', position:'MID', display_name:'Letsie Koapeng',             price:7.5,  apps:14, goals:3, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:0.9, total_points:61 },
   { id:6007, club:'Durban City', position:'FWD', display_name:'Saziso Magawana',            price:9.0,  apps:20, goals:3, assists:3, clean_sheets:0,  yellow_cards:1, red_cards:1, xg:2.8, xa:2.8, total_points:66 },
+  { id:6008, club:'Durban City', position:'MID', display_name:'Donay Jansen',                   apifootball_id:469482, espn_id:384416, price:6.0,  apps:14, goals:1, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.8, xa:1.8, total_points:36 },
+  { id:6009, club:'Durban City', position:'FWD', display_name:'Luke Junio Baartman',             apifootball_id:417825, espn_id:374941, price:7.5,  apps:16, goals:5, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:4.5, xa:1.8, total_points:72 },
 
   // -- KAIZER CHIEFS  GP15 W8 D6 L1 GF15 GA6 │ 36YC 0RC ----------------
   { id:7001, club:'Kaizer Chiefs', position:'GK',  display_name:'Bruce Bvuma',              price:7.5,  apps:14, goals:0, assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:82, ownership:26 },
-  { id:7002, club:'Kaizer Chiefs', position:'DEF', display_name:'Edmilson Dove',            price:5.5,  apps:14, goals:0, assists:0, clean_sheets:6,  yellow_cards:7, red_cards:0, xg:0.1, xa:0.2, total_points:37 },
-  { id:7003, club:'Kaizer Chiefs', position:'DEF', display_name:'Dillon Solomons',          price:5.0,  apps:13, goals:0, assists:0, clean_sheets:5,  yellow_cards:6, red_cards:0, xg:0.1, xa:0.1, total_points:30 },
+  { id:7003, club:'Kaizer Chiefs', position:'DEF', display_name:'Dillan Solomons',          price:5.0,  apps:13, goals:0, assists:0, clean_sheets:5,  yellow_cards:6, red_cards:0, xg:0.1, xa:0.1, total_points:30 },
   { id:7004, club:'Kaizer Chiefs', position:'DEF', display_name:'Bradley Cross',            price:5.0,  apps:12, goals:0, assists:0, clean_sheets:5,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.2, total_points:30 },
   { id:7005, club:'Kaizer Chiefs', position:'MID', display_name:'Mduduzi Shabalala',        price:8.0,  apps:17, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:1.8, total_points:59 },
   { id:7006, club:'Kaizer Chiefs', position:'MID', display_name:'Leandro Sirino',           price:7.0,  apps:13, goals:1, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.9, xa:1.8, total_points:41 },
   { id:7007, club:'Kaizer Chiefs', position:'MID', display_name:'Lebohang Maboe',           price:7.0,  apps:13, goals:1, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:0.9, total_points:36 },
   { id:7008, club:'Kaizer Chiefs', position:'FWD', display_name:'Flavio Silva',             price:10.0, apps:12, goals:5, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.8, xa:0.9, total_points:79, ownership:23 },
+  { id:7009, club:'Kaizer Chiefs', position:'DEF', display_name:'Reeve Frosler',                 apifootball_id:46360,  espn_id:228583, price:7.0,  apps:20, goals:0, assists:3, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.2, xa:2.7, total_points:47 },
+  { id:7010, club:'Kaizer Chiefs', position:'DEF', display_name:'Alton Zitha Kwinika',            apifootball_id:46538,  espn_id:262787, price:5.5,  apps:14, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:32 },
+  { id:7011, club:'Kaizer Chiefs', position:'MID', display_name:'Mfundo Vilakazi',                apifootball_id:457629, espn_id:380673, price:8.5,  apps:18, goals:5, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.5, xa:3.6, total_points:77, ownership:16 },
+  { id:7012, club:'Kaizer Chiefs', position:'FWD', display_name:'Pule Sydney Mmodi',              apifootball_id:205514, espn_id:309039, price:7.5,  apps:17, goals:4, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:1.8, total_points:64 },
+  { id:7013, club:'Kaizer Chiefs', position:'FWD', display_name:'Khanyisa Mayo',                  apifootball_id:205678, espn_id:228587, price:9.5,  apps:19, goals:8, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:7.2, xa:2.7, total_points:95, ownership:24 },
+  { id:7014, club:'Kaizer Chiefs', position:'DEF', display_name:'Paseka Matsobane Godfrey Mako',  apifootball_id:46224,  espn_id:262785, price:5.5,  apps:15, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:30 },
 
   // -- POLOKWANE CITY  GP15 W6 D5 L4 GF11 GA9 │ 27YC 1RC ---------------
   { id:8001, club:'Polokwane City', position:'GK',  display_name:'Lindokuhle Mathebula',    price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:48 },
@@ -4486,6 +4584,10 @@ var PSL_ROSTER = [
   { id:12005, club:'Stellenbosch FC', position:'MID', display_name:'Junior Mendieta',       price:6.5,  apps:14, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.6, xa:0.9, total_points:38 },
   { id:12006, club:'Stellenbosch FC', position:'MID', display_name:'Waseem Isaacs',         price:5.5,  apps:12, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.3, total_points:23 },
   { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:10.5, apps:16, goals:7, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.5, xa:0.9, total_points:91, ownership:24 },
+  { id:12008, club:'Stellenbosch FC', position:'MID', display_name:'Ethan Chislett',              apifootball_id:108466, espn_id:282967, price:7.5,  apps:18, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.6, xa:3.6, total_points:65 },
+  { id:12009, club:'Stellenbosch FC', position:'FWD', display_name:'Ashley Du Preez',             apifootball_id:127434, espn_id:291123, price:8.5,  apps:17, goals:6, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:5.5, xa:1.8, total_points:75 },
+  { id:12010, club:'Stellenbosch FC', position:'MID', display_name:'Tashreeq Morris',             apifootball_id:98928,  espn_id:191467, price:7.0,  apps:16, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:51 },
+  { id:12011, club:'Stellenbosch FC', position:'MID', display_name:'Inácio Miguel Ferreira dos Santos', apifootball_id:41965, espn_id:208363, price:7.0,  apps:15, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.8, total_points:47 },
 
   // -- MARUMO GALLANTS  GP16 W3 D6 L7 GF12 GA20 │ 29YC 2RC ------------
   { id:13001, club:'Marumo Gallants', position:'GK',  display_name:'Washington Arubi',      price:4.5,  apps:16, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:25 },
@@ -4517,14 +4619,14 @@ var PSL_ROSTER = [
   { id:16002, club:'Magesi FC', position:'DEF', display_name:'Sibusiso Hadebe',             price:4.0,  apps:12, goals:0, assists:0, clean_sheets:1,  yellow_cards:6, red_cards:1, xg:0.0, xa:0.1, total_points:-3 },
   { id:16003, club:'Magesi FC', position:'DEF', display_name:'Thabang Sibanyoni',           price:4.0,  apps:11, goals:0, assists:0, clean_sheets:1,  yellow_cards:5, red_cards:1, xg:0.0, xa:0.1, total_points:0  },
   { id:16004, club:'Magesi FC', position:'MID', display_name:'Kgomotso Mosadi',             price:7.0,  apps:16, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.6, xa:1.8, total_points:44 },
-  { id:16005, club:'Magesi FC', position:'MID', display_name:'Glody Lilepo',               price:6.0,  apps:12, goals:1, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.9, total_points:22 },
+  { id:16005, club:'Magesi FC', position:'MID', display_name:'Glody Makabi Lilepo',         apifootball_id:296274, espn_id:312790, price:6.0,  apps:12, goals:1, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.9, total_points:22 },
   { id:16006, club:'Magesi FC', position:'MID', display_name:'Rowan Human',                price:5.0,  apps:13, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.8, xa:0.3, total_points:23 },
   { id:16007, club:'Magesi FC', position:'FWD', display_name:'Victor Letsoalo',            price:6.0,  apps:12, goals:2, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.8, xa:0.3, total_points:24 },
 
   // -- Additional players to complete all squads --------------------------
   // Chippa United (add 2)
   { id:16008, club:'Chippa United',    position:'GK',  display_name:'Ntando Dlamini',         price:4.0,  apps:14, goals:0, assists:0, clean_sheets:2,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:21 },
-  { id:16009, club:'Chippa United',    position:'DEF', display_name:'Sibusiso Mthethwa',       price:4.0,  apps:12, goals:0, assists:1, clean_sheets:2,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.3, total_points:18 },
+  { id:16009, club:'Chippa United',    position:'DEF', display_name:'Sibongiseni Mthethwa',     apifootball_id:270301, espn_id:309103, price:4.0,  apps:12, goals:0, assists:1, clean_sheets:2,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.3, total_points:18 },
   // Orbit College FC (add 2)
   { id:16010, club:'Orbit College FC', position:'GK',  display_name:'Sandile Mkhwanazi',       price:3.5,  apps:10, goals:0, assists:0, clean_sheets:1,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:14 },
   { id:16011, club:'Orbit College FC', position:'DEF', display_name:'Thabo Molefe',             price:3.5,  apps:11, goals:1, assists:0, clean_sheets:1,  yellow_cards:2, red_cards:0, xg:0.4, xa:0.1, total_points:16 },
@@ -7172,135 +7274,268 @@ onReady(function() {
     });
   };
 
-  // ── FIX 3B: FIXTURE EXPAND — load player stats from match_player_stats
+  // ── FIX 3B: FIXTURE EXPAND — rich match center with stats, my points, live chat
   window.buildFixDetail = function(f) {
-    var base = 'font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.8);';
-    var out  = '<div style="background:rgba(255,255,255,.025);border-top:1px solid rgba(255,255,255,.06);padding:.5rem 0 .75rem">';
-    if (!f) return out+'<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.35);text-align:center">No match data</div></div>';
-
+    if (!f) return '<div style="padding:.8rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.78rem;text-align:center">No match data</div>';
+    var fid    = String(f.fixture_id || f.api_fixture_id || '');
     var isFT   = f.status==='FT'||f.is_ft||f.is_finished;
     var isLive = f.is_live;
-    var fid    = f.fixture_id||f.api_fixture_id;
-
-    if (f.venue||f.round) {
-      out += '<div style="text-align:center;padding:.3rem 1rem;'+base+'color:rgba(255,255,255,.35);font-size:.65rem">';
-      if (f.round) out += f.round;
-      if (f.venue) out += (f.round?' · ':'')+' 📍 '+f.venue;
-      out += '</div>';
+    var elapsed= f.elapsed||0;
+    var pct    = Math.min(100, isFT?100:Math.round((elapsed/90)*100));
+    var tlPct  = pct+'%';
+    var statusBadge = isFT
+      ? '<span style="background:rgba(34,137,90,.12);color:#22895A;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:4px">FT</span>'
+      : isLive
+        ? '<span style="background:rgba(212,39,79,.12);color:#D4274F;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:4px;animation:livePulse 1.5s infinite">'+elapsed+"' LIVE</span>"
+        : '';
+    var venueHtml='';
+    if(f.venue||f.round){
+      venueHtml='<div style="text-align:center;padding:.35rem .9rem .1rem;font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.28)">'+(f.round||'')+(f.round&&f.venue?' · ':'')+( f.venue?'📍 '+f.venue:'')+'</div>';
     }
-    if (isFT||isLive) {
-      var pm = {'1H':'First Half','HT':'Half Time','2H':'Second Half','FT':'Full Time','ET':'Extra Time'};
-      out += '<div style="text-align:center;padding:.2rem 1rem;'+base+'color:'+(isLive?'#D4274F':'#DBA94A')+';font-weight:700;font-size:.7rem;letter-spacing:1px;text-transform:uppercase">'+(pm[f.status]||(isFT?'Full Time':'Live'))+'</div>';
+    var out='<div class="fix-expand">';
+    out+=venueHtml;
+    if(statusBadge) out+='<div style="text-align:center;padding:.3rem .9rem .15rem">'+statusBadge+'</div>';
+    if(isFT||isLive){
+      out+='<div class="mc-timeline" id="mc-tl-'+fid+'">' +
+        '<div class="mc-tl-track">' +
+          '<div class="mc-tl-bg"></div>' +
+          '<div class="mc-tl-prog" style="width:'+tlPct+'"></div>' +
+          '<div id="mc-tl-evts-'+fid+'"></div>' +
+        '</div>' +
+        '<div class="mc-tl-labels"><span>KO</span><span>15'</span><span>30'</span><span>HT</span><span>60'</span><span>75'</span><span>FT</span></div>' +
+      '</div>';
     }
+    out+='<div class="mc-tabs">' +
+      '<button class="mc-tab active" data-fix="'+fid+'" data-tab="stats" onclick="mcSwitchTab(''+fid+'','stats')">Match Stats</button>' +
+      '<button class="mc-tab" data-fix="'+fid+'" data-tab="mypts" onclick="mcSwitchTab(''+fid+'','mypts')">My Points</button>' +
+      '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
+    '</div>';
+    out+='<div class="mc-tab-body show" data-fix="'+fid+'" data-tab="stats">';
+    if(isFT&&fid){
+      out+='<div id="mc-stats-'+fid+'" style="padding:.6rem"><div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Loading stats...</div></div>';
+    } else if(isLive){
+      out+='<div style="padding:1rem;text-align:center;font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.35)">Stats available after full time</div>';
+    } else {
+      out+='<div style="padding:1rem;text-align:center;font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.3)">Match not started yet</div>';
+    }
+    out+='</div>';
+    out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="mypts">';
+    out+='<div id="mc-mypts-'+fid+'" class="mc-mypts-wrap">';
+    if(!ST.user){
+      out+='<div class="mc-nopts">Sign in to see your fantasy points for this match</div>';
+    } else if(!ST.squad||!ST.squad.length){
+      out+='<div class="mc-nopts">Register your squad to track fantasy points</div>';
+    } else {
+      out+='<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">Loading your points...</div>';
+    }
+    out+='</div></div>';
+    out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="chat">';
+    out+='<div class="mc-chat-wrap">';
+    out+='<div class="mc-chat-meta">' +
+      '<div class="mc-chat-live-badge"><div class="mc-chat-live-dot"></div>Live Match Chat <span id="mc-chat-count-'+fid+'" style="color:rgba(255,255,255,.3);font-weight:500;margin-left:3px"></span></div>' +
+      '<div class="mc-chat-ephemeral-note">Not stored · clears on reload</div>' +
+    '</div>';
+    out+='<div class="mc-chat-msgs" id="mc-chat-msgs-'+fid+'"><div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.25)">Be the first to comment</div></div>';
+    if(ST.user){
+      out+='<div class="mc-chat-compose">' +
+        '<textarea class="mc-chat-inp" id="mc-chat-inp-'+fid+'" placeholder="Say something about this match..." maxlength="280" rows="1" ' +
+          'oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" ' +
+          'onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMatchChatMsg(''+fid+'')}" ></textarea>' +
+        '<button class="mc-chat-send" onclick="sendMatchChatMsg(''+fid+'')">Post</button>' +
+      '</div>';
+    } else {
+      out+='<div class="mc-chat-login-note">Sign in to join the live chat</div>';
+    }
+    out+='</div></div>';
+    out+='</div>';
 
-    if (isFT && fid) {
-      out += '<div id="mps-'+fid+'" style="padding:.4rem 1rem"><div style="'+base+'color:rgba(255,255,255,.3);text-align:center;font-size:.7rem">Loading player stats...</div></div>';
-      out += '</div>';
-      setTimeout(function() {
-        var el = document.getElementById('mps-'+fid); if (!el) return;
+    if(isFT&&fid){
+      setTimeout(function(){
+        var statsEl=document.getElementById('mc-stats-'+fid);
+        if(!statsEl)return;
         db.from('match_player_stats')
-          .select('player_name,position,minutes_played,goals,assists,saves,clean_sheet,yellow_cards,red_cards,rating,fantasy_points,points_breakdown,apifootball_team_id,is_substitute,is_captain')
-          .eq('apifootball_fixture_id', fid).eq('season',2025)
+          .select('player_name,position,minutes_played,goals,assists,saves,clean_sheet,yellow_cards,red_cards,rating,fantasy_points,points_breakdown,apifootball_team_id,apifootball_player_id,is_substitute,is_captain,shots_on_target,shots_total,key_passes,passes_total')
+          .eq('apifootball_fixture_id',parseInt(fid)).eq('season',2025)
           .order('fantasy_points',{ascending:false})
-          .then(function(res) {
-            var stats = res.data||[];
-            if (!stats.length) { el.innerHTML='<div style="'+base+'color:rgba(255,255,255,.3);text-align:center;padding:.5rem">No player stats available</div>'; return; }
-            var teamIds=[]; stats.forEach(function(s){if(teamIds.indexOf(s.apifootball_team_id)===-1)teamIds.push(s.apifootball_team_id);});
-            var raw = f._raw||{};
-            var htid = raw.home_team_id||teamIds[0];
-            var homeStats = stats.filter(function(s){return s.apifootball_team_id===htid;});
-            var awayStats = stats.filter(function(s){return s.apifootball_team_id!==htid;});
-            function posL(p){return {G:'GK',D:'DEF',M:'MID',F:'FWD'}[p]||p;}
-            function rc(r){if(!r)return'#888';if(r>=8)return'#2ecc71';if(r>=7)return'#f39c12';if(r>=6)return'#e67e22';return'#e74c3c';}
-            function bldTeam(players,tName) {
-              if(!players.length)return'';
-              return '<div style="margin-bottom:.3rem">'+
-                '<div style="padding:.3rem .8rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);background:rgba(255,255,255,.03)">'+tName+'</div>'+
-                players.map(function(p){
-                  var bd=p.points_breakdown||{};
-                  var tips=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
-                  return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.7':'')+'">' +
-                    '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.6);min-width:26px;text-align:center">'+posL(p.position)+'</span>'+
-                    '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.player_name+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
-                    '<span style="font-size:.65rem;color:rgba(255,255,255,.35)">'+p.minutes_played+"'</span>"+
-                    (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
-                    (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
-                    (p.clean_sheet?'<span style="font-size:.7rem">🛡️</span>':'')+
-                    (p.saves>0?'<span style="font-size:.7rem">🧤'+p.saves+'</span>':'')+
-                    (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
-                    (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
-                    (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rc(p.rating)+'">'+p.rating+'</span>':'')+
-                    '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:32px;text-align:right" title="'+tips+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
-                  '</div>';
-                }).join('')+
+          .then(function(res){
+            var stats=res.data||[];
+            if(!stats.length){statsEl.innerHTML='<div style="padding:.8rem;text-align:center;font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.3)">No stats available yet</div>';return;}
+            var raw=f._raw||{};
+            var teamIds=[];stats.forEach(function(s){if(teamIds.indexOf(s.apifootball_team_id)===-1)teamIds.push(s.apifootball_team_id);});
+            var htid=raw.home_team_id||teamIds[0];
+            var homeStats=stats.filter(function(s){return s.apifootball_team_id===htid;});
+            var awayStats=stats.filter(function(s){return s.apifootball_team_id!==htid;});
+            function sum(arr,k){return arr.reduce(function(t,p){return t+(p[k]||0);},0);}
+            function posLbl(p){return{G:'GK',D:'DEF',M:'MID',F:'FWD'}[p]||p;}
+            function rCol(r){return r>=8?'#2ecc71':r>=7?'#f39c12':r>=6?'#e67e22':'#e74c3c';}
+            var hp=sum(homeStats,'passes_total'),ap=sum(awayStats,'passes_total');
+            var hPoss=hp+ap>0?Math.round(hp/(hp+ap)*100):50,aPoss=100-hPoss;
+            function possCir(pct,color){
+              var r=24,ci=2*Math.PI*r,da=ci*(pct/100);
+              return '<svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="'+r+'" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="6" transform="rotate(-90 30 30)"/><circle cx="30" cy="30" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="6" stroke-dasharray="'+da.toFixed(1)+' '+ci.toFixed(1)+'" stroke-linecap="round" transform="rotate(-90 30 30)"/></svg>';
+            }
+            var matchStats=[
+              {lbl:'Goals',h:f.hg||0,a:f.ag||0},
+              {lbl:'Shots on Target',h:sum(homeStats,'shots_on_target'),a:sum(awayStats,'shots_on_target')},
+              {lbl:'Total Shots',h:sum(homeStats,'shots_total'),a:sum(awayStats,'shots_total')},
+              {lbl:'Key Passes',h:sum(homeStats,'key_passes'),a:sum(awayStats,'key_passes')},
+              {lbl:'Saves',h:sum(homeStats,'saves'),a:sum(awayStats,'saves')},
+              {lbl:'Yellow Cards',h:sum(homeStats,'yellow_cards'),a:sum(awayStats,'yellow_cards')},
+            ];
+            var barsHtml='<div class="mc-stats-wrap">'+matchStats.map(function(d){
+              var tot=d.h+d.a;var hp2=tot?Math.round(d.h/tot*100):50;var ap2=100-hp2;
+              return '<div class="mc-stat-row">'+
+                '<span class="mc-stat-val left">'+d.h+'</span>'+
+                '<div class="mc-bar-wrap left"><div class="mc-bar-fill mc-bar-home" style="width:'+hp2+'%"></div></div>'+
+                '<span class="mc-stat-lbl">'+d.lbl+'</span>'+
+                '<div class="mc-bar-wrap"><div class="mc-bar-fill mc-bar-away" style="width:'+ap2+'%"></div></div>'+
+                '<span class="mc-stat-val right">'+d.a+'</span>'+
+              '</div>';
+            }).join('')+'</div>';
+            var possHtml='<div class="mc-poss-row">'+
+              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(hPoss,'#DBA94A')+'<div class="mc-poss-pct" style="color:#DBA94A">'+hPoss+'</div></div><div class="mc-poss-lbl">'+(f.home||'Home')+'</div></div>'+
+              '<div class="mc-poss-mid-lbl">Possession</div>'+
+              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(aPoss,'#D4274F')+'<div class="mc-poss-pct" style="color:#D4274F">'+aPoss+'</div></div><div class="mc-poss-lbl">'+(f.away||'Away')+'</div></div>'+
+            '</div>';
+            function buildRows(players){
+              return players.map(function(p){
+                var bd=p.points_breakdown||{};
+                var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
+                return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
+                  '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
+                  '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
+                  '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
+                  (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
+                  (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
+                  (p.clean_sheet?'<span style="font-size:.7rem">🛡️</span>':'')+
+                  (p.saves>0?'<span style="font-size:.7rem">🧤'+p.saves+'</span>':'')+
+                  (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
+                  (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
+                  (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
+                  '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+                '</div>';
+              }).join('');
+            }
+            window['_mpsData_'+fid]={home:homeStats,away:awayStats,f:f};
+            function buildTeamTabs(active){
+              var on=function(w){return active===w;};
+              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
+              return '<div style="display:flex;gap:5px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.05)">'+
+                '<button onclick="mpsTab(''+fid+'','home')" style="'+bs('home')+'">'+(f.home||'Home')+'</button>'+
+                '<button onclick="mpsTab(''+fid+'','away')" style="'+bs('away')+'">'+(f.away||'Away')+'</button>'+
+              '</div>'+
+              '<div class="mc-team-stats-wrap" id="mc-team-rows-'+fid+'">'+
+                '<div class="mc-section-head">'+(active==='home'?(f.home||'Home'):(f.away||'Away'))+'</div>'+
+                buildRows(active==='home'?homeStats:awayStats)+
               '</div>';
             }
-            window['_mpsData_'+fid]={home:homeStats,away:awayStats,f:f,bldTeam:bldTeam};
-            function buildMpsTabs(active){
-              var on=function(w){return active===w;};
-              var bs=function(w){return 'flex:1;padding:.4rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.5)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
-              return '<div style="display:flex;gap:6px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.06)">'+'<button onclick="mpsTab(\''+fid+'\',\'home\')" style="'+bs('home')+'">'+(f.home||'Home')+'</button>'+'<button onclick="mpsTab(\''+fid+'\',\'away\')" style="'+bs('away')+'">'+(f.away||'Away')+'</button>'+'</div>'+bldTeam(active==='home'?homeStats:awayStats,active==='home'?(f.home||'Home'):(f.away||'Away'));
+            statsEl.innerHTML=barsHtml+possHtml+'<div style="margin-top:.3rem;border-top:1px solid rgba(255,255,255,.06)" id="mc-playerblock-'+fid+'">'+buildTeamTabs('home')+'</div>';
+            // Populate timeline events from goal data
+            var tlEvts=document.getElementById('mc-tl-evts-'+fid);
+            if(tlEvts){
+              var evts=[];
+              stats.forEach(function(p){
+                if(p.goals>0){var side=p.apifootball_team_id===htid?'goal-h':'goal-a';for(var g=0;g<p.goals;g++)evts.push({type:side,name:p.player_name||''});}
+                if(p.yellow_cards>0)evts.push({type:'yc',name:p.player_name||''});
+              });
+              tlEvts.innerHTML=evts.slice(0,8).map(function(e,idx){
+                var lp=Math.min(92,Math.max(5,Math.round(((idx+1)/Math.max(evts.length,1))*88)));
+                var ico=e.type==='goal-h'||e.type==='goal-a'?'⚽':e.type==='yc'?'🟨':'🟥';
+                return '<div class="mc-tl-evt" style="left:'+lp+'%" title="'+escHtml(e.name)+'"><div class="mc-tl-evt-icon '+e.type+'">'+ico+'</div></div>';
+              }).join('');
             }
-            el.innerHTML=buildMpsTabs('home');
+            // Populate My Points tab
+            var myPtsEl=document.getElementById('mc-mypts-'+fid);
+            if(myPtsEl&&ST.user&&ST.squad&&ST.squad.length){
+              var myPlayers=[];
+              ST.squad.forEach(function(sp){
+                var stat=matchPlayerToStats(sp,stats);
+                if(!stat)return;
+                var rawPts=stat.fantasy_points||0;
+                var mult=sp.isCaptain?2:1;
+                if(sp.isCaptain&&ST.activeChip==='tc')mult=3;
+                myPlayers.push({sp:sp,stat:stat,pts:rawPts*mult,mult:mult});
+              });
+              if(!myPlayers.length){
+                myPtsEl.innerHTML='<div class="mc-nopts">None of your players featured in this match</div>';
+              } else {
+                var gwM=myPlayers.reduce(function(t,p){return t+p.pts;},0);
+                var h2='<div class="mc-mypts-header"><span class="mc-mypts-title">Your squad in this match</span><span class="mc-mypts-total">+'+gwM+' pts</span></div>';
+                h2+=myPlayers.sort(function(a,b){return b.pts-a.pts;}).map(function(mp){
+                  var sp=mp.sp;var st=mp.stat;var cls=mp.pts>0?'pos':mp.pts<0?'neg':'zero';
+                  var pos=sp.position||'';
+                  var evs=[];
+                  if(st.goals>0)       evs.push('⚽'+(st.goals>1?st.goals:''));
+                  if(st.assists>0)     evs.push('🅰️'+(st.assists>1?st.assists:''));
+                  if(st.clean_sheet)   evs.push('🛡️');
+                  if(st.saves>0)       evs.push('🧤'+st.saves);
+                  if(st.yellow_cards>0)evs.push('🟨');
+                  if(st.red_cards>0)   evs.push('🟥');
+                  return '<div class="mc-pt-row">'+
+                    '<span class="mc-pt-pos-badge">'+pos+'</span>'+
+                    '<span class="mc-pt-name">'+escHtml(sp.display_name||'')+
+                      (sp.isCaptain?' <span class="mc-pt-cap">C</span>'+(mp.mult===3?' <span class="mc-pt-cap" style="background:var(--red)">TC</span>':''):'')+
+                      (sp.isVC?' <span class="mc-pt-vc">VC</span>':'')+
+                    '</span>'+
+                    '<span class="mc-pt-events">'+evs.join(' ')+'</span>'+
+                    '<span class="mc-pt-pts '+cls+'">'+(mp.pts>0?'+':'')+mp.pts+'</span>'+
+                  '</div>';
+                }).join('');
+                myPtsEl.innerHTML=h2;
+              }
+            }
           })
-          .catch(function(){
-            var el2=document.getElementById('mps-'+fid);
-            if(el2) el2.innerHTML='<div style="'+base+'color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Stats unavailable</div>';
+          .catch(function(err){
+            var el2=document.getElementById('mc-stats-'+fid);
+            if(el2)el2.innerHTML='<div style="padding:.8rem;text-align:center;font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.3)">Stats unavailable</div>';
+            console.warn('[MatchCenter]',err&&err.message);
           });
-      }, 120);
-      return out;
+      },120);
     }
-
-    if (!isFT && !isLive) {
-      var d=f.date||f.kickoff_at;
-      var ts=d?new Date(d).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'}):'';
-      var ds=d?new Date(d).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}):'';
-      out+='<div style="text-align:center;padding:.8rem;'+base+'"><div style="font-size:.9rem;font-weight:900;color:#fff">'+ts+'</div><div style="font-size:.7rem;color:rgba(255,255,255,.4)">'+ds+' · Kick-off</div></div>';
-    } else {
-      out+='<div style="padding:.7rem 1rem;'+base+'color:rgba(255,255,255,.35);text-align:center;font-size:.72rem">Stats sync pending...</div>';
-    }
-    return out+'</div>';
+    return out;
   };
 
-  // ── FIX 4: PITCH ALIGNMENT CSS
-  var s = document.createElement('style');
-  s.textContent =
-    '.squad-pitch-wrap{width:100%!important;max-width:420px!important;margin:0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;padding:8px 4px!important;box-sizing:border-box!important;align-self:center!important}' +
-    '.prow{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;align-items:flex-start!important;width:100%!important;gap:4px!important;margin-bottom:4px!important}' +
-    '.pc{display:flex!important;flex-direction:column!important;align-items:center!important;cursor:pointer!important;min-width:52px!important;max-width:70px!important;flex:0 0 auto!important;-webkit-tap-highlight-color:transparent!important}' +
-    '.pc-shirt{width:44px!important;height:44px!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;flex-shrink:0!important}' +
-    '.pc-name{font-family:var(--font-ui)!important;font-size:.58rem!important;font-weight:700!important;color:#fff!important;margin-top:3px!important;text-align:center!important;max-width:62px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:1.2!important}' +
-    '.pc-pts{font-family:var(--font-display)!important;font-size:.6rem!important;font-weight:900!important;color:#DBA94A!important;text-align:center!important;line-height:1!important;margin-top:1px!important}' +
-    '.bench-strip{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.5rem .25rem!important;width:100%!important;max-width:480px!important;margin:0 auto!important}' +
-    '.squad-body-grid{display:flex!important;flex-direction:column!important;width:100%!important;align-items:center!important}' +
-    '#p-bench{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;justify-content:center!important;gap:6px!important;padding:.4rem!important}';
-  document.head.appendChild(s);
-
-  // GW fix in main loadGW above
-
-  // ── TRIGGER: reload with fixes if user already logged in
-  if (window.ST && ST.user) {
-    CACHE.players=null; CACHE.dashboard=null;
-    window.loadGW(function() {
-      window.ensurePlayersLoaded(function() {
-        window.getUserDashboard(true);
-      });
-    });
-  }
-
   window.mpsTab=function(fid,which){
-    var el=document.getElementById('mps-'+fid);
     var d=window['_mpsData_'+fid];
-    if(!el||!d)return;
-    el.querySelectorAll('button').forEach(function(b){
+    if(!d)return;
+    var block=document.getElementById('mc-playerblock-'+fid);
+    if(!block)return;
+    var f=d.f;
+    var btns=block.querySelectorAll('button');
+    btns.forEach(function(b){
       var isOn=(b.getAttribute('onclick')||'').indexOf("'"+which+"'")>-1;
-      b.style.borderColor=isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.1)';
+      b.style.borderColor=isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)';
       b.style.background=isOn?'rgba(219,169,74,.1)':'transparent';
-      b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.5)';
+      b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.45)';
     });
-    var teamDiv=el.querySelector('div[style*="margin-bottom:.3rem"]');
-    if(teamDiv)teamDiv.outerHTML=d.bldTeam(which==='home'?d.home:d.away,which==='home'?(d.f.home||'Home'):(d.f.away||'Away'));
-    else el.insertAdjacentHTML('beforeend',d.bldTeam(which==='home'?d.home:d.away,which==='home'?(d.f.home||'Home'):(d.f.away||'Away')));
+    var wrap=document.getElementById('mc-team-rows-'+fid);
+    if(!wrap)return;
+    var players=which==='home'?d.home:d.away;
+    var tname=which==='home'?(f.home||'Home'):(f.away||'Away');
+    function posLbl(p){return{G:'GK',D:'DEF',M:'MID',F:'FWD'}[p]||p;}
+    function rCol(r){return r>=8?'#2ecc71':r>=7?'#f39c12':r>=6?'#e67e22':'#e74c3c';}
+    var header=wrap.querySelector('.mc-section-head');
+    if(header)header.textContent=tname;
+    var rows=players.map(function(p){
+      var bd=p.points_breakdown||{};var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
+      return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
+        '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
+        '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+'</span>'+
+        '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
+        (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
+        (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
+        (p.clean_sheet?'<span style="font-size:.7rem">🛡️</span>':'')+
+        (p.saves>0?'<span style="font-size:.7rem">🧤'+p.saves+'</span>':'')+
+        (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
+        (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
+        (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
+        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+      '</div>';
+    }).join('');
+    // Remove old rows, keep header
+    while(wrap.children.length>1)wrap.removeChild(wrap.lastChild);
+    var tmp=document.createElement('div');tmp.innerHTML=rows;
+    while(tmp.firstChild)wrap.appendChild(tmp.firstChild);
   };
   console.log('[FPSL] Fix patch applied — match stats, no injuries, pitch centred, manual stats');
 });
