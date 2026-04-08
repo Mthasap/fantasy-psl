@@ -978,8 +978,8 @@
     </div>
 
     <div class="squad-body-grid">
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center">
-        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:480px;margin:0 auto">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
+        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:460px;margin:0 auto;align-self:center">
           <div id="p-fwd" class="prow"></div>
           <div id="p-mid" class="prow"></div>
           <div id="p-def" class="prow"></div>
@@ -996,7 +996,7 @@
               <button id="bench-order-btn" onclick="toggleBenchReorder()" style="display:none;background:none;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:rgba(255,255,255,.4);font-size:.65rem;font-weight:700;padding:.2rem .5rem;cursor:pointer;font-family:var(--font-ui)">Set Order</button>
             </span>
           </div>
-          <div id="p-bench" style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center"></div>
+          <div id="p-bench" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:center;width:100%"></div>
         </div>
       </div>
 
@@ -2347,21 +2347,24 @@ function loadUserGWPoints() {
     .eq('gameweek', ST.gw.number)
     .single()
     .then(function(res) {
+      if (!CACHE._profile) CACHE._profile = {};
       if (res.data && res.data.points !== undefined) {
-        // Update the profile cache so renderBudget() shows the right number
-        if (!CACHE._profile) CACHE._profile = {};
         CACHE._profile.gw_points = res.data.points;
         renderBudget();
-
-        // If we have a per-player breakdown, show it
         if (res.data.player_scores && res.data.player_scores.length) {
           showPointsBreakdown(res.data.player_scores);
         }
+      } else {
+        // No gw_scores row yet — use whatever is in profiles
+        var fallbackGW = CACHE._profile.gw_points || 0;
+        CACHE._profile.gw_points = fallbackGW;
+        renderBudget();
       }
     })
     .catch(function(e) {
-      console.warn('[loadUserGWPoints] Could not load from gw_scores:', e.message);
-      // Fallback: show whatever is in profiles.gw_points (less accurate but better than nothing)
+      console.warn('[loadUserGWPoints] gw_scores error:', e.message);
+      // Ensure pill still shows with profile data
+      if (CACHE._profile) renderBudget();
     });
 }
 
@@ -2691,13 +2694,13 @@ function renderBudget() {
   var gwEl      = document.getElementById('gw-pts-display');
   var totalEl   = document.getElementById('total-pts-display');
   if (ST.user && CACHE._profile) {
-    var gwPts    = CACHE._profile.gw_points    || 0;
-    var totalPts = CACHE._profile.total_points || 0;
+    var gwPts    = (CACHE._profile.gw_points    !== undefined && CACHE._profile.gw_points    !== null) ? CACHE._profile.gw_points    : 0;
+    var totalPts = (CACHE._profile.total_points !== undefined && CACHE._profile.total_points !== null) ? CACHE._profile.total_points : 0;
     var gwRank   = CACHE._profile.overall_rank || null;
     if (gwEl)    gwEl.textContent    = gwPts;
     if (totalEl) totalEl.textContent = totalPts;
-    if (gwPill)    gwPill.style.display    = '';
-    if (totalPill) totalPill.style.display = '';
+    if (gwPill)    { gwPill.style.display    = 'flex'; }
+    if (totalPill) { totalPill.style.display = 'flex'; }
     // Rank pill
     var rkPill = document.getElementById('rank-pts-pill');
     var rkEl   = document.getElementById('rank-pts-display');
@@ -3479,7 +3482,7 @@ function loadNews() {
 
   db.from('news_posts')
     .select('*')
-    .eq('published', true)
+    .or('published.is.null,published.eq.true,is_published.is.null,is_published.eq.true')
     .order('published_at', { ascending: false })
     .limit(20)
     .then(function(res) {
@@ -3793,7 +3796,7 @@ function loadGlobalLB() {
   }
   if (rateLimited()) return;
   // Only show users with full squads (squad_count = 15)
-  db.from('profiles').select('team_name, username, total_points, squad_count').order('total_points', { ascending: false }).limit(100).then(function(res) {
+  db.from('profiles').select('team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank').eq('squad_registered', true).order('total_points', { ascending: false }).limit(100).then(function(res) {
     var rows = (res.data || []).filter(function(p) { return (p.squad_count || 0) >= 15 || (p.total_points || 0) > 0; });
     if (!rows.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 1.2rem">Be the first manager!</div>'; return; }
     c.innerHTML = rows.map(function(p, i) {
@@ -7221,10 +7224,10 @@ onReady(function() {
     var isFTTab = (tab === 'FT' || tab === 'results');
     var query = db.from('fixtures')
       .select('apifootball_fixture_id,home_team_name,away_team_name,home_team_logo,away_team_logo,home_score,away_score,home_score_ht,away_score_ht,kickoff_time,status,elapsed_minutes,gw_number,api_round,venue_name,stats_synced,home_team_id,away_team_id')
-      .eq('season', 2025)
-      .order('kickoff_time', {ascending: !isFTTab});
+      .eq('season', 2025);
 
     if (isFTTab) {
+      // Results: most recent first
       query = query.eq('status','FT').order('kickoff_time',{ascending:false}).limit(80);
     } else {
       var today = new Date(); today.setHours(0,0,0,0);
