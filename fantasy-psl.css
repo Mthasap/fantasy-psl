@@ -867,3 +867,289 @@ html, body {
 .inj-player-name { color:#fff; }
 .inj-desc-text   { color:rgba(255,255,255,.6); }
 .inj-club-text   { color:rgba(255,255,255,.4); }
+
+/* =====================================================
+   LIVE MATCH CENTER — Expanded fixture card
+   ===================================================== */
+
+/* ── Expanded container ── */
+.fix-expand {
+  background: var(--bg-surface);
+  border-top: 1px solid rgba(255,255,255,.06);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+/* ── Tab bar ── */
+.mc-tabs {
+  display: flex;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mc-tabs::-webkit-scrollbar { display: none; }
+.mc-tab {
+  flex-shrink: 0;
+  padding: .6rem .9rem;
+  font-family: var(--font-ui);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.mc-tab.active { color: var(--gold-soft); border-bottom-color: var(--gold-soft); }
+.mc-tab:hover:not(.active) { color: rgba(255,255,255,.7); }
+.mc-tab-body { display: none; }
+.mc-tab-body.show { display: block; }
+
+/* ── Section heading inside panel ── */
+.mc-section-head {
+  padding: .35rem .9rem;
+  font-family: var(--font-ui);
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.025);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+
+/* ── Match Timeline ── */
+.mc-timeline {
+  padding: .6rem .9rem .5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.15);
+}
+.mc-tl-track {
+  position: relative;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+.mc-tl-bg {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: rgba(255,255,255,.08); border-radius: 2px;
+}
+.mc-tl-prog {
+  position: absolute; left: 0; height: 2px;
+  background: linear-gradient(90deg, var(--red), var(--gold-soft));
+  border-radius: 2px; transition: width .5s;
+}
+.mc-tl-evt {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  transform: translateX(-50%);
+}
+.mc-tl-evt-icon {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; border: 1.5px solid var(--bg-surface); z-index: 1;
+}
+.mc-tl-evt-icon.goal-h { background: var(--green-soft); }
+.mc-tl-evt-icon.goal-a { background: var(--red); }
+.mc-tl-evt-icon.yc     { background: #C9963A; }
+.mc-tl-evt-icon.rc     { background: var(--red); }
+.mc-tl-evt-min {
+  font-family: var(--font-ui); font-size: .48rem; color: rgba(255,255,255,.3);
+}
+.mc-tl-labels {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-ui); font-size: .52rem;
+  color: rgba(255,255,255,.22); padding: 2px 1px 0;
+}
+
+/* ── Match stats bars ── */
+.mc-stats-wrap { padding: .65rem .9rem; }
+.mc-stat-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto 1fr 28px;
+  gap: .3rem;
+  align-items: center;
+  margin-bottom: .45rem;
+}
+.mc-stat-val {
+  font-family: var(--font-ui); font-size: .75rem; font-weight: 700;
+  color: var(--text-primary);
+}
+.mc-stat-val.left { text-align: right; }
+.mc-stat-val.right { text-align: left; }
+.mc-stat-lbl {
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 600;
+  color: rgba(255,255,255,.32); text-align: center; white-space: nowrap;
+}
+.mc-bar-wrap {
+  height: 4px; background: rgba(255,255,255,.07);
+  border-radius: 2px; overflow: hidden;
+}
+.mc-bar-wrap.left { direction: rtl; }
+.mc-bar-fill {
+  height: 100%; border-radius: 2px; transition: width .4s;
+}
+.mc-bar-home { background: var(--gold-soft); }
+.mc-bar-away { background: var(--red-soft); }
+
+/* ── Possession rings ── */
+.mc-poss-row {
+  display: flex; justify-content: space-around; align-items: center;
+  padding: .8rem .9rem .5rem;
+  border-top: 1px solid var(--border); margin-top: .35rem;
+}
+.mc-poss-block { text-align: center; }
+.mc-poss-ring { position: relative; width: 60px; height: 60px; margin: 0 auto .25rem; }
+.mc-poss-ring svg { transform: rotate(-90deg); display: block; }
+.mc-poss-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: .95rem; font-weight: 900;
+}
+.mc-poss-lbl {
+  font-family: var(--font-ui); font-size: .58rem; font-weight: 700;
+  color: rgba(255,255,255,.35); letter-spacing: .5px;
+}
+.mc-poss-mid-lbl {
+  font-family: var(--font-ui); font-size: .58rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,.25); text-align: center;
+}
+
+/* ── My Points tab ── */
+.mc-mypts-wrap { padding: .7rem .9rem; }
+.mc-mypts-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: .55rem;
+}
+.mc-mypts-title {
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.35);
+}
+.mc-mypts-total {
+  font-family: var(--font-display); font-size: 1.2rem; font-weight: 900;
+  color: var(--gold-soft);
+}
+.mc-pt-row {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .38rem .55rem; border-radius: 7px;
+  background: var(--bg-card); margin-bottom: .28rem;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.mc-pt-pos-badge {
+  font-family: var(--font-ui); font-size: .55rem; font-weight: 700;
+  background: rgba(255,255,255,.08); color: rgba(255,255,255,.55);
+  padding: 1px 5px; border-radius: 3px; min-width: 28px; text-align: center;
+  flex-shrink: 0;
+}
+.mc-pt-name {
+  flex: 1; font-family: var(--font-ui); font-size: .78rem; font-weight: 700;
+  color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mc-pt-cap {
+  background: var(--gold); color: #000;
+  font-size: .48rem; font-weight: 900; font-family: var(--font-display);
+  padding: 1px 4px; border-radius: 2px;
+}
+.mc-pt-vc  { background: rgba(255,255,255,.7); color: #000; font-size: .48rem; font-weight: 900; font-family: var(--font-display); padding: 1px 4px; border-radius: 2px; }
+.mc-pt-events { display: flex; gap: 2px; font-size: .65rem; flex-shrink: 0; }
+.mc-pt-pts {
+  font-family: var(--font-display); font-size: .88rem; font-weight: 900;
+  min-width: 30px; text-align: right; flex-shrink: 0;
+}
+.mc-pt-pts.pos { color: var(--gold-soft); }
+.mc-pt-pts.neg { color: var(--red-soft); }
+.mc-pt-pts.zero { color: rgba(255,255,255,.3); }
+.mc-nopts {
+  text-align: center; padding: 1.2rem;
+  font-family: var(--font-ui); font-size: .75rem;
+  color: rgba(255,255,255,.3); font-weight: 600;
+}
+
+/* ── Disposable live chat ── */
+.mc-chat-wrap { padding: .65rem .9rem; display: flex; flex-direction: column; gap: .45rem; }
+.mc-chat-meta {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.mc-chat-live-badge {
+  display: flex; align-items: center; gap: .35rem;
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 700;
+  color: var(--green-soft); letter-spacing: 1px; text-transform: uppercase;
+}
+.mc-chat-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green-soft); animation: livePulse 1.2s infinite;
+}
+.mc-chat-ephemeral-note {
+  font-family: var(--font-ui); font-size: .58rem;
+  color: rgba(255,255,255,.25); font-style: italic;
+}
+.mc-chat-msgs {
+  display: flex; flex-direction: column; gap: .35rem;
+  max-height: 180px; overflow-y: auto;
+  padding: .2rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.1) transparent;
+}
+.mc-chat-msgs::-webkit-scrollbar { width: 3px; }
+.mc-chat-msgs::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+.mc-chat-msg {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,.04);
+  border-radius: 8px; padding: .42rem .6rem;
+}
+.mc-chat-msg-meta {
+  display: flex; align-items: center; gap: .35rem; margin-bottom: .15rem;
+}
+.mc-chat-msg-user {
+  font-family: var(--font-ui); font-size: .68rem; font-weight: 700;
+  color: var(--gold-soft);
+}
+.mc-chat-msg-pts {
+  font-size: .55rem; background: rgba(34,137,90,.15);
+  color: var(--green-soft); padding: 1px 5px; border-radius: 3px;
+  font-family: var(--font-ui); font-weight: 700;
+}
+.mc-chat-msg-time {
+  font-family: var(--font-ui); font-size: .55rem;
+  color: rgba(255,255,255,.22); margin-left: auto;
+}
+.mc-chat-msg-text {
+  font-size: .78rem; color: var(--text-primary); line-height: 1.45;
+}
+.mc-chat-compose {
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 10px; padding: .5rem .7rem;
+  display: flex; gap: .5rem; align-items: flex-end;
+}
+.mc-chat-compose textarea {
+  background: transparent; border: none; outline: none;
+  flex: 1; color: #fff; font-family: var(--font-body);
+  font-size: .8rem; resize: none; min-height: 32px; max-height: 80px;
+  line-height: 1.45;
+}
+.mc-chat-compose textarea::placeholder { color: rgba(255,255,255,.22); }
+.mc-chat-send {
+  background: var(--red); border: none; border-radius: 7px;
+  color: #fff; padding: .32rem .85rem;
+  font-family: var(--font-ui); font-size: .7rem; font-weight: 700;
+  cursor: pointer; flex-shrink: 0; align-self: flex-end;
+  transition: background .15s;
+}
+.mc-chat-send:hover { background: var(--red-soft); }
+.mc-chat-login-note {
+  text-align: center; font-family: var(--font-ui); font-size: .72rem;
+  color: rgba(255,255,255,.3); padding: .5rem;
+  background: var(--bg-card); border-radius: 7px;
+  border: 1px solid var(--border);
+}
+
+/* ── Player stats (existing, now inside a tab) ── */
+.mc-team-stats-wrap { padding: .3rem 0; }
+
+/* ── GW points pill — show when squad registered ── */
+.gw-pts-pill-visible { display: flex !important; }
