@@ -3474,34 +3474,58 @@ var REAL_INJURIES = [
   { name: 'Lebohang Manyama',  team: 'Kaizer Chiefs',     type: '⚕ Calf',               reason: 'Calf tightness',          severe: false },
 ];
 
-// ── loadNews: fetch news_posts from Supabase, fallback to static posts ────
+// ── loadNews: reads from BOTH news_posts and announcements tables ────────
+// Admin panel posts to 'announcements'; editorial posts go to 'news_posts'.
+// Both are merged and sorted newest-first.
 function loadNews() {
   var grid = document.getElementById('news-grid');
   if (!grid) return;
   grid.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
 
-  db.from('news_posts')
-    .select('*')
-    .eq('published', true)
-    .order('published_at', { ascending: false })
-    .limit(20)
-    .then(function(res) {
-      var posts = res.data || [];
-      if (!posts.length) {
-        // Static fallback news cards
-        posts = [
-          { id: 1, title: 'GW24 Deadline Reminder', summary: 'Make sure your transfers are in before kick-off on Saturday. Double check your captain pick!', published_at: new Date().toISOString(), category: 'Gameweek', image_url: '' },
-          { id: 2, title: 'Mamelodi Sundowns Storm Clear', summary: 'Sundowns extend their lead at the top of the Betway Premiership table after a dominant run of form.', published_at: new Date(Date.now() - 86400000).toISOString(), category: 'Table', image_url: '' },
-          { id: 3, title: 'Pirates Striker Form Guide', summary: 'Evidence Makgopa is in red-hot form — here is why he should be in your Fantasy PSL squad right now.', published_at: new Date(Date.now() - 2*86400000).toISOString(), category: 'Tips', image_url: '' },
-          { id: 4, title: 'Differential Picks: GW24', summary: 'Low-ownership players who could score big this gameweek. Our writers break down the best under-10% options.', published_at: new Date(Date.now() - 3*86400000).toISOString(), category: 'Tips', image_url: '' },
-        ];
-      }
-      renderNews(grid, posts);
-    })
-    .catch(function() {
-      // DB error — show placeholder
-      grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">Unable to load news. Check back soon.</div>';
+  // Normalise an announcements row into the same shape as news_posts
+  function normaliseAnnouncement(a) {
+    return {
+      id:           'ann-' + a.id,
+      title:        a.title || a.heading || a.name || 'Announcement',
+      summary:      a.body  || a.content || a.message || a.summary || '',
+      published_at: a.published_at || a.created_at || a.date || new Date().toISOString(),
+      category:     a.category || a.type || 'News',
+      image_url:    a.image_url || a.image || '',
+    };
+  }
+
+  Promise.allSettled([
+    db.from('news_posts')
+      .select('*')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .limit(20),
+    db.from('announcements')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(20)
+  ]).then(function(results) {
+    var newsPosts    = (results[0].status === 'fulfilled' ? results[0].value.data : null) || [];
+    var rawAnnounce  = (results[1].status === 'fulfilled' ? results[1].value.data : null) || [];
+    var announcements = rawAnnounce.map(normaliseAnnouncement);
+
+    // Merge, deduplicate by title+date, sort newest first
+    var all = newsPosts.concat(announcements);
+    all.sort(function(a, b) {
+      return new Date(b.published_at) - new Date(a.published_at);
     });
+
+    if (!all.length) {
+      all = [
+        { id:1, title:'GW24 Deadline Reminder', summary:'Make sure your transfers are in before kick-off on Saturday.', published_at:new Date().toISOString(), category:'Gameweek', image_url:'' },
+        { id:2, title:'Mamelodi Sundowns Lead the Way', summary:"Sundowns extend their lead at the top of the Betway Premiership table.", published_at:new Date(Date.now()-86400000).toISOString(), category:'Table', image_url:'' },
+        { id:3, title:'Form Guide: Best Picks This GW', summary:'Evidence Makgopa is in red-hot form — here is why he deserves a place in your squad.', published_at:new Date(Date.now()-2*86400000).toISOString(), category:'Tips', image_url:'' },
+      ];
+    }
+    renderNews(grid, all);
+  }).catch(function() {
+    grid.innerHTML = '<div style="color:rgba(255,255,255,.4);text-align:center;padding:2rem;font-size:.85rem">Unable to load news. Check back soon.</div>';
+  });
 }
 
 var NEWS_CAT_COLORS = {
