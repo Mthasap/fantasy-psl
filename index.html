@@ -995,7 +995,7 @@
 
       <!-- No-points-yet hint (hidden once cron runs) -->
       <div id="no-points-hint" style="display:none;background:rgba(201,150,58,.07);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.7rem 1rem;margin-bottom:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.6)">
-        ⏳ GW23 hasn't started yet — your points will update automatically once matches kick off and finish.
+        ⏳ Points haven't been calculated yet — they update automatically after each match finishes.
       </div>
     <div class="squad-body-grid">
       <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
@@ -1008,7 +1008,7 @@
         <!-- Active Chip Display -->
         <div id="chip-bar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"></div>
 
-        <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:flex-start">
+        <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:center">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
             <span class="bench-tag">Bench (4 subs)</span>
             <span style="display:flex;align-items:center;gap:.5rem">
@@ -1048,7 +1048,7 @@
   <div class="page-section" style="max-width:900px">
     <span class="eyebrow">Betway Premiership 2025/26</span>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;margin-bottom:.3rem">
-      <h1 class="section-title" style="margin:0">Fixtures &amp; Results</h1>
+      <h1 class="section-title" style="margin:0">Match Centre</h1>
       <span id="gw-nav-badge" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;text-transform:uppercase">GW <span id="gw-nav-num">--</span></span>
     </div>
     <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;flex-wrap:wrap">
@@ -3883,17 +3883,27 @@ function loadLeagueStandings(lid) {
     var members = (res.data || []).map(function(r) { return r.profiles; }).filter(Boolean)
       .sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
     if (!members.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.82rem;padding:1rem 1.2rem">No members yet -- share your code!</div>'; return; }
-    c.innerHTML = members.map(function(p, i) {
+    // header row
+    var lbHeader = '<div style="display:grid;grid-template-columns:28px 1fr 52px 58px;padding:.3rem .9rem;background:rgba(255,255,255,.03);font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<div>#</div><div>Team</div><div style="text-align:center">GW</div><div style="text-align:right">Total</div>' +
+    '</div>';
+    var lbRows = members.map(function(p, i) {
       var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
-      var medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : (i + 1);
-      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-        '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';width:22px;text-align:center;flex-shrink:0">' + medal + '</div>' +
-        '<div style="flex:1;font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' +
-          p.team_name + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:2px;margin-left:.3rem">YOU</span>' : '') +
+      var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+      var gwPts = (p.gw_points !== undefined && p.gw_points !== null) ? p.gw_points : 0;
+      return '<div style="display:grid;grid-template-columns:28px 1fr 52px 58px;gap:.3rem;align-items:center;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
+        '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
+        '<div style="min-width:0;overflow:hidden">' +
+          '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            (p.team_name||'Unknown') + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle;margin-left:3px">YOU</span>' : '') +
+          '</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.32)">@' + (p.username||'') + '</div>' +
         '</div>' +
-        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + ' pts</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.28)') + ';text-align:center">' + gwPts + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A;text-align:right">' + (p.total_points||0) + '</div>' +
       '</div>';
     }).join('');
+    c.innerHTML = lbHeader + lbRows;
   });
 }
 
@@ -3909,17 +3919,8 @@ function loadGlobalLB() {
   db.from('profiles').select('team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank').eq('squad_registered', true).order('total_points', { ascending: false }).limit(100).then(function(res) {
     var rows = (res.data || []).filter(function(p) { return (p.squad_count || 0) >= 15 || (p.total_points || 0) > 0; });
     if (!rows.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 1.2rem">Be the first manager!</div>'; return; }
-    c.innerHTML = rows.map(function(p, i) {
-      var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
-      var medal = i === 0 ? '' : i === 1 ? '' : i === 2 ? '' : (i + 1);
-      return '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-        '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';width:22px;text-align:center;flex-shrink:0">' + medal + '</div>' +
-        '<div style="flex:1;font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' +
-          p.team_name + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:2px;margin-left:.3rem">YOU</span>' : '') +
-        '</div>' +
-        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + ' pts</div>' +
-      '</div>';
-    }).join('');
+    CACHE.leaderboard = { data: rows, ts: Date.now() };
+    renderGlobalLBRows(c, rows);
 
     // Podium -- top 3
     var pw = document.getElementById('podium-wrap'); if (!pw) return;
@@ -7394,9 +7395,9 @@ onReady(function() {
     } else {
       var today = new Date(); today.setHours(0,0,0,0);
       if (ST.gw && ST.gw.number) {
-        query = query.eq('gw_number', ST.gw.number).in('status',['NS','TBD','PST']).limit(80);
+        query = query.eq('gw_number', ST.gw.number).in('status',['NS','TBD','PST']).order('kickoff_time',{ascending:true}).limit(80);
       } else {
-        query = query.in('status',['NS','TBD','PST']).gte('kickoff_time', today.toISOString()).limit(80);
+        query = query.in('status',['NS','TBD','PST']).gte('kickoff_time', today.toISOString()).order('kickoff_time',{ascending:true}).limit(80);
       }
     }
 
