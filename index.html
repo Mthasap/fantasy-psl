@@ -3482,7 +3482,7 @@ function loadNews() {
 
   db.from('news_posts')
     .select('*')
-    .or('published.is.null,published.eq.true,is_published.is.null,is_published.eq.true')
+    .eq('published', true)
     .order('published_at', { ascending: false })
     .limit(20)
     .then(function(res) {
