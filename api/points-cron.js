@@ -119,11 +119,13 @@ module.exports = async (req, res) => {
     const byDbId       = {};  // players.id → player
     const byRosterId   = {};  // psl_roster_id → player
     const byApiId      = {};  // apifootball_id → player
+    const byName       = {};  // normalised display_name → player (last-resort fallback)
 
     for (const p of (dbPlayers || [])) {
       byDbId[p.id]                   = p;
       if (p.psl_roster_id) byRosterId[p.psl_roster_id] = p;
       if (p.apifootball_id) byApiId[p.apifootball_id]  = p;
+      if (p.display_name)  byName[p.display_name.toLowerCase().trim()] = p;
     }
 
     log.push('DB players loaded: ' + (dbPlayers || []).length);
@@ -202,7 +204,7 @@ module.exports = async (req, res) => {
 
           if (captainEntry) {
             // Find captain's apifootball_id
-            const capApiId = resolveApiId(captainEntry, byDbId, byRosterId);
+            const capApiId = resolveApiId(captainEntry, byDbId, byRosterId, byName);
             if (capApiId && gwStatsByApiId[capApiId]) {
               captainPlayed = gwStatsByApiId[capApiId].minutes_played > 0;
             }
@@ -213,7 +215,7 @@ module.exports = async (req, res) => {
           const playerBreakdown = [];
 
           for (const sp of scoringPlayers) {
-            const apiId = resolveApiId(sp, byDbId, byRosterId);
+            const apiId = resolveApiId(sp, byDbId, byRosterId, byName);
             const gwStat = apiId ? gwStatsByApiId[apiId] : null;
 
             let pts = 0;
@@ -358,10 +360,13 @@ module.exports = async (req, res) => {
       .limit(5000);
 
     if (ranked && ranked.length) {
-      for (let ri = 0; ri < ranked.length; ri++) {
-        await db.from('profiles')
-          .update({ overall_rank: ri + 1 })
-          .eq('id', ranked[ri].id);
+      // Batch rank updates in groups of 100 to avoid per-row await overhead
+      const rankUpdates = ranked.map((r, i) => ({ id: r.id, overall_rank: i + 1 }));
+      for (let ri = 0; ri < rankUpdates.length; ri += 100) {
+        const batch = rankUpdates.slice(ri, ri + 100);
+        for (const upd of batch) {
+          await db.from('profiles').update({ overall_rank: upd.overall_rank }).eq('id', upd.id);
+        }
       }
       log.push('Rankings updated: ' + ranked.length + ' profiles');
     }
@@ -404,25 +409,43 @@ module.exports = async (req, res) => {
 // ── Helper: resolve apifootball_id from a squad entry ────────────────────
 // Squad entries save id as psl_roster_id or DB players.id
 // We need to map that to apifootball_id to look up match stats
-function resolveApiId(squadEntry, byDbId, byRosterId) {
+// Priority: DB id → psl_roster_id → integer-as-roster-id → display_name (last resort)
+function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
   if (!squadEntry) return null;
 
   const sid = squadEntry.id;
 
-  // Try direct DB id lookup
+  // 1. Direct DB id lookup (most reliable)
   if (sid && byDbId[sid] && byDbId[sid].apifootball_id) {
     return byDbId[sid].apifootball_id;
   }
 
-  // Try psl_roster_id lookup
+  // 2. psl_roster_id lookup
   const rid = squadEntry.psl_roster_id || parseInt(sid, 10);
   if (rid && byRosterId[rid] && byRosterId[rid].apifootball_id) {
     return byRosterId[rid].apifootball_id;
   }
 
-  // Try integer id as roster id
+  // 3. Integer id treated as roster id
   if (typeof sid === 'number' && byRosterId[sid] && byRosterId[sid].apifootball_id) {
     return byRosterId[sid].apifootball_id;
+  }
+
+  // 4. Name-based fallback — handles players not yet synced to DB
+  //    Uses display_name from squad entry
+  if (byName && squadEntry.display_name) {
+    const key = squadEntry.display_name.toLowerCase().trim();
+    if (byName[key] && byName[key].apifootball_id) {
+      return byName[key].apifootball_id;
+    }
+    // Try surname-only match (e.g. "Vilakazi" matches "Mfundo Vilakazi")
+    const parts = key.split(' ');
+    const surname = parts[parts.length - 1];
+    if (surname && surname.length >= 4) {
+      for (const [nm, player] of Object.entries(byName)) {
+        if (nm.endsWith(surname) && player.apifootball_id) return player.apifootball_id;
+      }
+    }
   }
 
   return null;
