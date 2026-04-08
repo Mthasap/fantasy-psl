@@ -1,59 +1,16 @@
 {
-  "name": "Fantasy PSL",
+  "name": "Fantasy Premier Soccer League",
   "short_name": "Fantasy PSL",
-  "description": "South Africa's #1 fantasy football game for the Betway Premiership",
+  "description": "South Africa's fantasy football game for the Betway Premiership",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0C0F14",
   "theme_color": "#0C0F14",
-  "lang": "en-ZA",
-  "scope": "/",
-  "categories": ["sports", "games"],
   "icons": [
-    {
-      "src": "/favicon.png",
-      "sizes": "32x32",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-167.png",
-      "sizes": "167x167",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-180.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
+    { "src": "/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
