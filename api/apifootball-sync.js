@@ -519,40 +519,33 @@ async function recalculateTotals(log) {
       const squadData = profile.squad_data;
       if (!squadData) continue;
 
-      // Get all psl_roster_ids from the squad
-      // squad_data structure: { players: [{psl_roster_id: "...", ...}] }
-      const rosterIds = (squadData.players ?? [])
-        .map(p => p.psl_roster_id)
-        .filter(Boolean);
+      // squad_data can be an array OR { players: [...] } — handle both
+      const squadArr = Array.isArray(squadData) ? squadData : (squadData?.players ?? []);
+      const rosterIds = squadArr
+        .map(p => p?.psl_roster_id ?? p?.id)
+        .filter(id => id && (typeof id === 'number' || (typeof id === 'string' && id.trim() !== '')))
+        .map(id => (typeof id === 'string' ? parseInt(id, 10) : id))
+        .filter(id => !isNaN(id));
 
       if (rosterIds.length === 0) continue;
 
-      // Look up apifootball_ids for these roster IDs
-      const { data: playerRows } = await supabase
-        .from('players')
-        .select('apifootball_id, psl_roster_id')
-        .in('psl_roster_id', rosterIds);
+      // Use gw_scores table — this already accounts for captain/chip multipliers
+      // (points-cron writes correctly calculated scores there)
+      const { data: gwScoreRows } = await supabase
+        .from('gw_scores')
+        .select('points')
+        .eq('user_id', profile.id);
 
-      const apiIds = (playerRows ?? [])
-        .map(p => p.apifootball_id)
-        .filter(Boolean);
+      const totalPoints = (gwScoreRows ?? [])
+        .reduce((sum, r) => sum + (r.points ?? 0), 0);
 
-      if (apiIds.length === 0) continue;
-
-      // Sum fantasy points for these players
-      const { data: pointsData } = await supabase
-        .from('match_player_stats')
-        .select('fantasy_points')
-        .eq('season', PSL_SEASON)
-        .in('apifootball_player_id', apiIds);
-
-      const totalPoints = (pointsData ?? [])
-        .reduce((sum, r) => sum + (r.fantasy_points ?? 0), 0);
-
-      await supabase
-        .from('profiles')
-        .update({ total_points: totalPoints })
-        .eq('id', profile.id);
+      // Only update if we have score data — don't zero out if no rows yet
+      if ((gwScoreRows ?? []).length > 0) {
+        await supabase
+          .from('profiles')
+          .update({ total_points: totalPoints })
+          .eq('id', profile.id);
+      }
 
       profilesUpdated++;
     } catch (e) {
