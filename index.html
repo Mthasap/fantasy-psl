@@ -5,7 +5,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6398135174637589" crossorigin="anonymous"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0C0F14">
+  <meta name="theme-color" content="#456959">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -567,7 +567,7 @@
   <ul class="nav-links">
     <li><a href="#" onclick="goPage('home');return false;">Home</a></li>
     <li><a href="#" onclick="goPage('squad');return false;">My Squad</a></li>
-    <li><a href="#" onclick="goPage('fixtures');return false;">Match Centre</a></li>
+    <li><a href="#" onclick="goPage('fixtures');return false;">Fixtures</a></li>
     <li><a href="#" onclick="goPage('chat');return false;">Diski Chat</a></li>
     <li><a href="#" onclick="goPage('news');return false;">News</a></li>
     <li><a href="#" onclick="goPage('stats');return false;">Stats</a></li>
@@ -740,8 +740,8 @@
     <span class="bnav-label">Squad</span>
   </button>
   <button class="bnav-btn" id="bn-fixtures" onclick="goPage('fixtures')">
-    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-    <span class="bnav-label">Matches</span>
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span class="bnav-label">Fixtures</span>
   </button>
   <button class="bnav-btn" id="bn-chat" onclick="goPage('chat')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -776,7 +776,7 @@
     <p class="hero-sub">Pick 15 players from all 16 Betway Premiership clubs, earn points every matchday, and compete with football fans across South Africa.</p>
     <div class="hero-cta-row">
       <button class="btn-hero-primary" onclick="goPage('squad')">Build Your Squad -- Free</button>
-      <button class="btn-hero-outline" onclick="goPage('fixtures')">Match Centre</button>
+      <button class="btn-hero-outline" onclick="goPage('fixtures')">View Fixtures</button>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-label">PSL Clubs</div></div>
@@ -792,10 +792,8 @@
 
   <div class="ticker">
     <div class="ticker-track" id="ticker-track">
-      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
-      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading latest scores &amp; fixtures...</span></div>
-      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
-      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading latest scores &amp; fixtures...</span></div>
+      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading PSL scores...</span></div>
+      <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
     </div>
   </div>
 
@@ -979,10 +977,6 @@
       <button onclick="cancelTransfer()" style="background:none;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:rgba(255,255,255,.4);font-size:.75rem;padding:.3rem .8rem;cursor:pointer">Cancel</button>
     </div>
 
-      <!-- No-points-yet hint (hidden once cron runs) -->
-      <div id="no-points-hint" style="display:none;background:rgba(201,150,58,.07);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.7rem 1rem;margin-bottom:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.6)">
-        ⏳ GW23 hasn't started yet — your points will update automatically once matches kick off and finish.
-      </div>
     <div class="squad-body-grid">
       <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
         <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:460px;margin:0 auto;align-self:center">
@@ -1029,7 +1023,7 @@
   </div>
 </div>
 
-<!-- == MATCH CENTRE == -->
+<!-- == FIXTURES == -->
 <div id="page-fixtures" class="page">
   <div class="page-section" style="max-width:900px">
     <span class="eyebrow">Betway Premiership 2025/26</span>
@@ -1207,7 +1201,7 @@
   </div>
 </div>
 <!-- FOOTER -->
-<footer style="padding-bottom:calc(90px + env(safe-area-inset-bottom, 20px))">
+<footer>
   <div class="foot-inner">
     <div class="foot-logo"><img id="footer-logo" src="/logo.png" alt="Fantasy PSL" style="height:28px;opacity:.4;filter:grayscale(1)" onerror="this.style.display='none'"></div>
     <ul class="foot-links">
@@ -1527,7 +1521,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // mechanism is consistent with the auth handler. Prevents any future
   // case where onAuthStateChange fires before DOMContentLoaded finishes.
   ensurePlayersLoaded(function() { /* players ready at startup */ });
-  setTimeout(buildLiveTicker, 1500); // populate ticker after initial load
   loadTickerData();
   setTimeout(loadPOTMHomeCard, 1500); // load after DB connection settles
 
@@ -1866,7 +1859,7 @@ function renderPlayerList() {
   var rows = slice.map(function(p) {
     var inSquad  = !!pickedIds[p.id];
     var name     = playerName(p);
-    var club     = (p.clubs && p.clubs.name) || p.club || p.team || '--';
+    var club     = p.clubs ? p.clubs.name : (p.club || '--');
     var icon     = posIcon(p.position);
     var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
     var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
@@ -1973,7 +1966,7 @@ function openPmodal(id) {
     } else {
       // Fallback: match on display_name + team
       var lastName = (p.display_name || p.name || '').split(' ').pop();
-      var club     = (p.clubs && p.clubs.name) || p.club || p.team || '';
+      var club     = p.clubs ? p.clubs.name : (p.club || '');
       fetchPromise = db.from('players')
         .select('goals,assists,yellow_cards,red_cards,clean_sheets,apps,total_points,photo,updated_at')
         .ilike('display_name', '%' + lastName + '%')
@@ -2359,12 +2352,12 @@ function loadUserGWPoints() {
         CACHE._profile.gw_points = res.data.points;
         renderBudget();
         if (res.data.player_scores && res.data.player_scores.length) {
-          // This sets gwPoints on squad players AND re-renders pitch
           showPointsBreakdown(res.data.player_scores);
         }
       } else {
-        // No gw_scores row yet — use whatever is in profiles.gw_points
-        CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
+        // No gw_scores row yet — use whatever is in profiles
+        var fallbackGW = CACHE._profile.gw_points || 0;
+        CACHE._profile.gw_points = fallbackGW;
         renderBudget();
       }
     })
@@ -2377,65 +2370,24 @@ function loadUserGWPoints() {
 
 // Show a breakdown of which players scored points this GW
 function showPointsBreakdown(playerScores) {
-  if (!playerScores || !playerScores.length) return;
-
-  // Step 1: map individual pts back onto ST.squad so pitch shows GW pts
-  if (ST.squad && ST.squad.length) {
-    var pitchUpdated = false;
-    ST.squad = ST.squad.map(function(p) {
-      // Match by id first, then by surname as fallback
-      var match = null;
-      var dn = (p.display_name || p.name || '').toLowerCase();
-      var surname = dn.split(' ').pop();
-      for (var k = 0; k < playerScores.length; k++) {
-        var ps = playerScores[k];
-        if (ps.id && (ps.id === p.id || String(ps.id) === String(p.id) ||
-            (p.psl_roster_id && String(ps.id) === String(p.psl_roster_id)))) {
-          match = ps; break;
-        }
-      }
-      if (!match && surname && surname.length >= 4) {
-        for (var m = 0; m < playerScores.length; m++) {
-          var pn = (playerScores[m].name || '').toLowerCase();
-          if (pn.indexOf(surname) !== -1) { match = playerScores[m]; break; }
-        }
-      }
-      if (match) {
-        pitchUpdated = true;
-        return Object.assign({}, p, { gwPoints: match.final_pts !== undefined ? match.final_pts : (match.pts || 0) });
-      }
-      return p;
-    });
-    if (pitchUpdated) { renderPitch(); renderBudget(); }
-  }
-
-  // Step 2: render the points breakdown panel
   var breakdown = document.getElementById('gw-breakdown');
-  if (!breakdown) return;
+  if (!breakdown || !playerScores.length) return;
 
-  var scorers = playerScores.slice().sort(function(a,b){ return (b.final_pts||0)-(a.final_pts||0); });
-  var allPts = playerScores.reduce(function(t,p){return t+(p.final_pts||0);},0);
+  var scorers = playerScores.filter(function(p) { return p.final_pts > 0; });
+  if (!scorers.length) return;
 
-  var h = '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.5rem;display:flex;justify-content:space-between">' +
-    '<span>GW Points Breakdown</span><span style="color:#DBA94A">' + allPts + ' total</span></div>';
-
+  var html = '<div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.4rem">GW Points Breakdown</div>';
+  scorers.sort(function(a,b) { return b.final_pts - a.final_pts; });
   scorers.forEach(function(p) {
-    var pts = p.final_pts !== undefined ? p.final_pts : (p.pts || 0);
-    var ptsColor = pts >= 10 ? '#DBA94A' : pts > 0 ? '#22895A' : pts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-    var capBadge = p.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
-    var vcBadge  = p.isVC      ? ' <span style="background:#888;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">V</span>' : '';
-    var benchBadge = p.onBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.58rem">sub</span>' : '';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
-      '<span style="font-family:var(--font-ui);font-size:.74rem;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-        (p.name||'Unknown') + capBadge + vcBadge + benchBadge +
-      '</span>' +
-      '<span style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + ptsColor + ';margin-left:.5rem">' +
-        (pts > 0 ? '+' : '') + pts +
-      '</span>' +
-    '</div>';
+    var capBadge = p.is_captain ? ' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
+    var vcBadge  = p.is_vc     ? ' <span style="background:#888;color:#fff;font-size:.5rem;padding:1px 4px;border-radius:3px;font-weight:900">V</span>' : '';
+    html +=
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+        '<span style="font-size:.72rem;color:#fff">' + (p.name || 'Unknown') + capBadge + vcBadge + '</span>' +
+        '<span style="font-size:.8rem;font-weight:900;color:#DBA94A">' + (p.final_pts > 0 ? '+' : '') + p.final_pts + ' pts</span>' +
+      '</div>';
   });
-
-  breakdown.innerHTML = h;
+  breakdown.innerHTML = html;
   breakdown.style.display = 'block';
 }
 
@@ -2749,11 +2701,6 @@ function renderBudget() {
     if (totalEl) totalEl.textContent = totalPts;
     if (gwPill)    { gwPill.style.display    = 'flex'; }
     if (totalPill) { totalPill.style.display = 'flex'; }
-    // Show a subtle hint when squad is registered but no points yet
-    var noPointsHint = document.getElementById('no-points-hint');
-    if (noPointsHint) {
-      noPointsHint.style.display = (ST.squadRegistered && totalPts === 0) ? '' : 'none';
-    }
     // Rank pill
     var rkPill = document.getElementById('rank-pts-pill');
     var rkEl   = document.getElementById('rank-pts-display');
@@ -2803,27 +2750,11 @@ function renderPitch() {
   var minSlots = { GK:1, DEF:3, MID:2, FWD:1 };
 
   var starters = ST.squad.filter(function(p) { return !p.onBench; });
-  // Deduplicate starters: prevent same player appearing in multiple rows
-  var _seenPitchIds = {};
-  starters = starters.filter(function(p) {
-    var key = p.id || p.display_name;
-    if (_seenPitchIds[key]) return false;
-    _seenPitchIds[key] = true;
-    return true;
-  });
   // Bench sorted by bench order for correct auto-sub priority display
   var bench = ST.squad.filter(function(p) { return p.onBench; })
                       .sort(function(a,b) { return (a.benchOrder||0) - (b.benchOrder||0); });
   var byPos = { GK:[], DEF:[], MID:[], FWD:[] };
-  starters.forEach(function(p) {
-    // Normalise position in case DB returns G/D/M/F instead of GK/DEF/MID/FWD
-    var pos = p.position || '';
-    if (pos === 'G' || pos === 'GOALKEEPER') pos = 'GK';
-    else if (pos === 'D' || pos === 'DEFENDER') pos = 'DEF';
-    else if (pos === 'M' || pos === 'MIDFIELDER') pos = 'MID';
-    else if (pos === 'F' || pos === 'FORWARD' || pos === 'ATTACKER') pos = 'FWD';
-    if (byPos[pos]) byPos[pos].push(Object.assign({}, p, { position: pos }));
-  });
+  starters.forEach(function(p) { if (byPos[p.position]) byPos[p.position].push(p); });
 
   // Determine what mode we're in for click behaviour
   var mode = ST.deadlinePassed ? 'locked'
@@ -2850,13 +2781,10 @@ function renderPitch() {
       else if (mode === 'transfer') { clickFn = 'onclick="removePlayer(' + p.id + ')"'; titleTxt = 'Transfer OUT'; }
       else if (mode === 'bench')    { clickFn = ''; titleTxt = 'In starting XI'; }
       else                          { clickFn = 'onclick="pitchPlayerTap(' + p.id + ')"'; titleTxt = 'Tap for options'; }
-      // Show GW points if available, coloured by value; else show price
-      var bottomLabel, ptsStyle = '';
+      // Show GW points if available (gameweek active), else always show price
+      var bottomLabel;
       if (typeof p.gwPoints !== 'undefined' && p.gwPoints !== null) {
-        var gpts = p.gwPoints;
-        var ptCol = gpts >= 10 ? '#DBA94A' : gpts > 0 ? '#22895A' : gpts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-        ptsStyle = 'color:' + ptCol;
-        bottomLabel = (gpts > 0 ? '+' : '') + gpts + ' pts';
+        bottomLabel = p.gwPoints + ' pts';
       } else {
         bottomLabel = p.price ? 'R' + p.price + 'M' : '';
       }
@@ -2872,7 +2800,7 @@ function renderPitch() {
         '</div>' +
         '<div class="pc-name">' + shortName + '</div>' +
         '<div style="font-family:var(--font-ui);font-size:.5rem;color:rgba(255,255,255,.45);text-align:center;line-height:1;margin-top:1px">' + clubAbbr + '</div>' +
-        '<div class="pc-pts" style="' + ptsStyle + '">' + bottomLabel + '</div>' +
+        '<div class="pc-pts">' + bottomLabel + '</div>' +
       '</div>';
     }).join('');
 
@@ -3865,7 +3793,7 @@ function renderLeaguesList(leagues) {
 
 function loadLeagueStandings(lid) {
   var c = document.getElementById('ls-' + lid); if (!c) return;
-  db.from('league_members').select('profiles(team_name, username, total_points, gw_points, overall_rank)').eq('league_id', lid).then(function(res) {
+  db.from('league_members').select('profiles(team_name, username, total_points)').eq('league_id', lid).then(function(res) {
     var members = (res.data || []).map(function(r) { return r.profiles; }).filter(Boolean)
       .sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
     if (!members.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.82rem;padding:1rem 1.2rem">No members yet -- share your code!</div>'; return; }
@@ -3930,27 +3858,17 @@ function loadGlobalLB() {
 // ====================================================
 function renderGlobalLBRows(c, rows) {
   if (!c || !rows || !rows.length) return;
-  // Header row
-  var header = '<div style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;padding:.35rem 1rem;background:rgba(255,255,255,.03);font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.06)">' +
-    '<div>#</div><div>Team</div><div style="text-align:center">GW</div><div style="text-align:right">Total</div>' +
-  '</div>';
-  var bodyRows = rows.map(function(p, i) {
+  c.innerHTML = rows.map(function(p, i) {
     var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
     var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
-    var gwPts = p.gw_points !== undefined && p.gw_points !== null ? p.gw_points : 0;
-    return '<div style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;align-items:center;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-      '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
-      '<div style="min-width:0;overflow:hidden">' +
-        '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
-          (p.team_name || 'Unknown') + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle">YOU</span>' : '') +
-        '</div>' +
-        '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@' + (p.username || '') + '</div>' +
+    return '<div style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
+      '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';width:22px;text-align:center;flex-shrink:0">' + medal + '</div>' +
+      '<div style="flex:1;font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' +
+        p.team_name + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:2px;margin-left:.3rem">YOU</span>' : '') +
       '</div>' +
-      '<div style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:' + (gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + gwPts + '</div>' +
-      '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A;text-align:right">' + (p.total_points || 0) + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + ' pts</div>' +
     '</div>';
   }).join('');
-  c.innerHTML = header + bodyRows;
 }
 
 
@@ -4844,42 +4762,6 @@ function setTableView(view, el) {
 //  FIXTURES & RESULTS
 // ====================================================
 
-
-// ── buildLiveTicker: populate the ticker with real fixtures / results ─────
-function buildLiveTicker() {
-  var track = document.getElementById('ticker-track');
-  if (!track) return;
-  // Fetch recent FT results (last 10) AND upcoming NS fixtures (next 8)
-  Promise.allSettled([
-    db.from('fixtures').select('home_team_name,away_team_name,home_score,away_score,kickoff_time,status,elapsed_minutes')
-      .eq('season',2025).eq('status','FT')
-      .order('kickoff_time',{ascending:false}).limit(10),
-    db.from('fixtures').select('home_team_name,away_team_name,kickoff_time,status')
-      .eq('season',2025).in('status',['NS','TBD','PST'])
-      .order('kickoff_time',{ascending:true}).limit(8)
-  ]).then(function(results) {
-    var ft  = (results[0].status==='fulfilled'? results[0].value.data : null) || [];
-    var ns  = (results[1].status==='fulfilled'? results[1].value.data : null) || [];
-    if (!ft.length && !ns.length) return; // keep loading placeholder
-    function abbr(n){ return (n||'').split(' ').map(function(w){return w[0];}).join('').substring(0,3).toUpperCase(); }
-    function fmtDate(d){ if(!d)return''; var dt=new Date(d); return dt.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}); }
-    var items = [];
-    ft.forEach(function(f){
-      items.push('<div class="ti"><div class="ti-dot g"></div><span class="ti-label">'+abbr(f.home_team_name)+'</span><span class="ti-score"> '+f.home_score+' – '+f.away_score+' </span><span class="ti-label">'+abbr(f.away_team_name)+'</span></div>');
-    });
-    ns.forEach(function(f){
-      items.push('<div class="ti"><div class="ti-dot o"></div><span class="ti-label">'+abbr(f.home_team_name)+' vs '+abbr(f.away_team_name)+'</span><span class="ti-score"> '+fmtDate(f.kickoff_time)+'</span></div>');
-    });
-    // Duplicate for seamless loop
-    var all = items.concat(items);
-    track.innerHTML = all.join('');
-    // Reset animation so it restarts smoothly
-    track.style.animation = 'none';
-    void track.offsetWidth;
-    track.style.animation = '';
-  }).catch(function(){});
-}
-
 function loadFixtures() {
   var c = document.getElementById('fix-list');
   if (!c) return;
@@ -5532,10 +5414,7 @@ function loadTable() {
   var c = document.getElementById('table-body');
   if (!c) return;
   if (!TABLE_VIEW) TABLE_VIEW = 'short';
-  // Show compact loader instead of stale REAL_TABLE to avoid the flash/jump
-  c.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;padding:2rem;gap:.5rem">' +
-    '<div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
-  var _tableTimeout = setTimeout(function() { renderRealTable(c); }, 4000); // fallback after 4s
+  renderRealTable(c); // show fallback immediately
   fetch('/api/football?type=standings')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -5543,7 +5422,6 @@ function loadTable() {
       // Need at least 10 teams with real names
       var namedRows = rows.filter(function(s){ return s.team && s.team !== 'Unknown'; });
       if (namedRows.length >= 10) {
-        clearTimeout(_tableTimeout);
         // Merge live Sportmonks data (position, points, logo) with
         // REAL_TABLE (played, won, drawn, lost, gf, ga, gd, form)
         // because Sportmonks standings endpoint doesn't include played stats
@@ -5583,7 +5461,7 @@ function loadTable() {
         });
         renderRealTable(c);
       }
-      } else { clearTimeout(_tableTimeout); renderRealTable(c); } // fallback if < 10 rows
+      // else: keep REAL_TABLE as-is (already rendered above)
     })
     .catch(function(){});
 }
@@ -7690,23 +7568,6 @@ onReady(function() {
 });
 
 })();
-// ── Splash screen: hide after fonts + critical JS loaded ─────────────────
-(function() {
-  function hideSplash() {
-    var s = document.getElementById('splash-screen');
-    if (!s) return;
-    s.style.opacity = '0';
-    setTimeout(function() { if (s.parentNode) s.parentNode.removeChild(s); }, 700);
-  }
-  // Hide after 2s max (or when window.onload fires, whichever is first)
-  var splashTimer = setTimeout(hideSplash, 2200);
-  window.addEventListener('load', function() {
-    clearTimeout(splashTimer);
-    setTimeout(hideSplash, 600); // small delay so content is rendered
-  });
-})();
-
-
 </script>
 
 </body>
