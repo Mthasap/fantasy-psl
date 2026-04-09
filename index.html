@@ -1033,11 +1033,11 @@
 
       <!-- No-points-yet hint (hidden once cron runs) -->
       <div id="no-points-hint" style="display:none;background:rgba(201,150,58,.07);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.7rem 1rem;margin-bottom:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.6)">
-        ⏳ Points haven't been calculated yet — they update automatically after each match finishes.
+        ⏳ GW24 hasn't kicked off yet — your GW23 season points are shown above. Points update after each match.
       </div>
     <div class="squad-body-grid">
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
-        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:100%;margin:0 auto;align-self:center">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:stretch;overflow-x:hidden">
+        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;margin:0 auto">
           <div id="p-fwd" class="prow"></div>
           <div id="p-mid" class="prow"></div>
           <div id="p-def" class="prow"></div>
@@ -1046,7 +1046,7 @@
         <!-- Active Chip Display -->
         <div id="chip-bar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem"></div>
 
-        <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:center">
+        <div class="bench-strip" style="flex-direction:column;gap:.4rem;align-items:center;width:100%">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
             <span class="bench-tag">Bench (4 subs)</span>
             <span style="display:flex;align-items:center;gap:.5rem">
@@ -2401,22 +2401,28 @@ function applyDashboard(d) {
 function loadUserGWPoints() {
   if (!ST.user) return;
   var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : 23;
+  // Load current GW score; if empty also check previous GW (handles GW transition)
   db.from('gw_scores')
-    .select('points, player_scores, calculated_at')
+    .select('points, player_scores, calculated_at, gameweek')
     .eq('user_id', ST.user.id)
-    .eq('gameweek', _gwNum)
+    .order('gameweek', { ascending: false })
+    .limit(1)
     .single()
     .then(function(res) {
       if (!CACHE._profile) CACHE._profile = {};
       if (res.data && res.data.points !== undefined) {
         CACHE._profile.gw_points = res.data.points;
+        // If total_points on profile is still 0 but we have GW scores,
+        // use GW points as minimum total so it shows on screen
+        if (!CACHE._profile.total_points && res.data.points > 0) {
+          CACHE._profile.total_points = res.data.points;
+        }
         renderBudget();
         if (res.data.player_scores && res.data.player_scores.length) {
-          // This sets gwPoints on squad players AND re-renders pitch
           showPointsBreakdown(res.data.player_scores);
         }
       } else {
-        // No gw_scores row yet — use whatever is in profiles.gw_points
+        // No gw_scores row yet — use profile values
         CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
         renderBudget();
       }
@@ -2806,7 +2812,7 @@ function renderBudget() {
     // Show a subtle hint when squad is registered but no points yet
     var noPointsHint = document.getElementById('no-points-hint');
     if (noPointsHint) {
-      noPointsHint.style.display = (ST.squadRegistered && totalPts === 0) ? '' : 'none';
+      noPointsHint.style.display = (ST.squadRegistered && totalPts === 0 && !(CACHE._profile && CACHE._profile.gw_points > 0)) ? '' : 'none';
     }
     // Rank pill
     var rkPill = document.getElementById('rank-pts-pill');
