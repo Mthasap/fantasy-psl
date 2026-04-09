@@ -74,6 +74,43 @@
   <link rel="stylesheet" href="fantasy-psl.css">
   <style>
     /* -- Force dark mode -- inline override prevents any CSS caching issues -- */
+    /* ═══════════════════════════════════════════════════════════════
+       COLOUR & FONT GUIDE — Edit these variables to restyle the app
+       ═══════════════════════════════════════════════════════════════
+
+       BACKGROUNDS
+         --bg-base      = main page background (darkest)
+         --bg-surface   = section backgrounds, nav, cards
+         --bg-card      = individual card surfaces
+         --bg-input     = form inputs, search boxes
+
+       ACCENT COLOURS
+         --red          = primary brand red (buttons, active states)
+         --red-soft     = hover/pressed red
+         --gold         = secondary accent (prices, stats)
+         --gold-soft    = points, highlights
+         --green        = positive actions, clean sheets
+         --green-soft   = hover green
+
+       TEXT
+         --text-primary   = main body text (#E8EDF4 off-white)
+         --text-secondary = labels, subtitles (#8A97A8 grey)
+         --text-muted     = hints, timestamps
+
+       FONTS  (loaded from Google Fonts — line 72)
+         --font-display = 'Montserrat Alternates'  → scores, headings
+         --font-ui      = 'Rajdhani'               → labels, tabs, names
+         --font-body    = 'DM Sans'                → body text, inputs
+
+       FONT SIZES (common values — search & replace in CSS/HTML)
+         Player names on pitch : .pc-name  { font-size: .62rem }
+         Player list name      : .pli-name { font-size: .84rem }
+         Nav labels            : .bnav-label { font-size: .48rem }
+         Points pill           : .meta-pill-val { font-size: 1.1rem }
+         Section headings      : .section-title  (clamp in CSS)
+
+       ALL VARIABLES LIVE IN: fantasy-psl.css  lines 7-55
+    ═══════════════════════════════════════════════════════════════ */
     :root {
       --bg-base:      #0C0F14;
       --bg-surface:   #121720;
@@ -1000,7 +1037,7 @@
       </div>
     <div class="squad-body-grid">
       <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
-        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:460px;margin:0 auto;align-self:center">
+        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;max-width:100%;margin:0 auto;align-self:center">
           <div id="p-fwd" class="prow"></div>
           <div id="p-mid" class="prow"></div>
           <div id="p-def" class="prow"></div>
@@ -1762,14 +1799,14 @@ function loadGW(cb) {
           }
         }
       } else {
-        // No gameweek is set in DB yet — show dashes, never a stale number
-        ST.gw = null;
+        // No gameweek marked is_current — use minimal fallback so squad still loads
+        ST.gw = { number: 23, gw_number: 23, deadline_at: null };
         ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
           var el = document.getElementById(elId);
-          if (el) el.textContent = '--';
+          if (el) el.textContent = '23';
         });
         var dl = document.getElementById('gw-deadline');
-        if (dl) dl.textContent = 'Set by admin';
+        if (dl) dl.textContent = 'Deadline TBC';
       }
 
       // CRITICAL: always re-evaluate deadline lock after loading fresh GW data
@@ -2124,7 +2161,7 @@ function addFromModal() {
 //  SQUAD MANAGEMENT
 // ====================================================
 function loadMySquad() {
-  if (!ST.user || !ST.gw) return;
+  if (!ST.user) return;
   getUserDashboard();
 }
 
@@ -2144,7 +2181,7 @@ function checkProfilesSchema() {
 }
 
 function getUserDashboard(forceRefresh) {
-  if (!ST.user || !ST.gw) return;
+  if (!ST.user) return;
   if (rateLimited()) return;
   if (!forceRefresh && cacheValid('dashboard')) { applyDashboard(CACHE.dashboard.data); return; }
 
@@ -2362,11 +2399,12 @@ function applyDashboard(d) {
 // Fetch the user's points for the current GW from gw_scores table
 // This table is written by the cron job after every completed match
 function loadUserGWPoints() {
-  if (!ST.user || !ST.gw) return;
+  if (!ST.user) return;
+  var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : 23;
   db.from('gw_scores')
     .select('points, player_scores, calculated_at')
     .eq('user_id', ST.user.id)
-    .eq('gameweek', ST.gw.number)
+    .eq('gameweek', _gwNum)
     .single()
     .then(function(res) {
       if (!CACHE._profile) CACHE._profile = {};
@@ -2456,7 +2494,7 @@ function showPointsBreakdown(playerScores) {
 
 function addPlayer(id) {
   if (!ST.user)  { openAuth('login'); return; }
-  if (!ST.gw)    { showToast('Gameweek is being prepared. Check back soon!', 'info'); return; }
+  // Allow squad building even if GW isn't loaded yet — it will be set on save
 
 
   // TRANSFER MODE -- out player already selected, pick replacement
@@ -2551,7 +2589,7 @@ function addPlayer(id) {
 }
 
 function removePlayer(id) {
-  if (!ST.user || !ST.gw) return;
+  if (!ST.user) return;
 
   // Transfer mode -- select who goes OUT
   if (ST.xferMode && !ST.xferOut) {
@@ -2624,6 +2662,7 @@ function saveSquad() {
   if (isFirstRegistration) {
     ST.squadRegistered = true;
     // Record which GW the user entered — points ONLY count from this GW forward
+    if (!ST.entryGW) ST.entryGW = (ST.gw && ST.gw.number) ? ST.gw.number : 23;
     if (!ST.entryGW && ST.gw && ST.gw.number) {
       ST.entryGW = ST.gw.number;
     }
@@ -7178,7 +7217,7 @@ onReady(function() {
 
   // ── FIX 1: SQUAD RESTORE — prioritise DB players (allPlayers) over PSL_ROSTER
   window.getUserDashboard = function(forceRefresh) {
-    if (!window.ST || !ST.user || !ST.gw) return;
+    if (!window.ST || !ST.user) return;
     if (!forceRefresh && window.cacheValid && cacheValid('dashboard')) {
       window.applyDashboard(CACHE.dashboard.data); return;
     }
