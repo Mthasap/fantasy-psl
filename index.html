@@ -7707,20 +7707,38 @@ onReady(function() {
 });
 
 })();
-// ── Splash screen: hide after fonts + critical JS loaded ─────────────────
+// ── Splash screen ────────────────────────────────────────────────────────
 (function() {
+  var s = document.getElementById('splash-screen');
+  if (!s) return;
+  // Add CSS transition now (can't be in inline style at creation time
+  // because iOS sometimes ignores transitions on initial paint)
+  s.style.transition = 'opacity .55s ease';
+
   function hideSplash() {
-    var s = document.getElementById('splash-screen');
     if (!s) return;
     s.style.opacity = '0';
-    setTimeout(function() { if (s.parentNode) s.parentNode.removeChild(s); }, 700);
+    setTimeout(function() {
+      if (s && s.parentNode) s.parentNode.removeChild(s);
+    }, 600);
   }
-  // Hide after 2s max (or when window.onload fires, whichever is first)
-  var splashTimer = setTimeout(hideSplash, 2200);
-  window.addEventListener('load', function() {
-    clearTimeout(splashTimer);
-    setTimeout(hideSplash, 600); // small delay so content is rendered
-  });
+
+  // This script runs at end-of-body: DOM is fully parsed.
+  // Hide after a short delay so the user sees the logo briefly.
+  // Use requestAnimationFrame to ensure at least one paint has happened,
+  // then wait 1.4 s before fading out.
+  if (window.requestAnimationFrame) {
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        setTimeout(hideSplash, 1400);
+      });
+    });
+  } else {
+    setTimeout(hideSplash, 1600);
+  }
+
+  // Safety net: force-hide after 4 s no matter what
+  setTimeout(hideSplash, 4000);
 })();
 
 
