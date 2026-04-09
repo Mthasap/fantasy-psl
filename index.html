@@ -543,8 +543,8 @@
 </head>
 <body style="background:#0C0F14;color:#ffffff;">
 <!-- SPLASH SCREEN -->
-<div id="splash-screen" style="position:fixed;inset:0;background:#0C0F14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-  <img src="/logo.png" alt="Fantasy PSL" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(185,28,58,.5))" onerror="this.style.display='none'">
+<div id="splash-screen" style="position:fixed;inset:0;background:#0C0F14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashFade 2.6s ease forwards">
+  <img src="/logo.png" alt="Fantasy PSL" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(185,28,58,.5))" onerror="this.style.display:'none'">
   <div style="font-family:'Montserrat Alternates',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;margin-top:1.1rem;letter-spacing:-0.5px">Fantasy PSL</div>
   <div style="font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.35rem">Betway Premiership 2025/26</div>
   <div style="margin-top:2rem;display:flex;gap:.45rem">
@@ -555,6 +555,7 @@
 </div>
 <style>
 @keyframes sDot{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+@keyframes splashFade{0%,75%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
 </style>
 
 
@@ -7707,38 +7708,15 @@ onReady(function() {
 });
 
 })();
-// ── Splash screen ────────────────────────────────────────────────────────
+// ── Splash screen: CSS animation handles the fade; JS just cleans up the DOM
 (function() {
-  var s = document.getElementById('splash-screen');
-  if (!s) return;
-  // Add CSS transition now (can't be in inline style at creation time
-  // because iOS sometimes ignores transitions on initial paint)
-  s.style.transition = 'opacity .55s ease';
-
-  function hideSplash() {
-    if (!s) return;
-    s.style.opacity = '0';
-    setTimeout(function() {
-      if (s && s.parentNode) s.parentNode.removeChild(s);
-    }, 600);
-  }
-
-  // This script runs at end-of-body: DOM is fully parsed.
-  // Hide after a short delay so the user sees the logo briefly.
-  // Use requestAnimationFrame to ensure at least one paint has happened,
-  // then wait 1.4 s before fading out.
-  if (window.requestAnimationFrame) {
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        setTimeout(hideSplash, 1400);
-      });
-    });
-  } else {
-    setTimeout(hideSplash, 1600);
-  }
-
-  // Safety net: force-hide after 4 s no matter what
-  setTimeout(hideSplash, 4000);
+  // Remove the element from DOM after animation completes (2.6s)
+  // so it doesn't sit in the accessibility tree.
+  // CSS animation already makes it invisible — this is cleanup only.
+  setTimeout(function() {
+    var s = document.getElementById('splash-screen');
+    if (s && s.parentNode) s.parentNode.removeChild(s);
+  }, 3200);
 })();
 
 
