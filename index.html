@@ -1036,8 +1036,8 @@
         ⏳ GW24 hasn't kicked off yet — your GW23 season points are shown above. Points update after each match.
       </div>
     <div class="squad-body-grid">
-      <div style="width:100%;display:flex;flex-direction:column;align-items:stretch;overflow-x:hidden">
-        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;margin:0 auto">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;overflow-x:hidden">
+        <div class="squad-pitch-wrap" id="squad-pitch" style="width:100%;margin:0 auto;box-sizing:border-box">
           <div id="p-fwd" class="prow"></div>
           <div id="p-mid" class="prow"></div>
           <div id="p-def" class="prow"></div>
@@ -1153,7 +1153,7 @@
 
     <div style="background:linear-gradient(135deg,rgba(201,150,58,.08),rgba(185,28,58,.06));border:1px solid rgba(201,150,58,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;position:relative">
       <div style="position:absolute;top:.8rem;right:1rem;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25)">[Sponsor]</div>
-      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A;text-align:center;margin-bottom:1.2rem">SA Overall -- Season Prizes</div>
+      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A;text-align:center;margin-bottom:1.2rem">SA Overall — Season Prizes</div>
       <div class="podium-wrap" id="podium-wrap"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
     </div>
 
@@ -2407,29 +2407,29 @@ function loadUserGWPoints() {
     .eq('user_id', ST.user.id)
     .order('gameweek', { ascending: false })
     .limit(1)
-    .single()
     .then(function(res) {
       if (!CACHE._profile) CACHE._profile = {};
-      if (res.data && res.data.points !== undefined) {
-        CACHE._profile.gw_points = res.data.points;
-        // If total_points on profile is still 0 but we have GW scores,
-        // use GW points as minimum total so it shows on screen
-        if (!CACHE._profile.total_points && res.data.points > 0) {
-          CACHE._profile.total_points = res.data.points;
+      // Use first row from array (avoids .single() throwing on no rows)
+      var row = Array.isArray(res.data) ? res.data[0] : res.data;
+      if (row && row.points !== undefined) {
+        CACHE._profile.gw_points = row.points;
+        // Sync total_points from profile if it's higher (cron may have updated it)
+        if (!CACHE._profile.total_points && row.points > 0) {
+          CACHE._profile.total_points = row.points;
         }
         renderBudget();
-        if (res.data.player_scores && res.data.player_scores.length) {
-          showPointsBreakdown(res.data.player_scores);
-        }
+        // Parse player_scores — may be stored as JSON string or array
+        var ps = row.player_scores;
+        if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
+        if (ps && ps.length) showPointsBreakdown(ps);
       } else {
-        // No gw_scores row yet — use profile values
+        // No gw_scores row yet — render with profile totals (may still be > 0 from prior GWs)
         CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
         renderBudget();
       }
     })
     .catch(function(e) {
       console.warn('[loadUserGWPoints] gw_scores error:', e.message);
-      // Ensure pill still shows with profile data
       if (CACHE._profile) renderBudget();
     });
 }
@@ -2814,11 +2814,13 @@ function renderBudget() {
     if (noPointsHint) {
       noPointsHint.style.display = (ST.squadRegistered && totalPts === 0 && !(CACHE._profile && CACHE._profile.gw_points > 0)) ? '' : 'none';
     }
-    // Rank pill
+    // Rank pill — always show when logged in
     var rkPill = document.getElementById('rank-pts-pill');
     var rkEl   = document.getElementById('rank-pts-display');
-    if (rkPill && gwRank) { rkEl.textContent = '#' + gwRank; rkPill.style.display = ''; }
-    else if (rkPill) rkPill.style.display = 'none';
+    if (rkPill) {
+      rkEl.textContent = gwRank ? '#' + gwRank : '#—';
+      rkPill.style.display = 'flex';
+    }
   } else {
     if (gwPill)    gwPill.style.display    = 'none';
     if (totalPill) totalPill.style.display = 'none';
@@ -7431,19 +7433,20 @@ onReady(function() {
     }
 
     var isFTTab = (tab === 'FT' || tab === 'results');
+    // Column names match what sync.js / football.js write to Supabase:
+    //   api_fixture_id, home_team, away_team, home_logo, away_logo, kickoff_at, round
     var query = db.from('fixtures')
-      .select('apifootball_fixture_id,home_team_name,away_team_name,home_team_logo,away_team_logo,home_score,away_score,home_score_ht,away_score_ht,kickoff_time,status,elapsed_minutes,gw_number,api_round,venue_name,stats_synced,home_team_id,away_team_id')
-      .eq('season', 2025);
+      .select('api_fixture_id,home_team,away_team,home_logo,away_logo,home_score,away_score,kickoff_at,status,round');
 
     if (isFTTab) {
       // Results: most recent first
-      query = query.eq('status','FT').order('kickoff_time',{ascending:false}).limit(80);
+      query = query.eq('status','FT').order('kickoff_at',{ascending:false}).limit(80);
     } else {
       var today = new Date(); today.setHours(0,0,0,0);
       if (ST.gw && ST.gw.number) {
-        query = query.eq('gw_number', ST.gw.number).in('status',['NS','TBD','PST']).order('kickoff_time',{ascending:true}).limit(80);
+        query = query.in('status',['NS','TBD','PST']).order('kickoff_at',{ascending:true}).limit(80);
       } else {
-        query = query.in('status',['NS','TBD','PST']).gte('kickoff_time', today.toISOString()).order('kickoff_time',{ascending:true}).limit(80);
+        query = query.in('status',['NS','TBD','PST']).gte('kickoff_at', today.toISOString()).order('kickoff_at',{ascending:true}).limit(80);
       }
     }
 
@@ -7463,16 +7466,23 @@ onReady(function() {
         var isLive = ['1H','HT','2H','ET','BT','P'].indexOf(f.status) > -1;
         var isFT   = f.status === 'FT';
         return {
-          fixture_id:f.apifootball_fixture_id, api_fixture_id:f.apifootball_fixture_id,
-          status:f.status||'NS', date:f.kickoff_time, kickoff_at:f.kickoff_time,
-          home:f.home_team_name||'', away:f.away_team_name||'',
-          home_logo:f.home_team_logo||null, away_logo:f.away_team_logo||null,
-          hg:(isFT||isLive)?f.home_score:null, ag:(isFT||isLive)?f.away_score:null,
-          is_live:isLive, is_finished:isFT, is_ft:isFT,
-          elapsed:f.elapsed_minutes||null, round:f.api_round||null,
-          gw_number:f.gw_number||null, venue:f.venue_name||null,
-          stats_synced:f.stats_synced||false,
-          _raw:f
+          fixture_id:    f.api_fixture_id,
+          api_fixture_id:f.api_fixture_id,
+          status:        f.status || 'NS',
+          date:          f.kickoff_at,
+          kickoff_at:    f.kickoff_at,
+          home:          f.home_team || '',
+          away:          f.away_team || '',
+          home_logo:     f.home_logo || null,
+          away_logo:     f.away_logo || null,
+          hg:            (isFT || isLive) ? f.home_score : null,
+          ag:            (isFT || isLive) ? f.away_score : null,
+          is_live:       isLive,
+          is_finished:   isFT,
+          is_ft:         isFT,
+          elapsed:       f.elapsed || null,
+          round:         f.round   || null,
+          _raw:          f
         };
       });
       LAST_MATCHES = matches;
