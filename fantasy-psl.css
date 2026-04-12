@@ -783,6 +783,13 @@ html, body {
   .squad-pitch-wrap {
     width:100% !important;
     max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    box-sizing:border-box !important;
+  }
+  .prow {
+    justify-content:center !important;
+    width:100% !important;
   }
 
   /* Pitch: compact, shows full formation */
@@ -802,6 +809,7 @@ html, body {
     position:static;
     max-height:none;
     overflow:visible;
+    width:100% !important;
   }
 
   /* Player list: scrollable at a comfortable height */
