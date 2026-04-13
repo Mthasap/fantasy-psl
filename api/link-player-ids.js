@@ -50,7 +50,27 @@ function initKey(normName) {
   return parts[0][0] + '_' + parts[parts.length - 1];
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ── MANUAL OVERRIDES ─────────────────────────────────────────────────────────
+// Add any known mismatches here: our display_name → correct apifootball_id
+// Format: 'our display_name (lowercase)': apifootball_id_number
+const MANUAL_OVERRIDES = {
+  'brandon peterson': 98933,   // API has "Brandon Petersen" — different spelling
+};
+
+// ── Fuzzy surname similarity (handles Peterson/Petersen, Dlamini/Dlamini) ────
+// Returns true if two surnames are close enough (1 char difference)
+function surnameFuzzy(a, b) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 2) return false;
+  var diff = 0;
+  var longer  = a.length > b.length ? a : b;
+  var shorter = a.length > b.length ? b : a;
+  for (var i = 0; i < longer.length; i++) {
+    if (longer[i] !== shorter[i]) diff++;
+    if (diff > 1) return false;
+  }
+  return true;
+}
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
@@ -140,30 +160,59 @@ module.exports = async (req, res) => {
       const pSurname = surname(pNorm);
       const pInit    = initKey(pNorm);
 
-      // Tier 1: exact normalised name
-      let hit = byNorm[pNorm];
-      let tier = 1;
+      // TIER 0: Manual override — highest confidence, used for known API spelling mismatches
+      let hit  = null;
+      let tier = 0;
+      if (MANUAL_OVERRIDES[pNorm] !== undefined) {
+        const overrideId = MANUAL_OVERRIDES[pNorm];
+        hit = apiPlayers.find(function(ap) { return ap.api_id === overrideId; });
+        if (hit) tier = 0;
+      }
 
-      // Tier 2: unique surname match
+      // Tier 1: exact normalised name
+      if (!hit) {
+        hit = byNorm[pNorm];
+        if (hit) tier = 1;
+      }
+
+      // Tier 2: unique exact surname match (requires surname is unambiguous)
       if (!hit && pSurname.length >= 4) {
         const s = bySurname[pSurname];
         if (s) { hit = s; tier = 2; }
       }
 
-      // Tier 3: first-initial + surname (handles "B. Grobler" → "Bradley Grobler")
+      // Tier 2b: fuzzy surname match — catches Peterson/Petersen spelling differences
+      // Only fires when combined with matching first initial (prevents false positives)
+      if (!hit && pSurname.length >= 5 && pInit) {
+        const ourInitial = pNorm.split(' ')[0][0];
+        const fuzzyHit = apiPlayers.find(function(ap) {
+          const apSur = ap.surname;
+          const apInitial = ap.norm.split(' ')[0][0];
+          return apInitial === ourInitial && surnameFuzzy(pSurname, apSur);
+        });
+        if (fuzzyHit) { hit = fuzzyHit; tier = 2; }
+      }
+
+      // Tier 3: first-initial + exact surname (handles "B. Grobler" → "Bradley Grobler")
       if (!hit && pInit) {
         const s = byInit[pInit];
         if (s) { hit = s; tier = 3; }
       }
 
-      // Tier 4: first-name contains match (handles "Iqraam" → "Iqraam Rayners")
+      // Tier 4: UNIQUE first name match — ONLY fires when first name is unique across
+      // all API players (prevents "Brandon" matching "Brandon Junior Theron" instead of
+      // "Brandon Petersen"). Requires first name ≥5 chars and only ONE player has that name.
       if (!hit) {
         const firstName = pNorm.split(' ')[0];
-        if (firstName && firstName.length >= 4) {
-          const found = apiPlayers.find(function(ap) {
-            return ap.norm.startsWith(firstName + ' ') || ap.norm === firstName;
+        if (firstName && firstName.length >= 5) {
+          const candidates = apiPlayers.filter(function(ap) {
+            return ap.norm.split(' ')[0] === firstName;
           });
-          if (found) { hit = found; tier = 4; }
+          // Only match if exactly ONE player has this first name — no ambiguity
+          if (candidates.length === 1) {
+            hit = candidates[0];
+            tier = 4;
+          }
         }
       }
 
