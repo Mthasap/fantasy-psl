@@ -1,27 +1,19 @@
 {
   "version": 2,
-
   "routes": [
-    { "src": "^/api/football$",        "dest": "/api/football.js" },
-    { "src": "^/api/sync$",            "dest": "/api/sync.js" },
-    { "src": "^/api/points-cron$",     "dest": "/api/points-cron.js" },
-    { "src": "^/api/apifootball-sync$","dest": "/api/apifootball-sync.js" },
-    { "src": "^/api/admin-api$",       "dest": "/api/admin-api.js" },
-    { "src": "^/api/squad-import$",    "dest": "/api/squad-import.js" },
-    { "src": "^/api/link-player-ids$", "dest": "/api/link-player-ids.js" },
-    { "src": "^/api/sitemap$",         "dest": "/api/sitemap.js" },
-    { "src": "^/api/robots$",          "dest": "/api/robots.js" },
-
-    { "src": "^/sitemap.xml$", "dest": "/api/sitemap.js" },
-    { "src": "^/robots.txt$",  "dest": "/api/robots.js" },
-
-    // ✅ Allow static files (CSS, JS, images, fonts)
-    { "src": "^/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|webp|json))$", "dest": "/$1" },
-
-    // ✅ SPA fallback ONLY for pages (NOT assets or API)
-    { "src": "^/(?!api/)(.*)$", "dest": "/index.html" }
+    { "src": "/api/football",        "dest": "/api/football.js" },
+    { "src": "/api/sync",            "dest": "/api/sync.js" },
+    { "src": "/api/points-cron",     "dest": "/api/points-cron.js" },
+    { "src": "/api/apifootball-sync","dest": "/api/apifootball-sync.js" },
+    { "src": "/api/admin-api",       "dest": "/api/admin-api.js" },
+    { "src": "/api/squad-import",    "dest": "/api/squad-import.js" },
+    { "src": "/api/link-player-ids", "dest": "/api/link-player-ids.js" },
+    { "src": "/api/sitemap",         "dest": "/api/sitemap.js" },
+    { "src": "/api/robots",          "dest": "/api/robots.js" },
+    { "src": "/sitemap.xml",         "dest": "/api/sitemap.js" },
+    { "src": "/robots.txt",          "dest": "/api/robots.js" },
+    { "src": "/(.*)",                "dest": "/index.html" }
   ],
-
   "crons": [
     {
       "path": "/api/apifootball-sync",
@@ -46,6 +38,14 @@
     {
       "path": "/api/points-cron",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 17 * * 5,6,0"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 23 * * 5,6,0"
     }
   ]
 }
