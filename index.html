@@ -2427,10 +2427,98 @@ function loadUserGWPoints() {
         CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
         renderBudget();
       }
+      // ALWAYS also fetch directly from match_player_stats by name
+      // This covers the case where apifootball_id is not linked in players table
+      loadGWPointsFromMatchStats(_gwNum);
     })
     .catch(function(e) {
       console.warn('[loadUserGWPoints] gw_scores error:', e.message);
       if (CACHE._profile) renderBudget();
+      loadGWPointsFromMatchStats(_gwNum);
+    });
+}
+
+// Direct lookup from match_player_stats for current GW — matches squad players by name.
+// This is the fallback when apifootball_id is not set on players table rows.
+function loadGWPointsFromMatchStats(gwNum) {
+  if (!ST.squad || !ST.squad.length) return;
+  db.from('match_player_stats')
+    .select('player_name, fantasy_points, minutes_played, position, goals, assists, clean_sheet, yellow_cards, red_cards, saves')
+    .eq('gw_number', gwNum)
+    .eq('season', 2025)
+    .then(function(res) {
+      var stats = res.data || [];
+      if (!stats.length) return;
+
+      // Build name lookup: normalised name → best stat row (highest fantasy_points if multiple)
+      var statByName = {};
+      stats.forEach(function(s) {
+        var norm = (s.player_name || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+        if (!statByName[norm] || (s.fantasy_points || 0) > (statByName[norm].fantasy_points || 0)) {
+          statByName[norm] = s;
+        }
+        // Also index by surname alone
+        var parts   = norm.split(' ');
+        var surname = parts[parts.length - 1];
+        if (surname && surname.length >= 4) {
+          if (!statByName['_sn_' + surname] || (s.fantasy_points || 0) > (statByName['_sn_' + surname].fantasy_points || 0)) {
+            statByName['_sn_' + surname] = s;
+          }
+        }
+      });
+
+      var totalGW = 0;
+      var updated = false;
+      var playerBreakdown = [];
+
+      ST.squad = ST.squad.map(function(p) {
+        var dn   = (p.display_name || p.name || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+        var parts   = dn.split(' ');
+        var surname = parts[parts.length - 1];
+        var stat = statByName[dn] || (surname && surname.length >= 4 ? statByName['_sn_' + surname] : null);
+
+        if (stat) {
+          var pts = stat.fantasy_points || 0;
+          var mult = (p.isCaptain || p.isVC) ? 2 : 1;
+          var finalPts = p.onBench ? 0 : pts * mult;
+          updated = true;
+          if (!p.onBench) totalGW += finalPts;
+          playerBreakdown.push({
+            id:         p.id,
+            name:       p.display_name || p.name || '',
+            pts:        pts,
+            final_pts:  finalPts,
+            isCaptain:  p.isCaptain || false,
+            isVC:       p.isVC      || false,
+            onBench:    p.onBench   || false,
+            position:   p.position  || ''
+          });
+          return Object.assign({}, p, { gwPoints: finalPts });
+        }
+        // Player didn't feature this GW — 0 pts
+        playerBreakdown.push({
+          id: p.id, name: p.display_name || p.name || '',
+          pts: 0, final_pts: 0,
+          isCaptain: p.isCaptain || false, isVC: p.isVC || false,
+          onBench: p.onBench || false, position: p.position || ''
+        });
+        return p;
+      });
+
+      if (updated) {
+        // Update pill with the actual computed GW total
+        if (!CACHE._profile) CACHE._profile = {};
+        // Only override gw_points if it's still 0 (cron hasn't set it or failed)
+        if (!(CACHE._profile.gw_points > 0)) {
+          CACHE._profile.gw_points = totalGW;
+        }
+        renderPitch();
+        renderBudget();
+        if (playerBreakdown.length) showPointsBreakdown(playerBreakdown);
+      }
+    })
+    .catch(function(e) {
+      console.warn('[loadGWPointsFromMatchStats]', e.message);
     });
 }
 
@@ -7433,21 +7521,18 @@ onReady(function() {
     }
 
     var isFTTab = (tab === 'FT' || tab === 'results');
-    // Column names match what sync.js / football.js write to Supabase:
-    //   api_fixture_id, home_team, away_team, home_logo, away_logo, kickoff_at, round
+    // Column names match what apifootball-sync.js writes to Supabase:
+    //   apifootball_fixture_id, home_team_name, away_team_name, home_team_logo,
+    //   away_team_logo, kickoff_time, api_round, venue_name, gw_number, elapsed_minutes
     var query = db.from('fixtures')
-      .select('api_fixture_id,home_team,away_team,home_logo,away_logo,home_score,away_score,kickoff_at,status,round');
+      .select('apifootball_fixture_id,home_team_name,away_team_name,home_team_logo,away_team_logo,home_score,away_score,kickoff_time,status,api_round,venue_name,gw_number,elapsed_minutes,season');
 
     if (isFTTab) {
       // Results: most recent first
-      query = query.eq('status','FT').order('kickoff_at',{ascending:false}).limit(80);
+      query = query.eq('status','FT').order('kickoff_time',{ascending:false}).limit(80);
     } else {
       var today = new Date(); today.setHours(0,0,0,0);
-      if (ST.gw && ST.gw.number) {
-        query = query.in('status',['NS','TBD','PST']).order('kickoff_at',{ascending:true}).limit(80);
-      } else {
-        query = query.in('status',['NS','TBD','PST']).gte('kickoff_at', today.toISOString()).order('kickoff_at',{ascending:true}).limit(80);
-      }
+      query = query.in('status',['NS','TBD','PST']).gte('kickoff_time', today.toISOString()).order('kickoff_time',{ascending:true}).limit(80);
     }
 
     query.then(function(res) {
@@ -7466,23 +7551,25 @@ onReady(function() {
         var isLive = ['1H','HT','2H','ET','BT','P'].indexOf(f.status) > -1;
         var isFT   = f.status === 'FT';
         return {
-          fixture_id:    f.api_fixture_id,
-          api_fixture_id:f.api_fixture_id,
-          status:        f.status || 'NS',
-          date:          f.kickoff_at,
-          kickoff_at:    f.kickoff_at,
-          home:          f.home_team || '',
-          away:          f.away_team || '',
-          home_logo:     f.home_logo || null,
-          away_logo:     f.away_logo || null,
-          hg:            (isFT || isLive) ? f.home_score : null,
-          ag:            (isFT || isLive) ? f.away_score : null,
-          is_live:       isLive,
-          is_finished:   isFT,
-          is_ft:         isFT,
-          elapsed:       f.elapsed || null,
-          round:         f.round   || null,
-          _raw:          f
+          fixture_id:     f.apifootball_fixture_id,
+          api_fixture_id: f.apifootball_fixture_id,
+          status:         f.status || 'NS',
+          date:           f.kickoff_time,
+          kickoff_at:     f.kickoff_time,
+          home:           f.home_team_name || '',
+          away:           f.away_team_name || '',
+          home_logo:      f.home_team_logo || null,
+          away_logo:      f.away_team_logo || null,
+          hg:             (isFT || isLive) ? f.home_score : null,
+          ag:             (isFT || isLive) ? f.away_score : null,
+          is_live:        isLive,
+          is_finished:    isFT,
+          is_ft:          isFT,
+          elapsed:        f.elapsed_minutes || null,
+          round:          f.api_round || null,
+          venue:          f.venue_name || null,
+          gw_number:      f.gw_number || null,
+          _raw:           f
         };
       });
       LAST_MATCHES = matches;
