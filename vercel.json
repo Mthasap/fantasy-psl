@@ -1,71 +1,51 @@
 {
-  "functions": {
-    "api/points-cron.js": {
-      "maxDuration": 60
-    },
-    "api/squad-import.js": {
-      "maxDuration": 60
-    },
-    "api/apifootball-sync.js": {
-      "maxDuration": 60
-    }
-  },
+  "version": 2,
   "routes": [
-    { "src": "/admin", "dest": "/admin.html" },
-    { "src": "/confirm", "dest": "/confirm.html" },
-    { "src": "/sitemap.xml", "dest": "/api/sitemap" },
-    { "src": "/robots.txt", "dest": "/api/robots" },
-    { "src": "/news/(.*)", "dest": "/index.html" },
-    { "src": "/api/live-matches", "dest": "/api/sync?action=live" },
-    { "src": "/api/psl-data", "dest": "/api/sync?action=psl-data" },
-    { "src": "/api/force-sync", "dest": "/api/sync?action=force-sync" },
-    { "src": "/api/sync-fixtures", "dest": "/api/sync?action=force-sync" },
-    { "src": "/api/import-players", "dest": "/api/sync?action=import-players" },
-    { "src": "/api/sync-player-stats", "dest": "/api/sync?action=import-players" },
-    { "src": "/api/sportmonks-setup", "dest": "/api/sync?action=status" },
-    { "src": "/api/sportmonks", "dest": "/api/sync?action=proxy" },
-    { "src": "/api/squad-import", "dest": "/api/squad-import" },
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=30" }
-      ]
-    },
-    {
-      "source": "/sitemap.xml",
-      "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=600" }
-      ]
-    }
+    { "src": "/api/football",        "dest": "/api/football.js" },
+    { "src": "/api/sync",            "dest": "/api/sync.js" },
+    { "src": "/api/points-cron",     "dest": "/api/points-cron.js" },
+    { "src": "/api/apifootball-sync","dest": "/api/apifootball-sync.js" },
+    { "src": "/api/admin-api",       "dest": "/api/admin-api.js" },
+    { "src": "/api/squad-import",    "dest": "/api/squad-import.js" },
+    { "src": "/api/link-player-ids", "dest": "/api/link-player-ids.js" },
+    { "src": "/api/sitemap",         "dest": "/api/sitemap.js" },
+    { "src": "/api/robots",          "dest": "/api/robots.js" },
+    { "src": "/sitemap.xml",         "dest": "/api/sitemap.js" },
+    { "src": "/robots.txt",          "dest": "/api/robots.js" },
+    { "src": "/(.*)",                "dest": "/index.html" }
   ],
   "crons": [
     {
-      "path": "/api/apifootball-sync?phase=1&secret=mzansi4show",
-      "schedule": "0 22 * * *"
+      "path": "/api/apifootball-sync",
+      "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/apifootball-sync?phase=2&secret=mzansi4show",
-      "schedule": "30 21 * * *"
+      "path": "/api/apifootball-sync",
+      "schedule": "0 14 * * *"
     },
     {
-      "path": "/api/apifootball-sync?phase=3&secret=mzansi4show",
-      "schedule": "0 22 * * *"
+      "path": "/api/apifootball-sync",
+      "schedule": "30 16 * * 5,6,0"
     },
     {
-      "path": "/api/points-cron?secret=mzansi4show",
-      "schedule": "30 22 * * *"
+      "path": "/api/apifootball-sync",
+      "schedule": "30 22 * * 5,6,0"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 17 * * 5,6,0"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 23 * * 5,6,0"
     }
   ]
 }
