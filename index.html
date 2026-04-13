@@ -1151,10 +1151,21 @@
     <span class="eyebrow">Mini Leagues &amp; Rankings</span>
     <h1 class="section-title">Compete with SA</h1>
 
-    <div style="background:linear-gradient(135deg,rgba(201,150,58,.08),rgba(185,28,58,.06));border:1px solid rgba(201,150,58,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;position:relative">
-      <div style="position:absolute;top:.8rem;right:1rem;font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25)">[Sponsor]</div>
-      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A;text-align:center;margin-bottom:1.2rem">SA Overall — Season Prizes</div>
-      <div class="podium-wrap" id="podium-wrap"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
+    <!-- ══ LEAGUES AD BANNER — connect AdSense here ══
+         To activate: replace the ins tag with your actual AdSense slot.
+         Your publisher ID is already loaded in the <head> (ca-pub-6398135174637589).
+         Step 1: go to AdSense → Ad units → Display → copy your data-ad-slot number
+         Step 2: replace data-ad-slot="0000000000" below with your real slot number
+         Step 3: change data-ad-client to match your publisher ID if different
+    -->
+    <div id="leagues-ad-banner" style="width:100%;margin-bottom:1.5rem;border-radius:12px;overflow:hidden;min-height:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center">
+      <ins class="adsbygoogle"
+           style="display:block;width:100%;min-height:90px"
+           data-ad-client="ca-pub-6398135174637589"
+           data-ad-slot="0000000000"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
@@ -2457,12 +2468,19 @@ function loadGWPointsFromMatchStats(gwNum) {
         if (!statByName[norm] || (s.fantasy_points || 0) > (statByName[norm].fantasy_points || 0)) {
           statByName[norm] = s;
         }
-        // Also index by surname alone
+        // Index by surname
         var parts   = norm.split(' ');
         var surname = parts[parts.length - 1];
         if (surname && surname.length >= 4) {
           if (!statByName['_sn_' + surname] || (s.fantasy_points || 0) > (statByName['_sn_' + surname].fantasy_points || 0)) {
             statByName['_sn_' + surname] = s;
+          }
+        }
+        // Index by first-initial + surname e.g. "b grobler" from "bradley grobler"
+        if (parts.length >= 2) {
+          var initKey = '_ini_' + parts[0][0] + '_' + surname;
+          if (!statByName[initKey] || (s.fantasy_points || 0) > (statByName[initKey].fantasy_points || 0)) {
+            statByName[initKey] = s;
           }
         }
       });
@@ -2472,10 +2490,14 @@ function loadGWPointsFromMatchStats(gwNum) {
       var playerBreakdown = [];
 
       ST.squad = ST.squad.map(function(p) {
-        var dn   = (p.display_name || p.name || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+        var dn      = (p.display_name || p.name || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
         var parts   = dn.split(' ');
         var surname = parts[parts.length - 1];
-        var stat = statByName[dn] || (surname && surname.length >= 4 ? statByName['_sn_' + surname] : null);
+        var firstInitial = parts[0] ? parts[0][0] : '';
+        // Try: full name → surname → first-initial+surname
+        var stat = statByName[dn]
+          || (surname && surname.length >= 4 ? statByName['_sn_' + surname] : null)
+          || (firstInitial && surname ? statByName['_ini_' + firstInitial + '_' + surname] : null);
 
         if (stat) {
           var pts = stat.fantasy_points || 0;
@@ -2506,15 +2528,49 @@ function loadGWPointsFromMatchStats(gwNum) {
       });
 
       if (updated) {
-        // Update pill with the actual computed GW total
         if (!CACHE._profile) CACHE._profile = {};
-        // Only override gw_points if it's still 0 (cron hasn't set it or failed)
-        if (!(CACHE._profile.gw_points > 0)) {
-          CACHE._profile.gw_points = totalGW;
-        }
+        // Always update gw_points with the freshly computed value
+        CACHE._profile.gw_points = totalGW;
         renderPitch();
         renderBudget();
         if (playerBreakdown.length) showPointsBreakdown(playerBreakdown);
+
+        // Write back to Supabase so leaderboard + total_points stay in sync
+        // This mirrors what points-cron does but using name-based matching
+        if (ST.user && totalGW >= 0) {
+          db.from('gw_scores').upsert({
+            user_id:       ST.user.id,
+            gameweek:      gwNum,
+            points:        totalGW,
+            player_scores: playerBreakdown,
+            calculated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,gameweek' })
+          .then(function() {
+            // Sum ALL GW scores for this user = EPL-style season total
+            return db.from('gw_scores')
+              .select('points')
+              .eq('user_id', ST.user.id);
+          })
+          .then(function(scoreRes) {
+            var seasonTotal = (scoreRes.data || []).reduce(function(s, r) {
+              return s + (r.points || 0);
+            }, 0);
+            CACHE._profile.total_points = seasonTotal;
+            // Update profiles row so leaderboard reads the same values
+            return db.from('profiles').update({
+              gw_points:    totalGW,
+              total_points: seasonTotal
+            }).eq('id', ST.user.id);
+          })
+          .then(function() {
+            // Invalidate leaderboard cache so it re-fetches with new data
+            CACHE.leaderboard = null;
+            renderBudget();
+          })
+          .catch(function(e) {
+            console.warn('[loadGWPointsFromMatchStats] write-back error:', e.message);
+          });
+        }
       }
     })
     .catch(function(e) {
@@ -5718,17 +5774,15 @@ function loadTable() {
             pos:  s.pos  || i + 1,
             team: s.team,
             logo: s.logo || getTeamLogo(s.team),
-            // Sportmonks gives accurate live points and position
             pts:  s.pts  || (ex ? ex.pts : 0),
-            // Always use REAL_TABLE for played/won/drawn/lost/gf/ga/gd
-            // Sportmonks standings endpoint doesn't return these without paid includes
-            p:    ex ? ex.p  : (s.p  || 0),
-            w:    ex ? ex.w  : (s.w  || 0),
-            d:    ex ? ex.d  : (s.d  || 0),
-            l:    ex ? ex.l  : (s.l  || 0),
-            gf:   ex ? ex.gf : (s.gf || 0),
-            ga:   ex ? ex.ga : (s.ga || 0),
-            gd:   ex ? ex.gd : (s.gd || 0),
+            // Prefer live API data; fall back to REAL_TABLE only if API returned 0
+            p:    (s.p  > 0) ? s.p  : (ex ? ex.p  : 0),
+            w:    (s.w  > 0) ? s.w  : (ex ? ex.w  : 0),
+            d:    (s.d  >= 0 && s.p > 0) ? s.d  : (ex ? ex.d  : 0),
+            l:    (s.l  >= 0 && s.p > 0) ? s.l  : (ex ? ex.l  : 0),
+            gf:   (s.gf >= 0 && s.p > 0) ? s.gf : (ex ? ex.gf : 0),
+            ga:   (s.ga >= 0 && s.p > 0) ? s.ga : (ex ? ex.ga : 0),
+            gd:   (s.gd !== undefined && s.p > 0) ? s.gd : (ex ? ex.gd : 0),
             form: formArr
           };
         });
