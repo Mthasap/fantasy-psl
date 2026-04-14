@@ -971,7 +971,7 @@
     <div class="page-head">
       <div>
         <span class="eyebrow">Gameweek <span id="gw-squad">--</span> . Deadline <span id="gw-deadline">--</span></span>
-        <h1 class="section-title" style="margin-bottom:0">My Squad</h1>
+        <h1 class="section-title" style="margin-bottom:0" id="squad-page-title">My Squad</h1>
       </div>
       <div class="meta-strip" style="flex-wrap:wrap;gap:.5rem">
         <div class="meta-pill">
@@ -1754,11 +1754,37 @@ function doRegister() {
         discovery_source: discovery,
         referral_code: referralCode,
         referred_by: referralUsed || null
-      }).then(function() {});
+      }).then(function() {
+        if (suppTeam) autoJoinTeamLeague(userId, suppTeam);
+      });
     }
     closeAuth();
     showToast('Account created! Check your email to confirm.', 'success');
   });
+}
+
+function autoJoinTeamLeague(userId, teamName) {
+  if (!userId || !teamName) return;
+  var leagueName = teamName + ' Fans';
+  db.from('leagues').select('id, name').eq('name', leagueName).eq('is_public', true).limit(1)
+    .then(function(res) {
+      var league = res.data && res.data[0];
+      if (league) {
+        db.from('league_members').insert({ league_id: league.id, user_id: userId })
+          .then(function() {}).catch(function() {});
+      } else {
+        var letters = teamName.replace(/[^A-Za-z]/g, '').substring(0,3).toUpperCase();
+        var code = letters + '-FANS';
+        db.from('leagues').insert({ name: leagueName, code: code, created_by: userId, is_public: true })
+          .select('id').single()
+          .then(function(r) {
+            if (r.data && r.data.id) {
+              db.from('league_members').insert({ league_id: r.data.id, user_id: userId })
+                .then(function() {}).catch(function() {});
+            }
+          }).catch(function() {});
+      }
+    }).catch(function() {});
 }
 
 function doLogout() {
@@ -2386,7 +2412,11 @@ function applyDashboard(d) {
   ST.pendingTransfers = [];
   ST.xferOut = null;
   renderPitch(); renderBudget(); renderPlayerList();
-  if (d.profile) CACHE._profile = d.profile;
+  if (d.profile) {
+    CACHE._profile = d.profile;
+    var _sqTitle = document.getElementById('squad-page-title');
+    if (_sqTitle && d.profile.team_name) _sqTitle.textContent = d.profile.team_name;
+  }
   if (d.leagues) CACHE.myLeagues = { data: d.leagues, ts: Date.now() };
 
   // Squad already exists in DB — show "✓ Saved" not "Save Squad"
@@ -2411,7 +2441,7 @@ function applyDashboard(d) {
 // This table is written by the cron job after every completed match
 function loadUserGWPoints() {
   if (!ST.user) return;
-  var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : 23;
+  var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : 24;
   // Load current GW score; if empty also check previous GW (handles GW transition)
   db.from('gw_scores')
     .select('points, player_scores, calculated_at, gameweek')
@@ -2429,17 +2459,17 @@ function loadUserGWPoints() {
           CACHE._profile.total_points = row.points;
         }
         renderBudget();
-        // Parse player_scores — may be stored as JSON string or array
+        // Store gw_scores breakdown but don't render yet —
+        // loadGWPointsFromMatchStats runs next and produces the accurate per-player data.
+        // Only use gw_scores breakdown as fallback if match_player_stats is empty.
         var ps = row.player_scores;
         if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
-        if (ps && ps.length) showPointsBreakdown(ps);
+        if (ps && ps.length && row.points > 0) { window._gwScoresPs = ps; }
       } else {
-        // No gw_scores row yet — render with profile totals (may still be > 0 from prior GWs)
         CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
         renderBudget();
       }
-      // ALWAYS also fetch directly from match_player_stats by name
-      // This covers the case where apifootball_id is not linked in players table
+      // Always fetch from match_player_stats — most accurate per-player breakdown
       loadGWPointsFromMatchStats(_gwNum);
     })
     .catch(function(e) {
@@ -2459,7 +2489,10 @@ function loadGWPointsFromMatchStats(gwNum) {
     .eq('season', 2025)
     .then(function(res) {
       var stats = res.data || [];
-      if (!stats.length) return;
+      if (!stats.length) {
+        if (window._gwScoresPs && window._gwScoresPs.length) showPointsBreakdown(window._gwScoresPs);
+        return;
+      }
 
       // Build name lookup: normalised name → best stat row (highest fantasy_points if multiple)
       var statByName = {};
@@ -4145,7 +4178,7 @@ function renderGlobalLBRows(c, rows) {
     var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
     var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
     var gwPts = p.gw_points !== undefined && p.gw_points !== null ? p.gw_points : 0;
-    return '<div style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;align-items:center;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
+    return '<div onclick="openPublicProfile(\'' + esc(p.username) + '\')" style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;align-items:center;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent;' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
       '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
       '<div style="min-width:0;overflow:hidden">' +
         '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
@@ -4160,6 +4193,85 @@ function renderGlobalLBRows(c, rows) {
   c.innerHTML = header + bodyRows;
 }
 
+
+
+function openPublicProfile(username) {
+  if (!username) return;
+  var existing = document.getElementById('public-profile-modal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'public-profile-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)';
+  var closeId = 'public-profile-modal';
+  modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.5rem 1.2rem 2rem">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">'
+    + '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff">Manager Profile</div>'
+    + '<button id="pub-close-btn" style="background:rgba(255,255,255,.08);border:none;border-radius:50%;width:30px;height:30px;color:rgba(255,255,255,.6);font-size:1.2rem;cursor:pointer;line-height:1">&#x2715;</button>'
+    + '</div>'
+    + '<div id="pub-profile-body"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>'
+    + '</div>';
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  document.getElementById('pub-close-btn').addEventListener('click', function() { modal.remove(); });
+
+  db.from('profiles')
+    .select('id, team_name, username, total_points, gw_points, overall_rank, avatar_url, squad_data, squad_count')
+    .eq('username', username).single()
+    .then(function(res) {
+      var body = document.getElementById('pub-profile-body');
+      if (!body) return;
+      var p = res.data;
+      if (!p) { body.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,.35);font-family:var(--font-ui)">Manager not found</div>'; return; }
+      var initials = (p.team_name || '?').substring(0,2).toUpperCase();
+      var avatarHtml = p.avatar_url
+        ? '<img src="' + p.avatar_url + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)">'
+        : '<div style="width:56px;height:56px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff">' + initials + '</div>';
+      var squadArr = [];
+      try {
+        var raw = typeof p.squad_data === 'string' ? JSON.parse(p.squad_data) : p.squad_data;
+        if (Array.isArray(raw)) squadArr = raw;
+      } catch(e2) {}
+      var renderSqRow = function(s, isBench) {
+        var pl = null;
+        var intId = parseInt(s.id, 10);
+        if (!isNaN(intId) && intId > 0) pl = (PSL_ROSTER || []).find(function(r) { return r.id === intId; });
+        if (!pl && ST.allPlayers) pl = ST.allPlayers.find(function(r) { return r.id === s.id; });
+        var pname = pl ? playerName(pl) : (s.name || s.display_name || 'Unknown');
+        var pos   = pl ? pl.position : (s.position || '--');
+        var club  = pl ? (pl.team || '') : (s.club || '');
+        var cap   = s.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+        var vc    = s.isVC ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
+        var bench = isBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.6rem">bench</span>' : '';
+        return '<div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isBench ? 'opacity:.65' : '') + '">'
+          + '<span style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;color:rgba(255,255,255,.5);min-width:28px;text-align:center">' + pos + '</span>'
+          + '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff">' + pname + cap + vc + bench + '</div><div style="font-size:.65rem;color:rgba(255,255,255,.3)">' + club + '</div></div>'
+          + '</div>';
+      };
+      var starters  = squadArr.filter(function(s) { return !s.onBench; });
+      var benchList = squadArr.filter(function(s) { return s.onBench; });
+      var squadHtml = squadArr.length
+        ? starters.map(function(s) { return renderSqRow(s, false); }).join('')
+          + (benchList.length
+            ? '<div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.5rem 1rem .3rem;background:rgba(255,255,255,.02)">Bench</div>'
+              + benchList.map(function(s) { return renderSqRow(s, true); }).join('') : '')
+        : '<div style="text-align:center;padding:1.5rem;font-family:var(--font-ui);font-size:.82rem;color:rgba(255,255,255,.3)">Squad not public</div>';
+      body.innerHTML =
+        '<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem">'
+          + avatarHtml
+          + '<div><div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff">' + (p.team_name||'Unknown') + '</div>'
+          + '<div style="font-size:.78rem;color:rgba(255,255,255,.4)">@' + (p.username||'') + '</div></div></div>'
+        + '<div style="display:flex;gap:.6rem;margin-bottom:1.2rem">'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">' + (p.total_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#22895A">' + (p.gw_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Pts</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">#' + (p.overall_rank||'--') + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>'
+        + '</div>'
+        + '<div style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.5rem">Squad</div>'
+        + '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">' + squadHtml + '</div>';
+    }).catch(function() {
+      var body = document.getElementById('pub-profile-body');
+      if (body) body.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,.35);font-family:var(--font-ui)">Could not load profile</div>';
+    });
+}
 
 function loadGWHistory() {
   if (!ST.user) return;
@@ -4302,17 +4414,22 @@ function loadProfile() {
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">My Squad</div>' +
+      '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:.8rem">' + (p.team_name || 'My Squad') + '</div>' +
       '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;margin-bottom:1.5rem">' +
         (ST.squad.length ? ST.squad.map(function(pl) {
           var icon = posIcon(pl.position);
           var name = playerName(pl);
-          var club = pl.clubs ? pl.clubs.name : '--';
+          var club = pl.clubs ? pl.clubs.name : (pl.team || '--');
+          var capBadge = pl.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+          var vcBadge  = pl.isVC      ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
+          var gwPts    = (pl.gwPoints !== undefined && pl.gwPoints !== null) ? pl.gwPoints : null;
+          var ptsLabel = gwPts !== null ? (gwPts > 0 ? '+' + gwPts : String(gwPts)) + ' pts' : (pl.total_points || 0) + ' pts';
+          var ptsColor = gwPts !== null ? (gwPts >= 6 ? '#DBA94A' : gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') : '#DBA94A';
           return '<div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
             '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">' + icon + '</div>' +
-            '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' + name + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + club + '</div></div>' +
+            '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' + name + capBadge + vcBadge + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + club + '</div></div>' +
             '<span class="pli-pos pos-' + (pl.position || 'mid').toLowerCase() + '">' + pl.position + '</span>' +
-            '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points || 0) + ' pts</span>' +
+            '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:' + ptsColor + '">' + ptsLabel + '</span>' +
           '</div>';
         }).join('') : '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem;color:rgba(255,255,255,.35)">No squad yet — go pick yours! ⚽</div>') +
       '</div>' +
