@@ -84,25 +84,62 @@ module.exports = async (req, res) => {
     }
 
     // ── Step 2: Load all match_player_stats for this GW ──────────────────
-    // These are already calculated fantasy_points per player per match
     const { data: gwStats, error: statsErr } = await db
       .from('match_player_stats')
-      .select('apifootball_player_id, fantasy_points, minutes_played, position')
+      .select('apifootball_player_id, player_name, fantasy_points, minutes_played, position')
       .eq('season', 2025)
       .eq('gw_number', currentGW);
 
     if (statsErr) throw new Error('match_player_stats load: ' + statsErr.message);
 
-    // Aggregate per player (a player can appear in multiple fixtures in a GW if rescheduled)
+    // Aggregate per player by API id
     const gwStatsByApiId = {};
+    // ALSO build name-based lookup — handles squads where apifootball_id chain breaks
+    const gwStatsByName    = {};  // normalised full name → stat
+    const gwStatsBySurname = {};  // surname → stat (null if ambiguous)
+    const gwStatsByInit    = {};  // firstInitial_surname → stat
+
+    function normStatName(s) {
+      return (s || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g,' ').trim();
+    }
+
     for (const row of (gwStats || [])) {
       const pid = row.apifootball_player_id;
-      if (!pid) continue;
-      if (!gwStatsByApiId[pid]) {
-        gwStatsByApiId[pid] = { fantasy_points: 0, minutes_played: 0, position: row.position };
+      // Aggregate by API id
+      if (pid) {
+        if (!gwStatsByApiId[pid]) {
+          gwStatsByApiId[pid] = { fantasy_points: 0, minutes_played: 0, position: row.position };
+        }
+        gwStatsByApiId[pid].fantasy_points += (row.fantasy_points || 0);
+        gwStatsByApiId[pid].minutes_played += (row.minutes_played || 0);
       }
-      gwStatsByApiId[pid].fantasy_points += (row.fantasy_points || 0);
-      gwStatsByApiId[pid].minutes_played += (row.minutes_played || 0);
+      // Index by name
+      if (row.player_name) {
+        const n  = normStatName(row.player_name);
+        const pts = row.fantasy_points || 0;
+        // Full name
+        if (!gwStatsByName[n] || pts > (gwStatsByName[n].fantasy_points || 0))
+          gwStatsByName[n] = row;
+        // Surname
+        const parts   = n.split(' ');
+        const surname = parts[parts.length - 1];
+        if (surname && surname.length >= 4) {
+          if (gwStatsBySurname[surname] === undefined) gwStatsBySurname[surname] = row;
+          else if (gwStatsBySurname[surname] !== null &&
+                   gwStatsBySurname[surname].apifootball_player_id !== row.apifootball_player_id) {
+            gwStatsBySurname[surname] = null; // ambiguous
+          }
+        }
+        // Initial + surname
+        if (parts.length >= 2) {
+          const initKey = parts[0][0] + '_' + surname;
+          if (gwStatsByInit[initKey] === undefined) gwStatsByInit[initKey] = row;
+          else if (gwStatsByInit[initKey] !== null &&
+                   gwStatsByInit[initKey].apifootball_player_id !== row.apifootball_player_id) {
+            gwStatsByInit[initKey] = null; // ambiguous
+          }
+        }
+      }
     }
 
     log.push('Players with GW' + currentGW + ' stats: ' + Object.keys(gwStatsByApiId).length);
@@ -203,11 +240,17 @@ module.exports = async (req, res) => {
           let captainPlayed = false;
 
           if (captainEntry) {
-            // Find captain's apifootball_id
             const capApiId = resolveApiId(captainEntry, byDbId, byRosterId, byName);
-            if (capApiId && gwStatsByApiId[capApiId]) {
-              captainPlayed = gwStatsByApiId[capApiId].minutes_played > 0;
+            let capStat = capApiId ? gwStatsByApiId[capApiId] : null;
+            if (!capStat && (captainEntry.display_name || captainEntry.name)) {
+              const cn    = (captainEntry.display_name || captainEntry.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
+              const cParts = cn.split(' ');
+              const cSur   = cParts[cParts.length-1];
+              const cInit  = cParts.length >= 2 ? cParts[0][0] + '_' + cSur : null;
+              const cHit   = gwStatsByName[cn] || (cInit ? gwStatsByInit[cInit] : null) || (cSur && cSur.length >= 4 ? gwStatsBySurname[cSur] : null);
+              if (cHit) capStat = gwStatsByApiId[cHit.apifootball_player_id] || cHit;
             }
+            if (capStat) captainPlayed = (capStat.minutes_played || 0) > 0;
           }
 
           // Score each player
@@ -215,8 +258,22 @@ module.exports = async (req, res) => {
           const playerBreakdown = [];
 
           for (const sp of scoringPlayers) {
-            const apiId = resolveApiId(sp, byDbId, byRosterId, byName);
-            const gwStat = apiId ? gwStatsByApiId[apiId] : null;
+            const apiId  = resolveApiId(sp, byDbId, byRosterId, byName);
+            let   gwStat = apiId ? gwStatsByApiId[apiId] : null;
+
+            // Name-based fallback — fires when psl_roster_id chain breaks
+            // (handles squads saved with integer IDs that don't match UUID byDbId)
+            if (!gwStat && (sp.display_name || sp.name)) {
+              const spNorm    = (sp.display_name || sp.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
+              const spParts   = spNorm.split(' ');
+              const spSurname = spParts[spParts.length - 1];
+              const spInit    = spParts.length >= 2 ? spParts[0][0] + '_' + spSurname : null;
+              // Try: full name → initial+surname → unique surname
+              const nameHit = gwStatsByName[spNorm]
+                || (spInit ? gwStatsByInit[spInit] : null)
+                || (spSurname && spSurname.length >= 4 ? gwStatsBySurname[spSurname] : null);
+              if (nameHit) gwStat = gwStatsByApiId[nameHit.apifootball_player_id] || nameHit;
+            }
 
             let pts = 0;
             let source = 'none';
@@ -225,8 +282,6 @@ module.exports = async (req, res) => {
               pts = gwStat.fantasy_points || 0;
               source = 'live';
             } else {
-              // Fallback: use season total from players table as approximation
-              // (player had no stats this GW — likely didn't play)
               pts = 0;
               source = 'dnp';
             }
