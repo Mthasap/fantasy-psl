@@ -2915,6 +2915,7 @@ function saveSquad() {
     .then(function() { onSaveDone(null); })
     .catch(function(e) { onSaveDone(e); });
   });
+}
 
 function shareSquad() {
   if (!ST.squad.length) { showToast('Build your squad first', 'warning'); return; }
