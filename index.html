@@ -2892,22 +2892,29 @@ function saveSquad() {
   }
 
   // Always upsert — plain .update() silently saves nothing if profile row is missing
+  // NEW SECURE SAVE:
   var upsertPayload = Object.assign({ id: ST.user.id }, updatePayload);
-  db.from('profiles')
-    .upsert(upsertPayload, { onConflict: 'id' })
+  
+  db.auth.getSession().then(function({ data }) {
+    if (!data.session) { onSaveDone(new Error("Not logged in")); return; }
+    
+    fetch('/api/save-squad', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + data.session.access_token
+      },
+      body: JSON.stringify(upsertPayload)
+    })
     .then(function(res) {
-      if (res.error) {
-        // Last resort: try insert (profile row truly missing)
-        db.from('profiles')
-          .insert(upsertPayload)
-          .then(function(r2) { onSaveDone(r2.error || null); })
-          .catch(function(e) { onSaveDone(e); });
-      } else {
-        onSaveDone(null);
+      if (!res.ok) {
+        return res.json().then(function(errData) { throw new Error(errData.error || "Save failed"); });
       }
-    }).catch(function(e) { onSaveDone(e); });
-}
-
+      return res.json();
+    })
+    .then(function() { onSaveDone(null); })
+    .catch(function(e) { onSaveDone(e); });
+  });
 
 function shareSquad() {
   if (!ST.squad.length) { showToast('Build your squad first', 'warning'); return; }
