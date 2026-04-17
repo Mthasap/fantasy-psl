@@ -2329,7 +2329,8 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
   }
 
   async function saveAllBulkStats() {
-    const inputs = document.querySelectorAll('#bulk-tbody input[data-id]');
+    // FIX: Select both inputs AND selects
+    const inputs = document.querySelectorAll('#bulk-tbody input[data-id], #bulk-tbody select[data-id]');
     if (!inputs.length) { showStatus('bulk-stats-status', 'error', 'Load players first'); return; }
 
     showStatus('bulk-stats-status', 'info', 'Saving…');
@@ -2343,26 +2344,59 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
         const p = bulkPlayers.find(x => String(x.id) === String(id));
         byId[id] = { pos: p ? (p.position||'MID') : 'MID' };
       }
-      byId[id][field] = parseInt(inp.value) || 0;
+      
+      // FIX: Parse different data types correctly
+      if (field === 'price') {
+        byId[id][field] = parseFloat(inp.value) || 5.0;
+      } else if (field === 'is_available') {
+        byId[id][field] = inp.value === 'true';
+      } else if (field === 'position') {
+        byId[id][field] = inp.value;
+      } else {
+        byId[id][field] = parseInt(inp.value) || 0;
+      }
     });
 
     let saved = 0, failed = 0;
     for (const id in byId) {
       const d   = byId[id];
-      const pos = d.pos;
+      const pos = d.position || d.pos; // Use newly selected position if changed
       const gPts  = (pos==='GK'||pos==='DEF') ? 6 : pos==='MID' ? 5 : 4;
       const csPts = (pos==='GK'||pos==='DEF') ? 4 : pos==='MID' ? 1 : 0;
       const pts   = Math.max(0, (d.apps||0)*2 + (d.goals||0)*gPts + (d.assists||0)*3 +
                     (d.cs||0)*csPts - (d.yc||0) - (d.rc||0)*3);
       try {
+        // FIX: Add the new fields to the Supabase update payload
         await sbWrite('update', 'players', {
-          goals: d.goals||0, assists: d.assists||0, clean_sheets: d.cs||0,
-          yellow_cards: d.yc||0, red_cards: d.rc||0, apps: d.apps||0,
-          total_points: pts
+          goals: d.goals||0, 
+          assists: d.assists||0, 
+          clean_sheets: d.cs||0,
+          yellow_cards: d.yc||0, 
+          red_cards: d.rc||0, 
+          apps: d.apps||0,
+          total_points: pts,
+          price: d.price,
+          position: d.position,
+          is_available: d.is_available
         }, { id: parseInt(id) });
         saved++;
       } catch(e) { failed++; console.error('bulk save error', id, e.message); }
     }
+
+    // Reset dirty styles
+    document.querySelectorAll('#bulk-tbody input, #bulk-tbody select').forEach(inp => {
+      inp.style.borderColor = ''; inp.style.background = '';
+    });
+    document.querySelectorAll('#bulk-tbody td[id^="bulk-pts-"]').forEach(el => {
+      el.style.color = '';
+    });
+
+    if (failed) {
+      showStatus('bulk-stats-status', 'error', 'Saved ' + saved + ' | Failed ' + failed + ' — check console');
+    } else {
+      showStatus('bulk-stats-status', 'ok', '✓ ' + saved + ' players updated successfully');
+    }
+  }
 
     // Reset dirty styles
     document.querySelectorAll('#bulk-tbody input').forEach(inp => {
