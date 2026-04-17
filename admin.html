@@ -2398,21 +2398,6 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     }
   }
 
-    // Reset dirty styles
-    document.querySelectorAll('#bulk-tbody input').forEach(inp => {
-      inp.style.borderColor = ''; inp.style.background = '';
-    });
-    document.querySelectorAll('#bulk-tbody td[id^="bulk-pts-"]').forEach(el => {
-      el.style.color = '';
-    });
-
-    if (failed) {
-      showStatus('bulk-stats-status', 'error', 'Saved ' + saved + ' | Failed ' + failed + ' — check console');
-    } else {
-      showStatus('bulk-stats-status', 'ok', '✓ ' + saved + ' players updated successfully');
-    }
-  }
-
   // ══════════════════════════════════════════════════════════════════
   // SQUAD IMPORT — Fetch PSL squads from API-Football, approve new players
   // ══════════════════════════════════════════════════════════════════
