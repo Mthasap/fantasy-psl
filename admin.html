@@ -2263,28 +2263,41 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
         <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:680px">
           <thead>
             <tr style="background:var(--bg3);text-align:left">
-              <th style="padding:8px 6px;color:var(--muted);font-weight:600;min-width:160px">Player</th>
+              <th style="padding:8px 6px;color:var(--muted);font-weight:600">Player</th>
               <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">POS</th>
-              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Apps</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Price (M)</th>
+              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Status</th>
               <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#22c55e">G</th>
               <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#60a5fa">A</th>
-              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#a78bfa">CS</th>
-              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#fbbf24">YC</th>
-              <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center;color:#f87171">RC</th>
               <th style="padding:8px 4px;color:var(--muted);font-weight:600;text-align:center">Pts</th>
             </tr>
           </thead>
           <tbody id="bulk-tbody">
             ${bulkPlayers.map((p, i) => `
               <tr style="border-bottom:1px solid var(--border)" data-idx="${i}">
-                <td style="padding:6px">${p.display_name}</td>
-                <td style="padding:6px 4px;text-align:center;color:var(--muted)">${p.position||''}</td>
-                <td style="padding:4px"><input type="number" min="0" max="40" value="${p.apps||0}" data-field="apps" data-id="${p.id}" style="width:46px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 4px;font-size:12px" onchange="markBulkDirty(this)"></td>
-                <td style="padding:4px"><input type="number" min="0" max="60" value="${p.goals||0}" data-field="goals" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#22c55e;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
-                <td style="padding:4px"><input type="number" min="0" max="60" value="${p.assists||0}" data-field="assists" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#60a5fa;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
-                <td style="padding:4px"><input type="number" min="0" max="40" value="${p.clean_sheets||0}" data-field="cs" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#a78bfa;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
-                <td style="padding:4px"><input type="number" min="0" max="20" value="${p.yellow_cards||0}" data-field="yc" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#fbbf24;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
-                <td style="padding:4px"><input type="number" min="0" max="5" value="${p.red_cards||0}" data-field="rc" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#f87171;padding:3px 4px;font-size:12px;font-weight:700" onchange="markBulkDirty(this)"></td>
+                <td style="padding:6px">
+                  <div style="font-weight:bold;color:var(--text)">${p.display_name}</div>
+                  <div style="font-size:10px;color:var(--muted)">${p.team || 'No Club'}</div>
+                </td>
+                <td style="padding:4px;text-align:center">
+                  <select data-field="position" data-id="${p.id}" style="width:60px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px;font-size:11px" onchange="markBulkDirty(this)">
+                    <option value="GK" ${p.position==='GK'?'selected':''}>GK</option>
+                    <option value="DEF" ${p.position==='DEF'?'selected':''}>DEF</option>
+                    <option value="MID" ${p.position==='MID'?'selected':''}>MID</option>
+                    <option value="FWD" ${p.position==='FWD'?'selected':''}>FWD</option>
+                  </select>
+                </td>
+                <td style="padding:4px;text-align:center">
+                  <input type="number" step="0.5" min="3.5" max="15.0" value="${p.price||5.0}" data-field="price" data-id="${p.id}" style="width:50px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px;font-size:11px" onchange="markBulkDirty(this)">
+                </td>
+                <td style="padding:4px;text-align:center">
+                  <select data-field="is_available" data-id="${p.id}" style="width:85px;background:var(--bg2);border:1px solid ${p.is_available === false ? 'var(--red)' : 'var(--green)'};border-radius:4px;color:${p.is_available === false ? 'var(--red)' : 'var(--green)'};padding:3px;font-size:11px;font-weight:bold" onchange="markBulkDirty(this); this.style.color=this.value==='false'?'var(--red)':'var(--green)'; this.style.borderColor=this.value==='false'?'var(--red)':'var(--green)';">
+                    <option value="true" ${p.is_available !== false ? 'selected' : ''}>✓ Active</option>
+                    <option value="false" ${p.is_available === false ? 'selected' : ''}>⚕ Injured/Out</option>
+                  </select>
+                </td>
+                <td style="padding:4px"><input type="number" min="0" value="${p.goals||0}" data-field="goals" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#22c55e;padding:3px;font-size:11px" onchange="markBulkDirty(this)"></td>
+                <td style="padding:4px"><input type="number" min="0" value="${p.assists||0}" data-field="assists" data-id="${p.id}" style="width:40px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:#60a5fa;padding:3px;font-size:11px" onchange="markBulkDirty(this)"></td>
                 <td style="padding:6px 4px;text-align:center;color:var(--amber);font-weight:700;font-size:13px" id="bulk-pts-${p.id}">${p.total_points||0}</td>
               </tr>
             `).join('')}
