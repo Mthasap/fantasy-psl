@@ -198,6 +198,24 @@ module.exports = async (req, res) => {
 
       for (const prof of batch) {
         try {
+          // 🛑 RULE: Users only start scoring points the Gameweek AFTER they join.
+          // If they joined in GW5, they get 0 for GW5, and start scoring in GW6.
+          if (prof.entry_gw && currentGW <= prof.entry_gw) {
+            // Write a 0 score to the DB so the UI knows they were processed
+            await db.from('gw_scores').upsert({
+              user_id:        prof.id,
+              gameweek:       currentGW,
+              points:         0,
+              player_scores:  [],
+              chip_used:      null,
+              transfer_deduction: 0,
+              calculated_at:  new Date().toISOString()
+            }, { onConflict: 'user_id,gameweek' });
+            
+            profilesUpdated++;
+            continue; // Skip the rest of the scoring logic for this user
+          }
+
           // Parse squad
           let sq;
           try {
