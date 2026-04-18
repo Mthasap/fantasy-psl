@@ -634,6 +634,34 @@
 
     </div>
 
+    <div class="admin-card" id="player-roster-hub">
+  <h2>👥 Player Roster Hub</h2>
+  <p class="text-muted">Verify active status, teams, and positions.</p>
+  
+  <div style="margin: 1rem 0; display: flex; gap: 1rem;">
+    <button class="cta-btn" onclick="loadPlayers()">Fetch All Players</button>
+    <input type="text" id="player-search" placeholder="Search by name..." onkeyup="filterPlayers()" style="padding: 0.5rem; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-input); color: #fff; flex: 1;">
+  </div>
+
+  <div style="overflow-x: auto; max-height: 500px; border: 1px solid var(--border); border-radius: 8px;">
+    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+      <thead style="background: var(--bg-surface); position: sticky; top: 0;">
+        <tr>
+          <th style="padding: 0.75rem;">ID</th>
+          <th style="padding: 0.75rem;">Player Name</th>
+          <th style="padding: 0.75rem;">Team</th>
+          <th style="padding: 0.75rem;">Pos</th>
+          <th style="padding: 0.75rem;">Status</th>
+          <th style="padding: 0.75rem;">Price</th>
+        </tr>
+      </thead>
+      <tbody id="player-table-body">
+        <tr><td colspan="6" style="padding: 1rem; text-align: center; color: var(--muted);">Click 'Fetch All Players' to load...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
     <!-- ══════════════════ GAMEWEEK TAB ══════════════════ -->
     <div id="tab-gameweek" class="tab-page">
 
