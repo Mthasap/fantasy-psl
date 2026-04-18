@@ -35,19 +35,31 @@ module.exports = async (req, res) => {
         q = db.from(table).upsert(data, { onConflict: req.body.onConflict || 'id' }).select();
         break;
       case 'update':
+        if (!match || Object.keys(match).length === 0) {
+           return res.status(400).json({ error: 'Update requires a match condition (e.g., ID)' });
+        }
         q = db.from(table).update(data);
-        if (match) Object.entries(match).forEach(([k, v]) => { q = q.eq(k, v); });
+        Object.entries(match).forEach(([k, v]) => { q = q.eq(k, v); });
         q = q.select();
         break;
+
       case 'update_not':
+        if (!notMatch || Object.keys(notMatch).length === 0) {
+           return res.status(400).json({ error: 'Update requires a notMatch condition' });
+        }
         q = db.from(table).update(data);
-        if (notMatch) Object.entries(notMatch).forEach(([k, v]) => { q = q.neq(k, v); });
+        Object.entries(notMatch).forEach(([k, v]) => { q = q.neq(k, v); });
         q = q.select();
         break;
+
       case 'delete':
+        if (!match || Object.keys(match).length === 0) {
+           return res.status(400).json({ error: 'Delete requires a match condition' });
+        }
         q = db.from(table).delete();
-        if (match) Object.entries(match).forEach(([k, v]) => { q = q.eq(k, v); });
+        Object.entries(match).forEach(([k, v]) => { q = q.eq(k, v); });
         break;
+        
       case 'select':
         q = db.from(table).select(select);
         if (match) Object.entries(match).forEach(([k, v]) => { q = q.eq(k, v); });
