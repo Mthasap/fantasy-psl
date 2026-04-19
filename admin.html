@@ -2853,6 +2853,74 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     }
   }
 
+  // --- PLAYER ROSTER HUB LOGIC ---
+  let allPlayersCache = [];
+
+  async function loadPlayers() {
+    const tbody = document.getElementById('player-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center;">Loading players... ⏳</td></tr>';
+
+    try {
+      const res = await fetch('/api/admin-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_SECRET },
+        body: JSON.stringify({ 
+          action: 'select', 
+          table: 'players',
+          select: 'id, display_name, team, position, is_available, price, api_id' 
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
+      allPlayersCache = data.sort((a, b) => (a.team > b.team) ? 1 : -1); // Sort by team alphabetically
+      renderPlayers(allPlayersCache);
+
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding: 1rem; color: var(--red);">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderPlayers(players) {
+    const tbody = document.getElementById('player-table-body');
+    tbody.innerHTML = '';
+
+    if (players.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center;">No players found.</td></tr>';
+      return;
+    }
+
+    players.forEach(p => {
+      // Determine status badge (Active vs Unavailable/Injured)
+      const statusBadge = p.is_available 
+        ? `<span style="background: var(--green-muted); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Active</span>`
+        : `<span style="background: var(--red-muted); color: var(--red); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Unavailable</span>`;
+
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border)';
+      tr.innerHTML = `
+        <td style="padding: 0.75rem; color: var(--muted);">${p.id}</td>
+        <td style="padding: 0.75rem; font-weight: bold;">${p.display_name || 'N/A'}</td>
+        <td style="padding: 0.75rem;">${p.team || 'No Team'}</td>
+        <td style="padding: 0.75rem;">${p.position}</td>
+        <td style="padding: 0.75rem;">${statusBadge}</td>
+        <td style="padding: 0.75rem;">R ${p.price}m</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterPlayers() {
+    const term = document.getElementById('player-search').value.toLowerCase();
+    const filtered = allPlayersCache.filter(p => 
+      (p.display_name && p.display_name.toLowerCase().includes(term)) || 
+      (p.team && p.team.toLowerCase().includes(term)) ||
+      (p.position && p.position.toLowerCase().includes(term))
+    );
+    renderPlayers(filtered);
+  }
+
 </script>
 </body>
 </html>
