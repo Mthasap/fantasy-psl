@@ -332,7 +332,7 @@ async function syncMatchStats(log, options = {}) {
           );
 
           // ── ADDED: Extract Injury Status & Update Players Table ──
-          const isInjured = playerData.update?.injured === true;
+          const isInjured = playerData.update && playerData.update.injured === true;
           
           await supabase
             .from('players')
@@ -340,7 +340,7 @@ async function syncMatchStats(log, options = {}) {
               is_injured: isInjured, 
               is_available: !isInjured 
             })
-            .eq('apifootball_id', playerData.player?.id);
+            .eq('apifootball_id', playerData.player && playerData.player.id);
           // ─────────────────────────────────────────────────────────
 
           statRows.push({
