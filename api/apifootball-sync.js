@@ -270,22 +270,27 @@ async function syncFixtures(log) {
 async function syncMatchStats(log, options = {}) {
   log.push('Phase 2: Fetching match player stats');
 
-  // Find fixtures that haven't been stat-synced yet (LIVE or FT)
+  // Find fixtures that are either LIVE, or FT but haven't been synced yet
   let query = supabase
     .from('fixtures')
-    .select('apifootball_fixture_id, gw_number, home_team_id, home_score, away_score, status')
+    .select('apifootball_fixture_id, gw_number, home_team_id, home_score, away_score, status, stats_synced')
     .eq('season', PSL_SEASON)
-    .in('status', ['LIVE', '1H', '2H', 'HT', 'FT']) // <-- LIVE MATCH FIX
-    .eq('stats_synced', false)
-    .not('home_score', 'is', null);
+    .in('status', ['LIVE', '1H', '2H', 'HT', 'ET', 'P', 'PEN', 'FT']);
 
   if (options.gw)      query = query.eq('gw_number', options.gw);
   if (options.fixture) query = query.eq('apifootball_fixture_id', options.fixture);
 
-  const { data: pendingFixtures, error } = await query;
+  const { data: allCandidates, error } = await query;
   if (error) throw new Error('Failed to fetch pending fixtures: ' + error.message);
 
-  log.push(`  Found ${pendingFixtures?.length ?? 0} fixtures needing stats`);
+  // ── FIX: Filter intelligently to bypass any database glitches ──
+  const pendingFixtures = (allCandidates || []).filter(f => {
+    if (f.home_score === null) return false; // Skip if no score data at all
+    if (f.status === 'FT' && f.stats_synced === true) return false; // Skip if fully finished & synced
+    return true; // If we reach here, it's either LIVE, or FT and needing a sync!
+  });
+
+  log.push(`  Found ${pendingFixtures.length} fixtures needing stats`);
 
   let totalPlayers = 0;
   let totalErrors  = 0;
