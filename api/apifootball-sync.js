@@ -331,6 +331,20 @@ async function syncMatchStats(log, options = {}) {
             fixture.home_team_id
           );
 
+          // ── ADDED: Extract Injury Status & Update Players Table ──
+          const isInjured = playerData.update?.injured === true;
+          
+          await supabase
+            .from('players')
+            .update({ 
+              is_injured: isInjured, 
+              is_available: !isInjured 
+            })
+            .eq('apifootball_id', playerData.player?.id);
+          // ─────────────────────────────────────────────────────────
+
+          statRows.push({
+
           statRows.push({
             apifootball_fixture_id: fixture.apifootball_fixture_id,
             apifootball_player_id:  playerData.player?.id,
