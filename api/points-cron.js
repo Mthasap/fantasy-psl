@@ -216,6 +216,7 @@ module.exports = async (req, res) => {
             continue; // Skip the rest of the scoring logic for this user
           }
 
+          
           // Parse squad
           let sq;
           try {
@@ -223,7 +224,18 @@ module.exports = async (req, res) => {
               ? JSON.parse(prof.squad_data) : prof.squad_data;
           } catch (_) { continue; }
 
-          if (!Array.isArray(sq) || sq.length < 15) continue;
+          if (!Array.isArray(sq)) continue;
+
+          // ─── STRICT 15-PLAYER SCORING ENFORCEMENT ──────────────
+          // Filter out empty slots to count only actual selected players
+          const validPlayers = sq.filter(p => p && (p.id || p.psl_roster_id || p.apifootball_id || p.name));
+          
+          if (validPlayers.length !== 15) {
+            log.push(`Profile ${prof.id} skipped: Incomplete squad (${validPlayers.length}/15)`);
+            continue; 
+          }
+          // ───────────────────────────────────────────────────────
+
           if (prof.entry_gw === null || prof.entry_gw === undefined) continue;
 
           // Determine active chip
