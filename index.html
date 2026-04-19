@@ -4069,22 +4069,111 @@ function joinLeague() {
 
 function loadLeagues() {
   loadGlobalLB();
+  
   if (!ST.user) {
     var mw = document.getElementById('my-leagues-wrap');
     if (mw) mw.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 0">Log in to see your leagues</div>';
     return;
   }
-  // Serve from getUserDashboard cache if warm
+
+  // ── FIX: Automatically load the user's Team League ──
+  loadTeamLeague();
+  // ────────────────────────────────────────────────────
+
+  // Serve private leagues from cache if warm
   if (cacheValid('myLeagues') && CACHE.myLeagues.data) {
     renderLeaguesList(CACHE.myLeagues.data);
     return;
   }
+  
   if (rateLimited()) return;
-  db.from('league_members').select('leagues(*)').eq('user_id', ST.user.id).limit(20).then(function(res) {
-    var leagues = (res.data || []).map(function(r) { return r.leagues; }).filter(Boolean);
-    CACHE.myLeagues = { data: leagues, ts: Date.now() };
-    renderLeaguesList(leagues);
-  });
+  
+  db.from('league_members')
+    .select('leagues(*)')
+    .eq('user_id', ST.user.id)
+    .limit(20)
+    .then(function(res) {
+      var leagues = (res.data || []).map(function(r) { return r.leagues; }).filter(Boolean);
+      CACHE.myLeagues = { data: leagues, ts: Date.now() };
+      renderLeaguesList(leagues);
+    });
+}
+
+// ── NEW FUNCTION: Automated Team League Builder ──
+function loadTeamLeague() {
+  // First, we need to know the user's favorite team.
+  // We grab it from their profile in the database.
+  db.from('profiles')
+    .select('favorite_team')
+    .eq('id', ST.user.id)
+    .single()
+    .then(function(res) {
+      var favTeam = res.data && res.data.favorite_team;
+      
+      // We need a place to put this in the UI. We will create a container 
+      // dynamically right above the private leagues wrap.
+      var myLeaguesWrap = document.getElementById('my-leagues-wrap');
+      var teamWrapId = 'auto-team-league-wrap';
+      var teamWrap = document.getElementById(teamWrapId);
+      
+      if (!teamWrap && myLeaguesWrap) {
+        teamWrap = document.createElement('div');
+        teamWrap.id = teamWrapId;
+        teamWrap.style.marginBottom = '2rem';
+        myLeaguesWrap.parentNode.insertBefore(teamWrap, myLeaguesWrap);
+      }
+      
+      if (!teamWrap) return; // Failsafe if UI isn't ready
+
+      if (!favTeam) {
+        teamWrap.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.4);">Update your profile with a Favorite Team to join the fan league!</div>';
+        return;
+      }
+
+      teamWrap.innerHTML = '<div class="fpsl-loader" style="padding:2rem 0"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
+
+      // Query the top 50 fans of this specific team
+      db.from('profiles')
+        .select('id, display_name, total_points')
+        .eq('favorite_team', favTeam)
+        .eq('squad_registered', true)
+        .order('total_points', { ascending: false })
+        .limit(50)
+        .then(function(lbRes) {
+          var fans = lbRes.data || [];
+          
+          var html = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;">';
+          
+          // Header with gold accent
+          html += '<div style="background:rgba(219,169,74,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(219,169,74,.2);display:flex;align-items:center;gap:10px;">';
+          html += '<div style="font-size:1.5rem;">🔥</div>';
+          html += '<div>';
+          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + favTeam + ' Fans</div>';
+          html += '<div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px">Global Mini-League</div>';
+          html += '</div></div>';
+
+          if (fans.length === 0) {
+            html += '<div style="padding:1.5rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.3);">No fans registered yet. You are the first!</div>';
+          } else {
+            // Render the ranks
+            html += fans.map(function(fan, i) {
+              var rank = i + 1;
+              var isMe = fan.id === ST.user.id;
+              var bg = isMe ? 'background:rgba(255,255,255,.03);' : '';
+              var bold = isMe ? 'color:#fff;font-weight:700;' : 'color:rgba(255,255,255,.7);';
+              var goldRank = rank <= 3 ? 'color:#DBA94A;font-weight:900;' : 'color:rgba(255,255,255,.3);';
+              
+              return '<div style="' + bg + 'display:flex;align-items:center;padding:.7rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--font-ui);font-size:.85rem;">' +
+                '<div style="width:30px;' + goldRank + '">' + rank + '</div>' +
+                '<div style="flex:1;' + bold + ' white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(fan.display_name || 'Anonymous Fan') + (isMe ? ' <span style="font-size:.65rem;background:rgba(255,255,255,.1);padding:2px 5px;border-radius:4px;margin-left:5px;">YOU</span>' : '') + '</div>' +
+                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#DBA94A' : '#fff') + '">' + (fan.total_points || 0) + '</div>' +
+              '</div>';
+            }).join('');
+          }
+          html += '</div>';
+          teamWrap.innerHTML = html;
+        });
+    });
 }
 
 function renderLeaguesList(leagues) {
