@@ -270,12 +270,12 @@ async function syncFixtures(log) {
 async function syncMatchStats(log, options = {}) {
   log.push('Phase 2: Fetching match player stats');
 
-  // Find finished fixtures that haven't been stat-synced yet
+  // Find fixtures that haven't been stat-synced yet (LIVE or FT)
   let query = supabase
     .from('fixtures')
-    .select('apifootball_fixture_id, gw_number, home_team_id, home_score, away_score')
+    .select('apifootball_fixture_id, gw_number, home_team_id, home_score, away_score, status')
     .eq('season', PSL_SEASON)
-    .eq('status', 'FT')
+    .in('status', ['LIVE', '1H', '2H', 'HT', 'FT']) // <-- LIVE MATCH FIX
     .eq('stats_synced', false)
     .not('home_score', 'is', null);
 
@@ -301,11 +301,13 @@ async function syncMatchStats(log, options = {}) {
 
       if (teams.length === 0) {
         log.push(`    ⚠️  No player stats returned for fixture ${fixture.apifootball_fixture_id}`);
-        // Mark as synced to avoid retrying endlessly
-        await supabase
-          .from('fixtures')
-          .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
-          .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+        // Only mark as permanently synced if it's full time, otherwise we want it to retry while live
+        if (fixture.status === 'FT') {
+          await supabase
+            .from('fixtures')
+            .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
+            .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+        }
         continue;
       }
 
@@ -343,8 +345,7 @@ async function syncMatchStats(log, options = {}) {
             .eq('apifootball_id', playerData.player && playerData.player.id);
           // ─────────────────────────────────────────────────────────
 
-          statRows.push({
-
+          // NO DUPLICATES HERE: Just the clean push
           statRows.push({
             apifootball_fixture_id: fixture.apifootball_fixture_id,
             apifootball_player_id:  playerData.player?.id,
@@ -390,7 +391,6 @@ async function syncMatchStats(log, options = {}) {
       }
 
       // ── Deduplicate by player ID ──────────────────────────────────────────
-      // API-Football sometimes returns the same player twice in one fixture
       const seen = new Set();
       const dedupedRows = statRows.filter(row => {
         const key = `${row.apifootball_fixture_id}_${row.apifootball_player_id}`;
@@ -411,11 +411,13 @@ async function syncMatchStats(log, options = {}) {
         log.push(`    ✅ ${dedupedRows.length} player stats saved`);
       }
 
-      // Mark fixture as synced
-      await supabase
-        .from('fixtures')
-        .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
-        .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+      // Only mark fixture as completely synced if it is Full Time
+      if (fixture.status === 'FT') {
+        await supabase
+          .from('fixtures')
+          .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
+          .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+      }
 
       // Small delay to be polite to the API
       await new Promise(r => setTimeout(r, 200));
@@ -429,6 +431,7 @@ async function syncMatchStats(log, options = {}) {
   log.push(`  ✅ Phase 2 complete: ${totalPlayers} player stats, ${totalErrors} errors`);
   return { totalPlayers, totalErrors };
 }
+
 
 // ─── Phase 3: Recalculate Totals ─────────────────────────────────────────────
 
