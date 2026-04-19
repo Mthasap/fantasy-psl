@@ -36,18 +36,23 @@ module.exports = async (req, res) => {
       }
     }
 
-    // 3. Deadline is safe, save the squad
     const payload = req.body;
-    // Enforce that a user can only update their own profile ID
-    payload.id = user.id; 
 
-    const { error: upsertErr } = await db.from('profiles').upsert(payload, { onConflict: 'id' });
+    // ─── 3. STRICT 15-PLAYER ENFORCEMENT ──────────────────────────────
+    // Safely extract the players array depending on how your frontend formats it
+    const squadData = payload.squad_data;
+    const squadArr = Array.isArray(squadData) ? squadData : (squadData?.players || []);
     
-    if (upsertErr) throw upsertErr;
+    // Filter out empty slots to count only actual selected players
+    const validPlayers = squadArr.filter(p => p && (p.id || p.psl_roster_id || p.apifootball_id));
 
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error('[save-squad]', err);
-    return res.status(500).json({ error: err.message });
-  }
-};
+    if (validPlayers.length !== 15) {
+      return res.status(400).json({ 
+        error: `Incomplete squad! You must select exactly 15 players to save and earn points. You currently have ${validPlayers.length}.` 
+      });
+    }
+    // ──────────────────────────────────────────────────────────────────
+
+    // 4. Deadline is safe and squad is full, proceed to save
+    // Enforce that a user can only update their own profile ID
+    payload.id = user.id;
