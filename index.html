@@ -7776,9 +7776,16 @@ onReady(function() {
       : isLive
         ? '<span style="background:rgba(212,39,79,.12);color:#D4274F;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:4px;animation:livePulse 1.5s infinite">'+elapsed+"' LIVE</span>"
         : '';
-    var venueHtml='';
-    if(f.venue||f.round){
-      venueHtml='<div style="text-align:center;padding:.35rem .9rem .1rem;font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.28)">'+(f.round||'')+(f.round&&f.venue?' · ':'')+( f.venue?'📍 '+f.venue:'')+'</div>';
+    var venueHtml = '';
+    // Use the new f.stadium property we mapped from the API
+    var stadiumName = f.stadium || f.venue || ''; 
+    
+    if (stadiumName || f.round) {
+      venueHtml = '<div style="text-align:center; padding: .5rem .9rem .2rem; font-family: var(--font-ui); font-size: .65rem; color: rgba(255,255,255,.4); letter-spacing: 0.5px;">' +
+        (f.round ? '<span style="color: var(--gold-soft); font-weight: bold;">' + f.round + '</span>' : '') +
+        (f.round && stadiumName ? ' <span style="margin: 0 4px; opacity: 0.5;">|</span> ' : '') +
+        (stadiumName ? '📍 ' + stadiumName : '') +
+      '</div>';
     }
     var out='<div class="fix-expand">';
     out+=venueHtml;
