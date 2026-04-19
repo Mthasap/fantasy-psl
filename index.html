@@ -4868,23 +4868,88 @@ function initMatchChat(fixtureId) {
 function sendMatchChatMsg(fixtureId) {
   var key = String(fixtureId);
   var inp = document.getElementById('mc-chat-inp-' + key);
-  if (!inp) return;
+  if (!inp || !ST.user) return; // Must be logged in to chat
+
   var txt = (inp.value || '').trim();
   if (!txt) return;
-  inp.value = ''; inp.style.height = 'auto';
-  var payload = {
-    user: (ST.user && ST.user.user_metadata && ST.user.user_metadata.username) || 'Fan',
-    gwPts: (CACHE._profile && CACHE._profile.total_points) || null,
-    text: txt.substring(0, 280),
-    t: (function() { var d=new Date(),h=d.getHours(),m=d.getMinutes();return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; })()
-  };
-  if (_matchChats[key] && _matchChats[key].channel) {
-    _matchChats[key].channel.send({ type:'broadcast', event:'mc_msg', payload:payload });
-  } else {
-    if (!_matchChats[key]) _matchChats[key] = { channel:null, msgs:[] };
-    _matchChats[key].msgs.push(payload);
-    renderMatchChatMsgs(key);
+
+  // Clear input immediately for snappy feel
+  inp.value = ''; 
+  inp.style.height = 'auto';
+
+  // ── SAVE TO DATABASE ──
+  // This triggers the 'INSERT' event your Realtime listener is watching
+  db.from('match_chat').insert({
+    fixture_id: parseInt(key),
+    user_id: ST.user.id,
+    display_name: ST.user.user_metadata?.username || (CACHE._profile && CACHE._profile.display_name) || 'Fan',
+    favorite_team: CACHE._profile?.favorite_team || null,
+    message: txt.substring(0, 280)
+  }).then(function(res) {
+    if (res.error) {
+      console.error('[Chat Error]', res.error.message);
+      // Optional: Give the text back to the user if it failed
+      inp.value = txt; 
+    }
+  });
+}
+
+// ── FIX: Instant Realtime Chat Updates ──
+window.subscribeToMatchChat = function(fid) {
+  // 1. Unsubscribe from any previous match chat to save memory
+  if (window._chatSub) {
+    db.removeChannel(window._chatSub);
   }
+
+  // 2. Create a new subscription for this specific match ID
+  window._chatSub = db
+    .channel('match_chat_' + fid)
+    .on(
+      'postgres_changes', 
+      { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'match_chat', 
+        filter: 'fixture_id=eq.' + fid 
+      }, 
+      (payload) => {
+        // When a new message is detected, push it to the UI
+        renderNewChatMessage(fid, payload.new);
+      }
+    )
+    .subscribe();
+};
+
+function renderNewChatMessage(fid, msg) {
+  const container = document.getElementById('mc-chat-msgs-' + fid);
+  if (!container) return;
+
+  // Remove the "Be the first to comment" placeholder if it's there
+  if (container.innerHTML.includes('Be the first to comment')) {
+    container.innerHTML = '';
+  }
+
+  const isMe = ST.user && msg.user_id === ST.user.id;
+  
+  const msgHtml = `
+    <div style="margin-bottom:1rem; display:flex; flex-direction:column; align-items: ${isMe ? 'flex-end' : 'flex-start'}">
+      <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px">
+        <span style="font-family:var(--font-ui); font-size:.65rem; font-weight:700; color:rgba(255,255,255,${isMe ? '0.6' : '0.3'})">
+          ${escHtml(msg.display_name || 'Anonymous')}
+        </span>
+        ${msg.favorite_team ? `<span style="font-size:.55rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px; color:rgba(255,255,255,0.2)">${msg.favorite_team}</span>` : ''}
+      </div>
+      <div style="background: ${isMe ? 'rgba(219,169,74,0.15)' : 'rgba(255,255,255,0.05)'}; 
+                  color: ${isMe ? '#DBA94A' : '#fff'}; 
+                  padding: .6rem .8rem; border-radius: 12px; font-size: .8rem; max-width: 85%;
+                  border: 1px solid ${isMe ? 'rgba(219,169,74,0.2)' : 'rgba(255,255,255,0.05)'}">
+        ${escHtml(msg.message)}
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', msgHtml);
+  container.scrollTop = container.scrollHeight; // Auto-scroll to bottom
 }
 
 function renderMatchChatMsgs(key) {
