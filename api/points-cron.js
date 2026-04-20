@@ -8,17 +8,8 @@
 //   - Bench Boost (BB) now correctly includes all 15 players in scoring
 //   - Free Hit snapshot/revert logic added
 //   - Transfer point deductions applied correctly
-//
-// ARCHITECTURE:
-//   - Reads match_player_stats for current GW to get per-player fantasy_points
-//   - Maps each user's squad (psl_roster_id / DB id) to apifootball_id
-//   - Applies captain multiplier, chip effects, transfer deductions
-//   - Writes to gw_scores (idempotent upsert)
-//   - Updates profiles.total_points = sum of all gw_scores since entry_gw
-//
-// SECURITY:
-//   - Requires ADMIN_SECRET or x-vercel-cron header
-//   - Uses SUPABASE_SERVICE_KEY server-side only
+//   - STRICT name matching applied to fix incorrect scoring
+//   - Lightning-fast Parallel Ranking Updates added
 //
 // ════════════════════════════════════════════════════════════════════════
 
@@ -94,10 +85,8 @@ module.exports = async (req, res) => {
 
     // Aggregate per player by API id
     const gwStatsByApiId = {};
-    // ALSO build name-based lookup — handles squads where apifootball_id chain breaks
-    const gwStatsByName    = {};  // normalised full name → stat
-    const gwStatsBySurname = {};  // surname → stat (null if ambiguous)
-    const gwStatsByInit    = {};  // firstInitial_surname → stat
+    // Name-based strict lookup
+    const gwStatsByName  = {};  
 
     function normStatName(s) {
       return (s || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g,' ').trim();
@@ -113,31 +102,12 @@ module.exports = async (req, res) => {
         gwStatsByApiId[pid].fantasy_points += (row.fantasy_points || 0);
         gwStatsByApiId[pid].minutes_played += (row.minutes_played || 0);
       }
-      // Index by name
+      // Index strictly by full name
       if (row.player_name) {
         const n  = normStatName(row.player_name);
         const pts = row.fantasy_points || 0;
-        // Full name
-        if (!gwStatsByName[n] || pts > (gwStatsByName[n].fantasy_points || 0))
+        if (!gwStatsByName[n] || pts > (gwStatsByName[n].fantasy_points || 0)) {
           gwStatsByName[n] = row;
-        // Surname
-        const parts   = n.split(' ');
-        const surname = parts[parts.length - 1];
-        if (surname && surname.length >= 4) {
-          if (gwStatsBySurname[surname] === undefined) gwStatsBySurname[surname] = row;
-          else if (gwStatsBySurname[surname] !== null &&
-                   gwStatsBySurname[surname].apifootball_player_id !== row.apifootball_player_id) {
-            gwStatsBySurname[surname] = null; // ambiguous
-          }
-        }
-        // Initial + surname
-        if (parts.length >= 2) {
-          const initKey = parts[0][0] + '_' + surname;
-          if (gwStatsByInit[initKey] === undefined) gwStatsByInit[initKey] = row;
-          else if (gwStatsByInit[initKey] !== null &&
-                   gwStatsByInit[initKey].apifootball_player_id !== row.apifootball_player_id) {
-            gwStatsByInit[initKey] = null; // ambiguous
-          }
         }
       }
     }
@@ -145,7 +115,6 @@ module.exports = async (req, res) => {
     log.push('Players with GW' + currentGW + ' stats: ' + Object.keys(gwStatsByApiId).length);
 
     // ── Step 3: Build apifootball_id lookup from players table ───────────
-    // We need to map psl_roster_id (saved in squad_data) → apifootball_id
     const { data: dbPlayers, error: playersErr } = await db
       .from('players')
       .select('id, psl_roster_id, apifootball_id, display_name, position, total_points');
@@ -153,28 +122,26 @@ module.exports = async (req, res) => {
     if (playersErr) throw new Error('players load: ' + playersErr.message);
 
     // Build maps for fast lookup
-    const byDbId       = {};  // players.id → player
-    const byRosterId   = {};  // psl_roster_id → player
-    const byApiId      = {};  // apifootball_id → player
-    const byName       = {};  // normalised display_name → player (last-resort fallback)
+    const byDbId       = {};  
+    const byRosterId   = {};  
+    const byApiId      = {};  
+    const byName       = {};  
 
     for (const p of (dbPlayers || [])) {
-      byDbId[p.id]                   = p;
+      byDbId[p.id] = p;
       if (p.psl_roster_id) byRosterId[p.psl_roster_id] = p;
       if (p.apifootball_id) byApiId[p.apifootball_id]  = p;
-      if (p.display_name)  byName[p.display_name.toLowerCase().trim()] = p;
+      if (p.display_name) byName[p.display_name.toLowerCase().trim()] = p;
     }
 
     log.push('DB players loaded: ' + (dbPlayers || []).length);
 
     // ── Step 4: Build rosterPtsMap for season total fallback ─────────────
-    // psl_roster_id → total season fantasy points (from players table)
     const rosterPtsMap = {};
     for (const p of (dbPlayers || [])) {
       if (p.psl_roster_id) {
         rosterPtsMap[p.psl_roster_id] = p.total_points || 0;
       }
-      // Also map by DB id
       rosterPtsMap[p.id] = p.total_points || 0;
     }
 
@@ -198,10 +165,7 @@ module.exports = async (req, res) => {
 
       for (const prof of batch) {
         try {
-          // 🛑 RULE: Users only start scoring points the Gameweek AFTER they join.
-          // If they joined in GW5, they get 0 for GW5, and start scoring in GW6.
           if (prof.entry_gw && currentGW <= prof.entry_gw) {
-            // Write a 0 score to the DB so the UI knows they were processed
             await db.from('gw_scores').upsert({
               user_id:        prof.id,
               gameweek:       currentGW,
@@ -213,11 +177,9 @@ module.exports = async (req, res) => {
             }, { onConflict: 'user_id,gameweek' });
             
             profilesUpdated++;
-            continue; // Skip the rest of the scoring logic for this user
+            continue; 
           }
 
-          
-          // Parse squad
           let sq;
           try {
             sq = typeof prof.squad_data === 'string'
@@ -226,24 +188,19 @@ module.exports = async (req, res) => {
 
           if (!Array.isArray(sq)) continue;
 
-          // ─── STRICT 15-PLAYER SCORING ENFORCEMENT ──────────────
-          // Filter out empty slots to count only actual selected players
           const validPlayers = sq.filter(p => p && (p.id || p.psl_roster_id || p.apifootball_id || p.name));
           
           if (validPlayers.length !== 15) {
             log.push(`Profile ${prof.id} skipped: Incomplete squad (${validPlayers.length}/15)`);
             continue; 
           }
-          // ───────────────────────────────────────────────────────
 
           if (prof.entry_gw === null || prof.entry_gw === undefined) continue;
 
-          // Determine active chip
           const activeChip = prof.active_chip || null;
           let usedChips = [];
           try { usedChips = JSON.parse(prof.used_chips || '[]'); } catch(_) {}
 
-          // Free Hit: use snapshot squad if active
           let scoringSq = sq;
           if (activeChip === 'fh' && prof.fh_snapshot) {
             try {
@@ -255,35 +212,29 @@ module.exports = async (req, res) => {
             } catch(_) {}
           }
 
-          // Bench Boost: all 15 players score (not just starters)
           const isBB = activeChip === 'bb';
-          // Triple Captain: captain scores 3× instead of 2×
           const isTC = activeChip === 'tc';
 
-          // Determine scoring players
           const scoringPlayers = isBB
-            ? scoringSq                                           // all 15
-            : scoringSq.filter(function(p) { return !p.onBench; }); // only starters
+            ? scoringSq                                           
+            : scoringSq.filter(function(p) { return !p.onBench; }); 
 
-          // Check if captain played (for VC fallback)
           const captainEntry = scoringSq.find(function(p) { return p.isCaptain; });
           let captainPlayed = false;
 
           if (captainEntry) {
             const capApiId = resolveApiId(captainEntry, byDbId, byRosterId, byName);
             let capStat = capApiId ? gwStatsByApiId[capApiId] : null;
+            
+            // Strict name match for captain
             if (!capStat && (captainEntry.display_name || captainEntry.name)) {
-              const cn    = (captainEntry.display_name || captainEntry.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
-              const cParts = cn.split(' ');
-              const cSur   = cParts[cParts.length-1];
-              const cInit  = cParts.length >= 2 ? cParts[0][0] + '_' + cSur : null;
-              const cHit   = gwStatsByName[cn] || (cInit ? gwStatsByInit[cInit] : null) || (cSur && cSur.length >= 4 ? gwStatsBySurname[cSur] : null);
+              const cn = (captainEntry.display_name || captainEntry.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
+              const cHit = gwStatsByName[cn];
               if (cHit) capStat = gwStatsByApiId[cHit.apifootball_player_id] || cHit;
             }
             if (capStat) captainPlayed = (capStat.minutes_played || 0) > 0;
           }
 
-          // Score each player
           let gwTotal = 0;
           const playerBreakdown = [];
 
@@ -291,17 +242,10 @@ module.exports = async (req, res) => {
             const apiId  = resolveApiId(sp, byDbId, byRosterId, byName);
             let   gwStat = apiId ? gwStatsByApiId[apiId] : null;
 
-            // Name-based fallback — fires when psl_roster_id chain breaks
-            // (handles squads saved with integer IDs that don't match UUID byDbId)
+            // Name-based strict fallback (Full Name Only)
             if (!gwStat && (sp.display_name || sp.name)) {
-              const spNorm    = (sp.display_name || sp.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
-              const spParts   = spNorm.split(' ');
-              const spSurname = spParts[spParts.length - 1];
-              const spInit    = spParts.length >= 2 ? spParts[0][0] + '_' + spSurname : null;
-              // Try: full name → initial+surname → unique surname
-              const nameHit = gwStatsByName[spNorm]
-                || (spInit ? gwStatsByInit[spInit] : null)
-                || (spSurname && spSurname.length >= 4 ? gwStatsBySurname[spSurname] : null);
+              const spNorm = (sp.display_name || sp.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
+              const nameHit = gwStatsByName[spNorm];
               if (nameHit) gwStat = gwStatsByApiId[nameHit.apifootball_player_id] || nameHit;
             }
 
@@ -316,7 +260,6 @@ module.exports = async (req, res) => {
               source = 'dnp';
             }
 
-            // Apply captain/VC multiplier
             let finalPts = pts;
             let multiplier = 1;
 
@@ -344,8 +287,6 @@ module.exports = async (req, res) => {
             });
           }
 
-          // Apply transfer point deductions (4 pts per extra transfer)
-          // Only applies if no Wildcard or Free Hit active
           let transferDeduction = 0;
           if (activeChip !== 'wc' && activeChip !== 'fh') {
             const freeTransfers = prof.free_transfers || 1;
@@ -358,11 +299,7 @@ module.exports = async (req, res) => {
             }
           }
 
-          // Write to gw_scores
-          // If GW override is active (game in hand), ADD to existing score
-          // so users accumulate points from multiple matches in the same GW
           if (gwOverride) {
-            // Fetch existing score for this GW if any
             const { data: existing } = await db.from('gw_scores')
               .select('points, player_scores')
               .eq('user_id', prof.id)
@@ -370,7 +307,6 @@ module.exports = async (req, res) => {
               .single();
 
             if (existing) {
-              // Add game-in-hand points to existing GW total
               gwTotal = gwTotal + (existing.points || 0);
               const existingBreakdown = existing.player_scores || [];
               playerBreakdown.push(...existingBreakdown);
@@ -387,7 +323,6 @@ module.exports = async (req, res) => {
             calculated_at:  new Date().toISOString()
           }, { onConflict: 'user_id,gameweek' });
 
-          // Update profiles.total_points = sum of all GW scores since entry_gw
           const { data: allScores } = await db
             .from('gw_scores')
             .select('points')
@@ -398,32 +333,28 @@ module.exports = async (req, res) => {
             return s + (r.points || 0);
           }, 0);
 
-          // Build chip update payload
           const chipUpdate = {};
 
-          // If chip was active this GW, mark it as used and clear active_chip
           if (activeChip && !usedChips.includes(activeChip)) {
             usedChips.push(activeChip);
             chipUpdate.used_chips   = JSON.stringify(usedChips);
             chipUpdate.active_chip  = null;
           }
 
-          // Free Hit: revert squad to pre-FH snapshot after GW scores
           if (activeChip === 'fh' && prof.fh_snapshot) {
-            chipUpdate.squad_data   = prof.fh_snapshot; // revert
-            chipUpdate.fh_snapshot  = null;             // clear snapshot
+            chipUpdate.squad_data   = prof.fh_snapshot; 
+            chipUpdate.fh_snapshot  = null;             
           }
 
-          // Roll over free transfers: unused transfers carry over (max 2 banked)
           const freeUsed    = Math.min(prof.transfers_this_gw || 0, prof.free_transfers || 1);
           const unused      = (prof.free_transfers || 1) - freeUsed;
-          const newFreeXfers = Math.min(2, unused + 1); // +1 per GW, max 2 banked
+          const newFreeXfers = Math.min(2, unused + 1); 
 
           await db.from('profiles').update(Object.assign({
             total_points:       seasonTotal,
             squad_count:        sq.length,
             free_transfers:     newFreeXfers,
-            transfers_this_gw:  0,             // reset for new GW
+            transfers_this_gw:  0,             
           }, chipUpdate)).eq('id', prof.id);
 
           profilesUpdated++;
@@ -436,7 +367,7 @@ module.exports = async (req, res) => {
 
     log.push('Profiles updated: ' + profilesUpdated + ' | Errors: ' + profileErrors);
 
-    // ── Step 6: Update overall_rank on profiles ───────────────────────────
+    // ── Step 6: Update overall_rank on profiles (FAST PARALLEL BATCHING) ──
     const { data: ranked } = await db
       .from('profiles')
       .select('id, total_points')
@@ -445,19 +376,19 @@ module.exports = async (req, res) => {
       .limit(5000);
 
     if (ranked && ranked.length) {
-      // Batch rank updates in groups of 100 to avoid per-row await overhead
       const rankUpdates = ranked.map((r, i) => ({ id: r.id, overall_rank: i + 1 }));
-      for (let ri = 0; ri < rankUpdates.length; ri += 100) {
-        const batch = rankUpdates.slice(ri, ri + 100);
-        for (const upd of batch) {
-          await db.from('profiles').update({ overall_rank: upd.overall_rank }).eq('id', upd.id);
-        }
+      
+      // Process in chunks of 50 simultaneously to beat Vercel timeouts
+      for (let ri = 0; ri < rankUpdates.length; ri += 50) {
+        const batch = rankUpdates.slice(ri, ri + 50);
+        await Promise.all(batch.map(upd => 
+          db.from('profiles').update({ overall_rank: upd.overall_rank }).eq('id', upd.id)
+        ));
       }
-      log.push('Rankings updated: ' + ranked.length + ' profiles');
+      log.push('Rankings updated lightning-fast: ' + ranked.length + ' profiles');
     }
 
     // ── Step 7: Advance GW if all fixtures finished ───────────────────────
-    // Check if all GW fixtures have status=FT
     const { data: gwFixtures } = await db
       .from('fixtures')
       .select('status')
@@ -491,50 +422,7 @@ module.exports = async (req, res) => {
   }
 };
 
-// ── Helper: resolve apifootball_id from a squad entry ────────────────────
-// Squad entries save id as psl_roster_id or DB players.id
-// We need to map that to apifootball_id to look up match stats
-// Priority: DB id → psl_roster_id → integer-as-roster-id → display_name (last resort)
-function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
-  if (!squadEntry) return null;
-
-  const sid = squadEntry.id;
-
-  // 1. Direct DB id lookup (most reliable)
-  if (sid && byDbId[sid] && byDbId[sid].apifootball_id) {
-    return byDbId[sid].apifootball_id;
-  }
-
-  // 2. psl_roster_id lookup
-  const rid = squadEntry.psl_roster_id || parseInt(sid, 10);
-  if (rid && byRosterId[rid] && byRosterId[rid].apifootball_id) {
-    return byRosterId[rid].apifootball_id;
-  }
-
-  // 3. Integer id treated as roster id
-  if (typeof sid === 'number' && byRosterId[sid] && byRosterId[sid].apifootball_id) {
-    return byRosterId[sid].apifootball_id;
-  }
-
-  // 4. Name-based fallback — handles players not yet synced to DB
-  //    Uses display_name from squad entry
-  if (byName && squadEntry.display_name) {
-    const key = squadEntry.display_name.toLowerCase().trim();
-    if (byName[key] && byName[key].apifootball_id) {
-      return byName[key].apifootball_id;
-    }
-    // Try surname-only match (e.g. "Vilakazi" matches "Mfundo Vilakazi")
-    const parts = key.split(' ');
-    const surname = parts[parts.length - 1];
-    if (surname && surname.length >= 4) {
-      for (const [nm, player] of Object.entries(byName)) {
-        if (nm.endsWith(surname) && player.apifootball_id) return player.apifootball_id;
-      }
-    }
-  }
-
-  return null;
-}// ── Helper: STRICT resolve apifootball_id from a squad entry ─────────────
+// ── Helper: STRICT resolve apifootball_id from a squad entry ─────────────
 // Priority: DB id → psl_roster_id → integer-as-roster-id → exact display_name
 function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
   if (!squadEntry) return null;
