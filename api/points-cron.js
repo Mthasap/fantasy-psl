@@ -534,4 +534,36 @@ function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
   }
 
   return null;
+}// ── Helper: STRICT resolve apifootball_id from a squad entry ─────────────
+// Priority: DB id → psl_roster_id → integer-as-roster-id → exact display_name
+function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
+  if (!squadEntry) return null;
+
+  const sid = squadEntry.id;
+
+  // 1. Direct DB id lookup (most reliable)
+  if (sid && byDbId[sid] && byDbId[sid].apifootball_id) {
+    return byDbId[sid].apifootball_id;
+  }
+
+  // 2. psl_roster_id lookup
+  const rid = squadEntry.psl_roster_id || parseInt(sid, 10);
+  if (rid && byRosterId[rid] && byRosterId[rid].apifootball_id) {
+    return byRosterId[rid].apifootball_id;
+  }
+
+  // 3. Integer id treated as roster id
+  if (typeof sid === 'number' && byRosterId[sid] && byRosterId[sid].apifootball_id) {
+    return byRosterId[sid].apifootball_id;
+  }
+
+  // 4. STRICT Full-Name-Only fallback (No more surname guessing!)
+  if (byName && squadEntry.display_name) {
+    const key = squadEntry.display_name.toLowerCase().trim();
+    if (byName[key] && byName[key].apifootball_id) {
+      return byName[key].apifootball_id;
+    }
+  }
+
+  return null;
 }
