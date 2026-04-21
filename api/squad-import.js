@@ -28,7 +28,7 @@ const { apiFetch, PSL_LEAGUE, getSeasonYear } = require('./season-helper');
 const TOKEN  = process.env.APIFOOTBALL_KEY     || '';
 const SB_URL = process.env.SUPABASE_URL        || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const ADMIN  = process.env.ADMIN_SECRET        || 'mzansi4sho';
+const ADMIN  = process.env.ADMIN_SECRET;
 
 // PSL club names — canonical versions matching PSL_ROSTER
 // Maps API-Football team name → our canonical name
