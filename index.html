@@ -1576,10 +1576,6 @@ db.auth.onAuthStateChange(function(event, session) {
     // Wait for news to load, then open the matching article
     window._pendingNewsSlug = targetSlug;
   }
-  // Handle bare /news route — go directly to news page on load
-  if (path === '/news' || path === '/news/') {
-    window._pendingPage = 'news';
-  }
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1590,10 +1586,6 @@ document.addEventListener('DOMContentLoaded', function() {
   imgs.forEach(function(img) { img.src = LOGO_PATH; });
 
   loadGW(function() {});
-  // Handle deep-linked pages (e.g. /news, /news/slug)
-  if (window._pendingPage) {
-    setTimeout(function() { goPage(window._pendingPage); window._pendingPage = null; }, 300);
-  }
   // Use ensurePlayersLoaded (not bare loadPlayers) so the cache/callback
   // mechanism is consistent with the auth handler. Prevents any future
   // case where onAuthStateChange fires before DOMContentLoaded finishes.
@@ -1631,23 +1623,12 @@ function goPage(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (id === 'fixtures') { loadFixtures(); loadTable(); }
-  if (id === 'news')     {
-    loadNews();
-    try { window.history.pushState({}, 'Fantasy PSL — PSL News', '/news'); } catch(e) {}
-    setMeta('og-url', 'https://www.fantasypsl.co.za/news');
-    setMeta('og-title', 'Fantasy PSL — Betway Premiership News');
-    setMeta("page-desc", "Latest PSL fantasy football news, tips and match previews. South Africa's #1 fantasy football game");
-  }
+  if (id === 'news')     { loadNews(); }
   if (id === 'chat')     { if(typeof loadDiskiChat==='function') loadDiskiChat(); }
   if (id === 'stats')    loadStats();
   if (id === 'leagues')  loadLeagues();
   if (id === 'profile')  loadProfile();
-  if (id === 'home')     {
-    setTimeout(loadPOTMHomeCard, 400);
-    try { window.history.pushState({}, 'Fantasy PSL', '/'); } catch(e) {}
-    setMeta('og-url', 'https://www.fantasypsl.co.za/');
-    setMeta('og-title', 'Fantasy PSL — South Africa's Fantasy Football');
-  }
+  if (id === 'home')     { setTimeout(loadPOTMHomeCard, 400); }
 }
 
 function syncNav() {
@@ -2931,11 +2912,7 @@ function saveSquad() {
       }
       return res.json();
     })
-    .then(function() {
-      // Remove stale local cache so next load reads fresh data from cloud
-      try { localStorage.removeItem('fpsl_squad_' + ST.user.id); } catch(e) {}
-      onSaveDone(null);
-    })
+    .then(function() { onSaveDone(null); })
     .catch(function(e) { onSaveDone(e); });
   });
 }
@@ -5358,15 +5335,13 @@ function setTableView(view, el) {
 function buildLiveTicker() {
   var track = document.getElementById('ticker-track');
   if (!track) return;
-  // Ticker: only show results from current GW and upcoming from next GW
-  var _tGW     = (ST.gw && ST.gw.number) ? ST.gw.number : 25;
-  var _tGWNext = _tGW + 1;
+  // Fetch recent FT results (last 10) AND upcoming NS fixtures (next 8)
   Promise.allSettled([
     db.from('fixtures').select('home_team_name,away_team_name,home_score,away_score,kickoff_time,status,elapsed_minutes')
-      .eq('season',2025).eq('status','FT').eq('gw_number', _tGW)
+      .eq('season',2025).eq('status','FT')
       .order('kickoff_time',{ascending:false}).limit(10),
     db.from('fixtures').select('home_team_name,away_team_name,kickoff_time,status')
-      .eq('season',2025).in('status',['NS','TBD','PST']).eq('gw_number', _tGWNext)
+      .eq('season',2025).in('status',['NS','TBD','PST'])
       .order('kickoff_time',{ascending:true}).limit(8)
   ]).then(function(results) {
     var ft  = (results[0].status==='fulfilled'? results[0].value.data : null) || [];
@@ -7966,29 +7941,24 @@ onReady(function() {
         (stadiumName ? '📍 ' + stadiumName : '') +
       '</div>';
     }
-var out='<div class="fix-expand">';
-out+=venueHtml;
-
-if(statusBadge) out+='<div style="text-align:center;padding:.3rem .9rem .15rem">'+statusBadge+'</div>';
-
-if(isFT||isLive){
-  out+='<div class="mc-timeline" id="mc-tl-'+fid+'">' +
-    '<div class="mc-tl-track">' +
-      '<div class="mc-tl-bg"></div>' +
-      '<div class="mc-tl-prog" style="width:'+tlPct+'%"></div>' +
-      '<div id="mc-tl-evts-'+fid+'"></div>' +
-    '</div>' +
-    '<div class="mc-tl-labels"><span>KO</span><span>15\'</span><span>30\'</span><span>HT</span><span>60\'</span><span>75\'</span><span>FT</span></div>' +
-  '</div>';
-}
-
-out += `
-<div class="mc-tabs">
-  <button class="mc-tab active" onclick="mcSwitchTab(${fid}, 'stats')">Match Stats</button>
-  <button class="mc-tab" onclick="mcSwitchTab(${fid}, 'mypts')">My Points</button>
-  <button class="mc-tab" onclick="mcSwitchTab(${fid}, 'chat')">💬 Chat</button>
-</div>
-`;
+    var out='<div class="fix-expand">';
+    out+=venueHtml;
+    if(statusBadge) out+='<div style="text-align:center;padding:.3rem .9rem .15rem">'+statusBadge+'</div>';
+    if(isFT||isLive){
+      out+='<div class="mc-timeline" id="mc-tl-'+fid+'">' +
+        '<div class="mc-tl-track">' +
+          '<div class="mc-tl-bg"></div>' +
+          '<div class="mc-tl-prog" style="width:'+tlPct+'"></div>' +
+          '<div id="mc-tl-evts-'+fid+'"></div>' +
+        '</div>' +
+        '<div class="mc-tl-labels"><span>KO</span><span>15'</span><span>30'</span><span>HT</span><span>60'</span><span>75'</span><span>FT</span></div>' +
+      '</div>';
+    }
+    out+='<div class="mc-tabs">' +
+      '<button class="mc-tab active" data-fix="'+fid+'" data-tab="stats" onclick="mcSwitchTab(''+fid+'','stats')">Match Stats</button>' +
+      '<button class="mc-tab" data-fix="'+fid+'" data-tab="mypts" onclick="mcSwitchTab(''+fid+'','mypts')">My Points</button>' +
+      '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
+    '</div>';
     out+='<div class="mc-tab-body show" data-fix="'+fid+'" data-tab="stats">';
     if(isFT&&fid){
       out+='<div id="mc-stats-'+fid+'" style="padding:.6rem"><div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Loading stats...</div></div>';
@@ -8018,9 +7988,9 @@ out += `
     if(ST.user){
       out+='<div class="mc-chat-compose">' +
         '<textarea class="mc-chat-inp" id="mc-chat-inp-'+fid+'" placeholder="Say something about this match..." maxlength="280" rows="1" ' +
-          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" ' +
-          'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMatchChatMsg(\''+fid+'\')}" ></textarea>' +
-        '<button class="mc-chat-send" onclick="sendMatchChatMsg(\''+fid+'\')">Post</button>' +
+          'oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" ' +
+          'onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMatchChatMsg(''+fid+'')}" ></textarea>' +
+        '<button class="mc-chat-send" onclick="sendMatchChatMsg(''+fid+'')">Post</button>' +
       '</div>';
     } else {
       out+='<div class="mc-chat-login-note">Sign in to join the live chat</div>';
