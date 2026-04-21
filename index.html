@@ -8013,9 +8013,9 @@ onReady(function() {
     if(ST.user){
       out+='<div class="mc-chat-compose">' +
         '<textarea class="mc-chat-inp" id="mc-chat-inp-'+fid+'" placeholder="Say something about this match..." maxlength="280" rows="1" ' +
-          'oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" ' +
-          'onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMatchChatMsg(''+fid+'')}" ></textarea>' +
-        '<button class="mc-chat-send" onclick="sendMatchChatMsg(''+fid+'')">Post</button>' +
+          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" ' +
+          'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMatchChatMsg(\''+fid+'\')}" ></textarea>' +
+        '<button class="mc-chat-send" onclick="sendMatchChatMsg(\''+fid+'\')">Post</button>' +
       '</div>';
     } else {
       out+='<div class="mc-chat-login-note">Sign in to join the live chat</div>';
