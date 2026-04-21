@@ -1636,7 +1636,7 @@ function goPage(id) {
     try { window.history.pushState({}, 'Fantasy PSL — PSL News', '/news'); } catch(e) {}
     setMeta('og-url', 'https://www.fantasypsl.co.za/news');
     setMeta('og-title', 'Fantasy PSL — Betway Premiership News');
-    setMeta('page-desc', 'Latest PSL fantasy football news, tips and match previews. South Africa's #1 fantasy game.');
+    setMeta("page-desc", "Latest PSL fantasy football news, tips and match previews. South Africa's #1 fantasy football game");
   }
   if (id === 'chat')     { if(typeof loadDiskiChat==='function') loadDiskiChat(); }
   if (id === 'stats')    loadStats();
@@ -7966,24 +7966,29 @@ onReady(function() {
         (stadiumName ? '📍 ' + stadiumName : '') +
       '</div>';
     }
-    var out='<div class="fix-expand">';
-    out+=venueHtml;
-    if(statusBadge) out+='<div style="text-align:center;padding:.3rem .9rem .15rem">'+statusBadge+'</div>';
-    if(isFT||isLive){
-      out+='<div class="mc-timeline" id="mc-tl-'+fid+'">' +
-        '<div class="mc-tl-track">' +
-          '<div class="mc-tl-bg"></div>' +
-          '<div class="mc-tl-prog" style="width:'+tlPct+'"></div>' +
-          '<div id="mc-tl-evts-'+fid+'"></div>' +
-        '</div>' +
-        '<div class="mc-tl-labels"><span>KO</span><span>15'</span><span>30'</span><span>HT</span><span>60'</span><span>75'</span><span>FT</span></div>' +
-      '</div>';
-    }
-    out+='<div class="mc-tabs">' +
-      '<button class="mc-tab active" data-fix="'+fid+'" data-tab="stats" onclick="mcSwitchTab(''+fid+'','stats')">Match Stats</button>' +
-      '<button class="mc-tab" data-fix="'+fid+'" data-tab="mypts" onclick="mcSwitchTab(''+fid+'','mypts')">My Points</button>' +
-      '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
-    '</div>';
+var out='<div class="fix-expand">';
+out+=venueHtml;
+
+if(statusBadge) out+='<div style="text-align:center;padding:.3rem .9rem .15rem">'+statusBadge+'</div>';
+
+if(isFT||isLive){
+  out+='<div class="mc-timeline" id="mc-tl-'+fid+'">' +
+    '<div class="mc-tl-track">' +
+      '<div class="mc-tl-bg"></div>' +
+      '<div class="mc-tl-prog" style="width:'+tlPct+'%"></div>' +
+      '<div id="mc-tl-evts-'+fid+'"></div>' +
+    '</div>' +
+    '<div class="mc-tl-labels"><span>KO</span><span>15\'</span><span>30\'</span><span>HT</span><span>60\'</span><span>75\'</span><span>FT</span></div>' +
+  '</div>';
+}
+
+out += `
+<div class="mc-tabs">
+  <button class="mc-tab active" onclick="mcSwitchTab(${fid}, 'stats')">Match Stats</button>
+  <button class="mc-tab" onclick="mcSwitchTab(${fid}, 'mypts')">My Points</button>
+  <button class="mc-tab" onclick="mcSwitchTab(${fid}, 'chat')">💬 Chat</button>
+</div>
+`;
     out+='<div class="mc-tab-body show" data-fix="'+fid+'" data-tab="stats">';
     if(isFT&&fid){
       out+='<div id="mc-stats-'+fid+'" style="padding:.6rem"><div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Loading stats...</div></div>';
