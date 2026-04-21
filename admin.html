@@ -2863,7 +2863,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     try {
       const res = await fetch('/api/admin-api', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_SECRET },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
         body: JSON.stringify({ 
           action: 'select', 
           table: 'players',
@@ -2871,10 +2871,11 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
         })
       });
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      
-      allPlayersCache = data.sort((a, b) => (a.team > b.team) ? 1 : -1); // Sort by team alphabetically
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      // admin-api returns { success: true, data: [...] }
+      const data = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
+      allPlayersCache = data.sort((a, b) => (a.team > b.team ? 1 : -1));
       renderPlayers(allPlayersCache);
 
     } catch (e) {
