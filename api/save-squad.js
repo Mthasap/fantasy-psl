@@ -1,4 +1,7 @@
-// api/save-squad.js
+// api/save-squad.js — Fantasy PSL — Secure Squad Save
+// Validates JWT, checks deadline server-side, enforces 15-player rule,
+// then upserts to profiles table using service key (bypasses RLS safely).
+
 const { createClient } = require('@supabase/supabase-js');
 
 const SB_URL = process.env.SUPABASE_URL;
@@ -8,12 +11,12 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // 1. Verify the user's JWT token
-  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST')   return res.status(405).json({ error: 'POST only' });
+
+  // 1. Verify JWT token from Authorization header
+  const token = (req.headers.authorization || '').split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Missing auth token' });
 
   const db = createClient(SB_URL, SB_KEY);
@@ -21,38 +24,82 @@ module.exports = async (req, res) => {
   if (authErr || !user) return res.status(401).json({ error: 'Invalid token' });
 
   try {
-    // 2. Check the Gameweek Deadline securely on the backend
-    const { data: gw } = await db.from('gameweeks')
-      .select('deadline_at, is_current')
+    // 2. Check GW deadline server-side (cannot be bypassed from client)
+    const { data: gw } = await db
+      .from('gameweeks')
+      .select('deadline_at, is_current, gw_number')
       .eq('is_current', true)
       .eq('season', 2025)
       .limit(1)
       .single();
 
     if (gw && gw.deadline_at) {
-      const deadline = new Date(gw.deadline_at);
-      if (new Date() >= deadline) {
-        return res.status(403).json({ error: 'Deadline passed. Squad locked.' });
+      if (new Date() >= new Date(gw.deadline_at)) {
+        return res.status(403).json({ error: 'Gameweek deadline has passed. Squad is locked.' });
       }
     }
 
-    const payload = req.body;
+    const payload = req.body || {};
 
-    // ─── 3. STRICT 15-PLAYER ENFORCEMENT ──────────────────────────────
-    // Safely extract the players array depending on how your frontend formats it
+    // 3. Validate squad has exactly 15 players
     const squadData = payload.squad_data;
-    const squadArr = Array.isArray(squadData) ? squadData : (squadData?.players || []);
-    
-    // Filter out empty slots to count only actual selected players
-    const validPlayers = squadArr.filter(p => p && (p.id || p.psl_roster_id || p.apifootball_id));
+    let squadArr = [];
+    if (typeof squadData === 'string') {
+      try { squadArr = JSON.parse(squadData); } catch(e) { squadArr = []; }
+    } else if (Array.isArray(squadData)) {
+      squadArr = squadData;
+    } else if (squadData && squadData.players) {
+      squadArr = squadData.players;
+    }
 
-    if (validPlayers.length !== 15) {
-      return res.status(400).json({ 
-        error: `Incomplete squad! You must select exactly 15 players to save and earn points. You currently have ${validPlayers.length}.` 
+    const validPlayers = squadArr.filter(p => p && (p.id || p.psl_roster_id));
+    if (payload.squad_registered === true && validPlayers.length !== 15) {
+      return res.status(400).json({
+        error: `Incomplete squad. You need 15 players but have ${validPlayers.length}.`
       });
     }
-    // ──────────────────────────────────────────────────────────────────
 
-    // 4. Deadline is safe and squad is full, proceed to save
-    // Enforce that a user can only update their own profile ID
-    payload.id = user.id;
+    // 4. Enforce user can only save their own profile
+    const updateData = {
+      id:                payload.id === user.id ? user.id : user.id, // always force own ID
+      squad_data:        typeof squadData === 'string' ? squadData : JSON.stringify(squadArr),
+      squad_count:       validPlayers.length,
+      squad_registered:  validPlayers.length === 15,
+      free_transfers:    payload.free_transfers    ?? 1,
+      transfers_this_gw: payload.transfers_this_gw ?? 0,
+      active_chip:       payload.active_chip       ?? null,
+      updated_at:        new Date().toISOString(),
+    };
+
+    // First registration: lock in entry GW and timestamps
+    if (payload.entry_gw) {
+      updateData.entry_gw            = payload.entry_gw;
+      updateData.squad_registered_at = payload.squad_registered_at || new Date().toISOString();
+      // Only zero out points on first registration
+      if (!payload._skipPointsReset) {
+        updateData.total_points = 0;
+        updateData.gw_points    = 0;
+      }
+    }
+
+    // 5. Upsert to profiles (service key bypasses RLS)
+    const { error: upsertErr } = await db
+      .from('profiles')
+      .upsert(updateData, { onConflict: 'id' });
+
+    if (upsertErr) {
+      console.error('[save-squad] upsert error:', upsertErr.message);
+      return res.status(500).json({ error: upsertErr.message });
+    }
+
+    return res.json({
+      success:    true,
+      squad_count: validPlayers.length,
+      registered:  validPlayers.length === 15,
+    });
+
+  } catch (err) {
+    console.error('[save-squad] fatal:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
