@@ -1353,7 +1353,19 @@ var LOGOS = {
 var LOGO_PATH = '/logo.png';
 
 // -- Supabase client ----------------------------------
-var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// auth.persistSession = true   → session survives app close / PWA relaunch
+// auth.autoRefreshToken = true → JWT is silently refreshed before it expires
+// auth.storage = localStorage  → explicit (default, but stated clearly for PWA)
+// auth.detectSessionInUrl = true → handles magic-link / OAuth callbacks
+var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession:      true,
+    autoRefreshToken:    true,
+    storage:             window.localStorage,
+    detectSessionInUrl:  true,
+    storageKey:          'fpsl-auth-token'
+  }
+});
 
 // -- App state ----------------------------------------
 var ST = {
@@ -1551,21 +1563,73 @@ function ensurePlayersLoaded(cb) {
     });
 }
 
+// ── Session restore on app open ───────────────────────────────────────────
+// When the user reopens the app (PWA or browser tab), Supabase has the token
+// in localStorage but onAuthStateChange alone can be slow to fire.
+// getSession() reads it synchronously from storage and restores state immediately,
+// so the user never sees the login screen on relaunch.
+(function restoreSessionOnLoad() {
+  db.auth.getSession().then(function(result) {
+    var session = result && result.data && result.data.session;
+    if (session && session.user) {
+      // Valid stored session — restore user state right now
+      if (!ST.user) {
+        ST.user = session.user;
+        syncNav();
+        updateAdVisibility();
+        loadGW(function() {
+          ensurePlayersLoaded(function() {
+            loadMySquad();
+          });
+        });
+        loadReactions();
+        loadWatchlistFromDB();
+        setTimeout(initPushNotifications, 3000);
+      }
+    }
+  }).catch(function() {
+    // No stored session or token expired — user will need to log in
+    // onAuthStateChange will handle this normally
+  });
+})();
+
 db.auth.onAuthStateChange(function(event, session) {
+  var prevUser = ST.user;
   ST.user = session ? session.user : null;
+
+  // SIGNED_OUT — clear everything
+  if (event === 'SIGNED_OUT') {
+    ST.user  = null;
+    ST.squad = [];
+    syncNav();
+    updateAdVisibility();
+    renderPitch();
+    renderBudget();
+    return;
+  }
+
+  // TOKEN_REFRESHED — session silently renewed, no UI change needed
+  if (event === 'TOKEN_REFRESHED') {
+    return;
+  }
+
   syncNav();
   updateAdVisibility();
+
   if (ST.user) {
-    // GUARANTEED ORDER: GW first, then players, then squad restore
-    loadGW(function() {
-      ensurePlayersLoaded(function() {
-        loadMySquad();
+    // Only reload squad data if this is a fresh sign-in (not just a token refresh
+    // or a duplicate INITIAL_SESSION event after getSession() already ran)
+    var isNewLogin = (event === 'SIGNED_IN') || (!prevUser && ST.user);
+    if (isNewLogin) {
+      loadGW(function() {
+        ensurePlayersLoaded(function() {
+          loadMySquad();
+        });
       });
-    });
-    loadReactions();
-    loadWatchlistFromDB();
-    // Init push notifications after login (safe: checks subscription first)
-    setTimeout(initPushNotifications, 3000);
+      loadReactions();
+      loadWatchlistFromDB();
+      setTimeout(initPushNotifications, 3000);
+    }
   } else {
     ST.squad = [];
     renderPitch();
@@ -1823,6 +1887,9 @@ function autoJoinTeamLeague(userId, teamName) {
 
 function doLogout() {
   db.auth.signOut().then(function() {
+    // Explicitly clear the stored session key so it doesn't auto-restore on next open
+    try { localStorage.removeItem('fpsl-auth-token'); } catch(e) {}
+    try { sessionStorage.removeItem('fpsl_ak'); } catch(e) {}
     ST.user = null; ST.squad = [];
     syncNav(); renderPitch(); renderBudget(); checkProfilesSchema();
     goPage('home');
