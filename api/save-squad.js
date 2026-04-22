@@ -1,6 +1,8 @@
 // api/save-squad.js — Fantasy PSL — Secure Squad Save
+// ─────────────────────────────────────────────────────────────────────────
 // Validates JWT, checks deadline server-side, enforces 15-player rule,
 // then upserts to profiles table using service key (bypasses RLS safely).
+// ─────────────────────────────────────────────────────────────────────────
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -41,7 +43,7 @@ module.exports = async (req, res) => {
 
     const payload = req.body || {};
 
-    // 3. Validate squad has exactly 15 players
+    // 3. Validate squad structure
     const squadData = payload.squad_data;
     let squadArr = [];
     if (typeof squadData === 'string') {
@@ -53,15 +55,17 @@ module.exports = async (req, res) => {
     }
 
     const validPlayers = squadArr.filter(p => p && (p.id || p.psl_roster_id));
+
+    // Only enforce 15-player rule when registering a full squad
     if (payload.squad_registered === true && validPlayers.length !== 15) {
       return res.status(400).json({
         error: `Incomplete squad. You need 15 players but have ${validPlayers.length}.`
       });
     }
 
-    // 4. Enforce user can only save their own profile
+    // 4. Enforce user can only save their own profile (always force own ID)
     const updateData = {
-      id:                payload.id === user.id ? user.id : user.id, // always force own ID
+      id:                user.id,
       squad_data:        typeof squadData === 'string' ? squadData : JSON.stringify(squadArr),
       squad_count:       validPlayers.length,
       squad_registered:  validPlayers.length === 15,
@@ -75,14 +79,33 @@ module.exports = async (req, res) => {
     if (payload.entry_gw) {
       updateData.entry_gw            = payload.entry_gw;
       updateData.squad_registered_at = payload.squad_registered_at || new Date().toISOString();
-      // Only zero out points on first registration
+      // Only zero out points on first-ever registration
       if (!payload._skipPointsReset) {
         updateData.total_points = 0;
         updateData.gw_points    = 0;
       }
     }
 
-    // 5. Upsert to profiles (service key bypasses RLS)
+    // 5. Check if profile already exists (to avoid wiping existing points data)
+    const { data: existingProfile } = await db
+      .from('profiles')
+      .select('total_points, gw_points, entry_gw, squad_registered_at')
+      .eq('id', user.id)
+      .single();
+
+    // SAFETY: Never overwrite existing points if they're already recorded
+    if (existingProfile && existingProfile.total_points > 0 && !payload.entry_gw) {
+      delete updateData.total_points;
+      delete updateData.gw_points;
+    }
+
+    // If already registered once, don't overwrite entry_gw or squad_registered_at
+    if (existingProfile && existingProfile.entry_gw) {
+      delete updateData.entry_gw;
+      delete updateData.squad_registered_at;
+    }
+
+    // 6. Upsert to profiles (service key bypasses RLS)
     const { error: upsertErr } = await db
       .from('profiles')
       .upsert(updateData, { onConflict: 'id' });
@@ -93,7 +116,7 @@ module.exports = async (req, res) => {
     }
 
     return res.json({
-      success:    true,
+      success:     true,
       squad_count: validPlayers.length,
       registered:  validPlayers.length === 15,
     });
