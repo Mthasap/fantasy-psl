@@ -10,8 +10,8 @@
 //   all GW points calculate accurately — permanently.
 //
 // USAGE:
-//   GET /api/link-player-ids?admin_key=mzansi4sho           → dry run (shows matches, no writes)
-//   GET /api/link-player-ids?admin_key=mzansi4sho&apply=1   → actually writes to DB
+//   GET /api/link-player-ids?admin_key=YOUR_ADMIN_SECRET           → dry run (shows matches, no writes)
+//   GET /api/link-player-ids?admin_key=YOUR_ADMIN_SECRET&apply=1   → actually writes to DB
 //
 // MATCHING TIERS (in order of confidence):
 //   1. Exact normalised name match        "Bradley Grobler" = "bradley grobler"
@@ -27,7 +27,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const SB_URL = process.env.SUPABASE_URL          || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
-const ADMIN  = process.env.ADMIN_SECRET           || 'mzansi4sho';
+const ADMIN  = process.env.ADMIN_SECRET;
 
 // ── Name normalisation ────────────────────────────────────────────────────────
 function norm(s) {
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
   const adminKey = (req.query && req.query.admin_key)
     || (req.headers && req.headers['x-admin-key']) || '';
 
-  if (adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
+  if (!ADMIN || adminKey !== ADMIN) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!SB_URL || !SB_KEY) {
