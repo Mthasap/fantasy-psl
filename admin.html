@@ -810,18 +810,115 @@
 
     <!-- ══════════════════ PLAYERS TAB ══════════════════ -->
     <div id="tab-players" class="tab-page">
+
+      <!-- ══ ADD PLAYER FROM API-FOOTBALL ══════════════════════════════════ -->
+      <div class="card" style="border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.03);margin-bottom:16px">
+        <div class="card-header" style="border-bottom-color:rgba(0,230,118,.15)">
+          <div class="card-title"><span class="dot dot-green"></span>➕ Add Player from API-Football</div>
+          <div style="font-size:12px;color:var(--muted)">Enter the Player ID, Team ID and Season from API-Football — the player details are fetched automatically</div>
+        </div>
+        <div class="card-body">
+
+          <!-- Step 1: Lookup -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Step 1 — Look up player from API-Football</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;flex-wrap:wrap">
+              <div>
+                <label>Player ID <span style="color:var(--muted);font-weight:400">(from API-Football)</span></label>
+                <input type="number" id="af-player-id" placeholder="e.g. 414149" style="width:100%">
+              </div>
+              <div>
+                <label>Team ID <span style="color:var(--muted);font-weight:400">(PSL team)</span></label>
+                <input type="number" id="af-team-id" placeholder="e.g. 3936" style="width:100%">
+              </div>
+              <div>
+                <label>Season</label>
+                <input type="number" id="af-season" value="2025" style="width:100%">
+              </div>
+              <div>
+                <button class="btn btn-blue" onclick="lookupAPIPlayer()" style="white-space:nowrap;height:38px">🔍 Look Up</button>
+              </div>
+            </div>
+            <div class="status-msg" id="af-lookup-status" style="margin-top:10px"></div>
+          </div>
+
+          <!-- Step 2: Preview & Confirm -->
+          <div id="af-preview-wrap" style="display:none;background:var(--surface);border:1px solid rgba(0,230,118,.25);border-radius:10px;padding:16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Step 2 — Review &amp; confirm details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+              <div>
+                <label>Full Name</label>
+                <input type="text" id="af-name" placeholder="Auto-filled from API" style="width:100%">
+              </div>
+              <div>
+                <label>Position</label>
+                <select id="af-position" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px">
+                  <option value="GK">GK — Goalkeeper</option>
+                  <option value="DEF">DEF — Defender</option>
+                  <option value="MID" selected>MID — Midfielder</option>
+                  <option value="FWD">FWD — Forward</option>
+                </select>
+              </div>
+              <div>
+                <label>Club / Team</label>
+                <input type="text" id="af-team-name" placeholder="Auto-filled from API" style="width:100%">
+              </div>
+              <div>
+                <label>Price (R Millions)</label>
+                <input type="number" id="af-price" step="0.5" min="3.5" max="15" value="6.5" style="width:100%">
+              </div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-green btn-full" onclick="confirmAddAPIPlayer()">✓ Add to Database</button>
+              <button class="btn btn-ghost" onclick="cancelAPIPreview()">✕ Cancel</button>
+            </div>
+            <div class="status-msg" id="af-confirm-status" style="margin-top:10px"></div>
+          </div>
+
+          <!-- How to find IDs help box -->
+          <div style="background:rgba(41,121,255,.06);border:1px solid rgba(41,121,255,.18);border-radius:8px;padding:12px 16px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.7">
+            <strong style="color:#60A5FA">📌 How to find Player ID &amp; Team ID on API-Football:</strong><br>
+            1. Go to <a href="https://dashboard.api-football.com" target="_blank" style="color:#60A5FA">dashboard.api-football.com</a> → API → Endpoints → Players<br>
+            2. Search by player name + league (288) + season (2025) — the <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">id</code> in the response is the Player ID<br>
+            3. For Team ID: Endpoints → Teams → search by league 288 — the <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">team.id</code> field<br>
+            <strong style="color:#FFB830">PSL League ID = 288 &nbsp;|&nbsp; Season = 2025</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REMOVE / DEACTIVATE PLAYER ════════════════════════════════════ -->
+      <div class="card" style="border-color:rgba(239,68,68,.2);margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title"><span class="dot dot-red"></span>🗑 Remove or Deactivate Player</div>
+          <div style="font-size:12px;color:var(--muted)">Deactivate marks player as unavailable but keeps their history. Delete permanently removes them.</div>
+        </div>
+        <div class="card-body">
+          <label>Search Player to Remove</label>
+          <input type="text" id="remove-player-search" placeholder="Type player name…" oninput="searchRemovePlayers()" style="width:100%">
+          <div id="remove-player-results" class="search-dropdown"></div>
+          <div id="remove-player-actions" style="display:none;margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px" id="remove-player-name-display"></div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="remove-player-meta-display"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-amber" onclick="deactivateSelectedPlayer()" style="flex:1">⚠️ Deactivate (keep history)</button>
+              <button class="btn" onclick="deleteSelectedPlayer()" style="flex:1;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#F87171">🗑 Permanently Delete</button>
+            </div>
+            <div class="status-msg" id="remove-player-status" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="grid-2">
 
-        <!-- Search & Edit player -->
+        <!-- ══ EDIT PLAYER (price / availability) ════════════════════════ -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><span class="dot dot-red"></span>Edit Player (Price / Availability)</div>
+            <div class="card-title"><span class="dot dot-red"></span>✏️ Edit Player (Price / Availability)</div>
           </div>
           <div class="card-body">
             <label>Search Player</label>
             <input type="text" id="player-search" placeholder="e.g. Makgopa, Mofokeng…" oninput="searchPlayers()">
             <div id="player-results" class="search-dropdown"></div>
-
             <div id="player-edit-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--green)" id="editing-player-name"></div>
               <div class="row">
@@ -846,16 +943,15 @@
           </div>
         </div>
 
-        <!-- Update player stats -->
+        <!-- ══ UPDATE PLAYER STATS (manual) ══════════════════════════════ -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><span class="dot dot-blue"></span>Update Player Stats</div>
+            <div class="card-title"><span class="dot dot-blue"></span>📊 Update Player Stats (Manual)</div>
           </div>
           <div class="card-body">
             <label>Search Player</label>
             <input type="text" id="stats-player-search" placeholder="e.g. Rayners, Grobler…" oninput="searchStatsPlayers()">
             <div id="stats-player-results" class="search-dropdown"></div>
-
             <div id="stats-edit-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--blue)" id="stats-player-name"></div>
               <div class="row-3">
@@ -877,8 +973,8 @@
           </div>
         </div>
 
-        <!-- ══ BULK STATS EDITOR ══ -->
-        <div class="card">
+        <!-- ══ BULK STATS EDITOR ══════════════════════════════════════════ -->
+        <div class="card" style="grid-column:1/-1">
           <div class="card-header">
             <div class="card-title"><span class="dot dot-green"></span>Bulk Stats Editor</div>
             <div style="font-size:12px;color:var(--muted)">Edit all players at once — filter by club or position</div>
@@ -1292,12 +1388,7 @@
   // ══════════════════════════════════════════════════════════════════
   const SUPABASE_URL   = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-  const ADMIN_PASSWORD = ''; // REMOVED: key now comes from login input only
-
-  // ── Session key — set once at login, never hardcoded ─────────────
-  // The admin key is typed into the login form and held in memory only.
-  // It is NEVER stored in localStorage, cookies, or source code.
-  let adminKey = sessionStorage.getItem('fpsl_ak') || '';
+  const ADMIN_PASSWORD = ''; // Removed — key set at login only
 
   const TEAMS = [
     'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
@@ -1361,42 +1452,54 @@
   // ══════════════════════════════════════════════════════════════════
   // LOGIN
   // ══════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════
+  // LOGIN  — key verified server-side, never compared client-side
+  // ══════════════════════════════════════════════════════════════════
+  let adminKey = sessionStorage.getItem('fpsl_ak') || '';
+
+  // Auto-restore session if key already in sessionStorage
+  if (adminKey) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-panel').style.display  = 'block';
+    setTimeout(initPanel, 0);
+  }
+
   document.getElementById('admin-pw').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
 
   function doLogin() {
     const pw  = document.getElementById('admin-pw').value.trim();
-    const btn = document.getElementById('login-btn') || null;
     const err = document.getElementById('login-error');
     if (!pw) { err.style.display = 'block'; err.textContent = 'Enter the admin key'; return; }
 
-    // Verify key against the real API — never compare client-side
-    if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
     err.style.display = 'none';
+    const btn = document.querySelector('#login-screen button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
 
+    // Verify against the real API — never compare locally
     fetch('/api/admin-api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': pw },
       body: JSON.stringify({ table: 'profiles', action: 'select', select: 'id', match: { id: '00000000-0000-0000-0000-000000000000' } })
     }).then(function(res) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Enter'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       if (res.status === 401) {
         err.style.display = 'block';
         err.textContent = 'Incorrect admin key';
         document.getElementById('admin-pw').value = '';
         return;
       }
-      // Key accepted — store in memory for this session only
+      // Accepted — store in sessionStorage (cleared when tab closes)
       adminKey = pw;
-      sessionStorage.setItem('fpsl_ak', pw); // session only — cleared when tab closes
+      sessionStorage.setItem('fpsl_ak', pw);
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-panel').style.display  = 'block';
       initPanel();
     }).catch(function() {
-      if (btn) { btn.disabled = false; btn.textContent = 'Enter'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter Admin Panel'; }
       err.style.display = 'block';
-      err.textContent = 'Network error — check your connection';
+      err.textContent = 'Network error — check connection';
     });
   }
 
@@ -1652,6 +1755,221 @@
   // ══════════════════════════════════════════════════════════════════
   // PLAYER EDIT (price & availability)
   // ══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
+  //  PLAYER MANAGER — API-Football Lookup, Add, Remove
+  // ═══════════════════════════════════════════════════════════════
+
+  let afPlayerBuffer = null; // holds the looked-up player data until confirmed
+
+  async function lookupAPIPlayer() {
+    const playerId = document.getElementById('af-player-id').value.trim();
+    const teamId   = document.getElementById('af-team-id').value.trim();
+    const season   = document.getElementById('af-season').value.trim() || '2025';
+    const status   = document.getElementById('af-lookup-status');
+    const preview  = document.getElementById('af-preview-wrap');
+
+    if (!playerId) { showStatus('af-lookup-status', 'error', '⚠ Enter a Player ID'); return; }
+
+    showStatus('af-lookup-status', 'info', '🔍 Fetching player from API-Football…');
+    preview.style.display = 'none';
+    afPlayerBuffer = null;
+
+    try {
+      // Call our backend proxy (avoids exposing API key in browser)
+      const url = `/api/sync?action=proxy&endpoint=players%3Fid%3D${playerId}%26season%3D${season}` +
+                  (teamId ? `%26team%3D${teamId}` : '');
+      const res  = await fetch(url, { headers: { 'x-admin-key': adminKey } });
+      const data = await res.json();
+
+      const players = data.response || [];
+      if (!players.length) {
+        showStatus('af-lookup-status', 'error', `❌ No player found for ID ${playerId} in season ${season}. Check the ID on API-Football dashboard.`);
+        return;
+      }
+
+      const p    = players[0];
+      const info = p.player  || {};
+      const stat = (p.statistics || [])[0] || {};
+      const team = stat.team || {};
+
+      // Map API-Football position to our system
+      const rawPos = stat.games && stat.games.position ? stat.games.position : 'Midfielder';
+      let pos = 'MID';
+      if (/goalkeeper/i.test(rawPos)) pos = 'GK';
+      else if (/defender/i.test(rawPos)) pos = 'DEF';
+      else if (/forward|attacker/i.test(rawPos)) pos = 'FWD';
+
+      // Default price by position
+      const defaultPrices = { GK: 5.0, DEF: 5.5, MID: 6.5, FWD: 7.0 };
+
+      // Store for confirm step
+      afPlayerBuffer = {
+        display_name:   info.name || '',
+        apifootball_id: parseInt(playerId, 10),
+        team:           team.name || '',
+        position:       pos,
+        price:          defaultPrices[pos],
+        photo:          info.photo || null
+      };
+
+      // Fill preview form
+      document.getElementById('af-name').value     = afPlayerBuffer.display_name;
+      document.getElementById('af-position').value  = pos;
+      document.getElementById('af-team-name').value = afPlayerBuffer.team;
+      document.getElementById('af-price').value     = afPlayerBuffer.price;
+
+      preview.style.display = 'block';
+      showStatus('af-lookup-status', 'ok',
+        `✓ Found: ${info.name} (${pos}) — ${team.name || 'Team unknown'}. Review details below then click Add.`);
+
+    } catch (err) {
+      showStatus('af-lookup-status', 'error', '❌ Lookup failed: ' + err.message);
+    }
+  }
+
+  async function confirmAddAPIPlayer() {
+    if (!afPlayerBuffer) return;
+    const status = document.getElementById('af-confirm-status');
+
+    // Read the (possibly edited) form values
+    const payload = {
+      action:         'add_player',
+      display_name:   document.getElementById('af-name').value.trim(),
+      team:           document.getElementById('af-team-name').value.trim(),
+      position:       document.getElementById('af-position').value,
+      apifootball_id: afPlayerBuffer.apifootball_id,
+      price:          parseFloat(document.getElementById('af-price').value) || 6.5,
+      is_available:   true
+    };
+
+    if (!payload.display_name) { showStatus('af-confirm-status', 'error', 'Name is required'); return; }
+    if (!payload.team)         { showStatus('af-confirm-status', 'error', 'Team is required'); return; }
+
+    showStatus('af-confirm-status', 'info', 'Adding player…');
+
+    try {
+      const res  = await fetch('/api/admin-api', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body:    JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        showStatus('af-confirm-status', 'error', '❌ ' + (data.error || 'Failed'));
+        return;
+      }
+
+      showStatus('af-confirm-status', 'ok',
+        `✅ ${payload.display_name} (${payload.position}, ${payload.team}) added! ` +
+        `They are now visible in the app and can be selected in squads.`);
+
+      // Reset form
+      afPlayerBuffer = null;
+      document.getElementById('af-player-id').value = '';
+      document.getElementById('af-team-id').value   = '';
+      document.getElementById('af-preview-wrap').style.display = 'none';
+      document.getElementById('af-lookup-status').className = 'status-msg';
+      document.getElementById('af-lookup-status').textContent = '';
+
+      // Reload player table so the new player shows
+      setTimeout(loadPlayerTable, 800);
+
+    } catch (err) {
+      showStatus('af-confirm-status', 'error', '❌ ' + err.message);
+    }
+  }
+
+  function cancelAPIPreview() {
+    afPlayerBuffer = null;
+    document.getElementById('af-preview-wrap').style.display = 'none';
+  }
+
+  // ── Remove / Deactivate ─────────────────────────────────────────────────
+  let removePlayerBuffer = null;
+
+  function searchRemovePlayers() {
+    const q    = document.getElementById('remove-player-search').value.trim();
+    const wrap = document.getElementById('remove-player-results');
+    const actions = document.getElementById('remove-player-actions');
+    actions.style.display = 'none';
+    removePlayerBuffer = null;
+    if (q.length < 2) { wrap.innerHTML = ''; return; }
+
+    sbCall({ table: 'players', action: 'select', select: 'id,display_name,team,position,is_available,apifootball_id' })
+      .then(function(data) {
+        const matches = (data || []).filter(function(p) {
+          return (p.display_name || '').toLowerCase().includes(q.toLowerCase());
+        }).slice(0, 8);
+
+        if (!matches.length) { wrap.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:13px">No players found</div>'; return; }
+
+        wrap.innerHTML = matches.map(function(p) {
+          const avail = p.is_available ? '✓ Available' : '✗ Unavailable';
+          return `<div class="dropdown-item" onclick="selectRemovePlayer(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            <strong>${p.display_name}</strong>
+            <span style="color:var(--muted);font-size:11px;margin-left:8px">${p.team} · ${p.position} · ${avail}</span>
+          </div>`;
+        }).join('');
+      });
+  }
+
+  function selectRemovePlayer(p) {
+    removePlayerBuffer = p;
+    document.getElementById('remove-player-search').value = p.display_name;
+    document.getElementById('remove-player-results').innerHTML = '';
+    document.getElementById('remove-player-name-display').textContent = p.display_name;
+    document.getElementById('remove-player-meta-display').textContent =
+      `${p.team} · ${p.position} · API-Football ID: ${p.apifootball_id || 'not linked'} · Currently: ${p.is_available ? 'Available' : 'Unavailable'}`;
+    document.getElementById('remove-player-actions').style.display = 'block';
+    document.getElementById('remove-player-status').className = 'status-msg';
+    document.getElementById('remove-player-status').textContent = '';
+  }
+
+  async function deactivateSelectedPlayer() {
+    if (!removePlayerBuffer) return;
+    const p = removePlayerBuffer;
+    showStatus('remove-player-status', 'info', 'Deactivating…');
+    try {
+      const res  = await fetch('/api/admin-api', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body:    JSON.stringify({ table: 'players', action: 'update', data: { is_available: false }, match: { id: p.id } })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showStatus('remove-player-status', 'ok',
+        `✅ ${p.display_name} marked as Unavailable. They won't appear in player selection but their stats/history are kept.`);
+      setTimeout(loadPlayerTable, 600);
+    } catch (err) {
+      showStatus('remove-player-status', 'error', '❌ ' + err.message);
+    }
+  }
+
+  async function deleteSelectedPlayer() {
+    if (!removePlayerBuffer) return;
+    const p = removePlayerBuffer;
+    if (!confirm(`PERMANENTLY DELETE ${p.display_name}?\n\nThis cannot be undone. Any users who have this player in their squad will need to replace them.\n\nAre you sure?`)) return;
+
+    showStatus('remove-player-status', 'info', 'Deleting…');
+    try {
+      const res  = await fetch('/api/admin-api', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body:    JSON.stringify({ table: 'players', action: 'delete', match: { id: p.id } })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showStatus('remove-player-status', 'ok', `✅ ${p.display_name} permanently deleted from the database.`);
+      removePlayerBuffer = null;
+      document.getElementById('remove-player-actions').style.display = 'none';
+      document.getElementById('remove-player-search').value = '';
+      setTimeout(loadPlayerTable, 600);
+    } catch (err) {
+      showStatus('remove-player-status', 'error', '❌ ' + err.message);
+    }
+  }
+
   function searchPlayers() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
@@ -2474,9 +2792,10 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     stat.className = 'status-msg info';
 
     try {
-      let url = '/api/squad-import' + (club ? '?club=' + encodeURIComponent(club) : '');
+      let url = '/api/squad-import';
+      if (club) url += '&club=' + encodeURIComponent(club);
 
-      const res  = await fetch(url, { headers: { 'x-admin-key': adminKey } });
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (!res.ok || data.error) throw new Error(data.error || 'Fetch failed');
@@ -2702,7 +3021,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
   //  END OF GAMEWEEK WIZARD
   // ══════════════════════════════════════════════════════
 
-  const SYNC_SECRET = adminKey; // Uses the key typed at login
+  const SYNC_SECRET = adminKey; // Uses key typed at login
   const BASE_URL    = '';  // empty = same domain
 
   function showStepStatus(elId, type, msg) {
@@ -2735,7 +3054,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     document.getElementById('step1-log').style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?phase=2', { headers: { 'x-admin-key': adminKey } });
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=2');
       const data = await res.json();
 
       if (data.status === 'success' || data.errors_encountered === 0) {
@@ -2762,7 +3081,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     document.getElementById('step2-log').style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/points-cron', { method: 'POST', headers: { 'x-admin-key': adminKey } });
+      const res  = await fetch(BASE_URL + '/api/points-cron?secret=' + SYNC_SECRET);
       const data = await res.json();
 
       if (data.success || data.profiles_updated >= 0) {
@@ -2866,7 +3185,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     logEl.style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?phase=' + phase, { headers: { 'x-admin-key': adminKey } });
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=' + phase);
       const data = await res.json();
 
       statusEl.className = 'status-msg status-' + (data.errors_encountered > 0 ? 'error' : 'ok');
