@@ -1,63 +1,33 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/football",                  "dest": "/api/football.js" },
-    { "src": "/api/sync",                      "dest": "/api/sync.js" },
-    { "src": "/api/points-cron",               "dest": "/api/points-cron.js" },
-    { "src": "/api/apifootball-sync",          "dest": "/api/apifootball-sync.js" },
-    { "src": "/api/admin-api",                 "dest": "/api/admin-api.js" },
-    { "src": "/api/squad-import",              "dest": "/api/squad-import.js" },
-    { "src": "/api/link-player-ids",           "dest": "/api/link-player-ids.js" },
-    { "src": "/api/add-player",                "dest": "/api/add-player.js" },
-    { "src": "/api/nudge-incomplete-squads",   "dest": "/api/nudge-incomplete-squads.js" },
-    { "src": "/api/save-squad",                "dest": "/api/save-squad.js" },
-    { "src": "/api/sitemap",                   "dest": "/api/sitemap.js" },
-    { "src": "/api/robots",                    "dest": "/api/robots.js" },
-    { "src": "/sitemap.xml",                   "dest": "/api/sitemap.js" },
-    { "src": "/robots.txt",                    "dest": "/api/robots.js" },
-    { "src": "/sw.js",                         "dest": "/sw.js" },
-    { "src": "/manifest.json",                 "dest": "/manifest.json" },
-    { "src": "/admin",                         "dest": "/admin.html" },
-    { "src": "/admin.html",                    "dest": "/admin.html" },
+    { "src": "/api/football",                "dest": "/api/football.js" },
+    { "src": "/api/sync",                    "dest": "/api/sync.js" },
+    { "src": "/api/points-cron",             "dest": "/api/points-cron.js" },
+    { "src": "/api/apifootball-sync",        "dest": "/api/apifootball-sync.js" },
+    { "src": "/api/admin-api",               "dest": "/api/admin-api.js" },
+    { "src": "/api/squad-import",            "dest": "/api/squad-import.js" },
+    { "src": "/api/link-player-ids",         "dest": "/api/link-player-ids.js" },
+    { "src": "/api/save-squad",              "dest": "/api/save-squad.js" },
+    { "src": "/api/sitemap",                 "dest": "/api/sitemap.js" },
+    { "src": "/api/robots",                  "dest": "/api/robots.js" },
+    { "src": "/sitemap.xml",                 "dest": "/api/sitemap.js" },
+    { "src": "/robots.txt",                  "dest": "/api/robots.js" },
+    { "src": "/sw.js",                       "dest": "/sw.js" },
+    { "src": "/manifest.json",               "dest": "/manifest.json" },
+    { "src": "/admin",                       "dest": "/admin.html" },
+    { "src": "/admin.html",                  "dest": "/admin.html" },
     { "handle": "filesystem" },
-    { "src": "/(.*)",                          "dest": "/index.html" }
+    { "src": "/(.*)",                        "dest": "/index.html" }
   ],
   "crons": [
-    {
-      "path": "/api/apifootball-sync",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/apifootball-sync",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/apifootball-sync",
-      "schedule": "30 16 * * 5,6,0"
-    },
-    {
-      "path": "/api/apifootball-sync",
-      "schedule": "30 22 * * 5,6,0"
-    },
-    {
-      "path": "/api/points-cron",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/points-cron",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/points-cron",
-      "schedule": "30 17 * * 5,6,0"
-    },
-    {
-      "path": "/api/points-cron",
-      "schedule": "30 23 * * 5,6,0"
-    },
-    {
-      "path": "/api/nudge-incomplete-squads",
-      "schedule": "0 8 * * *"
-    }
+    { "path": "/api/apifootball-sync", "schedule": "0 2 * * *"        },
+    { "path": "/api/apifootball-sync", "schedule": "0 14 * * *"       },
+    { "path": "/api/apifootball-sync", "schedule": "30 16 * * 5,6,0"  },
+    { "path": "/api/apifootball-sync", "schedule": "30 22 * * 5,6,0"  },
+    { "path": "/api/points-cron",      "schedule": "0 3 * * *"        },
+    { "path": "/api/points-cron",      "schedule": "0 15 * * *"       },
+    { "path": "/api/points-cron",      "schedule": "30 17 * * 5,6,0"  },
+    { "path": "/api/points-cron",      "schedule": "30 23 * * 5,6,0"  }
   ]
 }
