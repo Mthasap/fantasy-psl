@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fantasy PSL">
-  <link rel="apple-touch-icon" href="/icon-192.png">
   <meta name="description" content="South Africa's #1 fantasy football game for the Betway Premiership. Pick your squad, earn points, compete with friends.">
   <link rel="canonical" href="https://www.fantasypsl.co.za/">
 
@@ -113,23 +112,23 @@
        ALL VARIABLES LIVE IN: fantasy-psl.css  lines 7-55
     ═══════════════════════════════════════════════════════════════ */
     :root {
-      --bg-base:      #0C0F14;
-      --bg-surface:   #121720;
-      --bg-card:      #18202C;
-      --bg-input:     #0F1520;
-      --bg-page:      #0C0F14;
+      --bg-base:      #080B10;
+      --bg-surface:   #0E1420;
+      --bg-card:      #141B28;
+      --bg-input:     #0C1220;
+      --bg-page:      #080B10;
       --text-primary: #ffffff;
-      --text-secondary: rgba(255,255,255,.55);
-      --text-muted:   rgba(255,255,255,.3);
-      --border:       rgba(255,255,255,.08);
-      --border-color: rgba(255,255,255,.07);
-      --red:          #B91C3A;
-      --red-soft:     #D4274F;
-      --gold:         #C9963A;
-      --gold-soft:    #DBA94A;
-      --green:        #1A6B42;
-      --green-soft:   #22895A;
-      --stat-highlight:#DBA94A;
+      --text-secondary: rgba(255,255,255,.60);
+      --text-muted:   rgba(255,255,255,.32);
+      --border:       rgba(255,255,255,.09);
+      --border-color: rgba(255,255,255,.08);
+      --red:          #E8192C;
+      --red-soft:     #FF2D42;
+      --gold:         #E8A020;
+      --gold-soft:    #FFB830;
+      --green:        #1A7A48;
+      --green-soft:   #25A060;
+      --stat-highlight:#FFB830;
       --font-display: 'Montserrat Alternates', sans-serif;
       --font-ui:      'Rajdhani', sans-serif;
       --font-body:    'DM Sans', sans-serif;
@@ -137,7 +136,7 @@
       --radius-lg:    16px;
     }
     html, body {
-      background: #0C0F14 !important;
+      background: #080B10 !important;
       color: #ffffff !important;
     }
 
@@ -811,6 +810,10 @@
   <button class="bnav-btn" id="bn-leagues" onclick="goPage('leagues')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
     <span class="bnav-label">Leagues</span>
+  </button>
+  <button class="bnav-btn" id="bn-help" onclick="showTutorial()" title="How to Play">
+    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="bnav-label">Help</span>
   </button>
 </nav>
 
@@ -1561,6 +1564,8 @@ db.auth.onAuthStateChange(function(event, session) {
     });
     loadReactions();
     loadWatchlistFromDB();
+    // Init push notifications after login (safe: checks subscription first)
+    setTimeout(initPushNotifications, 3000);
   } else {
     ST.squad = [];
     renderPitch();
@@ -1600,8 +1605,20 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTickerData();
   setTimeout(loadPOTMHomeCard, 1500); // load after DB connection settles
 
+  // Register service worker for PWA push notifications + offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.warn('[SW] Registration failed:', err);
+    });
+  }
+
+  // Show tutorial for first-time visitors (after 2.5s so app loads first)
+  if (!localStorage.getItem('fpsl_tut_done')) {
+    setTimeout(showTutorial, 2500);
+  }
+
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeAuth(); closePmodal(); closeClubProfile(); }
+    if (e.key === 'Escape') { closeAuth(); closePmodal(); closeClubProfile(); closeTutorial(); }
   });
 });
 
@@ -2452,6 +2469,21 @@ function applyDashboard(d) {
   renderTransferBadge();
   // Start checking for new match scores in the background
   startPointsAutoCheck();
+
+  // Squad completion nudge — show once per session if user has < 15 players
+  if (ST.user && !ST.squadRegistered && ST.squad.length < 15) {
+    if (!sessionStorage.getItem('fpsl_squad_nudge_shown')) {
+      sessionStorage.setItem('fpsl_squad_nudge_shown', '1');
+      setTimeout(function() {
+        var have = ST.squad.length;
+        var need = 15 - have;
+        var msg = have === 0
+          ? '⚽ Pick your 15 players to start earning points!'
+          : '⚽ Almost there! Add ' + need + ' more player' + (need !== 1 ? 's' : '') + ' to complete your squad.';
+        showSquadNudge(msg);
+      }, 3500);
+    }
+  }
 }
 
 // Fetch the user's points for the current GW from gw_scores table
@@ -6506,24 +6538,70 @@ function openMiniPoll() {
 }
 
 function castPoll(key, opt) {
-  // Save locally for instant feedback
-  try {
-    localStorage.setItem(key, opt);
-    var counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}');
-    counts[opt] = (counts[opt] || 0) + 1;
-    localStorage.setItem(key + '_counts', JSON.stringify(counts));
-  } catch(e) {}
-  // Persist to Supabase so ALL users share the same live vote counts
-  db.from('fan_polls').select('votes').eq('poll_key', key).eq('option', opt).single()
+  // Require login for server-side dedup
+  if (!ST.user) {
+    showToast('Log in to vote', 'warning');
+    openAuth('login');
+    return;
+  }
+
+  // Check DB for existing vote first — prevents multi-device / browser-clear bypass
+  db.from('fan_poll_votes')
+    .select('id')
+    .eq('poll_key', key)
+    .eq('user_id', ST.user.id)
+    .limit(1)
     .then(function(res) {
-      var v = (res.data && res.data.votes) ? res.data.votes : 0;
-      return db.from('fan_polls').upsert(
-        { poll_key: key, option: opt, votes: v + 1, updated_at: new Date().toISOString() },
-        { onConflict: 'poll_key,option' }
-      );
-    }).catch(function() {});
-  openMiniPoll();
-  showToast('Vote cast! 🎉', 'success');
+      if (res.data && res.data.length > 0) {
+        showToast('You already voted on this poll!', 'info');
+        try { localStorage.setItem(key, opt); } catch(e) {} // sync local so UI shows result
+        openMiniPoll();
+        return;
+      }
+
+      // Record per-user vote (unique constraint: poll_key + user_id)
+      db.from('fan_poll_votes').insert({
+        poll_key: key,
+        user_id: ST.user.id,
+        option: opt
+      }).then(function() {
+        // Also update aggregated counts table
+        db.from('fan_polls').select('votes').eq('poll_key', key).eq('option', opt).single()
+          .then(function(r) {
+            var v = (r.data && r.data.votes) ? r.data.votes : 0;
+            return db.from('fan_polls').upsert(
+              { poll_key: key, option: opt, votes: v + 1, updated_at: new Date().toISOString() },
+              { onConflict: 'poll_key,option' }
+            );
+          }).catch(function() {});
+
+        // Save locally so UI refreshes without another DB call
+        try {
+          localStorage.setItem(key, opt);
+          var counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}');
+          counts[opt] = (counts[opt] || 0) + 1;
+          localStorage.setItem(key + '_counts', JSON.stringify(counts));
+        } catch(e) {}
+
+        openMiniPoll();
+        showToast('Vote cast! 🎉', 'success');
+      }).catch(function(err) {
+        // Unique constraint violation = already voted (race condition fallback)
+        if (err && err.message && err.message.indexOf('duplicate') !== -1) {
+          showToast('Already voted!', 'info');
+        } else {
+          // Fallback: save locally anyway
+          try { localStorage.setItem(key, opt); } catch(e) {}
+          openMiniPoll();
+          showToast('Vote cast! 🎉', 'success');
+        }
+      });
+    }).catch(function() {
+      // Network error fallback — vote locally only
+      try { localStorage.setItem(key, opt); } catch(e) {}
+      openMiniPoll();
+      showToast('Vote cast! 🎉', 'success');
+    });
 }
 
 // Fetch real shared vote counts from DB and update displayed bars live
@@ -6637,29 +6715,36 @@ function castPOTMVote(matchKey, playerId) {
 // 🔥 LIVE DATA AUTO-REFRESH (FINAL)
 // ====================================================
 
-async function refreshLiveData() {
+// Auto-refresh frontend data every 60 seconds (no admin key needed)
+// Backend sync is handled by Vercel cron jobs in vercel.json — never from the browser
+function refreshLiveData() {
   try {
-    console.log("🔄 Refreshing PSL data...");
-
-    // 1. Force backend sync
-    const res = await fetch('/api/force-sync?admin_key=fpsl-admin-2026');
-    const result = await res.json();
-
-    console.log("✅ Sync result:", result);
-
-    // 2. Reload frontend data AFTER sync
     if (typeof loadFixtures === 'function') loadFixtures();
-    if (typeof loadTable === 'function') loadTable();
-    if (typeof loadStats === 'function') loadStats();
-
+    if (typeof loadTable    === 'function') loadTable();
   } catch (err) {
-    console.error("❌ Refresh error:", err);
+    console.warn('[AutoRefresh]', err);
   }
 }
-
-// Auto refresh every 60 seconds
 setInterval(refreshLiveData, 60000);
 </script>
+
+<!-- ── TUTORIAL OVERLAY ─────────────────────────────────────────── -->
+<div id="tutorial-overlay" onclick="if(event.target===this)closeTutorial()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99998;flex-direction:column;overflow-y:auto;padding:1.5rem 1rem;align-items:center;justify-content:flex-start">
+  <div style="width:100%;max-width:480px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.3rem">
+      <div>
+        <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:900;color:#fff;line-height:1">How to Play</div>
+        <div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.3rem">Fantasy PSL Guide</div>
+      </div>
+      <button onclick="closeTutorial()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:50%;width:36px;height:36px;color:rgba(255,255,255,.6);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+    </div>
+    <div id="tut-steps"></div>
+    <button onclick="closeTutorial()" style="width:100%;background:var(--red);color:#fff;border:none;border-radius:12px;padding:1rem;font-family:var(--font-ui);font-size:.95rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:.5rem;box-shadow:0 4px 20px rgba(185,28,58,.4)">
+      Got It — Build My Squad →
+    </button>
+    <div style="text-align:center;margin-top:.9rem;font-family:var(--font-body);font-size:.72rem;color:rgba(255,255,255,.22)">Tap anywhere outside to close</div>
+  </div>
+</div>
 
 <!-- -- POTM Vote Modal ---------------------------------------------- -->
 <div id="potm-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:1rem">
@@ -8222,6 +8307,152 @@ onReady(function() {
     if (s && s.parentNode) s.parentNode.removeChild(s);
   }, 3200);
 })();
+
+// ====================================================
+//  SQUAD NUDGE — popup for users with incomplete squad
+// ====================================================
+function showSquadNudge(msg) {
+  var existing = document.getElementById('squad-nudge-banner');
+  if (existing) existing.parentNode.removeChild(existing);
+  var el = document.createElement('div');
+  el.id = 'squad-nudge-banner';
+  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+    'width:calc(100% - 2rem);max-width:460px;background:linear-gradient(135deg,#1A3A2A,#1A2C1A);' +
+    'border:1px solid rgba(34,137,90,.4);border-radius:14px;padding:1rem 1.1rem;z-index:8500;' +
+    'box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;align-items:center;gap:.9rem;' +
+    'animation:nudgeIn .35s cubic-bezier(.34,1.4,.64,1) both';
+  el.innerHTML =
+    '<div style="font-size:1.6rem;line-height:1;flex-shrink:0">⚽</div>' +
+    '<div style="flex:1">' +
+      '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;line-height:1.4">' + msg + '</div>' +
+      '<div style="font-family:var(--font-body);font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.2rem">You won\'t earn points until your squad is full.</div>' +
+    '</div>' +
+    '<button onclick="goPage(\'squad\');dismissSquadNudge()" style="flex-shrink:0;background:#22895A;border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.5rem .9rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">Pick Now</button>' +
+    '<button onclick="dismissSquadNudge()" style="flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.3);font-size:1.1rem;cursor:pointer;padding:.2rem .3rem;line-height:1">✕</button>';
+  document.body.appendChild(el);
+
+  // Add animation keyframe if not present
+  if (!document.getElementById('nudge-style')) {
+    var s = document.createElement('style');
+    s.id = 'nudge-style';
+    s.textContent = '@keyframes nudgeIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(s);
+  }
+  // Auto-dismiss after 8 seconds
+  setTimeout(dismissSquadNudge, 8000);
+}
+function dismissSquadNudge() {
+  var el = document.getElementById('squad-nudge-banner');
+  if (el) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(20px)';
+    el.style.transition = 'opacity .3s, transform .3s';
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 350);
+  }
+}
+
+// ====================================================
+//  TUTORIAL OVERLAY
+// ====================================================
+var TUT_STEPS = [
+  { icon:'⚽', title:'Pick 15 Players',           body:'Choose 2 GKs, 5 DEFs, 5 MIDs & 3 FWDs within a R100M budget. Tap the Squad tab, then tap any player to add them.' },
+  { icon:'⭐', title:'Set Captain & Vice-Captain', body:'Your Captain scores double points. Tap a player on your pitch to assign (C) or (V). You must set both before saving.' },
+  { icon:'💾', title:'Save Your Squad',            body:'Tap "Save Squad" to lock in your 15 players. Your squad is saved to the cloud — it will be there when you log back in on any device.' },
+  { icon:'📊', title:'Earn Fantasy Points',        body:'Goals (4–6 pts), Assists (3 pts), Clean Sheets (1–4 pts), Saves bonus, Appearances. Minus points for cards & goals conceded.' },
+  { icon:'🔄', title:'Transfers',                  body:'You get 1 free transfer per gameweek. Each extra transfer costs 4 points. Use chips like Wildcard to make unlimited free changes.' },
+  { icon:'🔴', title:'Live Match Scores',          body:'Tap Matches → Live tab for real-time PSL scores. Tap any match to expand it for stats, player points, and live chat.' },
+  { icon:'💬', title:'Live Match Chat',            body:'Each live match has its own disposable chat room. Tap the Chat tab inside any match to join the conversation.' },
+  { icon:'📈', title:'Player Stats',               body:'Tap the Stats tab for top scorers, assisters, clean sheets and more. Tap any club badge to see their full squad profile.' },
+  { icon:'📰', title:'News',                       body:'Tap News for PSL fantasy tips, match previews and injury updates to help you pick the best squad.' },
+  { icon:'🏆', title:'Mini Leagues',               body:'Create a private league, share the code with friends and compete on a separate leaderboard. Tap the Leagues tab.' },
+  { icon:'📱', title:'Save to Home Screen (Android)', body:'In Chrome tap the 3-dot menu (⋮) → "Add to Home Screen" → tap Add. You get a full-screen app with no browser bar.' },
+  { icon:'📱', title:'Save to Home Screen (iPhone)',  body:'In Safari tap the Share button (□↑) → scroll down → "Add to Home Screen" → tap Add. Works like a native app.' }
+];
+
+function showTutorial() {
+  var overlay = document.getElementById('tutorial-overlay');
+  if (!overlay) return;
+  var steps = document.getElementById('tut-steps');
+  if (steps) {
+    steps.innerHTML = TUT_STEPS.map(function(t) {
+      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.9rem 1rem;margin-bottom:.65rem;display:flex;gap:.85rem;align-items:flex-start">' +
+        '<div style="font-size:1.4rem;line-height:1;flex-shrink:0;margin-top:.1rem">' + t.icon + '</div>' +
+        '<div><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff;margin-bottom:.28rem">' + t.title + '</div>' +
+        '<div style="font-family:var(--font-body);font-size:.78rem;color:rgba(255,255,255,.52);line-height:1.55">' + t.body + '</div></div>' +
+      '</div>';
+    }).join('');
+  }
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeTutorial() {
+  var overlay = document.getElementById('tutorial-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  try { localStorage.setItem('fpsl_tut_done', '1'); } catch(e) {}
+}
+
+// ====================================================
+//  PUSH NOTIFICATIONS  (Web Push / PWA)
+// ====================================================
+// VAPID public key — replace this with your own from:
+//   npx web-push generate-vapid-keys
+var VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY';
+
+function initPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!ST.user) return; // only for logged-in users
+  if (VAPID_PUBLIC_KEY === 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY') return; // not configured yet
+
+  navigator.serviceWorker.ready.then(function(reg) {
+    reg.pushManager.getSubscription().then(function(existing) {
+      if (existing) return; // already subscribed
+      // Only request permission if user hasn't dismissed it before
+      if (localStorage.getItem('fpsl_push_denied')) return;
+      // Small delay so it doesn't fire on first load
+      setTimeout(function() {
+        Notification.requestPermission().then(function(permission) {
+          if (permission === 'granted') {
+            subscribeToPush(reg);
+          } else {
+            try { localStorage.setItem('fpsl_push_denied', '1'); } catch(e) {}
+          }
+        });
+      }, 5000);
+    });
+  }).catch(function() {});
+}
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = window.atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+function subscribeToPush(reg) {
+  try {
+    reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    }).then(function(sub) {
+      // Save subscription to Supabase profiles
+      db.from('profiles').update({
+        push_subscription: JSON.stringify(sub)
+      }).eq('id', ST.user.id).then(function() {
+        console.log('[Push] Subscription saved');
+      }).catch(function() {});
+    }).catch(function() {});
+  } catch(e) {}
+}
+
+// Call initPush when user logs in — wired into onAuthStateChange below
+// (safe to call multiple times — getSubscription() guards against duplicates)
+
+
+
 
 
 </script>
