@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
     if (action === 'status' && !adminKey) return res.json(await getStatus());
 
     // Admin endpoints
-    if (adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
+    if (!ADMIN || adminKey !== ADMIN) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
