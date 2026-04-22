@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
   const adminKey = (req.query && req.query.admin_key)
     || (req.headers && req.headers['x-admin-key']) || '';
 
-  if (adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
+  if (!ADMIN || adminKey !== ADMIN) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!TOKEN) {
