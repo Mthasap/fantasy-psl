@@ -1292,7 +1292,12 @@
   // ══════════════════════════════════════════════════════════════════
   const SUPABASE_URL   = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-  const ADMIN_PASSWORD = 'mzansi4sho';
+  const ADMIN_PASSWORD = ''; // REMOVED: key now comes from login input only
+
+  // ── Session key — set once at login, never hardcoded ─────────────
+  // The admin key is typed into the login form and held in memory only.
+  // It is NEVER stored in localStorage, cookies, or source code.
+  let adminKey = sessionStorage.getItem('fpsl_ak') || '';
 
   const TEAMS = [
     'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
@@ -1328,7 +1333,7 @@
     const payload = Object.assign({ action, table, data, match }, extra || {});
     const res = await fetch('/api/admin-api', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
       body: JSON.stringify(payload)
     });
     const json = await res.json();
@@ -1361,18 +1366,43 @@
   });
 
   function doLogin() {
-    const pw = document.getElementById('admin-pw').value.trim();
-    if (pw === ADMIN_PASSWORD) {
+    const pw  = document.getElementById('admin-pw').value.trim();
+    const btn = document.getElementById('login-btn') || null;
+    const err = document.getElementById('login-error');
+    if (!pw) { err.style.display = 'block'; err.textContent = 'Enter the admin key'; return; }
+
+    // Verify key against the real API — never compare client-side
+    if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
+    err.style.display = 'none';
+
+    fetch('/api/admin-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': pw },
+      body: JSON.stringify({ table: 'profiles', action: 'select', select: 'id', match: { id: '00000000-0000-0000-0000-000000000000' } })
+    }).then(function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter'; }
+      if (res.status === 401) {
+        err.style.display = 'block';
+        err.textContent = 'Incorrect admin key';
+        document.getElementById('admin-pw').value = '';
+        return;
+      }
+      // Key accepted — store in memory for this session only
+      adminKey = pw;
+      sessionStorage.setItem('fpsl_ak', pw); // session only — cleared when tab closes
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-panel').style.display  = 'block';
       initPanel();
-    } else {
-      document.getElementById('login-error').style.display = 'block';
-      document.getElementById('admin-pw').value = '';
-    }
+    }).catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Enter'; }
+      err.style.display = 'block';
+      err.textContent = 'Network error — check your connection';
+    });
   }
 
   function doLogout() {
+    adminKey = '';
+    sessionStorage.removeItem('fpsl_ak');
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('admin-panel').style.display  = 'none';
     document.getElementById('admin-pw').value = '';
@@ -1800,9 +1830,9 @@
         let totalInserted = 0, totalSkipped = 0;
 
         while (true) {
-          const url = '/api/points-cron?mode=points&batch=' + batch + '&admin_key=' + ADMIN_PASSWORD;
+          const url = '/api/points-cron?mode=points&batch=' + batch;
           showStatus('cron-status', 'info', '⚙ Processing batch ' + batch + (totalBatches ? '/' + (totalBatches-1) : '') + '…');
-          const res  = await fetch(url, { method: 'POST' });
+          const res  = await fetch(url, { method: 'POST', headers: { 'x-admin-key': adminKey } });
           const data = await res.json();
 
           if (data.error) { showStatus('cron-status', 'error', '✗ Batch ' + batch + ' error: ' + data.error); break; }
@@ -1831,7 +1861,7 @@
         }
       } else {
         // Non-points modes (fixtures, results) — single request, fast
-        const res  = await fetch('/api/points-cron?mode=' + mode + '&admin_key=' + ADMIN_PASSWORD, { method: 'POST' });
+        const res  = await fetch('/api/points-cron?mode=' + mode, { method: 'POST', headers: { 'x-admin-key': adminKey } });
         const data = await res.json();
         if (data.error) {
           showStatus('cron-status', 'error', '✗ Error: ' + data.error);
@@ -2444,10 +2474,9 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     stat.className = 'status-msg info';
 
     try {
-      let url = '/api/squad-import?admin_key=' + ADMIN_PASSWORD;
-      if (club) url += '&club=' + encodeURIComponent(club);
+      let url = '/api/squad-import' + (club ? '?club=' + encodeURIComponent(club) : '');
 
-      const res  = await fetch(url);
+      const res  = await fetch(url, { headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
 
       if (!res.ok || data.error) throw new Error(data.error || 'Fetch failed');
@@ -2673,7 +2702,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
   //  END OF GAMEWEEK WIZARD
   // ══════════════════════════════════════════════════════
 
-  const SYNC_SECRET = 'mzansi4sho';
+  const SYNC_SECRET = adminKey; // Uses the key typed at login
   const BASE_URL    = '';  // empty = same domain
 
   function showStepStatus(elId, type, msg) {
@@ -2706,7 +2735,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     document.getElementById('step1-log').style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=2');
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?phase=2', { headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
 
       if (data.status === 'success' || data.errors_encountered === 0) {
@@ -2733,7 +2762,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     document.getElementById('step2-log').style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/points-cron?secret=' + SYNC_SECRET);
+      const res  = await fetch(BASE_URL + '/api/points-cron', { method: 'POST', headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
 
       if (data.success || data.profiles_updated >= 0) {
@@ -2837,7 +2866,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     logEl.style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=' + phase);
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?phase=' + phase, { headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
 
       statusEl.className = 'status-msg status-' + (data.errors_encountered > 0 ? 'error' : 'ok');
@@ -2863,7 +2892,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     try {
       const res = await fetch('/api/admin-api', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PASSWORD },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ 
           action: 'select', 
           table: 'players',
