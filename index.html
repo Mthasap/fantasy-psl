@@ -136,7 +136,7 @@
       --radius-lg:    16px;
     }
     html, body {
-      background: #2d4544 !important;
+      background: #080B10 !important;
       color: #ffffff !important;
     }
 
@@ -640,21 +640,42 @@
 <div id="auth-modal" class="auth-modal" onclick="if(event.target===this)closeAuth()">
   <div class="auth-box" style="position:relative;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <button class="auth-close" onclick="closeAuth()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+
+    <!-- ── LOGIN PANEL ── -->
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
       <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
         <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected -- tap Login to continue</span>
+        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
-      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
-        <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#B91C3A;cursor:pointer" checked>
-        <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me on this device</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#E8192C;cursor:pointer" checked>
+          <label for="l-remember" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.45);cursor:pointer;user-select:none">Remember me</label>
+        </div>
+        <a onclick="openAuth('forgot')" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent">Forgot password?</a>
       </div>
       <div class="auth-error" id="l-err"></div>
       <button class="auth-submit" id="l-btn" onclick="doLogin()">Login</button>
       <div class="auth-switch">No account? <a onclick="openAuth('register')">Register free →</a></div>
+    </div>
+
+    <!-- ── FORGOT PASSWORD PANEL ── -->
+    <div id="auth-forgot-panel" style="display:none">
+      <div class="auth-box-title">Reset Password</div>
+      <div style="font-family:var(--font-body);font-size:.85rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:1rem">
+        Enter your email address and we'll send you a link to reset your password.
+      </div>
+      <div class="auth-field"><label>Email</label><input id="fp-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+      <div class="auth-error" id="fp-err"></div>
+      <div id="fp-success" style="display:none;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.3);border-radius:8px;padding:.75rem 1rem;font-family:var(--font-body);font-size:.85rem;color:#4ade80;line-height:1.5;margin-bottom:.75rem">
+        ✓ Reset link sent! Check your email inbox (and spam folder).<br>
+        <span style="font-size:.78rem;color:rgba(255,255,255,.4)">The link expires in 1 hour.</span>
+      </div>
+      <button class="auth-submit" id="fp-btn" onclick="doForgotPassword()">Send Reset Link</button>
+      <div class="auth-switch"><a onclick="openAuth('login')">← Back to Login</a></div>
     </div>
     <div id="auth-reg-panel" style="display:none">
       <div class="auth-box-title">Create Account</div>
@@ -1754,10 +1775,24 @@ function syncNav() {
 function openAuth(mode) {
   var modal = document.getElementById('auth-modal');
   modal.classList.add('open');
-  document.getElementById('auth-login-panel').style.display = (mode === 'login')    ? '' : 'none';
-  document.getElementById('auth-reg-panel').style.display   = (mode === 'register') ? '' : 'none';
-  document.getElementById('l-err').textContent = '';
-  document.getElementById('r-err').textContent = '';
+  // Hide all panels
+  document.getElementById('auth-login-panel').style.display  = 'none';
+  document.getElementById('auth-reg-panel').style.display    = 'none';
+  var forgotPanel = document.getElementById('auth-forgot-panel');
+  if (forgotPanel) forgotPanel.style.display = 'none';
+  // Show correct panel
+  if (mode === 'login')    document.getElementById('auth-login-panel').style.display  = '';
+  if (mode === 'register') document.getElementById('auth-reg-panel').style.display    = '';
+  if (mode === 'forgot' && forgotPanel) {
+    forgotPanel.style.display = '';
+    var fpErr = document.getElementById('fp-err');
+    var fpSuc = document.getElementById('fp-success');
+    if (fpErr) fpErr.textContent = '';
+    if (fpSuc) fpSuc.style.display = 'none';
+  }
+  // Clear errors
+  try { document.getElementById('l-err').textContent = ''; } catch(e) {}
+  try { document.getElementById('r-err').textContent = ''; } catch(e) {}
   // Prefill saved credentials
   try {
     var savedEmail = localStorage.getItem('fpsl_saved_email');
@@ -1776,7 +1811,40 @@ function openAuth(mode) {
 }
 
 function closeAuth() {
-  document.getElementById('auth-modal').classList.remove('open');
+  var modal = document.getElementById('auth-modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  // Belt-and-suspenders: also directly hide via style in case CSS class fails
+  modal.style.display = 'none';
+  // Reset display after a frame so next openAuth() works correctly
+  setTimeout(function() { if (modal) modal.style.display = ''; }, 50);
+}
+
+function doForgotPassword() {
+  var emailEl   = document.getElementById('fp-email');
+  var errEl     = document.getElementById('fp-err');
+  var successEl = document.getElementById('fp-success');
+  var btn       = document.getElementById('fp-btn');
+  var email     = emailEl ? emailEl.value.trim() : '';
+  if (!email) { if (errEl) errEl.textContent = 'Enter your email address'; return; }
+  if (errEl) errEl.textContent = '';
+  if (btn)   { btn.textContent = 'Sending…'; btn.disabled = true; }
+
+  db.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/confirm?type=recovery'
+  }).then(function(res) {
+    if (btn) { btn.textContent = 'Send Reset Link'; btn.disabled = false; }
+    if (res && res.error) {
+      if (errEl) errEl.textContent = res.error.message || 'Could not send reset email';
+      return;
+    }
+    // Always show success (don't reveal whether email exists — security)
+    if (successEl) successEl.style.display = 'block';
+    if (emailEl)   emailEl.value = '';
+  }).catch(function(err) {
+    if (btn) { btn.textContent = 'Send Reset Link'; btn.disabled = false; }
+    if (errEl) errEl.textContent = (err && err.message) || 'Network error — try again';
+  });
 }
 
 function doLogin() {
@@ -1784,12 +1852,18 @@ function doLogin() {
   var email    = document.getElementById('l-email').value.trim();
   var pass     = document.getElementById('l-pass').value;
   var remember = document.getElementById('l-remember') && document.getElementById('l-remember').checked;
-  if (!email || !pass) { document.getElementById('l-err').textContent = 'Fill in all fields'; return; }
+  var errEl    = document.getElementById('l-err');
+  if (!email || !pass) { if (errEl) errEl.textContent = 'Fill in all fields'; return; }
+  if (errEl) errEl.textContent = '';
   btn.textContent = 'Logging in...'; btn.disabled = true;
+
   db.auth.signInWithPassword({ email: email, password: pass }).then(function(res) {
     btn.textContent = 'Login'; btn.disabled = false;
-    if (res.error) { document.getElementById('l-err').textContent = 'Incorrect email or password'; return; }
-    // Save email for next time if remember me is checked
+    if (res.error) {
+      if (errEl) errEl.textContent = 'Incorrect email or password';
+      return;
+    }
+    // Save credentials if remember me checked
     try {
       if (remember) {
         localStorage.setItem('fpsl_saved_email', email);
@@ -1799,8 +1873,12 @@ function doLogin() {
         localStorage.removeItem('fpsl_saved_pass');
       }
     } catch(e) {}
+    // Force close modal immediately — do not rely on onAuthStateChange to do it
     closeAuth();
     showToast('Welcome back! 👋', 'success');
+  }).catch(function(err) {
+    btn.textContent = 'Login'; btn.disabled = false;
+    if (errEl) errEl.textContent = (err && err.message) || 'Login failed — try again';
   });
 }
 
@@ -4352,9 +4430,36 @@ function loadGlobalLB() {
     return;
   }
   if (rateLimited()) return;
-  // Only show users with full squads (squad_count = 15)
-  db.from('profiles').select('team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank').eq('squad_registered', true).order('total_points', { ascending: false }).limit(100).then(function(res) {
-    var rows = (res.data || []).filter(function(p) { return (p.squad_count || 0) >= 15 || (p.total_points || 0) > 0; });
+
+  // Fetch ALL profiles that have squad_registered=true OR squad_count>=15
+  // Using two queries and merging deduped — catches users whose flag is stale
+  Promise.all([
+    db.from('profiles')
+      .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
+      .eq('squad_registered', true)
+      .order('total_points', { ascending: false })
+      .limit(200),
+    db.from('profiles')
+      .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
+      .gte('squad_count', 15)
+      .order('total_points', { ascending: false })
+      .limit(200)
+  ]).then(function(results) {
+    var seen = {};
+    var merged = [];
+    (results[0].data || []).concat(results[1].data || []).forEach(function(p) {
+      if (!seen[p.id]) { seen[p.id] = true; merged.push(p); }
+    });
+    // Also auto-fix squad_registered flag for any user with squad_count=15 but flag=false
+    (results[1].data || []).forEach(function(p) {
+      if (!p.squad_registered && (p.squad_count || 0) >= 15) {
+        // Silently fix the flag in the background
+        db.from('profiles').update({ squad_registered: true }).eq('id', p.id).then(function() {});
+      }
+    });
+    // Sort by total_points desc
+    merged.sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
+    var rows = merged.slice(0, 100);
     if (!rows.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 1.2rem">Be the first manager!</div>'; return; }
     CACHE.leaderboard = { data: rows, ts: Date.now() };
     renderGlobalLBRows(c, rows);
