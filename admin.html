@@ -591,6 +591,7 @@
     <button class="tab-btn" onclick="switchTab('players')">Players</button>
     <button class="tab-btn" onclick="switchTab('automation')">Automation</button>
     <button class="tab-btn" onclick="switchTab('users')">Users</button>
+    <button class="tab-btn" onclick="switchTab('email-nudge')" style="color:#34d399">📧 Email Nudges</button>
     <button class="tab-btn" onclick="switchTab('announcements')">Announcements</button>
     <button class="tab-btn" onclick="switchTab('news')">📰 News</button>
     <button class="tab-btn" onclick="switchTab('squad-import')" style="color:#f59e0b">⬇ Squad Import</button>
@@ -1173,7 +1174,127 @@
 
     </div>
 
+    <!-- ══════════════════ EMAIL NUDGES TAB ══════════════════ -->
+    <div id="tab-email-nudge" class="tab-page">
+
+      <!-- Resend setup guide -->
+      <div class="card" style="border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.03);margin-bottom:16px">
+        <div class="card-header" style="border-bottom-color:rgba(52,211,153,.15)">
+          <div class="card-title"><span class="dot dot-green"></span>📧 Email Setup — Resend.com</div>
+          <div style="font-size:12px;color:var(--muted)">One-time setup required before emails will send</div>
+        </div>
+        <div class="card-body">
+          <div style="background:rgba(41,121,255,.06);border:1px solid rgba(41,121,255,.18);border-radius:10px;padding:16px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.8;margin-bottom:16px">
+            <strong style="color:#fff;font-size:14px">🔧 How to set up email sending (free, 5 min):</strong><br><br>
+            <strong style="color:#60A5FA">Step 1</strong> — Go to <a href="https://resend.com" target="_blank" style="color:#60A5FA">resend.com</a> → Create a free account (3,000 emails/month free)<br>
+            <strong style="color:#60A5FA">Step 2</strong> — In Resend dashboard: <strong>Domains → Add Domain</strong> → enter <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px">fantasypsl.co.za</code><br>
+            <strong style="color:#60A5FA">Step 3</strong> — Resend gives you 3 DNS records to add. Go to your domain registrar (where you bought fantasypsl.co.za) → DNS settings → add those 3 records<br>
+            <strong style="color:#60A5FA">Step 4</strong> — Back in Resend: <strong>API Keys → Create API Key</strong> → copy the key<br>
+            <strong style="color:#60A5FA">Step 5</strong> — In Vercel: <strong>Project → Settings → Environment Variables → Add</strong>:<br>
+            &nbsp;&nbsp;&nbsp;Name: <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px">RESEND_API_KEY</code>&nbsp;&nbsp;Value: <em>paste your key here</em><br>
+            <strong style="color:#60A5FA">Step 6</strong> — Redeploy your Vercel project (push any small commit or click Redeploy)<br><br>
+            <strong style="color:#FFB830">✓ After this, emails will go out from noreply@fantasypsl.co.za to all users</strong>
+          </div>
+
+          <div id="resend-status-banner" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:12px 16px;font-size:13px;color:#F87171;margin-bottom:12px">
+            ⚠ RESEND_API_KEY is not configured — emails will not send until you complete the setup above
+          </div>
+        </div>
+      </div>
+
+      <!-- Send nudge emails -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title"><span class="dot dot-blue"></span>📨 Send Incomplete Squad Emails</div>
+          <div style="font-size:12px;color:var(--muted)">Sends a personalised email to every user who has not completed their 15-player squad</div>
+        </div>
+        <div class="card-body">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+              The email will include each user's name, how many players they have, a visual progress bar, 
+              the points they're missing out on, and a direct link to complete their squad.
+              It will be sent from <strong style="color:#fff">noreply@fantasypsl.co.za</strong>.
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+              <div>
+                <label style="font-size:12px;margin-bottom:4px;display:block">Wait time after registration</label>
+                <select id="nudge-wait-hours" style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-size:13px">
+                  <option value="1">1 hour (keen senders)</option>
+                  <option value="2" selected>2 hours (recommended)</option>
+                  <option value="6">6 hours</option>
+                  <option value="24">24 hours (gentle)</option>
+                  <option value="48">48 hours (very gentle)</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+              Users who registered less than the selected time ago are skipped — this avoids emailing people who just signed up and are still picking their squad.
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-green" onclick="previewNudgeCount()" style="flex:1">👁 Preview — See Who Would Get Emailed</button>
+              <button class="btn btn-blue" onclick="sendNudgeEmails()" style="flex:1">📨 Send Emails Now</button>
+            </div>
+          </div>
+          <div class="status-msg" id="nudge-status" style="margin-bottom:8px"></div>
+          <div class="cron-log" id="nudge-log" style="display:none;margin-top:8px;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- Email preview -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot dot-amber"></span>📬 Email Preview</div>
+          <div style="font-size:12px;color:var(--muted)">This is what users receive — personalised with their name, team and progress</div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div style="background:#080B10;border-radius:0 0 8px 8px;overflow:hidden;font-family:Arial,sans-serif;font-size:14px">
+            <div style="background:linear-gradient(135deg,#E8192C 0%,#7B0D14 100%);padding:22px 20px;text-align:center">
+              <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:3px">Fantasy PSL</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.6);letter-spacing:3px;text-transform:uppercase">Betway Premiership 2025/26</div>
+            </div>
+            <div style="padding:22px 20px;background:#0E1420">
+              <p style="font-size:16px;font-weight:700;color:#fff;margin:0 0 10px">Hi Coach! 👋</p>
+              <p style="color:rgba(255,255,255,.75);line-height:1.7;font-size:13px;margin:0 0 16px">
+                Your team has <strong style="color:#FFB830">8 out of 15 players</strong> — you're just <strong style="color:#fff">7 players away</strong> from earning fantasy points this gameweek!
+              </p>
+              <div style="background:#141B28;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+                <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Squad Progress</div>
+                <div style="margin-bottom:8px">
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:#25C06A"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                  <span style="display:inline-block;width:13px;height:13px;border-radius:50%;margin:2px;background:rgba(255,255,255,.15)"></span>
+                </div>
+                <div style="font-size:20px;font-weight:900;color:#FFB830">8 <span style="font-size:.8em;color:rgba(255,255,255,.3)">/ 15</span></div>
+              </div>
+              <div style="text-align:center;margin:22px 0">
+                <span style="display:inline-block;background:linear-gradient(135deg,#E8192C,#B91228);color:#fff;text-decoration:none;padding:14px 30px;border-radius:10px;font-size:14px;font-weight:700">
+                  Complete My Squad →
+                </span>
+              </div>
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid rgba(255,255,255,.06);text-align:center">
+              <div style="font-size:10px;color:rgba(255,255,255,.25)">Fantasy PSL · fan-made · not affiliated with the PSL or Betway</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end tab-email-nudge -->
+
     <!-- ══════════════════ ANNOUNCEMENTS TAB ══════════════════ -->
+
     <div id="tab-announcements" class="tab-page">
       <div class="grid-2">
 
@@ -2242,6 +2363,88 @@
   // ══════════════════════════════════════════════════════════════════
   // USERS
   // ══════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════
+  //  EMAIL NUDGE FUNCTIONS
+  // ══════════════════════════════════════════════════════════════════
+
+  async function previewNudgeCount() {
+    const waitHours = document.getElementById('nudge-wait-hours').value;
+    const waitCutoff = new Date(Date.now() - waitHours * 60 * 60 * 1000).toISOString();
+    showStatus('nudge-status', 'info', 'Counting users with incomplete squads…');
+    document.getElementById('nudge-log').style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/admin-api', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body:    JSON.stringify({
+          table:  'profiles',
+          action: 'select',
+          select: 'id, username, team_name, squad_count, created_at',
+          match:  { squad_registered: false }
+        })
+      });
+      const data = await res.json();
+      const all     = (data.data || []);
+      const eligible = all.filter(p => new Date(p.created_at) < new Date(waitCutoff));
+      const zero     = eligible.filter(p => !p.squad_count || p.squad_count === 0);
+      const partial  = eligible.filter(p => p.squad_count > 0 && p.squad_count < 15);
+
+      showStatus('nudge-status', 'ok',
+        `Found <strong>${eligible.length} users</strong> with incomplete squads:<br>` +
+        `&nbsp;&nbsp;• ${zero.length} users with 0 players picked<br>` +
+        `&nbsp;&nbsp;• ${partial.length} users with 1–14 players<br>` +
+        `All ${eligible.length} would receive the email. Click "Send Emails Now" to proceed.`);
+
+      const logEl = document.getElementById('nudge-log');
+      if (eligible.length > 0) {
+        logEl.style.display = 'block';
+        logEl.innerHTML = eligible.slice(0, 20).map(p =>
+          `<div>${p.username || 'unnamed'} — ${p.team_name || 'no team'} — ${p.squad_count || 0}/15 players</div>`
+        ).join('') + (eligible.length > 20 ? `<div style="color:var(--muted)">... and ${eligible.length - 20} more</div>` : '');
+      }
+    } catch (err) {
+      showStatus('nudge-status', 'error', '❌ ' + err.message);
+    }
+  }
+
+  async function sendNudgeEmails() {
+    const waitHours = document.getElementById('nudge-wait-hours').value;
+    if (!confirm(`Send incomplete squad emails to all eligible users?\n\nUsers who registered more than ${waitHours} hour(s) ago and have not completed their 15-player squad will receive an email.\n\nThis cannot be undone.`)) return;
+
+    showStatus('nudge-status', 'info', '📨 Sending emails… this may take 30–60 seconds…');
+    document.getElementById('nudge-log').style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/admin-api', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body:    JSON.stringify({ action: 'nudge_squads', wait_hours: parseInt(waitHours, 10) })
+      });
+      const data = await res.json();
+
+      if (!data.resend_configured) {
+        showStatus('nudge-status', 'error',
+          '⚠ RESEND_API_KEY is not configured in Vercel. Follow the setup guide above to enable email sending.');
+        document.getElementById('resend-status-banner').style.display = 'block';
+        return;
+      }
+
+      if (data.error) throw new Error(data.error);
+
+      showStatus('nudge-status', 'ok',
+        `✅ Done! Sent: <strong>${data.nudged}</strong> · Skipped: ${data.skipped} · Errors: ${data.errors}`);
+
+      if (data.log && data.log.length) {
+        const logEl = document.getElementById('nudge-log');
+        logEl.style.display = 'block';
+        logEl.innerHTML = data.log.map(l => `<div>${l}</div>`).join('');
+      }
+    } catch (err) {
+      showStatus('nudge-status', 'error', '❌ ' + err.message);
+    }
+  }
+
   async function loadTopUsers() {
     const tbody = document.getElementById('users-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
