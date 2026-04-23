@@ -2537,18 +2537,13 @@ function applyDashboard(d) {
   // Start checking for new match scores in the background
   startPointsAutoCheck();
 
-  // Squad completion nudge — show once per session if user has < 15 players
+  // Squad completion nudge — show once per 24h if user has < 15 players
   if (ST.user && !ST.squadRegistered && ST.squad.length < 15) {
-    if (!sessionStorage.getItem('fpsl_squad_nudge_shown')) {
-      sessionStorage.setItem('fpsl_squad_nudge_shown', '1');
-      setTimeout(function() {
-        var have = ST.squad.length;
-        var need = 15 - have;
-        var msg = have === 0
-          ? '⚽ Pick your 15 players to start earning points!'
-          : '⚽ Almost there! Add ' + need + ' more player' + (need !== 1 ? 's' : '') + ' to complete your squad.';
-        showSquadNudge(msg);
-      }, 3500);
+    var lastDismissed = 0;
+    try { lastDismissed = parseInt(localStorage.getItem('fpsl_nudge_dismissed') || '0', 10); } catch(e) {}
+    var hoursSinceDismiss = (Date.now() - lastDismissed) / (1000 * 60 * 60);
+    if (hoursSinceDismiss >= 24 || lastDismissed === 0) {
+      setTimeout(function() { showSquadNudge(ST.squad.length); }, 3500);
     }
   }
 }
@@ -8376,47 +8371,100 @@ onReady(function() {
 })();
 
 // ====================================================
-//  SQUAD NUDGE — popup for users with incomplete squad
+//  SQUAD NUDGE — persistent modal for incomplete squads
 // ====================================================
-function showSquadNudge(msg) {
-  var existing = document.getElementById('squad-nudge-banner');
-  if (existing) existing.parentNode.removeChild(existing);
-  var el = document.createElement('div');
-  el.id = 'squad-nudge-banner';
-  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
-    'width:calc(100% - 2rem);max-width:460px;background:linear-gradient(135deg,#1A3A2A,#1A2C1A);' +
-    'border:1px solid rgba(34,137,90,.4);border-radius:14px;padding:1rem 1.1rem;z-index:8500;' +
-    'box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;align-items:center;gap:.9rem;' +
-    'animation:nudgeIn .35s cubic-bezier(.34,1.4,.64,1) both';
-  el.innerHTML =
-    '<div style="font-size:1.6rem;line-height:1;flex-shrink:0">⚽</div>' +
-    '<div style="flex:1">' +
-      '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;line-height:1.4">' + msg + '</div>' +
-      '<div style="font-family:var(--font-body);font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.2rem">You won\'t earn points until your squad is full.</div>' +
-    '</div>' +
-    '<button onclick="goPage(\'squad\');dismissSquadNudge()" style="flex-shrink:0;background:#22895A;border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.5rem .9rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">Pick Now</button>' +
-    '<button onclick="dismissSquadNudge()" style="flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.3);font-size:1.1rem;cursor:pointer;padding:.2rem .3rem;line-height:1">✕</button>';
-  document.body.appendChild(el);
+function showSquadNudge(have) {
+  var existing = document.getElementById('squad-nudge-modal');
+  if (existing) return; // already showing
 
-  // Add animation keyframe if not present
+  var need = 15 - have;
+  var progressDots = '';
+  for (var i = 0; i < 15; i++) {
+    progressDots += '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;margin:2px;background:' +
+      (i < have ? '#25C06A' : 'rgba(255,255,255,.15)') + '"></span>';
+  }
+
+  var el = document.createElement('div');
+  el.id = 'squad-nudge-modal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9900;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:fadeInBg .3s ease';
+  el.innerHTML =
+    '<div style="width:100%;max-width:480px;background:linear-gradient(180deg,#141B28,#0E1420);border-radius:20px 20px 0 0;padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.6);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1)">' +
+
+      // Handle bar
+      '<div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 1.2rem"></div>' +
+
+      // Icon + title
+      '<div style="text-align:center;margin-bottom:1.2rem">' +
+        '<div style="font-size:2.2rem;margin-bottom:.5rem">⚽</div>' +
+        '<div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff;line-height:1.2">' +
+          (have === 0 ? 'Your squad is empty!' : 'Almost there, Coach!') +
+        '</div>' +
+        '<div style="font-family:var(--font-body);font-size:.82rem;color:rgba(255,255,255,.5);margin-top:.4rem">' +
+          (have === 0 ? 'Pick 15 players to start earning points' : 'Add ' + need + ' more player' + (need !== 1 ? 's' : '') + ' to complete your squad') +
+        '</div>' +
+      '</div>' +
+
+      // Progress bar
+      '<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1rem;margin-bottom:1.2rem;text-align:center">' +
+        '<div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.7rem">Squad Progress</div>' +
+        '<div style="margin-bottom:.7rem">' + progressDots + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:' + (have > 0 ? '#FFB830' : 'rgba(255,255,255,.4)') + '">' + have + ' <span style="font-size:.9rem;color:rgba(255,255,255,.3)">/ 15</span></div>' +
+      '</div>' +
+
+      // Points reminder
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1.2rem">' +
+        '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:.7rem .5rem;text-align:center">' +
+          '<div style="font-size:1.1rem;margin-bottom:.2rem">⚽</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.72rem;font-weight:700;color:#fff">Goals</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.4)">4–6 pts each</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:.7rem .5rem;text-align:center">' +
+          '<div style="font-size:1.1rem;margin-bottom:.2rem">🎯</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.72rem;font-weight:700;color:#fff">Assists</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.4)">3 pts each</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:.7rem .5rem;text-align:center">' +
+          '<div style="font-size:1.1rem;margin-bottom:.2rem">🧤</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.72rem;font-weight:700;color:#fff">Clean Sheet</div>' +
+          '<div style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.4)">up to 4 pts</div>' +
+        '</div>' +
+      '</div>' +
+
+      // CTA buttons
+      '<button onclick="goPage(\'squad\');dismissSquadNudge()" style="width:100%;background:linear-gradient(135deg,#E8192C,#B91228);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:1rem;font-weight:700;padding:1rem;cursor:pointer;letter-spacing:.5px;margin-bottom:.6rem;box-shadow:0 4px 20px rgba(232,25,44,.4)">Pick My Players Now →</button>' +
+      '<button onclick="dismissSquadNudge()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.5);font-family:var(--font-ui);font-size:.85rem;padding:.75rem;cursor:pointer">Remind Me Later</button>' +
+
+    '</div>';
+
+  // Add animations if not present
   if (!document.getElementById('nudge-style')) {
     var s = document.createElement('style');
     s.id = 'nudge-style';
-    s.textContent = '@keyframes nudgeIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    s.textContent =
+      '@keyframes fadeInBg{from{opacity:0}to{opacity:1}}' +
+      '@keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}' +
+      '@keyframes nudgeIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
     document.head.appendChild(s);
   }
-  // Auto-dismiss after 8 seconds
-  setTimeout(dismissSquadNudge, 8000);
+
+  document.body.appendChild(el);
+  document.body.style.overflow = 'hidden';
 }
+
 function dismissSquadNudge() {
-  var el = document.getElementById('squad-nudge-banner');
+  var el = document.getElementById('squad-nudge-modal');
   if (el) {
     el.style.opacity = '0';
-    el.style.transform = 'translateX(-50%) translateY(20px)';
-    el.style.transition = 'opacity .3s, transform .3s';
-    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 350);
+    el.style.transition = 'opacity .25s';
+    setTimeout(function() {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      document.body.style.overflow = '';
+    }, 270);
   }
+  // Remember dismiss time — show again after 24h if still incomplete
+  try { localStorage.setItem('fpsl_nudge_dismissed', Date.now().toString()); } catch(e) {}
 }
+
 
 // ====================================================
 //  TUTORIAL OVERLAY
