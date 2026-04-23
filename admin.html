@@ -1673,14 +1673,17 @@
   // ══════════════════════════════════════════════════════════════════
   async function loadOverviewStats() {
     try {
-      const [users, squads, posts, leagues] = await Promise.all([
+      const [users, squadsByFlag, squadsByCount, posts, leagues] = await Promise.all([
         sbCount('profiles'),
-        sbCount('profiles', 'squad_count=eq.15'),
+        sbCount('profiles', 'squad_registered=eq.true'),
+        sbCount('profiles', 'squad_count=gte.15'),
         sbCount('diski_posts', 'is_removed=eq.false'),
         sbCount('leagues')
       ]);
+      // Use whichever count is higher — catches users where flag is stale
+      const fullSquads = Math.max(squadsByFlag || 0, squadsByCount || 0);
       setTile('st-users',   users);
-      setTile('st-squads',  squads);
+      setTile('st-squads',  fullSquads);
       setTile('st-posts',   posts);
       setTile('st-leagues', leagues);
     } catch(e) { console.warn('Overview stats error:', e); }
