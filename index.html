@@ -1584,38 +1584,11 @@ function ensurePlayersLoaded(cb) {
     });
 }
 
-// ── Session restore on app open ───────────────────────────────────────────
-// When the user reopens the app (PWA or browser tab), Supabase has the token
-// in localStorage but onAuthStateChange alone can be slow to fire.
-// getSession() reads it synchronously from storage and restores state immediately,
-// so the user never sees the login screen on relaunch.
-(function restoreSessionOnLoad() {
-  db.auth.getSession().then(function(result) {
-    var session = result && result.data && result.data.session;
-    if (session && session.user) {
-      // Valid stored session — restore user state right now
-      if (!ST.user) {
-        ST.user = session.user;
-        syncNav();
-        updateAdVisibility();
-        loadGW(function() {
-          ensurePlayersLoaded(function() {
-            loadMySquad();
-          });
-        });
-        loadReactions();
-        loadWatchlistFromDB();
-        setTimeout(initPushNotifications, 3000);
-      }
-    }
-  }).catch(function() {
-    // No stored session or token expired — user will need to log in
-    // onAuthStateChange will handle this normally
-  });
-})();
+// ── Session restore is triggered inside DOMContentLoaded (see below)
+// so that PSL_ROSTER and all global variables are fully defined first.
+
 
 db.auth.onAuthStateChange(function(event, session) {
-  var prevUser = ST.user;
   ST.user = session ? session.user : null;
 
   // SIGNED_OUT — clear everything
@@ -1629,7 +1602,7 @@ db.auth.onAuthStateChange(function(event, session) {
     return;
   }
 
-  // TOKEN_REFRESHED — session silently renewed, no UI change needed
+  // TOKEN_REFRESHED — silently renewed, no UI reload needed
   if (event === 'TOKEN_REFRESHED') {
     return;
   }
@@ -1638,19 +1611,17 @@ db.auth.onAuthStateChange(function(event, session) {
   updateAdVisibility();
 
   if (ST.user) {
-    // Only reload squad data if this is a fresh sign-in (not just a token refresh
-    // or a duplicate INITIAL_SESSION event after getSession() already ran)
-    var isNewLogin = (event === 'SIGNED_IN') || (!prevUser && ST.user);
-    if (isNewLogin) {
-      loadGW(function() {
-        ensurePlayersLoaded(function() {
-          loadMySquad();
-        });
+    // Always load squad on SIGNED_IN or INITIAL_SESSION.
+    // getUserDashboard() has its own cache so a double-call is harmless
+    // and ensures the pitch is never empty after login.
+    loadGW(function() {
+      ensurePlayersLoaded(function() {
+        loadMySquad();
       });
-      loadReactions();
-      loadWatchlistFromDB();
-      setTimeout(initPushNotifications, 3000);
-    }
+    });
+    loadReactions();
+    loadWatchlistFromDB();
+    setTimeout(initPushNotifications, 3000);
   } else {
     ST.squad = [];
     renderPitch();
@@ -1682,10 +1653,35 @@ document.addEventListener('DOMContentLoaded', function() {
   if (window._pendingPage) {
     setTimeout(function() { goPage(window._pendingPage); window._pendingPage = null; }, 300);
   }
-  // Use ensurePlayersLoaded (not bare loadPlayers) so the cache/callback
-  // mechanism is consistent with the auth handler. Prevents any future
-  // case where onAuthStateChange fires before DOMContentLoaded finishes.
-  ensurePlayersLoaded(function() { /* players ready at startup */ });
+  // Load players first — then immediately attempt session restore.
+  // This guarantees PSL_ROSTER and ST.allPlayers are populated BEFORE
+  // getUserDashboard() tries to match saved squad IDs against them.
+  // Previously restoreSessionOnLoad fired at line ~1592 before PSL_ROSTER
+  // was defined at line ~5252 — causing empty pitch on first login.
+  ensurePlayersLoaded(function() {
+    // Players are now ready. Restore session if one exists in storage.
+    db.auth.getSession().then(function(result) {
+      var session = result && result.data && result.data.session;
+      if (session && session.user) {
+        if (!ST.user) {
+          ST.user = session.user;
+          syncNav();
+          updateAdVisibility();
+          // Players are already loaded — squad restore will work immediately
+          loadGW(function() {
+            loadMySquad();
+          });
+          loadReactions();
+          loadWatchlistFromDB();
+          setTimeout(initPushNotifications, 3000);
+        }
+        // If ST.user already set (onAuthStateChange beat us here), squad
+        // load is already running — nothing more needed
+      }
+    }).catch(function() {
+      // No valid session — user sees login screen, handled by onAuthStateChange
+    });
+  });
   setTimeout(buildLiveTicker, 1500); // populate ticker after initial load
   loadTickerData();
   setTimeout(loadPOTMHomeCard, 1500); // load after DB connection settles
@@ -1731,6 +1727,16 @@ function goPage(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (id === 'fixtures') { loadFixtures(); loadTable(); }
+  if (id === 'squad') {
+    // If user is logged in but pitch is empty (post-login race), reload squad now
+    if (ST.user && ST.squad.length === 0) {
+      ensurePlayersLoaded(function() { loadMySquad(); });
+    } else {
+      renderPitch();
+      renderBudget();
+      renderPlayerList();
+    }
+  }
   if (id === 'news') {
     loadNews();
     try { window.history.pushState({}, 'Fantasy PSL News', '/news'); } catch(e) {}
@@ -2378,7 +2384,8 @@ function addFromModal() {
 // ====================================================
 function loadMySquad() {
   if (!ST.user) return;
-  getUserDashboard();
+  // Always force a fresh fetch after login — never serve a cached empty squad
+  getUserDashboard(true);
 }
 
 // --- Batched dashboard loader: profile + squad + leagues in ONE call --
