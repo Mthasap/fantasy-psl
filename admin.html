@@ -1304,16 +1304,42 @@
             <div class="card-title"><span class="dot dot-purple"></span>Broadcast to All Users</div>
           </div>
           <div class="card-body">
-            <label>Message (max 200 chars)</label>
-            <textarea id="ann-message" placeholder="e.g. GW24 deadline is Saturday 21 Mar at 13:00 SAST. Make your transfers now!" maxlength="200" oninput="updateAnnCharCount()"></textarea>
-            <div class="char-counter"><span id="ann-char-count">200</span> chars remaining</div>
+
+            <!-- Breaking news toggle -->
+            <div style="background:rgba(232,25,44,.07);border:1px solid rgba(232,25,44,.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div>
+                <div style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:#fff;margin-bottom:3px">🔴 Breaking News Mode</div>
+                <div style="font-size:11px;color:var(--muted);line-height:1.5">When ON — shows a popup modal on app open + a red sticky banner at the top of the home page. Use for major news only.</div>
+              </div>
+              <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
+                <input type="checkbox" id="ann-breaking" style="opacity:0;width:0;height:0">
+                <span onclick="this.previousElementSibling.click()" style="position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,.12);border-radius:12px;transition:.3s" id="ann-breaking-track"></span>
+              </label>
+            </div>
+
+            <!-- Headline (required for breaking news) -->
+            <label>Headline <span style="color:var(--muted);font-weight:400;font-size:11px">(shown in popup & banner)</span></label>
+            <input type="text" id="ann-title" placeholder="e.g. GW26 Deadline Extended to Sunday 14:00" maxlength="120" style="width:100%;margin-bottom:10px">
+
+            <label>Message / Body <span style="color:var(--muted);font-weight:400;font-size:11px">(detail shown in popup)</span></label>
+            <textarea id="ann-message" placeholder="e.g. Due to a postponed fixture, the GW26 deadline has been moved. Make sure your transfers are in before Sunday at 14:00 SAST." maxlength="400" oninput="updateAnnCharCount()"></textarea>
+            <div class="char-counter"><span id="ann-char-count">400</span> chars remaining</div>
 
             <label>Banner Colour</label>
             <select id="ann-color" style="margin-bottom:14px">
-              <option value="red">🔴 Red — Urgent / Deadline</option>
+              <option value="red">🔴 Red — Breaking / Urgent</option>
               <option value="amber">🟡 Amber — Warning / Reminder</option>
               <option value="blue">🔵 Blue — Info / News</option>
               <option value="green">🟢 Green — Good news</option>
+            </select>
+
+            <label>Category</label>
+            <select id="ann-category" style="margin-bottom:14px">
+              <option value="News">News</option>
+              <option value="Deadline">Deadline Alert</option>
+              <option value="Transfer">Transfer Window</option>
+              <option value="Results">Results</option>
+              <option value="Announcement">Announcement</option>
             </select>
 
             <label>Expires After</label>
@@ -1324,7 +1350,7 @@
               <option value="0">Never (sticky)</option>
             </select>
 
-            <div style="margin-top:4px"></div>
+            <div style="margin-top:14px"></div>
             <button class="btn btn-purple btn-full" style="font-size:14px;padding:13px;" onclick="broadcastAnnouncement()">
               📣 Broadcast to All Users
             </button>
@@ -1333,6 +1359,22 @@
         </div>
 
         <!-- Active announcements -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot dot-purple"></span>Active Announcements</div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadAnnouncements()">Refresh</button>
+          </div>
+          <div class="card-body" id="ann-list">
+            <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No active announcements</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end tab-announcements -->
+
+    <!-- ══════════════════ NEWS CMS TAB ══════════════════ -->
+    <div id="tab-news" class="tab-page">
+
         <div class="card">
           <div class="card-header">
             <div class="card-title"><span class="dot dot-purple"></span>Active Announcements</div>
@@ -2502,40 +2544,51 @@
   };
 
   async function broadcastAnnouncement() {
-    const msg     = (document.getElementById('ann-message').value || '').trim();
-    const color   = document.getElementById('ann-color').value;
-    const expires = parseInt(document.getElementById('ann-expires').value);
-    if (!msg) { showStatus('ann-status', 'error', 'Type a message first'); return; }
+    const title    = (document.getElementById('ann-title').value   || '').trim();
+    const msg      = (document.getElementById('ann-message').value || '').trim();
+    const color    = document.getElementById('ann-color').value;
+    const category = document.getElementById('ann-category').value;
+    const expires  = parseInt(document.getElementById('ann-expires').value);
+    const breaking = document.getElementById('ann-breaking').checked;
+
+    if (!title && !msg) { showStatus('ann-status', 'error', 'Enter at least a headline or message'); return; }
+    if (breaking && !title) { showStatus('ann-status', 'error', 'Breaking news requires a headline'); return; }
 
     const expiresAt = expires > 0
       ? new Date(Date.now() + expires * 60 * 60 * 1000).toISOString()
       : null;
 
     const row = {
-      message:    msg,
-      color:      color,
-      is_active:  true,
-      expires_at: expiresAt,
-      created_at: new Date().toISOString()
+      title:       title || msg.substring(0, 80),
+      message:     msg,
+      body:        msg,
+      color:       color,
+      category:    category,
+      is_breaking: breaking,
+      is_active:   true,
+      expires_at:  expiresAt,
+      created_at:  new Date().toISOString()
     };
 
     try {
-      // Try announcements table first
       await sbWrite('insert', 'announcements', row);
-      showStatus('ann-status', 'ok', '✓ Broadcast sent — ' + (expires > 0 ? 'expires in ' + expires + 'h' : 'sticky'));
+      const breakingNote = breaking ? ' Breaking news banner + popup will appear for all users.' : '';
+      showStatus('ann-status', 'ok',
+        '✓ Broadcast sent — ' + (expires > 0 ? 'expires in ' + expires + 'h' : 'sticky') + breakingNote);
     } catch(e) {
-      // Fallback: store in api_cache so the main app can still read it
       try {
         await sbWrite('delete', 'api_cache', null, { key: 'active_announcement' });
-        await sbWrite('upsert', 'api_cache', { key: 'active_announcement', value: msg, updated_at: new Date().toISOString() }, null, { onConflict: 'key' });
-        showStatus('ann-status', 'ok', '✓ Broadcast saved (api_cache fallback) — visible to all users on next load');
+        await sbWrite('upsert', 'api_cache', { key: 'active_announcement', value: title || msg, updated_at: new Date().toISOString() }, null, { onConflict: 'key' });
+        showStatus('ann-status', 'ok', '✓ Broadcast saved (fallback) — visible to all users on next load');
       } catch(e2) {
-        showStatus('ann-status', 'error', '✗ Could not save: ' + e2.message + '\n\nRun the SQL below in Supabase to create the table:\nCREATE TABLE announcements (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, message text, color text DEFAULT \'red\', is_active boolean DEFAULT true, expires_at timestamptz, created_at timestamptz DEFAULT now());');
+        showStatus('ann-status', 'error', '✗ Could not save: ' + e2.message);
         return;
       }
     }
 
+    document.getElementById('ann-title').value   = '';
     document.getElementById('ann-message').value = '';
+    document.getElementById('ann-breaking').checked = false;
     updateAnnCharCount();
     await loadAnnouncements();
   }
