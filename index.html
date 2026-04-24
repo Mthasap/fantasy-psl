@@ -832,10 +832,6 @@
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
     <span class="bnav-label">Leagues</span>
   </button>
-  <button class="bnav-btn" id="bn-help" onclick="showTutorial()" title="How to Play">
-    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span class="bnav-label">Help</span>
-  </button>
 </nav>
 
 <!-- TOAST -->
@@ -844,6 +840,44 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
   <section class="hero">
+<!-- == BREAKING NEWS MODAL (popup on app open) ========================== -->
+<div id="breaking-news-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99990;align-items:flex-end;justify-content:center;padding:0">
+  <div style="width:100%;max-width:520px;background:#0E1420;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1)">
+    <!-- Red breaking news header bar -->
+    <div style="background:linear-gradient(90deg,#E8192C,#B91228);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem">
+      <div style="background:rgba(255,255,255,.22);border-radius:4px;padding:.18rem .55rem;display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;animation:livePulse 1s infinite"></span>
+        <span style="font-family:var(--font-ui);font-size:.62rem;font-weight:900;letter-spacing:2px;color:#fff;text-transform:uppercase">Breaking</span>
+      </div>
+      <div style="font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.5px;text-transform:uppercase;flex:1" id="bn-modal-category">News</div>
+      <button onclick="closeBreakingNews()" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;-webkit-tap-highlight-color:transparent">✕</button>
+    </div>
+    <!-- Content -->
+    <div style="padding:1.4rem 1.4rem 0">
+      <div id="bn-modal-headline" style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#fff;line-height:1.25;margin-bottom:.75rem"></div>
+      <div id="bn-modal-body" style="font-family:var(--font-body);font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:1rem"></div>
+      <div id="bn-modal-meta" style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:1.2rem"></div>
+    </div>
+    <!-- Actions -->
+    <div style="padding:.9rem 1.4rem calc(.9rem + env(safe-area-inset-bottom,0px));display:flex;gap:.7rem;border-top:1px solid rgba(255,255,255,.07)">
+      <button onclick="goPage('news');closeBreakingNews()" style="flex:1;background:linear-gradient(135deg,#E8192C,#B91228);border:none;border-radius:10px;color:#fff;font-family:var(--font-ui);font-size:.88rem;font-weight:700;padding:.75rem;cursor:pointer;letter-spacing:.5px">Read Full Story →</button>
+      <button onclick="closeBreakingNews()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);font-family:var(--font-ui);font-size:.85rem;padding:.75rem;cursor:pointer">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- == BREAKING NEWS STICKY BANNER (top of home page) ================== -->
+<div id="breaking-news-bar" style="display:none;background:linear-gradient(90deg,#E8192C 0%,#B91228 100%);cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="openBreakingNewsModal()">
+  <div style="max-width:960px;margin:0 auto;padding:.55rem 1rem;display:flex;align-items:center;gap:.7rem;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;animation:livePulse 1s infinite"></span>
+      <span style="font-family:var(--font-ui);font-size:.62rem;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,.9);text-transform:uppercase">Breaking</span>
+    </div>
+    <div id="breaking-news-bar-text" style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;letter-spacing:.2px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <div style="flex-shrink:0;color:rgba(255,255,255,.7);font-size:.8rem">→</div>
+  </div>
+</div>
+
     <div class="hero-bg"><div class="hero-glow"></div></div>
     <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">--</span></div>
     <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
@@ -1685,6 +1719,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(buildLiveTicker, 1500); // populate ticker after initial load
   loadTickerData();
   setTimeout(loadPOTMHomeCard, 1500); // load after DB connection settles
+  setTimeout(loadBreakingNews, 800);  // breaking news banner + popup
 
   // Register service worker for PWA push notifications + offline support
   if ('serviceWorker' in navigator) {
@@ -8483,8 +8518,104 @@ onReady(function() {
 })();
 
 // ====================================================
-//  SQUAD NUDGE — persistent modal for incomplete squads
+//  BREAKING NEWS — sticky banner + on-open popup
 // ====================================================
+var _breakingNewsData = null;
+
+function loadBreakingNews() {
+  // Fetch the most recent active announcement or breaking-tagged news post
+  Promise.all([
+    db.from('announcements')
+      .select('id, title, body, category, created_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1),
+    db.from('news_posts')
+      .select('id, title, excerpt, category, published_at')
+      .eq('published', true)
+      .eq('is_breaking', true)
+      .order('published_at', { ascending: false })
+      .limit(1)
+  ]).then(function(results) {
+    var announcement = results[0].data && results[0].data[0];
+    var newsPost     = results[1].data && results[1].data[0];
+
+    // Prefer announcement over news post; use whichever exists
+    var item = announcement || newsPost;
+    if (!item) return; // nothing to show
+
+    // Build a normalised object
+    _breakingNewsData = {
+      id:        item.id,
+      headline:  item.title || '',
+      body:      item.body || item.excerpt || '',
+      category:  item.category || 'News',
+      date:      item.created_at || item.published_at || ''
+    };
+
+    // Show sticky bar
+    var bar     = document.getElementById('breaking-news-bar');
+    var barText = document.getElementById('breaking-news-bar-text');
+    if (bar && barText) {
+      barText.textContent = _breakingNewsData.headline;
+      bar.style.display   = 'block';
+    }
+
+    // Show modal popup only if not already dismissed this session
+    var dismissedId = null;
+    try { dismissedId = sessionStorage.getItem('fpsl_bn_dismissed'); } catch(e) {}
+    if (dismissedId !== String(_breakingNewsData.id)) {
+      setTimeout(openBreakingNewsModal, 1200);
+    }
+  }).catch(function() {
+    // Silently fail — breaking news is non-critical
+  });
+}
+
+function openBreakingNewsModal() {
+  if (!_breakingNewsData) return;
+  var modal = document.getElementById('breaking-news-modal');
+  if (!modal) return;
+
+  // Populate modal content
+  document.getElementById('bn-modal-headline').textContent = _breakingNewsData.headline;
+  document.getElementById('bn-modal-body').textContent     = _breakingNewsData.body;
+  document.getElementById('bn-modal-category').textContent = _breakingNewsData.category.toUpperCase();
+
+  // Format date
+  var dateStr = '';
+  if (_breakingNewsData.date) {
+    try {
+      var d = new Date(_breakingNewsData.date);
+      dateStr = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }) +
+                ' · ' + d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+    } catch(e) {}
+  }
+  document.getElementById('bn-modal-meta').textContent = dateStr;
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBreakingNews() {
+  var modal = document.getElementById('breaking-news-modal');
+  if (modal) {
+    modal.style.opacity    = '0';
+    modal.style.transition = 'opacity .2s';
+    setTimeout(function() {
+      modal.style.display  = 'none';
+      modal.style.opacity  = '';
+      modal.style.transition = '';
+      document.body.style.overflow = '';
+    }, 220);
+  }
+  // Remember dismissed for this session so it won't pop up again on page reload
+  try {
+    if (_breakingNewsData) sessionStorage.setItem('fpsl_bn_dismissed', String(_breakingNewsData.id));
+  } catch(e) {}
+}
+
+
 function showSquadNudge(have) {
   var existing = document.getElementById('squad-nudge-modal');
   if (existing) return; // already showing
