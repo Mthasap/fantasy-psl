@@ -2423,6 +2423,42 @@ function loadMySquad() {
   getUserDashboard(true);
 }
 
+// ── Self-healing: repair stale squad_registered flag ─────────────────────
+// Runs once per session after squad loads. If the DB has squad_data with 15
+// players but squad_registered=false (due to the NaN id bug in older saves),
+// this silently fixes the flag so the user shows on the leaderboard.
+function repairSquadRegisteredFlag(profile, squadLength) {
+  if (!ST.user) return;
+  if (squadLength < 15) return;                          // not a full squad
+  if (profile && profile.squad_registered === true) return; // already correct
+
+  console.log('[FPSL] Repairing stale squad_registered flag for user', ST.user.id);
+
+  var fixPayload = {
+    squad_registered: true,
+    squad_count:      squadLength,
+    updated_at:       new Date().toISOString()
+  };
+  if (!profile.entry_gw) {
+    fixPayload.entry_gw           = (ST.gw && ST.gw.number) || null;
+    fixPayload.squad_registered_at = new Date().toISOString();
+  }
+
+  db.from('profiles')
+    .update(fixPayload)
+    .eq('id', ST.user.id)
+    .then(function(res) {
+      if (res.error) {
+        console.warn('[FPSL] Flag repair error:', res.error.message);
+      } else {
+        console.log('[FPSL] squad_registered flag repaired ✓');
+        ST.squadRegistered = true;
+        // Update leaderboard display without a full page reload
+        try { CACHE.leaderboard = null; } catch(e) {}
+      }
+    }).catch(function() {});
+}
+
 // --- Batched dashboard loader: profile + squad + leagues in ONE call --
 // Instead of 4 separate db.from() calls (loadProfile, loadMySquad,
 // loadLeagues, loadGlobalLB), we fire ONE request per section and cache
@@ -2637,6 +2673,8 @@ function applyDashboard(d) {
     CACHE._profile = d.profile;
     var _sqTitle = document.getElementById('squad-page-title');
     if (_sqTitle && d.profile.team_name) _sqTitle.textContent = d.profile.team_name;
+    // Self-heal: fix stale squad_registered flag for users affected by the NaN id bug
+    repairSquadRegisteredFlag(d.profile, incomingSquad.length);
   }
   if (d.leagues) CACHE.myLeagues = { data: d.leagues, ts: Date.now() };
 
@@ -3052,14 +3090,25 @@ function saveSquad() {
   var bench    = ST.squad.filter(function(p) { return p.onBench; });
 
   var squadData = starters.concat(bench).map(function(p, idx) {
-    // Always save the PSL_ROSTER integer id so restore works across all scenarios.
-    // If player came from DB (UUID id), use psl_roster_id. Otherwise use integer id directly.
-    var canonicalId = p.psl_roster_id
-      ? parseInt(p.psl_roster_id, 10)
-      : (typeof p.id === 'number' ? p.id : parseInt(p.id, 10) || p.id);
+    // Resolve the best canonical integer ID for this player.
+    // Priority: psl_roster_id (int) > numeric p.id > string p.id (UUID fallback)
+    // NEVER store NaN — always fall back to a truthy value so server validation passes.
+    var rosterInt = null;
+    if (p.psl_roster_id) {
+      var parsed = parseInt(p.psl_roster_id, 10);
+      if (!isNaN(parsed) && parsed > 0) rosterInt = parsed;
+    }
+    var numId = null;
+    if (typeof p.id === 'number' && !isNaN(p.id) && p.id > 0) {
+      numId = p.id;
+    } else if (typeof p.id === 'string' && !isNaN(parseInt(p.id, 10)) && parseInt(p.id, 10) > 0) {
+      numId = parseInt(p.id, 10);
+    }
+    // canonicalId: prefer integer roster id, then numeric p.id, then raw string (UUID)
+    var canonicalId = rosterInt || numId || p.id;
     return {
       id:            canonicalId,
-      psl_roster_id: typeof canonicalId === 'number' ? canonicalId : null,
+      psl_roster_id: rosterInt || numId || null,
       name:          playerName(p),
       position:      p.position,
       club:          p.clubs ? p.clubs.name : (p.club || ''),
@@ -3128,7 +3177,7 @@ function saveSquad() {
   
   db.auth.getSession().then(function({ data }) {
     if (!data.session) { onSaveDone(new Error("Not logged in")); return; }
-    
+
     fetch('/api/save-squad', {
       method: 'POST',
       headers: {
@@ -3139,16 +3188,38 @@ function saveSquad() {
     })
     .then(function(res) {
       if (!res.ok) {
-        return res.json().then(function(errData) { throw new Error(errData.error || "Save failed"); });
+        return res.json().then(function(errData) {
+          throw new Error(errData.error || 'Save failed (' + res.status + ')');
+        });
       }
       return res.json();
     })
-    .then(function() {
-      // Destroy stale local cache — cloud is now source of truth
+    .then(function(result) {
+      // API confirmed save — clear stale local copy, cloud is source of truth
       try { localStorage.removeItem('fpsl_squad_' + ST.user.id); } catch(e) {}
       onSaveDone(null);
     })
-    .catch(function(e) { onSaveDone(e); });
+    .catch(function(apiErr) {
+      // API call failed — fall back to direct Supabase upsert
+      // This catches network errors, Vercel cold starts, deadline misconfigs etc.
+      console.warn('[saveSquad] API save failed:', apiErr.message, '— trying direct DB fallback');
+      db.from('profiles')
+        .upsert(upsertPayload, { onConflict: 'id' })
+        .then(function(dbRes) {
+          if (dbRes.error) {
+            onSaveDone(dbRes.error);
+          } else {
+            try { localStorage.removeItem('fpsl_squad_' + ST.user.id); } catch(e) {}
+            onSaveDone(null);
+          }
+        })
+        .catch(function(dbErr) {
+          // Both API and direct DB failed — squad is at least in localStorage
+          onSaveDone(dbErr);
+        });
+    });
+  }).catch(function(sessionErr) {
+    onSaveDone(sessionErr);
   });
 }
 
