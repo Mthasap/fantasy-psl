@@ -499,16 +499,17 @@
   .dk-row.dk-own .dk-acts { justify-content:flex-end; }
 
   .dk-btn {
-    display:inline-flex; align-items:center; gap:.22rem;
-    background:none; border:none; cursor:pointer; padding:.22rem .38rem;
-    border-radius:8px; font-family:var(--font-ui); font-size:.65rem; font-weight:700;
-    color:rgba(255,255,255,.38); transition:color .12s,background .12s;
+    display:inline-flex; align-items:center; gap:.3rem;
+    background:none; border:none; cursor:pointer; padding:.28rem .5rem;
+    border-radius:8px; font-family:var(--font-ui); font-size:.75rem; font-weight:700;
+    color:rgba(255,255,255,.55); transition:color .12s,background .12s;
     -webkit-tap-highlight-color:transparent; line-height:1;
   }
-  .dk-btn:hover          { color:rgba(255,255,255,.75); background:rgba(255,255,255,.06); }
-  .dk-btn.dk-liked       { color:#DBA94A; }
-  .dk-btn.dk-disliked    { color:#D4274F; }
-  .dk-btn.dk-reposted    { color:#22895A; }
+  .dk-btn span { min-width:.8rem; text-align:left; }
+  .dk-btn:hover          { color:rgba(255,255,255,.9); background:rgba(255,255,255,.08); }
+  .dk-btn.dk-liked       { color:#FFB830; }
+  .dk-btn.dk-disliked    { color:#F87171; }
+  .dk-btn.dk-reposted    { color:#34D399; }
   .dk-btn svg            { flex-shrink:0; }
 
   /* date separator */
@@ -839,12 +840,12 @@
 
 <!-- == HOME == -->
 <div id="page-home" class="page active">
-  <section class="hero">
+
 <!-- == BREAKING NEWS MODAL (popup on app open) ========================== -->
 <div id="breaking-news-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99990;align-items:flex-end;justify-content:center;padding:0">
-  <div style="width:100%;max-width:520px;background:#0E1420;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1)">
-    <!-- Red breaking news header bar -->
-    <div style="background:linear-gradient(90deg,#E8192C,#B91228);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem">
+  <div style="width:100%;max-width:520px;background:#0E1420;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1);max-height:88vh;display:flex;flex-direction:column">
+    <!-- Red header bar -->
+    <div style="background:linear-gradient(90deg,#E8192C,#B91228);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem;flex-shrink:0">
       <div style="background:rgba(255,255,255,.22);border-radius:4px;padding:.18rem .55rem;display:flex;align-items:center;gap:.4rem;flex-shrink:0">
         <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;animation:livePulse 1s infinite"></span>
         <span style="font-family:var(--font-ui);font-size:.62rem;font-weight:900;letter-spacing:2px;color:#fff;text-transform:uppercase">Breaking</span>
@@ -852,33 +853,39 @@
       <div style="font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.5px;text-transform:uppercase;flex:1" id="bn-modal-category">News</div>
       <button onclick="closeBreakingNews()" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;-webkit-tap-highlight-color:transparent">✕</button>
     </div>
-    <!-- Content -->
-    <div style="padding:1.4rem 1.4rem 0">
-      <div id="bn-modal-headline" style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#fff;line-height:1.25;margin-bottom:.75rem"></div>
-      <div id="bn-modal-body" style="font-family:var(--font-body);font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:1rem"></div>
-      <div id="bn-modal-meta" style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:1.2rem"></div>
+    <!-- Scrollable content -->
+    <div style="overflow-y:auto;flex:1">
+      <!-- Image (shown only when present) -->
+      <div id="bn-modal-img-wrap" style="display:none;width:100%;max-height:200px;overflow:hidden">
+        <img id="bn-modal-img" src="" alt="" style="width:100%;height:200px;object-fit:cover;display:block">
+      </div>
+      <div style="padding:1.4rem 1.4rem 0">
+        <div id="bn-modal-headline" style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#fff;line-height:1.25;margin-bottom:.75rem"></div>
+        <div id="bn-modal-body" style="font-family:var(--font-body);font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:1rem"></div>
+        <div id="bn-modal-meta" style="font-family:var(--font-ui);font-size:.65rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:1.2rem"></div>
+      </div>
     </div>
     <!-- Actions -->
-    <div style="padding:.9rem 1.4rem calc(.9rem + env(safe-area-inset-bottom,0px));display:flex;gap:.7rem;border-top:1px solid rgba(255,255,255,.07)">
+    <div style="padding:.9rem 1.4rem calc(.9rem + env(safe-area-inset-bottom,0px));display:flex;gap:.7rem;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0">
       <button onclick="goPage('news');closeBreakingNews()" style="flex:1;background:linear-gradient(135deg,#E8192C,#B91228);border:none;border-radius:10px;color:#fff;font-family:var(--font-ui);font-size:.88rem;font-weight:700;padding:.75rem;cursor:pointer;letter-spacing:.5px">Read Full Story →</button>
       <button onclick="closeBreakingNews()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);font-family:var(--font-ui);font-size:.85rem;padding:.75rem;cursor:pointer">Dismiss</button>
     </div>
   </div>
 </div>
 
-<!-- == BREAKING NEWS STICKY BANNER (top of home page) ================== -->
-<div id="breaking-news-bar" style="display:none;background:linear-gradient(90deg,#E8192C 0%,#B91228 100%);cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="openBreakingNewsModal()">
-  <div style="max-width:960px;margin:0 auto;padding:.55rem 1rem;display:flex;align-items:center;gap:.7rem;overflow:hidden">
+<!-- == BREAKING NEWS STICKY BANNER — sits above hero, always visible == -->
+<div id="breaking-news-bar" style="display:none;background:linear-gradient(90deg,#E8192C 0%,#B91228 100%);cursor:pointer;-webkit-tap-highlight-color:transparent;position:relative;z-index:10" onclick="openBreakingNewsModal()">
+  <div style="max-width:960px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;gap:.7rem;overflow:hidden">
     <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
       <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;animation:livePulse 1s infinite"></span>
-      <span style="font-family:var(--font-ui);font-size:.62rem;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,.9);text-transform:uppercase">Breaking</span>
+      <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,.9);text-transform:uppercase">Breaking</span>
     </div>
-    <div id="breaking-news-bar-text" style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;letter-spacing:.2px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-    <div style="flex-shrink:0;color:rgba(255,255,255,.7);font-size:.8rem">→</div>
+    <div id="breaking-news-bar-text" style="font-family:var(--font-ui);font-size:.84rem;font-weight:700;color:#fff;letter-spacing:.2px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <div style="flex-shrink:0;color:rgba(255,255,255,.8);font-size:.85rem;font-weight:700">→</div>
   </div>
 </div>
 
-    <div class="hero-bg"><div class="hero-glow"></div></div>
+  <section class="hero">
     <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">--</span></div>
     <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
       South Africa's Greatest<br>Fantasy Football Game<br>
@@ -7302,23 +7309,22 @@ function renderFeed(){
     var bubbleCls=isOwn?'dk-mine':'dk-theirs';
     var bubble='<div class="dk-bubble '+bubbleCls+'">'+esc(p.content)+'</div>';
 
-    // ── Action buttons ───────────────────────────────
-    // like — always show (count visible to all)
+    // like — always show with explicit count (never blank)
     var likeClass='dk-btn'+(liked?' dk-liked':'');
-    var likeBtn='<button class="'+likeClass+'" onclick="likePost(this)" data-pid="'+pid+'">'+DSVG.like+'<span>'+(p.likes||0)+'</span></button>';
+    var likeBtn='<button class="'+likeClass+'" onclick="likePost(this)" data-pid="'+pid+'">'+DSVG.like+'<span class="react-count">'+(p.likes||0)+'</span></button>';
 
     // dislike — logged-in only
     var dislikeBtn='';
     if(ST.user){
       var dislikeClass='dk-btn'+(disliked?' dk-disliked':'');
-      dislikeBtn='<button class="'+dislikeClass+'" onclick="dislikePost(this)" data-pid="'+pid+'">'+DSVG.dislike+'<span>'+(p.dislikes||0)+'</span></button>';
+      dislikeBtn='<button class="'+dislikeClass+'" onclick="dislikePost(this)" data-pid="'+pid+'">'+DSVG.dislike+'<span class="react-count">'+(p.dislikes||0)+'</span></button>';
     }
 
     // repost — logged-in, not own post
     var repostBtn='';
     if(ST.user&&!isOwn){
       var repostClass='dk-btn'+(reposted?' dk-reposted':'');
-      repostBtn='<button class="'+repostClass+'" onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'">'+DSVG.repost+'<span>'+(p.reposts||0)+'</span></button>';
+      repostBtn='<button class="'+repostClass+'" onclick="repostPost(this)" data-pid="'+pid+'" data-username="'+esc(p.username||'')+'">'+DSVG.repost+'<span class="react-count">'+(p.reposts||0)+'</span></button>';
     }
 
     // reply — logged-in only
@@ -7396,25 +7402,45 @@ function submitPost(){
       CHAT.posts.unshift(res.data);renderFeed();showToast('Posted!','success');
     });
 }
+function updateReactCount(pid, type, newCount) {
+  // Directly update the count span inside the post row — no full re-render needed
+  var row = document.getElementById('post-'+pid);
+  if (!row) return;
+  var btns = row.querySelectorAll('.dk-acts .dk-btn');
+  btns.forEach(function(btn) {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf(type+'Post') !== -1) {
+      var span = btn.querySelector('.react-count');
+      if (span) span.textContent = newCount;
+    }
+  });
+}
+
 function likePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user){showToast('Log in to like posts','warning');return;}
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
   if(CHAT.myReactions[pid]==='like'){
-    // Undo like
     CHAT.myReactions[pid]=null;
     post.likes=Math.max(0,(post.likes||0)-1);
+    btn.classList.remove('dk-liked');
     saveReaction(pid,'none');
   } else {
-    if(CHAT.myReactions[pid]==='dislike'){post.dislikes=Math.max(0,(post.dislikes||0)-1);}
+    if(CHAT.myReactions[pid]==='dislike'){
+      post.dislikes=Math.max(0,(post.dislikes||0)-1);
+      // update dislike button count too
+      var row=document.getElementById('post-'+pid);
+      if(row){var db2=row.querySelector('.dk-btn[onclick*="dislikePost"] .react-count');if(db2)db2.textContent=post.dislikes;var disBtn=row.querySelector('.dk-btn[onclick*="dislikePost"]');if(disBtn)disBtn.classList.remove('dk-disliked');}
+    }
     CHAT.myReactions[pid]='like';
     post.likes=(post.likes||0)+1;
+    btn.classList.add('dk-liked');
     saveReaction(pid,'like');
   }
+  var span=btn.querySelector('.react-count');if(span)span.textContent=post.likes;
   db.from('diski_posts').update({likes:post.likes,dislikes:post.dislikes||0}).eq('id',pid);
-  renderFeed();
 }
+
 function dislikePost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
   if(!ST.user){showToast('Log in to react','warning');return;}
@@ -7424,15 +7450,21 @@ function dislikePost(btn){
   if(alreadyDisliked){
     CHAT.myReactions[pid]=null;
     post.dislikes=Math.max(0,(post.dislikes||0)-1);
+    btn.classList.remove('dk-disliked');
     saveReaction(pid,'none');
   } else {
-    if(CHAT.myReactions[pid]==='like'){post.likes=Math.max(0,(post.likes||0)-1);}
+    if(CHAT.myReactions[pid]==='like'){
+      post.likes=Math.max(0,(post.likes||0)-1);
+      var row=document.getElementById('post-'+pid);
+      if(row){var lb=row.querySelector('.dk-btn[onclick*="likePost"] .react-count');if(lb)lb.textContent=post.likes;var liBtn=row.querySelector('.dk-btn[onclick*="likePost"]');if(liBtn)liBtn.classList.remove('dk-liked');}
+    }
     CHAT.myReactions[pid]='dislike';
     post.dislikes=(post.dislikes||0)+1;
+    btn.classList.add('dk-disliked');
     saveReaction(pid,'dislike');
   }
+  var span=btn.querySelector('.react-count');if(span)span.textContent=post.dislikes;
   db.from('diski_posts').update({likes:post.likes||0,dislikes:post.dislikes||0}).eq('id',pid);
-  renderFeed();
 }
 function repostPost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
@@ -7453,6 +7485,12 @@ function repostPost(btn){
     CHAT.myReposts[pid]=true;
     original.reposts=(original.reposts||0)+1;
     db.from('diski_posts').update({reposts:original.reposts}).eq('id',pid);
+    // Update count in DOM directly
+    if(btn){
+      btn.classList.add('dk-reposted');
+      var span=btn.querySelector('.react-count');if(span)span.textContent=original.reposts;
+    }
+    if(CHAT.myReposts)CHAT.myReposts[pid]=true;
     CHAT.posts.unshift(res.data);renderFeed();
     showToast('Reposted!','success');
   });
@@ -8594,15 +8632,14 @@ onReady(function() {
 var _breakingNewsData = null;
 
 function loadBreakingNews() {
-  // Fetch the most recent active announcement or breaking-tagged news post
   Promise.all([
     db.from('announcements')
-      .select('id, title, body, category, created_at')
+      .select('id, title, body, category, image_url, created_at')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1),
     db.from('news_posts')
-      .select('id, title, excerpt, category, published_at')
+      .select('id, title, excerpt, category, image_url, cover_image, published_at')
       .eq('published', true)
       .eq('is_breaking', true)
       .order('published_at', { ascending: false })
@@ -8610,37 +8647,33 @@ function loadBreakingNews() {
   ]).then(function(results) {
     var announcement = results[0].data && results[0].data[0];
     var newsPost     = results[1].data && results[1].data[0];
-
-    // Prefer announcement over news post; use whichever exists
     var item = announcement || newsPost;
-    if (!item) return; // nothing to show
+    if (!item) return;
 
-    // Build a normalised object
     _breakingNewsData = {
       id:        item.id,
       headline:  item.title || '',
       body:      item.body || item.excerpt || '',
       category:  item.category || 'News',
-      date:      item.created_at || item.published_at || ''
+      date:      item.created_at || item.published_at || '',
+      image_url: item.image_url || item.cover_image || null
     };
 
     // Show sticky bar
     var bar     = document.getElementById('breaking-news-bar');
     var barText = document.getElementById('breaking-news-bar-text');
-    if (bar && barText) {
+    if (bar && barText && _breakingNewsData.headline) {
       barText.textContent = _breakingNewsData.headline;
       bar.style.display   = 'block';
     }
 
-    // Show modal popup only if not already dismissed this session
+    // Show popup if not dismissed this session
     var dismissedId = null;
     try { dismissedId = sessionStorage.getItem('fpsl_bn_dismissed'); } catch(e) {}
     if (dismissedId !== String(_breakingNewsData.id)) {
       setTimeout(openBreakingNewsModal, 1200);
     }
-  }).catch(function() {
-    // Silently fail — breaking news is non-critical
-  });
+  }).catch(function() {});
 }
 
 function openBreakingNewsModal() {
@@ -8648,10 +8681,19 @@ function openBreakingNewsModal() {
   var modal = document.getElementById('breaking-news-modal');
   if (!modal) return;
 
-  // Populate modal content
   document.getElementById('bn-modal-headline').textContent = _breakingNewsData.headline;
   document.getElementById('bn-modal-body').textContent     = _breakingNewsData.body;
-  document.getElementById('bn-modal-category').textContent = _breakingNewsData.category.toUpperCase();
+  document.getElementById('bn-modal-category').textContent = (_breakingNewsData.category || 'News').toUpperCase();
+
+  // Show image if available
+  var imgWrap = document.getElementById('bn-modal-img-wrap');
+  var imgEl   = document.getElementById('bn-modal-img');
+  if (_breakingNewsData.image_url && imgWrap && imgEl) {
+    imgEl.src            = _breakingNewsData.image_url;
+    imgWrap.style.display = 'block';
+  } else if (imgWrap) {
+    imgWrap.style.display = 'none';
+  }
 
   // Format date
   var dateStr = '';
