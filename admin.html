@@ -1342,6 +1342,22 @@
               <option value="Announcement">Announcement</option>
             </select>
 
+            <label>Image URL <span style="color:var(--muted);font-weight:400;font-size:11px">(optional — shown in popup)</span></label>
+            <input type="url" id="ann-image-url" placeholder="https://... paste image link here" style="width:100%;margin-bottom:10px">
+            <div id="ann-img-preview" style="display:none;margin-bottom:12px;border-radius:8px;overflow:hidden;max-height:120px">
+              <img id="ann-img-preview-el" src="" alt="" style="width:100%;height:120px;object-fit:cover;display:block">
+            </div>
+            <script>
+              document.getElementById('ann-image-url').addEventListener('input', function() {
+                var v = this.value.trim();
+                var prev = document.getElementById('ann-img-preview');
+                var img  = document.getElementById('ann-img-preview-el');
+                if (v && (v.startsWith('http') || v.startsWith('/'))) {
+                  img.src = v; prev.style.display = 'block';
+                } else { prev.style.display = 'none'; }
+              });
+            </script>
+
             <label>Expires After</label>
             <select id="ann-expires">
               <option value="24">24 hours</option>
@@ -2550,6 +2566,7 @@
     const category = document.getElementById('ann-category').value;
     const expires  = parseInt(document.getElementById('ann-expires').value);
     const breaking = document.getElementById('ann-breaking').checked;
+    const imageUrl = (document.getElementById('ann-image-url').value || '').trim() || null;
 
     if (!title && !msg) { showStatus('ann-status', 'error', 'Enter at least a headline or message'); return; }
     if (breaking && !title) { showStatus('ann-status', 'error', 'Breaking news requires a headline'); return; }
@@ -2564,6 +2581,7 @@
       body:        msg,
       color:       color,
       category:    category,
+      image_url:   imageUrl,
       is_breaking: breaking,
       is_active:   true,
       expires_at:  expiresAt,
@@ -2588,6 +2606,8 @@
 
     document.getElementById('ann-title').value   = '';
     document.getElementById('ann-message').value = '';
+    document.getElementById('ann-image-url').value = '';
+    document.getElementById('ann-img-preview').style.display = 'none';
     document.getElementById('ann-breaking').checked = false;
     updateAnnCharCount();
     await loadAnnouncements();
