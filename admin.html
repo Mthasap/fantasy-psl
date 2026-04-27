@@ -1037,7 +1037,7 @@
                 <div style="font-size:12px;color:var(--muted);">Fetches per-player stats from API-Football for all finished matches</div>
               </div>
               <button class="btn btn-blue" id="btn-sync-stats" onclick="runGWStep1()" style="margin-left:auto;white-space:nowrap;">
-                ▶ Run Phase 2
+                ▶ Run Phase 1 + 2
               </button>
             </div>
             <div class="status-msg" id="step1-status"></div>
@@ -3324,30 +3324,54 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     }).join('\n');
   }
 
-  // Step 1: Sync match stats (Phase 2 of apifootball-sync)
+  // Step 1: Sync Match Stats
+  //   1a. Phase 1 — update fixture statuses (NS → FT) from API-Football
+  //   1b. Phase 2 — fetch per-player stats for all finished matches
+  //   Both must run so fixtures show as FT AND player stats are populated.
   async function runGWStep1() {
     const btn = document.getElementById('btn-sync-stats');
     btn.disabled = true;
     btn.textContent = '⏳ Running...';
-    showStepStatus('step1-status', 'info', 'Fetching match player stats from API-Football...');
     document.getElementById('step1-log').style.display = 'none';
 
-    try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=2');
-      const data = await res.json();
+    const headers = { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET };
+    const allLog  = [];
 
-      if (data.status === 'success' || data.errors_encountered === 0) {
+    try {
+      // ── 1a: Phase 1 — sync fixture results (NS → FT) ────────────────
+      showStepStatus('step1-status', 'info', '1/2 · Syncing fixture results (NS → FT)...');
+      try {
+        const r1   = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=1', { headers });
+        const d1   = await r1.json();
+        allLog.push('=== Phase 1: Fixture Sync ===');
+        (d1.log || []).forEach(function(l){ allLog.push(l); });
+        allLog.push('Fixtures processed: ' + (d1.fixtures_processed || d1.fixturesProcessed || 0));
+        if (!r1.ok) allLog.push('⚠️ Phase 1 returned HTTP ' + r1.status);
+      } catch(e1) {
+        allLog.push('❌ Phase 1 error: ' + e1.message);
+      }
+
+      // ── 1b: Phase 2 — player stats ───────────────────────────────────
+      showStepStatus('step1-status', 'info', '2/2 · Fetching player stats from API-Football...');
+      const r2   = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=2', { headers });
+      const d2   = await r2.json();
+      allLog.push('');
+      allLog.push('=== Phase 2: Player Stats ===');
+      (d2.log || []).forEach(function(l){ allLog.push(l); });
+
+      if (d2.status === 'success' || d2.errors_encountered === 0) {
         showStepStatus('step1-status', 'ok',
-          '✅ Done — ' + (data.players_updated || 0) + ' player stats synced · ' + (data.duration || ''));
+          '✅ Done — ' + (d2.players_updated || 0) + ' player stats synced · ' + (d2.duration || ''));
       } else {
         showStepStatus('step1-status', 'error', '⚠ Completed with errors — see log below');
       }
-      if (data.log) showStepLog('step1-log', data.log);
     } catch(e) {
       showStepStatus('step1-status', 'error', '❌ Request failed: ' + e.message);
+      allLog.push('❌ ' + e.message);
     } finally {
+      showStepLog('step1-log', allLog);
       btn.disabled = false;
-      btn.textContent = '▶ Run Phase 2';
+      btn.textContent = '▶ Run Phase 1 + 2';
     }
   }
 
@@ -3360,7 +3384,10 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     document.getElementById('step2-log').style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/points-cron?secret=' + SYNC_SECRET);
+      const res  = await fetch(BASE_URL + '/api/points-cron?secret=' + SYNC_SECRET, {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
+      });
       const data = await res.json();
 
       if (data.success || data.profiles_updated >= 0) {
@@ -3464,7 +3491,9 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     logEl.style.display = 'none';
 
     try {
-      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=' + phase);
+      const res  = await fetch(BASE_URL + '/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=' + phase, {
+        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
+      });
       const data = await res.json();
 
       statusEl.className = 'status-msg status-' + (data.errors_encountered > 0 ? 'error' : 'ok');
