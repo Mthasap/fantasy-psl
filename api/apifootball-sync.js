@@ -166,15 +166,8 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
     breakdown.penalty_missed = total;
   }
 
-  // ── Rating Bonus ─────────────────────────────────────────────────────────
-  const rating = parseFloat(stats.games?.rating ?? 0);
-  if (rating >= 8.0) {
-    points += 3;
-    breakdown.rating_bonus = 3;
-  } else if (rating >= 7.0) {
-    points += 1;
-    breakdown.rating_bonus = 1;
-  }
+  // Rating bonus intentionally removed — not part of the published scoring rules.
+  // All displayed stats must match what users see in the scoring guide exactly.
 
   return { points, breakdown, cleanSheet };
 }
