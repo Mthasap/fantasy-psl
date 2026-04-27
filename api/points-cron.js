@@ -29,10 +29,19 @@ module.exports = async (req, res) => {
   // Auth
   const adminKey = (req.query && req.query.admin_key)
     || (req.headers && req.headers['x-admin-key']) || '';
-  const isCron = req.headers && req.headers['x-vercel-cron'] === '1';
-  const isSecret = req.query && req.query.secret === process.env.SYNC_SECRET;
+  const isCron   = req.headers && req.headers['x-vercel-cron'] === '1';
+  // Accept secret via header (preferred) OR query param (legacy admin panel support)
+  // Also accept the admin key itself as the secret so one key covers both endpoints
+  const syncSecretHeader = (req.headers && req.headers['x-sync-secret']) || '';
+  const secretParam      = (req.query  && req.query.secret)              || '';
+  const SYNC             = process.env.SYNC_SECRET || process.env.ADMIN_SECRET || '';
+  const isSecret = SYNC && (
+    syncSecretHeader === SYNC ||
+    secretParam      === SYNC ||
+    secretParam      === process.env.ADMIN_SECRET   // admin key doubles as secret
+  );
 
-  if (!isCron && !isSecret && adminKey !== ADMIN && adminKey !== 'mzansi4sho' && adminKey !== 'fpsl-admin-2026') {
+  if (!isCron && !isSecret && adminKey !== ADMIN) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!SB_URL || !SB_KEY) {
@@ -195,7 +204,21 @@ module.exports = async (req, res) => {
             continue; 
           }
 
-          if (prof.entry_gw === null || prof.entry_gw === undefined) continue;
+          // Auto-heal: if entry_gw was never recorded (race condition during signup),
+          // assign the current GW now so this user starts scoring and appears in rankings.
+          if (prof.entry_gw === null || prof.entry_gw === undefined) {
+            try {
+              await db.from('profiles').update({
+                entry_gw:            currentGW,
+                squad_registered_at: new Date().toISOString()
+              }).eq('id', prof.id);
+              prof.entry_gw = currentGW;
+              log.push('Auto-set entry_gw=' + currentGW + ' for profile ' + prof.id);
+            } catch (e) {
+              log.push('Could not auto-set entry_gw for ' + prof.id + ': ' + e.message);
+              continue;
+            }
+          }
 
           const activeChip = prof.active_chip || null;
           let usedChips = [];
@@ -350,11 +373,15 @@ module.exports = async (req, res) => {
           const unused      = (prof.free_transfers || 1) - freeUsed;
           const newFreeXfers = Math.min(2, unused + 1); 
 
+          // gw_points MUST be written here — the only place that updates
+          // the current-GW display value. Without it the profile always shows
+          // the previous GW's points (root cause of the stale-points bug).
           await db.from('profiles').update(Object.assign({
             total_points:       seasonTotal,
+            gw_points:          gwTotal,
             squad_count:        sq.length,
             free_transfers:     newFreeXfers,
-            transfers_this_gw:  0,             
+            transfers_this_gw:  0,
           }, chipUpdate)).eq('id', prof.id);
 
           profilesUpdated++;
