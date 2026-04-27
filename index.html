@@ -1378,8 +1378,8 @@
 // -- Config ------------------------------------------
 var SUPABASE_URL = 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
-var FOOTBALL_KEY = 'efd40a28aa4d2ed1758174bd319553d1';
-var NEWS_KEY     = '64074f01d6b94feeb870866bdfbc28a3';
+// FOOTBALL_KEY and NEWS_KEY removed from client — all calls go through server-side
+// /api/football and /api/sync endpoints so keys are never exposed to the browser.
 var PSL_ID       = 288;
 var SEASON       = 2025;
 
@@ -1792,6 +1792,8 @@ function goPage(id) {
   if (id === 'profile')  loadProfile();
   if (id === 'home') {
     setTimeout(loadPOTMHomeCard, 400);
+    // Re-check breaking news each time user returns to home (catches new posts)
+    if (!_breakingNewsData) setTimeout(loadBreakingNews, 300);
     try { window.history.pushState({}, 'Fantasy PSL', '/'); } catch(e) {}
     setMeta('og-url', 'https://www.fantasypsl.co.za/');
     setMeta('og-title', 'Fantasy PSL — South Africa Fantasy Football');
@@ -2063,14 +2065,25 @@ function loadGW(cb) {
           }
         }
       } else {
-        // No gameweek marked is_current — use minimal fallback so squad still loads
-        ST.gw = { number: 23, gw_number: 23, deadline_at: null };
-        ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
-          var el = document.getElementById(elId);
-          if (el) el.textContent = '23';
-        });
-        var dl = document.getElementById('gw-deadline');
-        if (dl) dl.textContent = 'Deadline TBC';
+        // No gameweek marked is_current — find the most recent one instead of
+        // using a hardcoded number that gets stale as the season progresses
+        db.from('gameweeks')
+          .select('gw_number, number, deadline_at')
+          .eq('season', 2025)
+          .order('gw_number', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then(function(r) {
+            var latest = r.data;
+            var n = latest ? (latest.gw_number || latest.number || 1) : 1;
+            ST.gw = { number: n, gw_number: n, deadline_at: latest ? latest.deadline_at : null };
+            ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+              var el = document.getElementById(elId);
+              if (el) el.textContent = n;
+            });
+          }).catch(function() {
+            ST.gw = { number: 1, gw_number: 1, deadline_at: null };
+          });
       }
 
       // CRITICAL: always re-evaluate deadline lock after loading fresh GW data
@@ -2714,44 +2727,51 @@ function applyDashboard(d) {
 }
 
 // Fetch the user's points for the current GW from gw_scores table
-// This table is written by the cron job after every completed match
+// Filters by the actual current GW number so we never show the previous GW's score.
 function loadUserGWPoints() {
   if (!ST.user) return;
-  var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : 24;
-  // Load current GW score; if empty also check previous GW (handles GW transition)
+  var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : null;
+  if (!_gwNum) {
+    // GW not loaded yet — wait for it and retry
+    setTimeout(loadUserGWPoints, 1000);
+    return;
+  }
+
+  // Query specifically for the CURRENT gameweek row.
+  // Using order+limit(1) would return the previous GW when the new GW has
+  // no score row yet — causing the stale-points display bug.
   db.from('gw_scores')
     .select('points, player_scores, calculated_at, gameweek')
     .eq('user_id', ST.user.id)
-    .order('gameweek', { ascending: false })
-    .limit(1)
+    .eq('gameweek', _gwNum)
+    .maybeSingle()
     .then(function(res) {
       if (!CACHE._profile) CACHE._profile = {};
-      // Use first row from array (avoids .single() throwing on no rows)
-      var row = Array.isArray(res.data) ? res.data[0] : res.data;
-      if (row && row.points !== undefined) {
+      var row = res.data;
+      if (row && row.points !== undefined && row.points !== null) {
         CACHE._profile.gw_points = row.points;
-        // Sync total_points from profile if it's higher (cron may have updated it)
-        if (!CACHE._profile.total_points && row.points > 0) {
-          CACHE._profile.total_points = row.points;
-        }
         renderBudget();
-        // Store gw_scores breakdown but don't render yet —
-        // loadGWPointsFromMatchStats runs next and produces the accurate per-player data.
-        // Only use gw_scores breakdown as fallback if match_player_stats is empty.
+        // Use server's player breakdown for the pitch display — authoritative source
         var ps = row.player_scores;
         if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
-        if (ps && ps.length && row.points > 0) { window._gwScoresPs = ps; }
+        if (ps && ps.length) {
+          window._gwScoresPs = ps;
+          showPointsBreakdown(ps);
+        } else {
+          // Server breakdown empty — fall back to match_player_stats name matching
+          loadGWPointsFromMatchStats(_gwNum);
+        }
       } else {
-        CACHE._profile.gw_points = CACHE._profile.gw_points || 0;
+        // No cron row yet for this GW — show 0 and try match_player_stats
+        CACHE._profile.gw_points = 0;
         renderBudget();
+        loadGWPointsFromMatchStats(_gwNum);
       }
-      // Always fetch from match_player_stats — most accurate per-player breakdown
-      loadGWPointsFromMatchStats(_gwNum);
     })
     .catch(function(e) {
       console.warn('[loadUserGWPoints] gw_scores error:', e.message);
       if (CACHE._profile) renderBudget();
-      loadGWPointsFromMatchStats(_gwNum);
+      if (_gwNum) loadGWPointsFromMatchStats(_gwNum);
     });
 }
 
@@ -2844,42 +2864,11 @@ function loadGWPointsFromMatchStats(gwNum) {
         renderBudget();
         if (playerBreakdown.length) showPointsBreakdown(playerBreakdown);
 
-        // Write back to Supabase so leaderboard + total_points stay in sync
-        // This mirrors what points-cron does but using name-based matching
-        if (ST.user && totalGW >= 0) {
-          db.from('gw_scores').upsert({
-            user_id:       ST.user.id,
-            gameweek:      gwNum,
-            points:        totalGW,
-            player_scores: playerBreakdown,
-            calculated_at: new Date().toISOString()
-          }, { onConflict: 'user_id,gameweek' })
-          .then(function() {
-            // Sum ALL GW scores for this user = EPL-style season total
-            return db.from('gw_scores')
-              .select('points')
-              .eq('user_id', ST.user.id);
-          })
-          .then(function(scoreRes) {
-            var seasonTotal = (scoreRes.data || []).reduce(function(s, r) {
-              return s + (r.points || 0);
-            }, 0);
-            CACHE._profile.total_points = seasonTotal;
-            // Update profiles row so leaderboard reads the same values
-            return db.from('profiles').update({
-              gw_points:    totalGW,
-              total_points: seasonTotal
-            }).eq('id', ST.user.id);
-          })
-          .then(function() {
-            // Invalidate leaderboard cache so it re-fetches with new data
-            CACHE.leaderboard = null;
-            renderBudget();
-          })
-          .catch(function(e) {
-            console.warn('[loadGWPointsFromMatchStats] write-back error:', e.message);
-          });
-        }
+        // NOTE: We do NOT write back to gw_scores or profiles from the client.
+        // The points-cron job is the single authoritative source for leaderboard
+        // scores. Client-side name matching is imperfect and writing back would
+        // corrupt server data with incorrectly matched player points.
+        CACHE.leaderboard = null; // invalidate so leaderboard refreshes on next view
       }
     })
     .catch(function(e) {
@@ -3182,38 +3171,61 @@ function saveSquad() {
   // NEW SECURE SAVE:
   var upsertPayload = Object.assign({ id: ST.user.id }, updatePayload);
   
-  db.auth.getSession().then(function({ data }) {
-    if (!data.session) { onSaveDone(new Error("Not logged in")); return; }
+  // Force a session refresh before saving — stale JWTs are the #1 cause of
+  // silent save failures that make the squad appear to "revert" on reload.
+  db.auth.refreshSession().then(function(refreshResult) {
+    var session = refreshResult.data && refreshResult.data.session;
+    if (!session) {
+      // Refresh failed — try the current session as-is before giving up
+      return db.auth.getSession().then(function(r) { return r.data && r.data.session; });
+    }
+    return session;
+  }).then(function(session) {
+    if (!session) {
+      showToast('Session expired — please log in again to save your squad', 'error');
+      onSaveDone(new Error('Not logged in'));
+      return;
+    }
 
     fetch('/api/save-squad', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + data.session.access_token
+        'Authorization': 'Bearer ' + session.access_token
       },
       body: JSON.stringify(upsertPayload)
     })
     .then(function(res) {
       if (!res.ok) {
-        return res.json().then(function(errData) {
-          throw new Error(errData.error || 'Save failed (' + res.status + ')');
+        return res.json().catch(function() {
+          // Non-JSON error body (e.g. Vercel 500 HTML page)
+          throw new Error('Server error (' + res.status + ') — please try again');
+        }).then(function(errData) {
+          var msg = (errData && errData.error) || ('Save failed — ' + res.status);
+          if (res.status === 403) msg = errData.error || 'Gameweek deadline has passed';
+          throw new Error(msg);
         });
       }
       return res.json();
     })
     .then(function(result) {
-      // API confirmed save — clear stale local copy, cloud is source of truth
+      // API confirmed save — cloud is now source of truth
       try { localStorage.removeItem('fpsl_squad_' + ST.user.id); } catch(e) {}
+      // Sync ST state from server response
+      if (result.registered) {
+        ST.squadRegistered = true;
+        if (result.entry_gw && !ST.entryGW) ST.entryGW = result.entry_gw;
+      }
       onSaveDone(null);
     })
     .catch(function(apiErr) {
-      // API call failed — fall back to direct Supabase upsert
-      // This catches network errors, Vercel cold starts, deadline misconfigs etc.
+      // API call failed — fall back to direct Supabase upsert as last resort
       console.warn('[saveSquad] API save failed:', apiErr.message, '— trying direct DB fallback');
       db.from('profiles')
         .upsert(upsertPayload, { onConflict: 'id' })
         .then(function(dbRes) {
           if (dbRes.error) {
+            console.error('[saveSquad] Direct DB fallback also failed:', dbRes.error.message);
             onSaveDone(dbRes.error);
           } else {
             try { localStorage.removeItem('fpsl_squad_' + ST.user.id); } catch(e) {}
@@ -3221,11 +3233,13 @@ function saveSquad() {
           }
         })
         .catch(function(dbErr) {
-          // Both API and direct DB failed — squad is at least in localStorage
+          // Both API and direct DB failed — squad stays in localStorage only
+          console.error('[saveSquad] Both save paths failed:', dbErr.message);
           onSaveDone(dbErr);
         });
     });
   }).catch(function(sessionErr) {
+    console.error('[saveSquad] Session check error:', sessionErr.message);
     onSaveDone(sessionErr);
   });
 }
@@ -8385,8 +8399,14 @@ onReady(function() {
       '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
     '</div>';
     out+='<div class="mc-tab-body show" data-fix="'+fid+'" data-tab="stats">';
-    if(isFT&&fid){
-      out+='<div id="mc-stats-'+fid+'" style="padding:.6rem"><div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;padding:.5rem">Loading stats...</div></div>';
+    if((isFT||isLive)&&fid){
+      out+='<div id="mc-stats-'+fid+'" style="padding:.6rem"><div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.3);text-align:center;padding:.5rem">'+(isLive?'Live stats loading...':'Loading stats...')+'</div></div>';
+    } else if(!isFT&&!isLive) {
+      out+='<div style="padding:1.2rem .8rem;text-align:center">'+
+        '<div style="font-size:1.4rem;margin-bottom:.5rem">📋</div>'+
+        '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:rgba(255,255,255,.5)">Pre-match</div>'+
+        '<div style="font-family:var(--font-ui);font-size:.7rem;color:rgba(255,255,255,.28);margin-top:.3rem">Player stats and ratings will appear here once the match kicks off.</div>'+
+      '</div>';
     } else if(isLive){
       out+='<div style="padding:1rem;text-align:center;font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.35)">Stats available after full time</div>';
     } else {
@@ -8423,8 +8443,8 @@ onReady(function() {
     out+='</div></div>';
     out+='</div>';
 
-    if(isFT&&fid){
-      setTimeout(function(){
+    if((isFT||isLive)&&fid){
+      function _loadStatsEl(){
         var statsEl=document.getElementById('mc-stats-'+fid);
         if(!statsEl)return;
         db.from('match_player_stats')
@@ -8611,6 +8631,8 @@ onReady(function() {
     var tmp=document.createElement('div');tmp.innerHTML=rows;
     while(tmp.firstChild)wrap.appendChild(tmp.firstChild);
   };
+  // Trigger the stats load for the expanded fixture
+  setTimeout(_loadStatsEl, 300);
   console.log('[FPSL] Fix patch applied — match stats, no injuries, pitch centred, manual stats');
 });
 
@@ -8632,9 +8654,11 @@ onReady(function() {
 var _breakingNewsData = null;
 
 function loadBreakingNews() {
-  Promise.all([
+  // Promise.allSettled: one failing query (e.g. missing is_breaking column)
+  // never silences the other source.
+  Promise.allSettled([
     db.from('announcements')
-      .select('id, title, body, category, image_url, created_at')
+      .select('id, title, body, category, image_url, created_at, is_breaking')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1),
@@ -8645,11 +8669,30 @@ function loadBreakingNews() {
       .order('published_at', { ascending: false })
       .limit(1)
   ]).then(function(results) {
-    var announcement = results[0].data && results[0].data[0];
-    var newsPost     = results[1].data && results[1].data[0];
-    var item = announcement || newsPost;
-    if (!item) return;
+    var announcement = (results[0].status === 'fulfilled' && results[0].value && results[0].value.data)
+      ? results[0].value.data[0] : null;
+    var newsPostResult = results[1].status === 'fulfilled' ? results[1].value : null;
+    var newsPost = (newsPostResult && newsPostResult.data && newsPostResult.data.length)
+      ? newsPostResult.data[0] : null;
 
+    // If is_breaking column doesn't exist yet, fall back to latest published post
+    if (!newsPost && newsPostResult && newsPostResult.error) {
+      db.from('news_posts')
+        .select('id, title, excerpt, category, image_url, cover_image, published_at')
+        .eq('published', true)
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .then(function(r) {
+          if (r.data && r.data[0]) _showBreakingNewsItem(r.data[0]);
+        }).catch(function() {});
+    }
+
+    var item = announcement || newsPost;
+    if (item) _showBreakingNewsItem(item);
+  }).catch(function() {});
+}
+
+function _showBreakingNewsItem(item) {
     _breakingNewsData = {
       id:        item.id,
       headline:  item.title || '',
@@ -8673,7 +8716,6 @@ function loadBreakingNews() {
     if (dismissedId !== String(_breakingNewsData.id)) {
       setTimeout(openBreakingNewsModal, 1200);
     }
-  }).catch(function() {});
 }
 
 function openBreakingNewsModal() {
