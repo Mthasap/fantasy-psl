@@ -575,14 +575,28 @@ async function recalculateTotals(log) {
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async (req, res) => {
-  // Security: only allow cron + manual with secret
-  const authHeader = req.headers['authorization'];
-  const cronHeader = req.headers['x-vercel-cron'];
+  // Security: accept cron, x-admin-key, x-sync-secret, Bearer token, or ?secret param.
+  // Admin panel sends x-admin-key; crons send x-vercel-cron.
+  // SYNC_SECRET falls back to ADMIN_SECRET so one env var covers everything.
+  const VALID_SECRET = process.env.SYNC_SECRET || process.env.ADMIN_SECRET || '';
+  const cronHeader   = req.headers['x-vercel-cron'];
+  const adminKeyHdr  = req.headers['x-admin-key']    || '';
+  const syncSecretHdr= req.headers['x-sync-secret']  || '';
+  const authHeader   = req.headers['authorization']  || '';
+  const secretParam  = req.query.secret              || '';
+
   const isAuthorized = cronHeader === '1'
-    || authHeader === `Bearer ${process.env.SYNC_SECRET}`
-    || req.query.secret === process.env.SYNC_SECRET;
+    || (VALID_SECRET && adminKeyHdr  === VALID_SECRET)
+    || (VALID_SECRET && syncSecretHdr=== VALID_SECRET)
+    || (VALID_SECRET && secretParam  === VALID_SECRET)
+    || (VALID_SECRET && authHeader   === `Bearer ${VALID_SECRET}`)
+    // Also accept ADMIN_SECRET directly so one key covers both endpoints
+    || (process.env.ADMIN_SECRET && adminKeyHdr === process.env.ADMIN_SECRET)
+    || (process.env.ADMIN_SECRET && secretParam  === process.env.ADMIN_SECRET);
 
   if (!isAuthorized) {
+    console.warn('[apifootball-sync] 401 — no valid auth. Headers:', 
+      Object.keys(req.headers).join(','), '| secretParam present:', !!secretParam);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
