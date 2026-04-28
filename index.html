@@ -841,6 +841,40 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
+<!-- HOME PAGE MID-FEED AD ════════════════════════════════════════════════
+     Shown between hero and fixtures section. Uses house-ad until AdSense fills.
+-->
+<div id="home-mid-ad" style="margin:.8rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;border-radius:12px;overflow:hidden">
+  <ins class="adsbygoogle"
+       style="display:block;min-height:100px"
+       data-ad-client="ca-pub-6398135174637589"
+       data-ad-slot="REPLACE_HOME_SLOT_ID"
+       data-ad-format="fluid"
+       data-ad-layout-key="-fb+5w+4e-db+86"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <!-- House-ad fallback -->
+  <div id="home-house-ad" style="background:linear-gradient(120deg,rgba(14,20,32,.95),rgba(25,28,37,.95));border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#7B0D14);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0">⚽</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff;letter-spacing:.5px">Invite a friend — earn bonus points</div>
+      <div style="font-family:var(--font-body,sans-serif);font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Share Fantasy PSL &amp; climb the leaderboard together</div>
+    </div>
+    <button onclick="if(navigator.share){navigator.share({title:'Fantasy PSL',text:'Play Fantasy PSL with me!',url:'https://www.fantasypsl.co.za'})}else{navigator.clipboard&&navigator.clipboard.writeText('https://www.fantasypsl.co.za')}" style="flex-shrink:0;background:rgba(185,28,58,.85);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Share</button>
+  </div>
+</div>
+<script>
+(function(){
+  function checkHomeFilled(){
+    var ins=document.querySelector('#home-mid-ad ins.adsbygoogle');
+    var house=document.getElementById('home-house-ad');
+    if(!ins||!house)return;
+    if(ins.getAttribute('data-ad-status')==='filled'){house.style.display='none';}
+  }
+  setTimeout(checkHomeFilled,2500);setTimeout(checkHomeFilled,5000);
+})();
+</script>
+
 <!-- == BREAKING NEWS MODAL (popup on app open) ========================== -->
 <div id="breaking-news-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99990;align-items:flex-end;justify-content:center;padding:0">
   <div style="width:100%;max-width:520px;background:#0E1420;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1);max-height:88vh;display:flex;flex-direction:column">
@@ -1183,6 +1217,27 @@
   <div class="page-section" style="max-width:1000px">
     <span class="eyebrow">2025/26 Season</span>
     <h1 class="section-title">PSL News</h1>
+    <!-- NEWS PAGE AD — above the grid ─────────────────────────── -->
+    <div id="news-top-ad" style="width:100%;margin-bottom:1rem;border-radius:10px;overflow:hidden;position:relative">
+      <ins class="adsbygoogle"
+           style="display:block;min-height:90px"
+           data-ad-client="ca-pub-6398135174637589"
+           data-ad-slot="REPLACE_NEWS_SLOT_ID"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- House-ad fallback -->
+      <div id="news-house-ad" style="background:linear-gradient(135deg,rgba(34,137,90,.15),rgba(14,20,32,.9));border:1px solid rgba(34,137,90,.2);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem">
+        <div style="font-size:1.4rem;flex-shrink:0">📱</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff">Add Fantasy PSL to your home screen</div>
+          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.45);margin-top:.15rem">Tap Share → Add to Home Screen for instant access</div>
+        </div>
+        <span style="font-family:var(--font-ui,sans-serif);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);flex-shrink:0">Sponsored</span>
+      </div>
+    </div>
+    <script>(function(){function c(){var i=document.querySelector('#news-top-ad ins.adsbygoogle');var h=document.getElementById('news-house-ad');if(!i||!h)return;if(i.getAttribute('data-ad-status')==='filled')h.style.display='none';}setTimeout(c,2500);setTimeout(c,5000);})();</script>
+    <!-- ──────────────────────────────────────────────────────── -->
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
       <div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>
@@ -1208,6 +1263,27 @@
     </div>
 
     <div id="stats-body"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
+
+    <!-- STATS PAGE AD — below the table ───────────────────────── -->
+    <div id="stats-bottom-ad" style="width:100%;margin-top:1.2rem;border-radius:10px;overflow:hidden;position:relative">
+      <ins class="adsbygoogle"
+           style="display:block;min-height:90px"
+           data-ad-client="ca-pub-6398135174637589"
+           data-ad-slot="REPLACE_STATS_SLOT_ID"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <div id="stats-house-ad" style="background:linear-gradient(135deg,rgba(185,28,58,.12),rgba(14,20,32,.95));border:1px solid rgba(185,28,58,.18);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
+        <div style="font-size:1.4rem;flex-shrink:0">🏅</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff">Fantasy PSL — Free to play</div>
+          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.45);margin-top:.15rem">Pick 15 PSL stars, score points every gameweek</div>
+        </div>
+        <button onclick="goPage('squad')" style="flex-shrink:0;background:rgba(185,28,58,.9);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Play →</button>
+      </div>
+    </div>
+    <script>(function(){function c(){var i=document.querySelector('#stats-bottom-ad ins.adsbygoogle');var h=document.getElementById('stats-house-ad');if(!i||!h)return;if(i.getAttribute('data-ad-status')==='filled')h.style.display='none';}setTimeout(c,2500);setTimeout(c,5000);})();</script>
+    <!-- ──────────────────────────────────────────────────────── -->
   </div>
 </div>
 
@@ -1224,15 +1300,39 @@
          Step 2: replace data-ad-slot="0000000000" below with your real slot number
          Step 3: change data-ad-client to match your publisher ID if different
     -->
-    <div id="leagues-ad-banner" style="width:100%;margin-bottom:1.5rem;border-radius:12px;overflow:hidden;min-height:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center">
+    <div id="leagues-ad-banner" style="width:100%;margin-bottom:1.5rem;border-radius:12px;overflow:hidden;min-height:90px;position:relative">
+      <!-- AdSense leaderboard — replace REPLACE_LEADERBOARD_SLOT_ID with your real slot -->
       <ins class="adsbygoogle"
            style="display:block;width:100%;min-height:90px"
            data-ad-client="ca-pub-6398135174637589"
-           data-ad-slot="0000000000"
+           data-ad-slot="REPLACE_LEADERBOARD_SLOT_ID"
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
       <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- House-ad fallback shown until AdSense fills the slot -->
+      <div id="leagues-house-ad" style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(185,28,58,.18) 0%,rgba(219,169,74,.12) 100%);border:1px solid rgba(219,169,74,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:.9rem 1.2rem;gap:1rem">
+        <div style="font-size:1.6rem">🏆</div>
+        <div>
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(219,169,74,.9)">Create a Private League</div>
+          <div style="font-family:var(--font-body,sans-serif);font-size:.8rem;color:rgba(255,255,255,.55);margin-top:.2rem">Challenge your friends — winner gets ultimate bragging rights</div>
+        </div>
+        <button onclick="goPage('leagues')" style="flex-shrink:0;background:var(--red,#B91C3A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:.55rem .9rem;cursor:pointer;white-space:nowrap">Create →</button>
+      </div>
     </div>
+    <script>
+    // Hide the house-ad once AdSense fills the slot
+    (function() {
+      function checkLeaguesAdFilled() {
+        var ins = document.querySelector('#leagues-ad-banner ins.adsbygoogle');
+        var house = document.getElementById('leagues-house-ad');
+        if (!ins || !house) return;
+        var filled = ins.getAttribute('data-ad-status') === 'filled';
+        if (filled) { house.style.display = 'none'; }
+      }
+      setTimeout(checkLeaguesAdFilled, 2500);
+      setTimeout(checkLeaguesAdFilled, 5000);
+    })();
+    </script>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
       <div style="flex:1;min-width:240px;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1.2rem">
@@ -6643,10 +6743,16 @@ function updateAdVisibility() {
     var dismissed = sessionStorage.getItem('ad_dismissed');
     if (dismissed) {
       banner.style.display = 'none';
-    } else {
-      banner.style.display = 'flex';
-      setTimeout(function() { banner.style.opacity = '1'; }, 1500);
+      return;
     }
+    // Show banner for all users — 30s delay so it doesn't interrupt onboarding
+    var delayMs = ST.user ? 30000 : 8000;
+    setTimeout(function() {
+      // Re-check in case user dismissed while waiting
+      try { if (sessionStorage.getItem('ad_dismissed')) return; } catch(e) {}
+      banner.style.display = 'flex';
+      setTimeout(function() { banner.style.opacity = '1'; }, 300);
+    }, delayMs);
   } catch(e) {}
 }
 
@@ -7064,8 +7170,14 @@ setInterval(refreshLiveData, 60000);
     </button>
   </div>
   <!-- Effective Gate CPM Ad -->
-  <div id="ad-slot-container" style="min-height:60px;display:flex;align-items:center;justify-content:center"></div>
-  <!-- ad slot removed -->
+  <div id="ad-slot-container" style="min-height:60px;display:flex;align-items:center;justify-content:center">
+    <!-- AdSense Anchor / Banner — 320x50 responsive -->
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:320px;height:50px"
+         data-ad-client="ca-pub-6398135174637589"
+         data-ad-slot="REPLACE_BANNER_SLOT_ID"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
 </div>
 
   <!-- -- Action sheet: captain/VC/transfer/bench options -- -->
