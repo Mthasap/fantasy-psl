@@ -111,13 +111,14 @@ module.exports = async (req, res) => {
         gwStatsByApiId[pid].fantasy_points += (row.fantasy_points || 0);
         gwStatsByApiId[pid].minutes_played += (row.minutes_played || 0);
       }
-      // Index strictly by full name
+      // Index by full name AND normalised name for resilient matching
       if (row.player_name) {
-        const n  = normStatName(row.player_name);
-        const pts = row.fantasy_points || 0;
-        if (!gwStatsByName[n] || pts > (gwStatsByName[n].fantasy_points || 0)) {
-          gwStatsByName[n] = row;
-        }
+        const raw  = row.player_name.toLowerCase().trim();
+        const norm = normStatName(row.player_name);
+        const pts  = row.fantasy_points || 0;
+        // Prefer higher-scoring row for same player across duplicate entries
+        if (!gwStatsByName[raw]  || pts > (gwStatsByName[raw].fantasy_points  || 0)) gwStatsByName[raw]  = row;
+        if (!gwStatsByName[norm] || pts > (gwStatsByName[norm].fantasy_points || 0)) gwStatsByName[norm] = row;
       }
     }
 
@@ -140,7 +141,13 @@ module.exports = async (req, res) => {
       byDbId[p.id] = p;
       if (p.psl_roster_id) byRosterId[p.psl_roster_id] = p;
       if (p.apifootball_id) byApiId[p.apifootball_id]  = p;
-      if (p.display_name) byName[p.display_name.toLowerCase().trim()] = p;
+      // Index by both raw and normalised name for resilient matching
+      if (p.display_name) {
+        const rawKey  = p.display_name.toLowerCase().trim();
+        const normKey = rawKey.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+        byName[rawKey]  = p;
+        byName[normKey] = p;
+      }
     }
 
     log.push('DB players loaded: ' + (dbPlayers || []).length);
@@ -249,11 +256,14 @@ module.exports = async (req, res) => {
             const capApiId = resolveApiId(captainEntry, byDbId, byRosterId, byName);
             let capStat = capApiId ? gwStatsByApiId[capApiId] : null;
             
-            // Strict name match for captain
-            if (!capStat && (captainEntry.display_name || captainEntry.name)) {
-              const cn = (captainEntry.display_name || captainEntry.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
-              const cHit = gwStatsByName[cn];
-              if (cHit) capStat = gwStatsByApiId[cHit.apifootball_player_id] || cHit;
+            // Name-based captain fallback — check both name and display_name
+            if (!capStat) {
+              const capNames = [captainEntry.display_name, captainEntry.name].filter(Boolean);
+              for (const cn of capNames) {
+                const normCn = cn.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim();
+                let cHit = gwStatsByName[cn.toLowerCase().trim()] || gwStatsByName[normCn];
+                if (cHit) { capStat = gwStatsByApiId[cHit.apifootball_player_id] || cHit; break; }
+              }
             }
             if (capStat) captainPlayed = (capStat.minutes_played || 0) > 0;
           }
@@ -265,11 +275,18 @@ module.exports = async (req, res) => {
             const apiId  = resolveApiId(sp, byDbId, byRosterId, byName);
             let   gwStat = apiId ? gwStatsByApiId[apiId] : null;
 
-            // Name-based strict fallback (Full Name Only)
-            if (!gwStat && (sp.display_name || sp.name)) {
-              const spNorm = (sp.display_name || sp.name || '').toLowerCase().replace(/[^a-z\s]/g,'').trim();
-              const nameHit = gwStatsByName[spNorm];
-              if (nameHit) gwStat = gwStatsByApiId[nameHit.apifootball_player_id] || nameHit;
+            // Name-based fallback — check display_name first, then name field,
+            // then normalised version. Squad data uses 'name', not 'display_name'.
+            if (!gwStat) {
+              const nameOptions = [sp.display_name, sp.name].filter(Boolean);
+              for (const rawN of nameOptions) {
+                const normN = rawN.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim();
+                let hit = gwStatsByName[rawN.toLowerCase().trim()] || gwStatsByName[normN];
+                if (hit) {
+                  gwStat = gwStatsByApiId[hit.apifootball_player_id] || hit;
+                  break;
+                }
+              }
             }
 
             let pts = 0;
@@ -449,34 +466,47 @@ module.exports = async (req, res) => {
   }
 };
 
-// ── Helper: STRICT resolve apifootball_id from a squad entry ─────────────
-// Priority: DB id → psl_roster_id → integer-as-roster-id → exact display_name
+// ── Helper: resolve apifootball_id from a squad entry ──────────────────
+// Priority: DB id → psl_roster_id → integer-as-roster-id → name (display_name OR name)
+// Squad entries use 'name' field, not 'display_name' — both are checked.
 function resolveApiId(squadEntry, byDbId, byRosterId, byName) {
   if (!squadEntry) return null;
 
   const sid = squadEntry.id;
 
-  // 1. Direct DB id lookup (most reliable)
+  // 1. Direct DB UUID lookup
   if (sid && byDbId[sid] && byDbId[sid].apifootball_id) {
     return byDbId[sid].apifootball_id;
   }
 
-  // 2. psl_roster_id lookup
-  const rid = squadEntry.psl_roster_id || parseInt(sid, 10);
-  if (rid && byRosterId[rid] && byRosterId[rid].apifootball_id) {
-    return byRosterId[rid].apifootball_id;
+  // 2. psl_roster_id explicit field
+  if (squadEntry.psl_roster_id && byRosterId[squadEntry.psl_roster_id] &&
+      byRosterId[squadEntry.psl_roster_id].apifootball_id) {
+    return byRosterId[squadEntry.psl_roster_id].apifootball_id;
   }
 
-  // 3. Integer id treated as roster id
-  if (typeof sid === 'number' && byRosterId[sid] && byRosterId[sid].apifootball_id) {
-    return byRosterId[sid].apifootball_id;
+  // 3. Numeric id treated as psl_roster_id
+  const numId = parseInt(sid, 10);
+  if (!isNaN(numId) && byRosterId[numId] && byRosterId[numId].apifootball_id) {
+    return byRosterId[numId].apifootball_id;
   }
 
-  // 4. STRICT Full-Name-Only fallback (No more surname guessing!)
-  if (byName && squadEntry.display_name) {
-    const key = squadEntry.display_name.toLowerCase().trim();
+  // 4. Name lookup — check BOTH 'name' and 'display_name' fields
+  // Squad data from the frontend saves player name as 'name', not 'display_name'
+  const candidateNames = [
+    squadEntry.display_name,
+    squadEntry.name,
+  ].filter(Boolean);
+
+  for (const rawName of candidateNames) {
+    const key = rawName.toLowerCase().trim();
     if (byName[key] && byName[key].apifootball_id) {
       return byName[key].apifootball_id;
+    }
+    // Normalised key (remove accents/punctuation)
+    const normKey = key.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+    if (byName[normKey] && byName[normKey].apifootball_id) {
+      return byName[normKey].apifootball_id;
     }
   }
 
