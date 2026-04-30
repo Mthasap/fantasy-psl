@@ -4320,9 +4320,40 @@ function openNewsPost(postOrIdx) {
   setMeta('og-title',       post.title + ' — Fantasy PSL');
   setMeta('og-description', post.summary || post.title);
   setMeta('og-url',         shareUrl);
-  setMeta('og-image',       post.image_url || 'https://www.fantasypsl.co.za/icon-512.png');
+  setMeta('og-image',       post.image_url || post.cover_image || 'https://www.fantasypsl.co.za/icon-512.png');
   setMeta('page-desc',      post.summary || post.title);
   try { document.title = post.title + ' — Fantasy PSL'; } catch(e) {}
+  // Inject NewsArticle structured data — critical for Google News indexing
+  try {
+    var ldExisting = document.getElementById('ld-article');
+    if (ldExisting) ldExisting.remove();
+    var ldScript = document.createElement('script');
+    ldScript.type = 'application/ld+json';
+    ldScript.id   = 'ld-article';
+    ldScript.textContent = JSON.stringify({
+      '@context':         'https://schema.org',
+      '@type':            'NewsArticle',
+      'headline':         post.title || '',
+      'description':      post.summary || post.excerpt || '',
+      'datePublished':    post.published_at || post.created_at || '',
+      'dateModified':     post.updated_at   || post.published_at || '',
+      'url':              shareUrl,
+      'image':            post.image_url || post.cover_image || 'https://www.fantasypsl.co.za/icon-512.png',
+      'author':           { '@type': 'Person', 'name': post.author || 'Fantasy PSL Editorial' },
+      'publisher': {
+        '@type':  'Organization',
+        'name':   'Fantasy PSL',
+        'logo':   { '@type': 'ImageObject', 'url': 'https://www.fantasypsl.co.za/icon-512.png', 'width': 512, 'height': 512 }
+      },
+      'keywords':         'PSL, Betway Premiership, Fantasy Football, Fantasy Soccer, South Africa' + (post.category ? ', ' + post.category : ''),
+      'mainEntityOfPage': { '@type': 'WebPage', '@id': shareUrl },
+      'inLanguage':       'en-ZA'
+    });
+    document.head.appendChild(ldScript);
+    // Update canonical link tag
+    var canon = document.querySelector('link[rel="canonical"]');
+    if (canon) canon.href = shareUrl;
+  } catch(e) { console.warn('[SEO structured data]', e.message); }
 
   // Build overlay
   // Always remove stale overlay so CSS is never cached with wrong top value
@@ -5429,7 +5460,18 @@ function mcSwitchTab(fixtureId, tabName) {
   var key = String(fixtureId);
   document.querySelectorAll('.mc-tab[data-fix="'+key+'"]').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tabName);});
   document.querySelectorAll('.mc-tab-body[data-fix="'+key+'"]').forEach(function(b){b.classList.toggle('show',b.dataset.tab===tabName);});
-  if (tabName==='chat') initMatchChat(fixtureId);
+  if (tabName==='chat')   initMatchChat(fixtureId);
+  // If lineup tab is opened before stats have loaded, trigger stats load first
+  if (tabName==='lineup') {
+    var lineupEl = document.getElementById('mc-lineup-'+key);
+    if (lineupEl && lineupEl.innerHTML.indexOf('Loading lineups')>-1) {
+      var d=window['_mpsData_'+key];
+      if (!d) {
+        // Stats not yet fetched — switch to stats tab which will populate lineup too
+        setTimeout(function(){ mcSwitchTab(fixtureId,'stats'); setTimeout(function(){ mcSwitchTab(fixtureId,'lineup'); },1500); }, 100);
+      }
+    }
+  }
 }
 
 function escHtml(s) {
@@ -8507,6 +8549,7 @@ onReady(function() {
     }
     out+='<div class="mc-tabs">' +
       '<button class="mc-tab active" data-fix="'+fid+'" data-tab="stats" onclick="mcSwitchTab(''+fid+'','stats')">Match Stats</button>' +
+      (isFT||isLive ? '<button class="mc-tab" data-fix="'+fid+'" data-tab="lineup" onclick="mcSwitchTab(''+fid+'','lineup')">Lineups</button>' : '') +
       '<button class="mc-tab" data-fix="'+fid+'" data-tab="mypts" onclick="mcSwitchTab(''+fid+'','mypts')">My Points</button>' +
       '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
     '</div>';
@@ -8535,6 +8578,14 @@ onReady(function() {
       out+='<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">Loading your points...</div>';
     }
     out+='</div></div>';
+    // Lineup tab body — rendered when player stats load
+    if (isFT||isLive) {
+      out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="lineup">' +
+        '<div id="mc-lineup-'+fid+'" style="padding:.4rem 0">' +
+          '<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">Loading lineups...</div>' +
+        '</div>' +
+      '</div>';
+    }
     out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="chat">';
     out+='<div class="mc-chat-wrap">';
     out+='<div class="mc-chat-meta">' +
@@ -8623,6 +8674,49 @@ onReady(function() {
               }).join('');
             }
             window['_mpsData_'+fid]={home:homeStats,away:awayStats,f:f};
+
+            // ── Populate Lineup tab ──────────────────────────────────
+            var lineupEl=document.getElementById('mc-lineup-'+fid);
+            if(lineupEl){
+              function buildLineup(players, teamName) {
+                var starters=players.filter(function(p){return !p.is_substitute&&(p.minutes_played>0||p.is_captain);});
+                var subs=players.filter(function(p){return p.is_substitute&&p.minutes_played>0;});
+                var unused=players.filter(function(p){return p.is_substitute&&p.minutes_played===0;});
+                function pRow(p,isSub){
+                  var posLabel={G:'GK',D:'DEF',M:'MID',F:'FWD'}[p.position]||p.position||'';
+                  var evts='';
+                  if(p.goals>0) evts+='⚽'+(p.goals>1?'×'+p.goals:'');
+                  if(p.assists>0) evts+='🅰️'+(p.assists>1?'×'+p.assists:'');
+                  if(p.clean_sheet) evts+='🛡️';
+                  if(p.yellow_cards>0) evts+='🟨';
+                  if(p.red_cards>0) evts+='🟥';
+                  if(p.saves>0) evts+='🧤'+p.saves;
+                  var ratingStr=p.rating?('<span style="font-size:.68rem;font-weight:700;padding:1px 5px;border-radius:4px;background:'+(p.rating>=8?'rgba(46,204,113,.2)':p.rating>=7?'rgba(243,156,18,.2)':'rgba(231,76,60,.15)')+';color:'+(p.rating>=8?'#2ecc71':p.rating>=7?'#f39c12':'#e74c3c')+'">'+p.rating+'</span>'):'';
+                  return '<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .8rem;border-bottom:1px solid rgba(255,255,255,.035);'+(isSub?'opacity:.7':'')+'">'+
+                    '<span style="font-size:.52rem;font-weight:700;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.5);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLabel+'</span>'+
+                    (p.jersey_number?'<span style="font-size:.62rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);min-width:16px;text-align:center">'+p.jersey_number+'</span>':'<span style="min-width:16px"></span>')+
+                    '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+
+                      (p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
+                    '</span>'+
+                    '<span style="font-size:.75rem">'+evts+'</span>'+
+                    '<span style="font-size:.65rem;color:rgba(255,255,255,.3);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
+                    ratingStr+
+                  '</div>';
+                }
+                var html='<div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);padding:.4rem .8rem .2rem">'+escHtml(teamName)+' — Starting XI</div>';
+                html+=starters.map(function(p){return pRow(p,false);}).join('');
+                if(subs.length){
+                  html+='<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.5rem .8rem .15rem;margin-top:.2rem;border-top:1px dashed rgba(255,255,255,.06)">Substitutes Used</div>';
+                  html+=subs.map(function(p){return pRow(p,true);}).join('');
+                }
+                return html;
+              }
+              var lineupHtid=f._raw&&f._raw.home_team_id||homeStats[0]&&homeStats[0].apifootball_team_id;
+              var homeL=homeStats,awayL=awayStats;
+              lineupEl.innerHTML=
+                '<div style="border-bottom:1px solid rgba(255,255,255,.06)">'+buildLineup(homeL,f.home||'Home')+'</div>'+
+                buildLineup(awayL,f.away||'Away');
+            }
             function buildTeamTabs(active){
               var on=function(w){return active===w;};
               var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
