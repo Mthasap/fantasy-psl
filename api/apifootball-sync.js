@@ -351,6 +351,8 @@ async function syncMatchStats(log, options = {}) {
             season:                 PSL_SEASON,
             gw_number:              fixture.gw_number,
             player_name:            playerData.player?.name,
+            player_photo:           playerData.player?.photo || null,
+            jersey_number:          stats.games?.number ?? null,
             position:               position,
             minutes_played:         mins,
             is_substitute:          stats.games?.substitute ?? false,
