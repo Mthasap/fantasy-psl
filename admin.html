@@ -1025,9 +1025,7 @@
           <div style="background:rgba(41,121,255,.08);border:1px solid rgba(41,121,255,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.7">
             Run these <strong style="color:#60A5FA">3 steps in order</strong> after the last match of each gameweek.<br>
             Steps 1 and 2 can be run multiple times safely — they are idempotent.<br>
-            Step 3 advances the GW counter visible to all users.<br>
-            <button id="btn-test-auth" onclick="testAuth()" style="margin-top:.4rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.8);padding:.25rem .75rem;font-size:.72rem;cursor:pointer">🔑 Test Auth</button>
-            <span style="font-size:.68rem;color:rgba(255,255,255,.35)">— run this first if you get 401 errors</span>
+            Step 3 advances the GW counter visible to all users.
           </div>
 
           <!-- Step 1 -->
@@ -1149,28 +1147,56 @@
     <!-- ══════════════════ USERS TAB ══════════════════ -->
     <div id="tab-users" class="tab-page">
 
+      <!-- User stats bar -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="card" style="padding:12px;text-align:center"><div id="ust-total" style="font-size:1.5rem;font-weight:900;color:var(--blue)">—</div><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Total Users</div></div>
+        <div class="card" style="padding:12px;text-align:center"><div id="ust-verified" style="font-size:1.5rem;font-weight:900;color:var(--green)">—</div><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Email Verified</div></div>
+        <div class="card" style="padding:12px;text-align:center"><div id="ust-full" style="font-size:1.5rem;font-weight:900;color:var(--amber)">—</div><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Full Squads</div></div>
+        <div class="card" style="padding:12px;text-align:center"><div id="ust-deleted" style="font-size:1.5rem;font-weight:900;color:var(--red)">—</div><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Deleted</div></div>
+      </div>
+
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><span class="dot dot-blue"></span>Top Users by Points</div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadTopUsers()">Load / Refresh</button>
+          <div class="card-title"><span class="dot dot-blue"></span>User Management</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="user-search" type="text" placeholder="Search username or team…" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:12px;padding:5px 10px;width:180px" oninput="filterUsers()">
+            <select id="user-filter" onchange="filterUsers()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:12px;padding:5px 8px">
+              <option value="all">All users</option>
+              <option value="full">Full squad</option>
+              <option value="incomplete">Incomplete</option>
+              <option value="unverified">Unverified email</option>
+              <option value="deleted">Deleted</option>
+            </select>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadAllUsers()">↻ Refresh</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;color:var(--amber)" onclick="purgeDeleted()">🗑 Purge deleted</button>
+          </div>
         </div>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto">
           <table class="user-table">
             <thead>
               <tr>
-                <th style="width:40px">#</th>
-                <th>Team Name</th>
-                <th>Username</th>
+                <th>#</th>
+                <th>Team / Username</th>
+                <th>Email</th>
+                <th style="text-align:center">Verified</th>
+                <th style="text-align:center">Squad</th>
                 <th style="text-align:center">GW Pts</th>
                 <th style="text-align:center">Total Pts</th>
-                <th style="text-align:center">Squad</th>
                 <th>Joined</th>
+                <th style="text-align:center">Actions</th>
               </tr>
             </thead>
             <tbody id="users-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Click Refresh to load</td></tr>
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load</td></tr>
             </tbody>
           </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+          <span id="users-page-info">—</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" id="users-prev" onclick="usersPage(-1)" disabled>← Prev</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" id="users-next" onclick="usersPage(1)">Next →</button>
+          </div>
         </div>
       </div>
 
@@ -2508,37 +2534,142 @@
     }
   }
 
-  async function loadTopUsers() {
+  // ── User Management ──────────────────────────────────────────────────
+  let ALL_USERS = [];
+  let USERS_CURRENT_PAGE = 1;
+  const USERS_PER_PAGE = 50;
+
+  async function apiPost(body) {
+    const res = await fetch('/api/admin-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+
+  async function loadAllUsers() {
     const tbody = document.getElementById('users-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Loading users…</td></tr>';
     try {
-      const data = await sb('GET', 'profiles', null,
-        'select=team_name,username,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=50'
-      );
-      if (!data || !data.length) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No users found</td></tr>';
-        return;
-      }
-      if (tbody) tbody.innerHTML = data.map((u, i) => {
-        const created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-ZA') : '—';
-        const rankColor = i === 0 ? 'var(--amber)' : i < 3 ? 'var(--green)' : 'var(--muted)';
-        const squadTag = u.squad_count >= 15
-          ? '<span class="tag tag-green">Full</span>'
-          : u.squad_count > 0
-            ? '<span class="tag tag-amber">' + u.squad_count + '/15</span>'
-            : '<span class="tag tag-red">None</span>';
-        return '<tr>' +
-          '<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:' + rankColor + '">' + (i+1) + '</span></td>' +
-          '<td style="font-weight:500">' + (u.team_name||'—') + '</td>' +
-          '<td style="color:var(--muted)">@' + (u.username||'—') + '</td>' +
-          '<td style="text-align:center;font-family:var(--mono);color:var(--blue)">' + (u.gw_points||0) + '</td>' +
-          '<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--green)">' + (u.total_points||0) + '</td>' +
-          '<td style="text-align:center">' + squadTag + '</td>' +
-          '<td style="color:var(--muted);font-size:12px">' + created + '</td>' +
-        '</tr>';
-      }).join('');
+      const res = await apiPost({ action: 'list_users', limit: 200 });
+      ALL_USERS = res.users || [];
+      // Update stats bar
+      const total     = ALL_USERS.length;
+      const verified  = ALL_USERS.filter(u => u.email_confirmed).length;
+      const fullSquad = ALL_USERS.filter(u => u.squad_count >= 15).length;
+      const deleted   = ALL_USERS.filter(u => u.is_deleted).length;
+      document.getElementById('ust-total').textContent    = total;
+      document.getElementById('ust-verified').textContent = verified;
+      document.getElementById('ust-full').textContent     = fullSquad;
+      document.getElementById('ust-deleted').textContent  = deleted;
+      USERS_CURRENT_PAGE = 1;
+      renderUsers();
     } catch(e) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red);padding:16px;">Error: ' + e.message + '</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="color:var(--red);padding:16px">Error: ' + e.message + '</td></tr>';
+    }
+  }
+
+  // Keep loadTopUsers as alias for backward compat (called by switchTab)
+  async function loadTopUsers() { return loadAllUsers(); }
+
+  function filterUsers() {
+    USERS_CURRENT_PAGE = 1;
+    renderUsers();
+  }
+
+  function usersPage(dir) {
+    USERS_CURRENT_PAGE += dir;
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const search  = (document.getElementById('user-search')  || {}).value || '';
+    const filter  = (document.getElementById('user-filter')  || {}).value || 'all';
+    const tbody   = document.getElementById('users-tbody');
+    if (!tbody) return;
+
+    let filtered = ALL_USERS.filter(u => {
+      const q = search.toLowerCase();
+      if (q && !(u.username||'').toLowerCase().includes(q) && !(u.team_name||'').toLowerCase().includes(q) && !(u.email||'').toLowerCase().includes(q)) return false;
+      if (filter === 'full')       return (u.squad_count||0) >= 15 && !u.is_deleted;
+      if (filter === 'incomplete') return (u.squad_count||0) < 15  && !u.is_deleted;
+      if (filter === 'unverified') return !u.email_confirmed && !u.is_deleted;
+      if (filter === 'deleted')    return u.is_deleted;
+      return true;
+    });
+
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / USERS_PER_PAGE));
+    USERS_CURRENT_PAGE = Math.min(USERS_CURRENT_PAGE, pages);
+    const from  = (USERS_CURRENT_PAGE - 1) * USERS_PER_PAGE;
+    const page  = filtered.slice(from, from + USERS_PER_PAGE);
+
+    document.getElementById('users-page-info').textContent =
+      total + ' users · page ' + USERS_CURRENT_PAGE + '/' + pages;
+    document.getElementById('users-prev').disabled = USERS_CURRENT_PAGE <= 1;
+    document.getElementById('users-next').disabled = USERS_CURRENT_PAGE >= pages;
+
+    if (!page.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No users match</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = page.map((u, i) => {
+      const num     = from + i + 1;
+      const created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-ZA') : '—';
+      const squadTag = (u.squad_count||0) >= 15
+        ? '<span class="tag tag-green">Full</span>'
+        : (u.squad_count||0) > 0
+          ? '<span class="tag tag-amber">' + (u.squad_count||0) + '/15</span>'
+          : '<span class="tag tag-red">None</span>';
+      const verTag = u.email_confirmed
+        ? '<span style="color:var(--green);font-size:16px" title="Verified">✓</span>'
+        : '<span style="color:var(--red);font-size:16px" title="Not verified">✗</span>';
+      const delStyle = u.is_deleted ? 'opacity:.45;text-decoration:line-through' : '';
+      return '<tr style="' + delStyle + '">' +
+        '<td style="color:var(--muted);font-size:11px">' + num + '</td>' +
+        '<td><div style="font-weight:600;font-size:13px">' + (u.team_name||'—') + '</div>' +
+          '<div style="color:var(--muted);font-size:11px">@' + (u.username||'—') + '</div></td>' +
+        '<td style="font-size:11px;color:var(--muted)">' + (u.email||'—') + '</td>' +
+        '<td style="text-align:center">' + verTag + '</td>' +
+        '<td style="text-align:center">' + squadTag + '</td>' +
+        '<td style="text-align:center;font-family:var(--mono);color:var(--blue)">' + (u.gw_points||0) + '</td>' +
+        '<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--green)">' + (u.total_points||0) + '</td>' +
+        '<td style="color:var(--muted);font-size:11px">' + created + '</td>' +
+        '<td style="text-align:center">' +
+          (!u.is_deleted
+            ? '<button onclick="adminDeleteUser('' + u.id + '','' + (u.username||'user') + '')" style="background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.3);border-radius:5px;color:#F87171;font-size:10px;padding:2px 8px;cursor:pointer">Delete</button>'
+            : '<span style="font-size:10px;color:var(--muted)">Deleted</span>') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  async function adminDeleteUser(userId, username) {
+    if (!confirm('Permanently delete user @' + username + '?\n\nThis removes them from Supabase Auth and all their data. Cannot be undone.')) return;
+    try {
+      await apiPost({ action: 'delete_user', user_id: userId });
+      showStatus('si-status', 'ok', 'User @' + username + ' deleted');
+      // Update local array
+      const u = ALL_USERS.find(x => x.id === userId);
+      if (u) u.is_deleted = true;
+      renderUsers();
+    } catch(e) {
+      showStatus('si-status', 'error', 'Delete failed: ' + e.message);
+    }
+  }
+
+  async function purgeDeleted() {
+    if (!confirm('Permanently purge all accounts soft-deleted 30+ days ago?')) return;
+    try {
+      const res = await apiPost({ action: 'purge_deleted' });
+      alert('Purged ' + res.purged + ' accounts. Errors: ' + (res.errors||[]).join(', '));
+      loadAllUsers();
+    } catch(e) {
+      alert('Purge failed: ' + e.message);
     }
   }
 
@@ -3304,35 +3435,6 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
 
   const SYNC_SECRET = adminKey; // Uses key typed at login
   const BASE_URL    = '';  // empty = same domain
-
-  // Quick auth test — run this first if Phase 1 keeps returning 401
-  async function testAuth() {
-    const btn = document.getElementById('btn-test-auth');
-    if (btn) { btn.textContent = 'Testing...'; btn.disabled = true; }
-    try {
-      // Test points-cron auth
-      const r1 = await fetch('/api/points-cron?secret=' + SYNC_SECRET + '&dry_run=1', {
-        method: 'POST',
-        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
-      });
-      // Test apifootball-sync auth + get diagnostics
-      const r2 = await fetch('/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=0', {
-        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
-      });
-      const d2 = await r2.json().catch(function(){ return {}; });
-
-      if (r1.status === 401 || r2.status === 401) {
-        alert('❌ Auth FAILED (401)\n\nYour admin key does not match the ADMIN_SECRET env var in Vercel.\n\nSteps to fix:\n1. Go to Vercel → your project → Settings → Environment Variables\n2. Find ADMIN_SECRET — copy its exact value\n3. Log out of admin panel, log back in using that exact value\n\nNote: value is case-sensitive and must have no spaces.');
-      } else {
-        const diagLines = (d2.log || []).join('\n');
-        alert('✅ Auth OK!\n\n' + diagLines + '\n\nYou can now run Phase 1+2 and Calculate Points.');
-      }
-    } catch(e) {
-      alert('Network error: ' + e.message);
-    } finally {
-      if (btn) { btn.textContent = '🔑 Test Auth'; btn.disabled = false; }
-    }
-  }
 
   function showStepStatus(elId, type, msg) {
     const el = document.getElementById(elId);
