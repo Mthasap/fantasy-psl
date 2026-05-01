@@ -1025,7 +1025,9 @@
           <div style="background:rgba(41,121,255,.08);border:1px solid rgba(41,121,255,.2);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.7">
             Run these <strong style="color:#60A5FA">3 steps in order</strong> after the last match of each gameweek.<br>
             Steps 1 and 2 can be run multiple times safely — they are idempotent.<br>
-            Step 3 advances the GW counter visible to all users.
+            Step 3 advances the GW counter visible to all users.<br>
+            <button id="btn-test-auth" onclick="testAuth()" style="margin-top:.4rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.8);padding:.25rem .75rem;font-size:.72rem;cursor:pointer">🔑 Test Auth</button>
+            <span style="font-size:.68rem;color:rgba(255,255,255,.35)">— run this first if you get 401 errors</span>
           </div>
 
           <!-- Step 1 -->
@@ -3302,6 +3304,35 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
 
   const SYNC_SECRET = adminKey; // Uses key typed at login
   const BASE_URL    = '';  // empty = same domain
+
+  // Quick auth test — run this first if Phase 1 keeps returning 401
+  async function testAuth() {
+    const btn = document.getElementById('btn-test-auth');
+    if (btn) { btn.textContent = 'Testing...'; btn.disabled = true; }
+    try {
+      // Test points-cron auth
+      const r1 = await fetch('/api/points-cron?secret=' + SYNC_SECRET + '&dry_run=1', {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
+      });
+      // Test apifootball-sync auth + get diagnostics
+      const r2 = await fetch('/api/apifootball-sync?secret=' + SYNC_SECRET + '&phase=0', {
+        headers: { 'x-admin-key': adminKey, 'x-sync-secret': SYNC_SECRET }
+      });
+      const d2 = await r2.json().catch(function(){ return {}; });
+
+      if (r1.status === 401 || r2.status === 401) {
+        alert('❌ Auth FAILED (401)\n\nYour admin key does not match the ADMIN_SECRET env var in Vercel.\n\nSteps to fix:\n1. Go to Vercel → your project → Settings → Environment Variables\n2. Find ADMIN_SECRET — copy its exact value\n3. Log out of admin panel, log back in using that exact value\n\nNote: value is case-sensitive and must have no spaces.');
+      } else {
+        const diagLines = (d2.log || []).join('\n');
+        alert('✅ Auth OK!\n\n' + diagLines + '\n\nYou can now run Phase 1+2 and Calculate Points.');
+      }
+    } catch(e) {
+      alert('Network error: ' + e.message);
+    } finally {
+      if (btn) { btn.textContent = '🔑 Test Auth'; btn.disabled = false; }
+    }
+  }
 
   function showStepStatus(elId, type, msg) {
     const el = document.getElementById(elId);
