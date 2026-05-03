@@ -331,108 +331,87 @@ module.exports = async (req, res) => {
 
     // ── STANDARD DB ACTIONS ─────────────────────────────────────────────
     const { table, data, match, notMatch, select = '*' } = body;
-    // ── DELETE USER (hard delete from Supabase Auth) ───────────────────
-    // Called from frontend deleteAccount() or admin panel
-    if (action === 'delete_user') {
+    // ── DELETE USER (self-initiated or admin) ───────────────────────────────
+    if (action === 'delete_user' || action === 'delete_user_self') {
       const userId = body.user_id;
       if (!userId) return res.status(400).json({ error: 'user_id required' });
-
       const logs = [];
-      // 1. Soft-delete profile (mark deleted, anonymise data)
       try {
         await db.from('profiles').update({
-          deleted_at: new Date().toISOString(),
-          squad_data: null,
-          username: 'deleted_' + userId.substring(0, 8),
-          team_name: 'Deleted Account',
+          deleted_at:  new Date().toISOString(),
+          squad_data:  null,
+          username:    'deleted_' + userId.substring(0,8),
+          team_name:   'Deleted Account',
         }).eq('id', userId);
         logs.push('Profile anonymised');
-      } catch (e) { logs.push('Profile update error: ' + e.message); }
-
-      // 2. Remove from leagues
+      } catch(e) { logs.push('Profile error: ' + e.message); }
       try {
         await db.from('league_members').delete().eq('user_id', userId);
         logs.push('League memberships removed');
-      } catch (e) { logs.push('League remove error: ' + e.message); }
-
-      // 3. Hard delete from Supabase Auth using admin client
+      } catch(e) { logs.push('League remove error: ' + e.message); }
       try {
-        const adminDb = createClient(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+        const { createClient: cc } = require('@supabase/supabase-js');
+        const adminDb = cc(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
         const { error: delErr } = await adminDb.auth.admin.deleteUser(userId);
         if (delErr) throw new Error(delErr.message);
-        logs.push('Auth user deleted from Supabase');
-      } catch (e) {
-        logs.push('Auth delete error: ' + e.message + ' — user soft-deleted only');
-        // Don't fail — profile is already anonymised
+        logs.push('Auth user hard-deleted');
+      } catch(e) {
+        logs.push('Auth delete error: ' + e.message + ' (profile soft-deleted only)');
         return res.json({ success: true, soft_only: true, logs });
       }
-
-      console.log('[admin-api] Deleted user:', userId, logs.join('; '));
       return res.json({ success: true, hard_deleted: true, logs });
     }
 
-    // ── LIST USERS (for admin panel) ─────────────────────────────────────
+    // ── LIST USERS (admin panel) ─────────────────────────────────────────
     if (action === 'list_users') {
-      const page  = parseInt(body.page || 1);
-      const limit = parseInt(body.limit || 50);
-      const from  = (page - 1) * limit;
-
+      const limit = parseInt(body.limit || 200);
       const { data: profiles, error: pErr, count } = await db
         .from('profiles')
-        .select('id, username, team_name, email_verified, squad_registered, total_points, gw_points, entry_gw, squad_count, created_at, deleted_at', { count: 'exact' })
+        .select('id,username,team_name,squad_registered,squad_count,total_points,gw_points,entry_gw,created_at,deleted_at', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(from, from + limit - 1);
-
+        .limit(limit);
       if (pErr) return res.status(500).json({ error: pErr.message });
 
-      // Get auth emails for this page of users (batched)
-      const userIds = (profiles || []).map(p => p.id);
+      // Fetch email + verification status for each user via auth admin
       const emailMap = {};
       try {
-        const adminDb = createClient(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-        for (const uid of userIds) {
+        const { createClient: cc } = require('@supabase/supabase-js');
+        const adminDb = cc(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+        for (const p of (profiles || [])) {
           try {
-            const { data: authUser } = await adminDb.auth.admin.getUserById(uid);
-            if (authUser && authUser.user) {
-              emailMap[uid] = {
-                email: authUser.user.email,
-                email_confirmed: !!authUser.user.email_confirmed_at,
-                last_sign_in: authUser.user.last_sign_in_at,
-                created_at_auth: authUser.user.created_at
-              };
-            }
+            const { data: au } = await adminDb.auth.admin.getUserById(p.id);
+            if (au && au.user) emailMap[p.id] = {
+              email:          au.user.email,
+              email_confirmed: !!au.user.email_confirmed_at,
+              last_sign_in:   au.user.last_sign_in_at
+            };
           } catch(e) {}
         }
-      } catch(e) { /* auth admin not available */ }
+      } catch(e) {}
 
       const users = (profiles || []).map(p => ({
-        ...p,
-        ...(emailMap[p.id] || {}),
-        is_deleted: !!p.deleted_at
+        ...p, ...(emailMap[p.id] || {}), is_deleted: !!p.deleted_at
       }));
-
-      return res.json({ success: true, users, total: count, page, limit });
+      return res.json({ success: true, users, total: count });
     }
 
-    // ── PURGE DELETED USERS (scheduled cleanup cron) ─────────────────────
-    // Run this monthly to hard-delete anyone soft-deleted 30+ days ago
+    // ── PURGE SOFT-DELETED USERS 30+ days old ───────────────────────────
     if (action === 'purge_deleted') {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: toDelete } = await db
-        .from('profiles')
-        .select('id')
-        .not('deleted_at', 'is', null)
-        .lt('deleted_at', thirtyDaysAgo);
-
+      const cutoff = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+      const { data: toDelete } = await db.from('profiles')
+        .select('id').not('deleted_at','is',null).lt('deleted_at', cutoff);
       const purged = [], errors = [];
-      const adminDb = createClient(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-      for (const u of (toDelete || [])) {
-        try {
-          await adminDb.auth.admin.deleteUser(u.id);
-          await db.from('profiles').delete().eq('id', u.id);
-          purged.push(u.id);
-        } catch(e) { errors.push(u.id + ': ' + e.message); }
-      }
+      try {
+        const { createClient: cc } = require('@supabase/supabase-js');
+        const adminDb = cc(SB_URL, SB_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+        for (const u of (toDelete || [])) {
+          try {
+            await adminDb.auth.admin.deleteUser(u.id);
+            await db.from('profiles').delete().eq('id', u.id);
+            purged.push(u.id);
+          } catch(e) { errors.push(u.id + ': ' + e.message); }
+        }
+      } catch(e) { errors.push('Admin client error: ' + e.message); }
       return res.json({ success: true, purged: purged.length, errors });
     }
 
