@@ -804,7 +804,7 @@
     <!-- Next 3 fixtures + Last 3 results -->
     <div style="padding:.8rem 1.2rem">
       <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Fixtures &amp; Results</div>
-      <div id="cp-fixtures" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden"></div>
+      <div id="cp-fixtures" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;min-height:40px"></div>
     </div>
 
   </div>
@@ -1758,12 +1758,8 @@ db.auth.onAuthStateChange(function(event, session) {
   updateAdVisibility();
 
   if (ST.user) {
-    // CRITICAL: close the login modal the moment auth confirms a user.
-    // Without this, users who click Login see the modal still open while
-    // the app loads in the background — exactly the bug shown in the screenshot.
+    // Close login modal immediately — do not wait for data loading
     closeAuth();
-
-    // Always load squad on SIGNED_IN or INITIAL_SESSION.
     loadGW(function() {
       ensurePlayersLoaded(function() {
         loadMySquad();
@@ -1981,43 +1977,6 @@ function closeAuth() {
   setTimeout(function() { if (modal) modal.style.display = ''; }, 50);
 }
 
-// Email verification prompt — shown after signup when email confirmation is required
-function showEmailVerificationPrompt(email) {
-  var modal = document.getElementById('auth-modal');
-  var body  = document.querySelector('#auth-modal .auth-body') || document.querySelector('#auth-modal .modal-inner');
-  if (!modal) return;
-
-  // Build verification prompt inside the modal
-  var inner = modal.querySelector('.modal-inner') || modal.querySelector('.auth-body');
-  if (inner) {
-    inner.innerHTML = [
-      '<div style="text-align:center;padding:1.5rem 1rem">',
-        '<div style="font-size:3rem;margin-bottom:1rem">📧</div>',
-        '<h2 style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;margin-bottom:.6rem">Check your email</h2>',
-        '<p style="font-family:var(--font-body);font-size:.88rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:1.4rem">',
-          'We sent a confirmation link to<br><strong style="color:#fff">' + (email||'your email') + '</strong><br>',
-          'Click the link to activate your account — it expires in 24 hours.',
-        '</p>',
-        '<p style="font-size:.75rem;color:rgba(255,255,255,.3);margin-bottom:1.2rem">',
-          "Didn't get it? Check spam, or ",
-          '<a onclick="resendVerification('' + (email||'') + '')" style="color:#DBA94A;cursor:pointer;text-decoration:underline">resend the email</a>',
-        '</p>',
-        '<button onclick="closeAuth()" style="background:var(--red);border:none;border-radius:10px;color:#fff;font-family:var(--font-ui);font-size:.88rem;font-weight:700;letter-spacing:1px;padding:.75rem 2rem;cursor:pointer;width:100%">Got it</button>',
-      '</div>'
-    ].join('');
-  }
-  modal.classList.add('open');
-}
-
-function resendVerification(email) {
-  if (!email) return;
-  db.auth.resend({ type: 'signup', email: email, options: { emailRedirectTo: window.location.origin + '/confirm' } })
-    .then(function(r) {
-      if (r.error) showToast('Could not resend: ' + r.error.message, 'error');
-      else showToast('Verification email resent ✓', 'success');
-    });
-}
-
 function doForgotPassword() {
   var emailEl   = document.getElementById('fp-email');
   var errEl     = document.getElementById('fp-err');
@@ -2111,25 +2070,17 @@ function doRegister() {
     email: email, password: pass,
     options: {
       data: { username: user, team_name: team },
-      // emailRedirectTo sends user back to app after clicking confirmation link
       emailRedirectTo: window.location.origin + '/confirm'
     }
   }).then(function(res) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
     if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
-
-    var userId = res.data && res.data.user && res.data.user.id;
-    // identities.length === 0 means user already exists (Supabase returns 200 for dupes)
-    var alreadyExists = res.data && res.data.user &&
-                        res.data.user.identities && res.data.user.identities.length === 0;
-    if (alreadyExists) {
-      document.getElementById('r-err').textContent = 'An account with this email already exists. Please log in.';
+    // identities.length===0 means email already exists (Supabase returns 200 for dupes)
+    if (res.data && res.data.user && res.data.user.identities && res.data.user.identities.length === 0) {
+      document.getElementById('r-err').textContent = 'An account with this email already exists. Please log in instead.';
       return;
     }
-
-    // Profile is created AFTER email confirmation via a Supabase DB trigger,
-    // OR we insert now and rely on email_confirmed_at to gate access.
-    // We insert now so the profile row exists — the user just can't score until confirmed.
+    var userId = res.data && res.data.user && res.data.user.id;
     if (userId) {
       db.from('profiles').insert({
         id: userId,
@@ -2143,25 +2094,36 @@ function doRegister() {
         supported_team: suppTeam,
         discovery_source: discovery,
         referral_code: referralCode,
-        referred_by: referralUsed || null,
-        email_verified: false
+        referred_by: referralUsed || null
       }).then(function() {
         if (suppTeam) autoJoinTeamLeague(userId, suppTeam);
       }).catch(function(){});
     }
-
-    // Check if email confirmation is required (Supabase returns session=null if so)
-    var needsConfirm = !res.data.session;
+    var needsConfirm = !(res.data && res.data.session);
     closeAuth();
     if (needsConfirm) {
-      // Show a clear confirmation-required message instead of logging them in
-      showEmailVerificationPrompt(email);
+      // Show verification prompt inside the modal
+      var modal = document.getElementById('auth-modal');
+      var inner = modal && modal.querySelector('.modal-inner');
+      if (inner) {
+        inner.innerHTML = '<div style="text-align:center;padding:2rem 1.2rem">' +
+          '<div style="font-size:2.5rem;margin-bottom:.8rem">📧</div>' +
+          '<h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;margin-bottom:.5rem">Check your inbox</h2>' +
+          '<p style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:1.2rem">We sent a confirmation link to<br><strong style="color:#fff">' + email + '</strong><br>Click it to activate your account.</p>' +
+          '<p style="font-size:.72rem;color:rgba(255,255,255,.3);margin-bottom:1rem">Didn't get it? Check spam or ' +
+          '<a onclick="db.auth.resend({type:'signup',email:'' + email + '',options:{emailRedirectTo:window.location.origin+'/confirm'}}).then(function(){showToast('Email resent','success');})" style="color:#DBA94A;cursor:pointer;text-decoration:underline">resend</a></p>' +
+          '<button onclick="closeAuth()" style="background:#B91C3A;border:none;border-radius:10px;color:#fff;font-family:var(--font-ui);font-size:.88rem;font-weight:700;padding:.7rem 2rem;cursor:pointer;width:100%">Got it</button>' +
+        '</div>';
+        modal.classList.add('open');
+      } else {
+        showToast('Account created! Check your email to confirm.', 'success');
+      }
     } else {
-      showToast('Account created! Welcome to Fantasy PSL 🦁', 'success');
+      showToast('Welcome to Fantasy PSL! 🦁', 'success');
     }
   }).catch(function(err) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
-    document.getElementById('r-err').textContent = (err && err.message) || 'Registration failed — try again';
+    document.getElementById('r-err').textContent = (err && err.message) || 'Registration failed';
   });
 }
 
@@ -5077,36 +5039,28 @@ function renderProfilePanel() {
 
 function deleteAccount() {
   if (!ST.user) return;
-  if (!confirm('Permanently delete your account?\n\nThis removes all your data from Fantasy PSL including your squad, points and league memberships. This cannot be undone.')) return;
+  if (!confirm('Permanently delete your account?\n\nThis removes your squad, points and all data. This cannot be undone.')) return;
   var uid = ST.user.id;
-
-  // Step 1: Soft-delete profile data
   db.from('profiles').update({
-    deleted_at:   new Date().toISOString(),
-    squad_data:   null,
-    username:     'deleted_' + uid.substring(0,8),
-    team_name:    'Deleted Account',
-    email_verified: false
+    deleted_at: new Date().toISOString(),
+    squad_data: null,
+    username: 'deleted_' + uid.substring(0,8),
+    team_name: 'Deleted Account'
   }).eq('id', uid).then(function() {
-    // Step 2: Remove from leagues
     db.from('league_members').delete().eq('user_id', uid).then(function(){}).catch(function(){});
-    // Step 3: Sign out locally — server-side hard delete handled by admin-api scheduled job
     return db.auth.signOut();
   }).then(function() {
-    // Step 4: Call server to hard-delete from Supabase Auth
-    // This uses the service key so RLS cannot block it
+    // Hard-delete from Supabase Auth via server endpoint
     fetch('/api/admin-api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete_user', user_id: uid, self_delete: true })
-    }).catch(function(e) {
-      console.warn('[deleteAccount] Hard delete call failed (will be cleaned up by cron):', e.message);
-    });
+      body: JSON.stringify({ action: 'delete_user_self', user_id: uid })
+    }).catch(function(){});
     ST.user = null;
     goPage('home');
-    showToast('Account deleted. Sorry to see you go 👋', 'info');
+    showToast('Account deleted. Sorry to see you go.', 'info');
   }).catch(function(err) {
-    showToast('Delete failed: ' + (err.message || 'unknown error'), 'error');
+    showToast('Delete failed: ' + (err && err.message), 'error');
   });
 }
 
@@ -6817,67 +6771,56 @@ function openClubProfile(teamName) {
   });
   document.getElementById('cp-squad').innerHTML = squadHtml;
 
-  // ── Next 3 upcoming fixtures + last 3 results for this team ─────────
-  var cpFixEl = document.getElementById('cp-fixtures');
-  if (cpFixEl) {
-    cpFixEl.innerHTML = '<div style="font-family:var(--font-ui);font-size:.68rem;color:rgba(255,255,255,.3);padding:.4rem 1rem">Loading fixtures...</div>';
-    // Fetch from fixtures table
+  // ── Fetch next 3 upcoming + last 3 results for this team ─────────────
+  var cpFix = document.getElementById('cp-fixtures');
+  if (cpFix) {
+    cpFix.innerHTML = '<div style="padding:.6rem 1rem;font-size:.72rem;color:rgba(255,255,255,.3)">Loading...</div>';
     Promise.all([
       db.from('fixtures')
         .select('home_team,away_team,home_score,away_score,kickoff_at,status,home_logo,away_logo,gw_number')
         .or('home_team.eq.' + teamName + ',away_team.eq.' + teamName)
-        .eq('status', 'NS')
-        .order('kickoff_at', { ascending: true })
-        .limit(3),
+        .eq('status','NS').order('kickoff_at',{ascending:true}).limit(3),
       db.from('fixtures')
         .select('home_team,away_team,home_score,away_score,kickoff_at,status,home_logo,away_logo,gw_number')
         .or('home_team.eq.' + teamName + ',away_team.eq.' + teamName)
-        .eq('status', 'FT')
-        .order('kickoff_at', { ascending: false })
-        .limit(3)
-    ]).then(function(results) {
-      var upcoming = (results[0].data || []);
-      var recent   = (results[1].data || []).reverse();
-
-      function fixRow(f, isResult) {
+        .eq('status','FT').order('kickoff_at',{ascending:false}).limit(3)
+    ]).then(function(rs) {
+      var upcoming = rs[0].data || [];
+      var recent   = (rs[1].data || []).slice().reverse();
+      function fRow(f, isResult) {
         var isHome = f.home_team === teamName;
-        var opp    = isHome ? f.away_team : f.home_team;
-        var oppLogo= isHome ? (f.away_logo||getTeamLogo(opp)) : (f.home_logo||getTeamLogo(opp));
-        var date   = f.kickoff_at ? new Date(f.kickoff_at).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : '--';
-        var gwLbl  = f.gw_number ? 'GW'+f.gw_number : '';
-        var score  = '', resultColor = 'rgba(255,255,255,.45)';
+        var opp = isHome ? f.away_team : f.home_team;
+        var oppLogo = isHome ? (f.away_logo || getTeamLogo(opp)) : (f.home_logo || getTeamLogo(opp));
+        var dt = f.kickoff_at ? new Date(f.kickoff_at).toLocaleDateString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '--';
+        var score = '', rCol = 'rgba(255,255,255,.5)';
         if (isResult) {
-          var hs = f.home_score, as = f.away_score;
-          var myGoals  = isHome ? hs : as;
-          var oppGoals = isHome ? as : hs;
-          score = hs + ' – ' + as;
-          resultColor = myGoals > oppGoals ? '#22895A' : myGoals < oppGoals ? '#D4274F' : '#DBA94A';
+          var myG = isHome ? f.home_score : f.away_score;
+          var opG = isHome ? f.away_score : f.home_score;
+          score = f.home_score + ' – ' + f.away_score;
+          rCol = myG > opG ? '#22895A' : myG < opG ? '#D4274F' : '#DBA94A';
         }
-        return '<div style="display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
-          '<img src="'+(oppLogo||'')+'" style="width:22px;height:22px;object-fit:contain" onerror="this.style.display='none'">' +
+        return '<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
+          '<img src="'+(oppLogo||'')+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'">' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-              (isHome?'vs ':'@ ') + opp +
-            '</div>' +
-            '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.35);margin-top:1px">' + date + (gwLbl?' · '+gwLbl:'') + '</div>' +
+            '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(isHome?'vs ':'@ ')+escHtml(opp)+'</div>' +
+            '<div style="font-size:.62rem;color:rgba(255,255,255,.35);margin-top:1px">'+dt+(f.gw_number?' · GW'+f.gw_number:'')+'</div>' +
           '</div>' +
-          (isResult ? '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:'+resultColor+'">'+score+'</div>' : '') +
+          (isResult ? '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:'+rCol+'">'+score+'</div>' : '<div style="font-size:.65rem;color:rgba(255,255,255,.3)">'+(!isResult?'KO':'')+'</div>') +
         '</div>';
       }
-
       var html = '';
       if (upcoming.length) {
-        html += '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:.5rem 1rem .2rem">Upcoming Fixtures</div>';
-        html += upcoming.map(function(f){ return fixRow(f,false); }).join('');
+        html += '<div style="padding:.3rem 1rem .1rem;font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25)">Upcoming</div>';
+        html += upcoming.map(function(f){return fRow(f,false);}).join('');
       }
       if (recent.length) {
-        html += '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:.7rem 1rem .2rem;border-top:1px solid rgba(255,255,255,.06)">Last Results</div>';
-        html += recent.map(function(f){ return fixRow(f,true); }).join('');
+        html += '<div style="padding:.4rem 1rem .1rem;font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);border-top:1px solid rgba(255,255,255,.05);margin-top:.2rem">Recent Results</div>';
+        html += recent.map(function(f){return fRow(f,true);}).join('');
       }
-      if (!html) html = '<div style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.25);padding:.8rem 1rem">No fixtures found</div>';
-      cpFixEl.innerHTML = html;
+      if (!html) html = '<div style="padding:.8rem 1rem;font-size:.72rem;color:rgba(255,255,255,.2)">No fixture data available</div>';
+      cpFix.innerHTML = html;
     }).catch(function() {
-      cpFixEl.innerHTML = '<div style="padding:.8rem 1rem;font-size:.72rem;color:rgba(255,255,255,.25)">Could not load fixtures</div>';
+      cpFix.innerHTML = '<div style="padding:.6rem 1rem;font-size:.72rem;color:rgba(255,255,255,.2)">Could not load fixtures</div>';
     });
   }
 
@@ -8911,7 +8854,6 @@ onReady(function() {
   console.log('[FPSL] Fix patch applied — match stats, no injuries, pitch centred, manual stats');
 });
 
-})();
 // ── Splash screen: CSS animation handles the fade; JS just cleans up the DOM
 (function() {
   // Remove the element from DOM after animation completes (2.6s)
