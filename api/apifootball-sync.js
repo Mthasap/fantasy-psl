@@ -606,23 +606,28 @@ module.exports = async (req, res) => {
   const gwFilter      = req.query.gw      ? parseInt(req.query.gw)      : null;
   const fixtureFilter = req.query.fixture ? parseInt(req.query.fixture) : null;
 
-  // Phase 0 = diagnostic — auth confirmed, shows env + DB counts, no writes
+  // Phase 0 = diagnostic — confirms env, DB counts, does no writes
   if (phase === 0) {
-    const diagLog = ['=== DIAGNOSTIC MODE ==='];
-    diagLog.push('Auth: PASSED');
+    const diagLog = [];
+    diagLog.push('=== DIAGNOSTIC MODE ===');
     diagLog.push('APIFOOTBALL_KEY set: ' + !!API_KEY);
     diagLog.push('SUPABASE_URL set: ' + !!process.env.SUPABASE_URL);
     diagLog.push('SUPABASE_SERVICE_KEY set: ' + !!process.env.SUPABASE_SERVICE_KEY);
     diagLog.push('ADMIN_SECRET set: ' + !!process.env.ADMIN_SECRET);
     diagLog.push('SYNC_SECRET set: ' + !!process.env.SYNC_SECRET);
+    diagLog.push('Auth passed: YES (you would not see this if auth failed)');
     try {
-      const { count: mpsCount } = await supabase.from('match_player_stats').select('*',{count:'exact',head:true});
+      const { count: mpsCount } = await supabase.from('match_player_stats').select('*', { count: 'exact', head: true });
       diagLog.push('match_player_stats rows: ' + mpsCount);
-      const { count: fixCount } = await supabase.from('fixtures').select('*',{count:'exact',head:true});
+      const { count: fixCount } = await supabase.from('fixtures').select('*', { count: 'exact', head: true });
       diagLog.push('fixtures rows: ' + fixCount);
-      const { data: gwRow } = await supabase.from('gameweeks').select('gw_number,is_current').eq('is_current',true).limit(1);
-      diagLog.push('Current GW: ' + JSON.stringify(gwRow));
-    } catch(e) { diagLog.push('DB check error: ' + e.message); }
+      const { data: ftFix } = await supabase.from('fixtures').select('apifootball_fixture_id,gw_number,status').eq('status','FT').limit(3);
+      diagLog.push('Sample FT fixtures: ' + JSON.stringify(ftFix));
+      const { data: gwRow } = await supabase.from('gameweeks').select('*').eq('is_current',true).limit(1);
+      diagLog.push('Current gameweek: ' + JSON.stringify(gwRow));
+    } catch(e) {
+      diagLog.push('DB error: ' + e.message);
+    }
     return res.json({ success: true, diagnostic: true, log: diagLog });
   }
 
