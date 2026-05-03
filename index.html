@@ -801,12 +801,6 @@
       <div id="cp-squad" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden"></div>
     </div>
 
-    <!-- Next 3 fixtures + Last 3 results -->
-    <div style="padding:.8rem 1.2rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.6rem">Fixtures &amp; Results</div>
-      <div id="cp-fixtures" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;min-height:40px"></div>
-    </div>
-
   </div>
 </div>
 <!-- MOBILE BOTTOM NAV -- fixed glassmorphic pill -->
@@ -1758,8 +1752,9 @@ db.auth.onAuthStateChange(function(event, session) {
   updateAdVisibility();
 
   if (ST.user) {
-    // Close login modal immediately — do not wait for data loading
-    closeAuth();
+    // Always load squad on SIGNED_IN or INITIAL_SESSION.
+    // getUserDashboard() has its own cache so a double-call is harmless
+    // and ensures the pitch is never empty after login.
     loadGW(function() {
       ensurePlayersLoaded(function() {
         loadMySquad();
@@ -1767,9 +1762,7 @@ db.auth.onAuthStateChange(function(event, session) {
     });
     loadReactions();
     loadWatchlistFromDB();
-    setTimeout(function() {
-      if (typeof initPushNotifications === 'function') initPushNotifications();
-    }, 3000);
+    setTimeout(initPushNotifications, 3000);
   } else {
     ST.squad = [];
     renderPitch();
@@ -1821,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           loadReactions();
           loadWatchlistFromDB();
-          setTimeout(function(){ if(typeof initPushNotifications==='function') initPushNotifications(); }, 3000);
+          setTimeout(initPushNotifications, 3000);
         }
         // If ST.user already set (onAuthStateChange beat us here), squad
         // load is already running — nothing more needed
@@ -2068,18 +2061,10 @@ function doRegister() {
 
   db.auth.signUp({
     email: email, password: pass,
-    options: {
-      data: { username: user, team_name: team },
-      emailRedirectTo: window.location.origin + '/confirm'
-    }
+    options: { data: { username: user, team_name: team } }
   }).then(function(res) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
     if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
-    // identities.length===0 means email already exists (Supabase returns 200 for dupes)
-    if (res.data && res.data.user && res.data.user.identities && res.data.user.identities.length === 0) {
-      document.getElementById('r-err').textContent = 'An account with this email already exists. Please log in instead.';
-      return;
-    }
     var userId = res.data && res.data.user && res.data.user.id;
     if (userId) {
       db.from('profiles').insert({
@@ -2097,33 +2082,10 @@ function doRegister() {
         referred_by: referralUsed || null
       }).then(function() {
         if (suppTeam) autoJoinTeamLeague(userId, suppTeam);
-      }).catch(function(){});
+      });
     }
-    var needsConfirm = !(res.data && res.data.session);
     closeAuth();
-    if (needsConfirm) {
-      // Show verification prompt inside the modal
-      var modal = document.getElementById('auth-modal');
-      var inner = modal && modal.querySelector('.modal-inner');
-      if (inner) {
-        inner.innerHTML = '<div style="text-align:center;padding:2rem 1.2rem">' +
-          '<div style="font-size:2.5rem;margin-bottom:.8rem">📧</div>' +
-          '<h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;margin-bottom:.5rem">Check your inbox</h2>' +
-          '<p style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:1.2rem">We sent a confirmation link to<br><strong style="color:#fff">' + email + '</strong><br>Click it to activate your account.</p>' +
-          '<p style="font-size:.72rem;color:rgba(255,255,255,.3);margin-bottom:1rem">Didn't get it? Check spam or ' +
-          '<a onclick="db.auth.resend({type:'signup',email:'' + email + '',options:{emailRedirectTo:window.location.origin+'/confirm'}}).then(function(){showToast('Email resent','success');})" style="color:#DBA94A;cursor:pointer;text-decoration:underline">resend</a></p>' +
-          '<button onclick="closeAuth()" style="background:#B91C3A;border:none;border-radius:10px;color:#fff;font-family:var(--font-ui);font-size:.88rem;font-weight:700;padding:.7rem 2rem;cursor:pointer;width:100%">Got it</button>' +
-        '</div>';
-        modal.classList.add('open');
-      } else {
-        showToast('Account created! Check your email to confirm.', 'success');
-      }
-    } else {
-      showToast('Welcome to Fantasy PSL! 🦁', 'success');
-    }
-  }).catch(function(err) {
-    btn.textContent = 'Create Account -- Free'; btn.disabled = false;
-    document.getElementById('r-err').textContent = (err && err.message) || 'Registration failed';
+    showToast('Account created! Check your email to confirm.', 'success');
   });
 }
 
@@ -4358,9 +4320,40 @@ function openNewsPost(postOrIdx) {
   setMeta('og-title',       post.title + ' — Fantasy PSL');
   setMeta('og-description', post.summary || post.title);
   setMeta('og-url',         shareUrl);
-  setMeta('og-image',       post.image_url || 'https://www.fantasypsl.co.za/icon-512.png');
+  setMeta('og-image',       post.image_url || post.cover_image || 'https://www.fantasypsl.co.za/icon-512.png');
   setMeta('page-desc',      post.summary || post.title);
   try { document.title = post.title + ' — Fantasy PSL'; } catch(e) {}
+  // Inject NewsArticle structured data — critical for Google News indexing
+  try {
+    var ldExisting = document.getElementById('ld-article');
+    if (ldExisting) ldExisting.remove();
+    var ldScript = document.createElement('script');
+    ldScript.type = 'application/ld+json';
+    ldScript.id   = 'ld-article';
+    ldScript.textContent = JSON.stringify({
+      '@context':         'https://schema.org',
+      '@type':            'NewsArticle',
+      'headline':         post.title || '',
+      'description':      post.summary || post.excerpt || '',
+      'datePublished':    post.published_at || post.created_at || '',
+      'dateModified':     post.updated_at   || post.published_at || '',
+      'url':              shareUrl,
+      'image':            post.image_url || post.cover_image || 'https://www.fantasypsl.co.za/icon-512.png',
+      'author':           { '@type': 'Person', 'name': post.author || 'Fantasy PSL Editorial' },
+      'publisher': {
+        '@type':  'Organization',
+        'name':   'Fantasy PSL',
+        'logo':   { '@type': 'ImageObject', 'url': 'https://www.fantasypsl.co.za/icon-512.png', 'width': 512, 'height': 512 }
+      },
+      'keywords':         'PSL, Betway Premiership, Fantasy Football, Fantasy Soccer, South Africa' + (post.category ? ', ' + post.category : ''),
+      'mainEntityOfPage': { '@type': 'WebPage', '@id': shareUrl },
+      'inLanguage':       'en-ZA'
+    });
+    document.head.appendChild(ldScript);
+    // Update canonical link tag
+    var canon = document.querySelector('link[rel="canonical"]');
+    if (canon) canon.href = shareUrl;
+  } catch(e) { console.warn('[SEO structured data]', e.message); }
 
   // Build overlay
   // Always remove stale overlay so CSS is never cached with wrong top value
@@ -5039,28 +5032,13 @@ function renderProfilePanel() {
 
 function deleteAccount() {
   if (!ST.user) return;
-  if (!confirm('Permanently delete your account?\n\nThis removes your squad, points and all data. This cannot be undone.')) return;
-  var uid = ST.user.id;
-  db.from('profiles').update({
-    deleted_at: new Date().toISOString(),
-    squad_data: null,
-    username: 'deleted_' + uid.substring(0,8),
-    team_name: 'Deleted Account'
-  }).eq('id', uid).then(function() {
-    db.from('league_members').delete().eq('user_id', uid).then(function(){}).catch(function(){});
-    return db.auth.signOut();
-  }).then(function() {
-    // Hard-delete from Supabase Auth via server endpoint
-    fetch('/api/admin-api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete_user_self', user_id: uid })
-    }).catch(function(){});
-    ST.user = null;
-    goPage('home');
-    showToast('Account deleted. Sorry to see you go.', 'info');
-  }).catch(function(err) {
-    showToast('Delete failed: ' + (err && err.message), 'error');
+  if (!confirm('Delete your account?\n\nYou have 30 days to reactivate before all data is permanently removed.')) return;
+  db.from('profiles').update({ deleted_at: new Date().toISOString() }).eq('id', ST.user.id).then(function() {
+    db.auth.signOut().then(function() {
+      ST.user = null;
+      goPage('home');
+      showToast('Account scheduled for deletion. 30 days to reactivate.', 'info');
+    });
   });
 }
 
@@ -5482,7 +5460,18 @@ function mcSwitchTab(fixtureId, tabName) {
   var key = String(fixtureId);
   document.querySelectorAll('.mc-tab[data-fix="'+key+'"]').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tabName);});
   document.querySelectorAll('.mc-tab-body[data-fix="'+key+'"]').forEach(function(b){b.classList.toggle('show',b.dataset.tab===tabName);});
-  if (tabName==='chat') initMatchChat(fixtureId);
+  if (tabName==='chat')   initMatchChat(fixtureId);
+  // If lineup tab is opened before stats have loaded, trigger stats load first
+  if (tabName==='lineup') {
+    var lineupEl = document.getElementById('mc-lineup-'+key);
+    if (lineupEl && lineupEl.innerHTML.indexOf('Loading lineups')>-1) {
+      var d=window['_mpsData_'+key];
+      if (!d) {
+        // Stats not yet fetched — switch to stats tab which will populate lineup too
+        setTimeout(function(){ mcSwitchTab(fixtureId,'stats'); setTimeout(function(){ mcSwitchTab(fixtureId,'lineup'); },1500); }, 100);
+      }
+    }
+  }
 }
 
 function escHtml(s) {
@@ -6770,59 +6759,6 @@ function openClubProfile(teamName) {
     });
   });
   document.getElementById('cp-squad').innerHTML = squadHtml;
-
-  // ── Fetch next 3 upcoming + last 3 results for this team ─────────────
-  var cpFix = document.getElementById('cp-fixtures');
-  if (cpFix) {
-    cpFix.innerHTML = '<div style="padding:.6rem 1rem;font-size:.72rem;color:rgba(255,255,255,.3)">Loading...</div>';
-    Promise.all([
-      db.from('fixtures')
-        .select('home_team,away_team,home_score,away_score,kickoff_at,status,home_logo,away_logo,gw_number')
-        .or('home_team.eq.' + teamName + ',away_team.eq.' + teamName)
-        .eq('status','NS').order('kickoff_at',{ascending:true}).limit(3),
-      db.from('fixtures')
-        .select('home_team,away_team,home_score,away_score,kickoff_at,status,home_logo,away_logo,gw_number')
-        .or('home_team.eq.' + teamName + ',away_team.eq.' + teamName)
-        .eq('status','FT').order('kickoff_at',{ascending:false}).limit(3)
-    ]).then(function(rs) {
-      var upcoming = rs[0].data || [];
-      var recent   = (rs[1].data || []).slice().reverse();
-      function fRow(f, isResult) {
-        var isHome = f.home_team === teamName;
-        var opp = isHome ? f.away_team : f.home_team;
-        var oppLogo = isHome ? (f.away_logo || getTeamLogo(opp)) : (f.home_logo || getTeamLogo(opp));
-        var dt = f.kickoff_at ? new Date(f.kickoff_at).toLocaleDateString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '--';
-        var score = '', rCol = 'rgba(255,255,255,.5)';
-        if (isResult) {
-          var myG = isHome ? f.home_score : f.away_score;
-          var opG = isHome ? f.away_score : f.home_score;
-          score = f.home_score + ' – ' + f.away_score;
-          rCol = myG > opG ? '#22895A' : myG < opG ? '#D4274F' : '#DBA94A';
-        }
-        return '<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
-          '<img src="'+(oppLogo||'')+'" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(isHome?'vs ':'@ ')+escHtml(opp)+'</div>' +
-            '<div style="font-size:.62rem;color:rgba(255,255,255,.35);margin-top:1px">'+dt+(f.gw_number?' · GW'+f.gw_number:'')+'</div>' +
-          '</div>' +
-          (isResult ? '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:'+rCol+'">'+score+'</div>' : '<div style="font-size:.65rem;color:rgba(255,255,255,.3)">'+(!isResult?'KO':'')+'</div>') +
-        '</div>';
-      }
-      var html = '';
-      if (upcoming.length) {
-        html += '<div style="padding:.3rem 1rem .1rem;font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25)">Upcoming</div>';
-        html += upcoming.map(function(f){return fRow(f,false);}).join('');
-      }
-      if (recent.length) {
-        html += '<div style="padding:.4rem 1rem .1rem;font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);border-top:1px solid rgba(255,255,255,.05);margin-top:.2rem">Recent Results</div>';
-        html += recent.map(function(f){return fRow(f,true);}).join('');
-      }
-      if (!html) html = '<div style="padding:.8rem 1rem;font-size:.72rem;color:rgba(255,255,255,.2)">No fixture data available</div>';
-      cpFix.innerHTML = html;
-    }).catch(function() {
-      cpFix.innerHTML = '<div style="padding:.6rem 1rem;font-size:.72rem;color:rgba(255,255,255,.2)">Could not load fixtures</div>';
-    });
-  }
 
   // Show modal
   modal.style.display = 'block';
@@ -8613,6 +8549,7 @@ onReady(function() {
     }
     out+='<div class="mc-tabs">' +
       '<button class="mc-tab active" data-fix="'+fid+'" data-tab="stats" onclick="mcSwitchTab(''+fid+'','stats')">Match Stats</button>' +
+      (isFT||isLive ? '<button class="mc-tab" data-fix="'+fid+'" data-tab="lineup" onclick="mcSwitchTab(''+fid+'','lineup')">Lineups</button>' : '') +
       '<button class="mc-tab" data-fix="'+fid+'" data-tab="mypts" onclick="mcSwitchTab(''+fid+'','mypts')">My Points</button>' +
       '<button class="mc-tab" data-fix="'+fid+'" data-tab="chat"  onclick="mcSwitchTab(''+fid+'','chat')">💬 Chat</button>' +
     '</div>';
@@ -8641,6 +8578,14 @@ onReady(function() {
       out+='<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">Loading your points...</div>';
     }
     out+='</div></div>';
+    // Lineup tab body — rendered when player stats load
+    if (isFT||isLive) {
+      out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="lineup">' +
+        '<div id="mc-lineup-'+fid+'" style="padding:.4rem 0">' +
+          '<div style="text-align:center;padding:.8rem;font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">Loading lineups...</div>' +
+        '</div>' +
+      '</div>';
+    }
     out+='<div class="mc-tab-body" data-fix="'+fid+'" data-tab="chat">';
     out+='<div class="mc-chat-wrap">';
     out+='<div class="mc-chat-meta">' +
@@ -8729,6 +8674,49 @@ onReady(function() {
               }).join('');
             }
             window['_mpsData_'+fid]={home:homeStats,away:awayStats,f:f};
+
+            // ── Populate Lineup tab ──────────────────────────────────
+            var lineupEl=document.getElementById('mc-lineup-'+fid);
+            if(lineupEl){
+              function buildLineup(players, teamName) {
+                var starters=players.filter(function(p){return !p.is_substitute&&(p.minutes_played>0||p.is_captain);});
+                var subs=players.filter(function(p){return p.is_substitute&&p.minutes_played>0;});
+                var unused=players.filter(function(p){return p.is_substitute&&p.minutes_played===0;});
+                function pRow(p,isSub){
+                  var posLabel={G:'GK',D:'DEF',M:'MID',F:'FWD'}[p.position]||p.position||'';
+                  var evts='';
+                  if(p.goals>0) evts+='⚽'+(p.goals>1?'×'+p.goals:'');
+                  if(p.assists>0) evts+='🅰️'+(p.assists>1?'×'+p.assists:'');
+                  if(p.clean_sheet) evts+='🛡️';
+                  if(p.yellow_cards>0) evts+='🟨';
+                  if(p.red_cards>0) evts+='🟥';
+                  if(p.saves>0) evts+='🧤'+p.saves;
+                  var ratingStr=p.rating?('<span style="font-size:.68rem;font-weight:700;padding:1px 5px;border-radius:4px;background:'+(p.rating>=8?'rgba(46,204,113,.2)':p.rating>=7?'rgba(243,156,18,.2)':'rgba(231,76,60,.15)')+';color:'+(p.rating>=8?'#2ecc71':p.rating>=7?'#f39c12':'#e74c3c')+'">'+p.rating+'</span>'):'';
+                  return '<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .8rem;border-bottom:1px solid rgba(255,255,255,.035);'+(isSub?'opacity:.7':'')+'">'+
+                    '<span style="font-size:.52rem;font-weight:700;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.5);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLabel+'</span>'+
+                    (p.jersey_number?'<span style="font-size:.62rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);min-width:16px;text-align:center">'+p.jersey_number+'</span>':'<span style="min-width:16px"></span>')+
+                    '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+
+                      (p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
+                    '</span>'+
+                    '<span style="font-size:.75rem">'+evts+'</span>'+
+                    '<span style="font-size:.65rem;color:rgba(255,255,255,.3);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
+                    ratingStr+
+                  '</div>';
+                }
+                var html='<div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);padding:.4rem .8rem .2rem">'+escHtml(teamName)+' — Starting XI</div>';
+                html+=starters.map(function(p){return pRow(p,false);}).join('');
+                if(subs.length){
+                  html+='<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.5rem .8rem .15rem;margin-top:.2rem;border-top:1px dashed rgba(255,255,255,.06)">Substitutes Used</div>';
+                  html+=subs.map(function(p){return pRow(p,true);}).join('');
+                }
+                return html;
+              }
+              var lineupHtid=f._raw&&f._raw.home_team_id||homeStats[0]&&homeStats[0].apifootball_team_id;
+              var homeL=homeStats,awayL=awayStats;
+              lineupEl.innerHTML=
+                '<div style="border-bottom:1px solid rgba(255,255,255,.06)">'+buildLineup(homeL,f.home||'Home')+'</div>'+
+                buildLineup(awayL,f.away||'Away');
+            }
             function buildTeamTabs(active){
               var on=function(w){return active===w;};
               var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
@@ -8854,6 +8842,7 @@ onReady(function() {
   console.log('[FPSL] Fix patch applied — match stats, no injuries, pitch centred, manual stats');
 });
 
+})();
 // ── Splash screen: CSS animation handles the fade; JS just cleans up the DOM
 (function() {
   // Remove the element from DOM after animation completes (2.6s)
