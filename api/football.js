@@ -50,13 +50,15 @@ module.exports = async (req, res) => {
 
   try {
     switch (type) {
-      case 'live':       return res.json(await getLive());
-      case 'fixtures':   return res.json(await getFixtures());
-      case 'results':    return res.json(await getResults());
-      case 'standings':  return res.json(await getStandings());
-      case 'topscorers': return res.json(await getTopScorers());
-      case 'status':     return res.json(await getStatus());
-      default:           return res.status(400).json({ error: 'Unknown type: ' + type });
+      case 'live':           return res.json(await getLive());
+      case 'fixtures':       return res.json(await getFixtures());
+      case 'results':        return res.json(await getResults());
+      case 'standings':      return res.json(await getStandings());
+      case 'topscorers':     return res.json(await getTopScorers());
+      case 'status':         return res.json(await getStatus());
+      case 'fixture_detail': return res.json(await getFixtureDetail(req.query.fixture_id));
+      case 'team_fixtures':  return res.json(await getTeamFixtures(req.query.team, req.query.team_id));
+      default:               return res.status(400).json({ error: 'Unknown type: ' + type });
     }
   } catch(err) {
     console.error('[football.js]', type, err.message);
@@ -395,4 +397,165 @@ function formatSupabaseFixture(f) {
     elapsed:       f.elapsed || null,
     round:         f.round   || null
   };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// FIXTURE DETAIL — full match stats, lineups, events (goals/cards/subs)
+// GET /api/football?type=fixture_detail&fixture_id=123456
+// ══════════════════════════════════════════════════════════════════════════
+async function getFixtureDetail(fixtureId) {
+  if (!fixtureId) throw new Error('fixture_id required');
+
+  var cacheKey = 'fixture_' + fixtureId;
+  var cached   = fromCache(cacheKey);
+  if (cached) return cached;
+
+  // Fetch base fixture + events + lineups + statistics in parallel
+  var [fixtureRes, eventsRes, lineupsRes, statsRes] = await Promise.all([
+    apiFetch('/fixtures?id=' + fixtureId, TOKEN),
+    apiFetch('/fixtures/events?fixture=' + fixtureId, TOKEN),
+    apiFetch('/fixtures/lineups?fixture=' + fixtureId, TOKEN),
+    apiFetch('/fixtures/statistics?fixture=' + fixtureId, TOKEN),
+  ]);
+
+  var f   = (fixtureRes.response || [])[0] || {};
+  var fix = f.fixture || {}, teams = f.teams || {}, goals = f.goals || {}, score = f.score || {}, league = f.league || {};
+
+  var status    = fix.status && fix.status.short || 'NS';
+  var isLive    = ['1H','2H','HT','ET','P','LIVE'].indexOf(status) > -1;
+  var isFT      = ['FT','AET','PEN'].indexOf(status) > -1;
+
+  // ── Events (goals, cards, substitutions) ─────────────────────────
+  var events = (eventsRes.response || []).map(function(e) {
+    return {
+      time:    e.time && e.time.elapsed || 0,
+      extra:   e.time && e.time.extra || null,
+      team:    normTeam(e.team && e.team.name || ''),
+      team_id: e.team && e.team.id || null,
+      player:  e.player && e.player.name || '',
+      assist:  e.assist && e.assist.name || null,
+      type:    e.type  || '',   // Goal, Card, subst, Var
+      detail:  e.detail || '',  // Normal Goal, Yellow Card, Red Card, etc.
+    };
+  });
+
+  // ── Lineups ───────────────────────────────────────────────────────
+  var lineups = (lineupsRes.response || []).map(function(l) {
+    return {
+      team:       normTeam(l.team && l.team.name || ''),
+      team_logo:  l.team && l.team.logo || null,
+      formation:  l.formation || '',
+      coach:      l.coach && l.coach.name || '',
+      startXI:    (l.startXI || []).map(function(p) {
+        var pl = p.player || {};
+        return { id: pl.id, name: pl.name, number: pl.number, pos: pl.pos, grid: pl.grid };
+      }),
+      substitutes: (l.substitutes || []).map(function(p) {
+        var pl = p.player || {};
+        return { id: pl.id, name: pl.name, number: pl.number, pos: pl.pos };
+      }),
+    };
+  });
+
+  // ── Statistics (shots, possession, etc.) ─────────────────────────
+  var statistics = (statsRes.response || []).map(function(t) {
+    var statMap = {};
+    (t.statistics || []).forEach(function(s) { statMap[s.type] = s.value; });
+    return {
+      team:             normTeam(t.team && t.team.name || ''),
+      team_logo:        t.team && t.team.logo || null,
+      shots_on_target:  statMap['Shots on Goal'] || 0,
+      shots_total:      statMap['Total Shots'] || 0,
+      possession:       statMap['Ball Possession'] || '0%',
+      passes:           statMap['Total passes'] || 0,
+      pass_accuracy:    statMap['Passes accurate'] || 0,
+      fouls:            statMap['Fouls'] || 0,
+      yellow_cards:     statMap['Yellow Cards'] || 0,
+      red_cards:        statMap['Red Cards'] || 0,
+      offsides:         statMap['Offsides'] || 0,
+      corners:          statMap['Corner Kicks'] || 0,
+      saves:            statMap['Goalkeeper Saves'] || 0,
+    };
+  });
+
+  // TTL: live matches cache only 60s; finished/upcoming cache longer
+  var ttl = isLive ? 60000 : isFT ? 10 * 60000 : 5 * 60000;
+  TTL[cacheKey] = ttl;
+
+  return toCache(cacheKey, {
+    type:       'fixture_detail',
+    fixture_id: fixtureId,
+    status:     isFT ? 'FT' : isLive ? 'LIVE' : 'NS',
+    elapsed:    fix.status && fix.status.elapsed || null,
+    date:       fix.date,
+    venue:      fix.venue && fix.venue.name || null,
+    round:      league.round || null,
+    home:       normTeam(teams.home && teams.home.name || ''),
+    away:       normTeam(teams.away && teams.away.name || ''),
+    home_logo:  teams.home && teams.home.logo || null,
+    away_logo:  teams.away && teams.away.logo || null,
+    hg:         (isFT || isLive) ? goals.home : null,
+    ag:         (isFT || isLive) ? goals.away : null,
+    ht_score:   score.halftime || null,
+    ft_score:   score.fulltime || null,
+    events,
+    lineups,
+    statistics,
+    fetched_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TEAM FIXTURES — next 3 upcoming + last 5 results for a team
+// GET /api/football?type=team_fixtures&team=Orlando+Pirates
+// GET /api/football?type=team_fixtures&team_id=12345
+// ══════════════════════════════════════════════════════════════════════════
+async function getTeamFixtures(teamName, teamId) {
+  if (!teamName && !teamId) throw new Error('team or team_id required');
+
+  var cacheKey = 'team_' + (teamId || teamName);
+  var cached   = fromCache(cacheKey);
+  if (cached) return cached;
+
+  var sy = await seasonYear();
+
+  // If we have a team name but no API team_id, try to find it from standings
+  var resolvedTeamId = teamId;
+  if (!resolvedTeamId && teamName) {
+    try {
+      var standData = await apiFetch('/standings?league=' + PSL_LEAGUE + '&season=' + sy, TOKEN);
+      var groups    = (standData.response || [])[0];
+      var rows      = groups && groups.league && groups.league.standings ? groups.league.standings[0] : [];
+      var match     = rows.find(function(r) {
+        return normTeam(r.team && r.team.name || '').toLowerCase() === (teamName || '').toLowerCase() ||
+               (r.team && r.team.name || '').toLowerCase() === (teamName || '').toLowerCase();
+      });
+      if (match) resolvedTeamId = match.team && match.team.id;
+    } catch(e) {}
+  }
+
+  if (!resolvedTeamId) {
+    // Return empty if we can't resolve
+    return { upcoming: [], results: [], team: teamName };
+  }
+
+  // Fetch upcoming + past in parallel
+  var [upRes, pastRes] = await Promise.all([
+    apiFetch('/fixtures?league=' + PSL_LEAGUE + '&season=' + sy + '&team=' + resolvedTeamId + '&status=NS&next=3', TOKEN),
+    apiFetch('/fixtures?league=' + PSL_LEAGUE + '&season=' + sy + '&team=' + resolvedTeamId + '&status=FT&last=5', TOKEN),
+  ]);
+
+  var upcoming = (upRes.response  || []).map(formatFixture);
+  var results  = (pastRes.response || []).map(formatFixture).reverse();
+
+  TTL[cacheKey] = 10 * 60 * 1000; // 10 min cache
+
+  return toCache(cacheKey, {
+    type:     'team_fixtures',
+    team:     teamName,
+    team_id:  resolvedTeamId,
+    upcoming: upcoming.slice(0, 3),
+    results:  results.slice(0, 5),
+    fetched_at: new Date().toISOString()
+  });
 }
