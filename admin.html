@@ -1149,10 +1149,29 @@
     <!-- ══════════════════ USERS TAB ══════════════════ -->
     <div id="tab-users" class="tab-page">
 
+      <!-- How user deletion works -->
+      <div class="card" style="border-color:rgba(41,121,255,.2);background:rgba(41,121,255,.03);margin-bottom:16px">
+        <div class="card-header" style="border-bottom-color:rgba(41,121,255,.15)">
+          <div class="card-title"><span class="dot dot-blue"></span>ℹ️ How User Deletion Works</div>
+        </div>
+        <div class="card-body" style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.8">
+          <p><strong style="color:#fff">The Problem (now fixed):</strong> The Supabase JS frontend SDK <em>cannot</em> delete from <code>auth.users</code> — it's a privileged table. Previously, "Delete Account" only marked the profile as <code>deleted_at</code> but the auth record remained.</p>
+          <br>
+          <p><strong style="color:#fff">The Fix:</strong> The new <code>/api/admin-api</code> endpoint uses the <strong>service-role key</strong> server-side to call <code>auth.admin.deleteUser()</code>, which fully removes the user from both <code>auth.users</code> and <code>profiles</code>.</p>
+          <br>
+          <p><strong style="color:#fff">Email Verification:</strong> Enabled via <strong>Supabase Dashboard → Authentication → Settings → "Confirm email"</strong>. When enabled, users must click the link in their email before their account is active. The app now shows a "Check your email" panel instead of closing the modal on registration.</p>
+          <br>
+          <p><strong style="color:#60A5FA">To clean up old ghost users</strong> (registered but unconfirmed): Go to <a href="https://supabase.com/dashboard" target="_blank" style="color:#60A5FA">Supabase Dashboard → Authentication → Users</a> → filter by "Unconfirmed" → delete manually, or use the Delete button below.</p>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><span class="dot dot-blue"></span>Top Users by Points</div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadTopUsers()">Load / Refresh</button>
+          <div class="card-title"><span class="dot dot-blue"></span>Users by Points</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="user-search" placeholder="Search username…" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-size:12px;width:160px" oninput="filterUserTable(this.value)">
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadTopUsers()">Load / Refresh</button>
+          </div>
         </div>
         <div style="overflow-x:auto;">
           <table class="user-table">
@@ -1161,17 +1180,20 @@
                 <th style="width:40px">#</th>
                 <th>Team Name</th>
                 <th>Username</th>
+                <th style="text-align:center">Email ✓</th>
                 <th style="text-align:center">GW Pts</th>
                 <th style="text-align:center">Total Pts</th>
                 <th style="text-align:center">Squad</th>
                 <th>Joined</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="users-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Click Refresh to load</td></tr>
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">Click Refresh to load</td></tr>
             </tbody>
           </table>
         </div>
+        <div id="users-status" style="margin:8px 16px;font-size:12px;display:none"></div>
       </div>
 
     </div>
@@ -1377,22 +1399,6 @@
         </div>
 
         <!-- Active announcements -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title"><span class="dot dot-purple"></span>Active Announcements</div>
-            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;" onclick="loadAnnouncements()">Refresh</button>
-          </div>
-          <div class="card-body" id="ann-list">
-            <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No active announcements</div>
-          </div>
-        </div>
-
-      </div>
-    </div><!-- end tab-announcements -->
-
-    <!-- ══════════════════ NEWS CMS TAB ══════════════════ -->
-    <div id="tab-news" class="tab-page">
-
         <div class="card">
           <div class="card-header">
             <div class="card-title"><span class="dot dot-purple"></span>Active Announcements</div>
@@ -2510,35 +2516,97 @@
 
   async function loadTopUsers() {
     const tbody = document.getElementById('users-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
     try {
-      const data = await sb('GET', 'profiles', null,
-        'select=team_name,username,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=50'
-      );
-      if (!data || !data.length) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No users found</td></tr>';
+      // Try the new admin-api endpoint first (includes email_confirmed status)
+      let users = [];
+      try {
+        const r = await fetch('/api/admin-api?action=list-users&admin_key=' + encodeURIComponent(ADMIN_KEY));
+        const d = await r.json();
+        if (d && d.users) users = d.users;
+      } catch(_) {}
+
+      // Fallback: direct Supabase query
+      if (!users.length) {
+        const data = await sb('GET', 'profiles', null,
+          'select=id,team_name,username,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=100'
+        );
+        users = data || [];
+      }
+
+      window._adminUserList = users; // cache for filter
+
+      if (!users.length) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;">No users found</td></tr>';
         return;
       }
-      if (tbody) tbody.innerHTML = data.map((u, i) => {
-        const created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-ZA') : '—';
-        const rankColor = i === 0 ? 'var(--amber)' : i < 3 ? 'var(--green)' : 'var(--muted)';
-        const squadTag = u.squad_count >= 15
-          ? '<span class="tag tag-green">Full</span>'
-          : u.squad_count > 0
-            ? '<span class="tag tag-amber">' + u.squad_count + '/15</span>'
-            : '<span class="tag tag-red">None</span>';
-        return '<tr>' +
-          '<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:' + rankColor + '">' + (i+1) + '</span></td>' +
-          '<td style="font-weight:500">' + (u.team_name||'—') + '</td>' +
-          '<td style="color:var(--muted)">@' + (u.username||'—') + '</td>' +
-          '<td style="text-align:center;font-family:var(--mono);color:var(--blue)">' + (u.gw_points||0) + '</td>' +
-          '<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--green)">' + (u.total_points||0) + '</td>' +
-          '<td style="text-align:center">' + squadTag + '</td>' +
-          '<td style="color:var(--muted);font-size:12px">' + created + '</td>' +
-        '</tr>';
-      }).join('');
+      renderUserTable(users);
     } catch(e) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red);padding:16px;">Error: ' + e.message + '</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="color:var(--red);padding:16px;">Error: ' + e.message + '</td></tr>';
+    }
+  }
+
+  function renderUserTable(users) {
+    const tbody = document.getElementById('users-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = users.map((u, i) => {
+      const created   = u.created_at || u.auth_created_at ? new Date(u.created_at || u.auth_created_at).toLocaleDateString('en-ZA') : '—';
+      const rankColor = i === 0 ? 'var(--amber)' : i < 3 ? 'var(--green)' : 'var(--muted)';
+      const squadTag  = u.squad_count >= 15
+        ? '<span class="tag tag-green">Full</span>'
+        : u.squad_count > 0
+          ? '<span class="tag tag-amber">' + u.squad_count + '/15</span>'
+          : '<span class="tag tag-red">None</span>';
+      const emailConf = u.email_confirmed === true
+        ? '<span style="color:var(--green);font-size:12px">✓</span>'
+        : u.email_confirmed === false
+          ? '<span style="color:var(--amber);font-size:11px">Pending</span>'
+          : '<span style="color:var(--muted);font-size:11px">—</span>';
+      const uid = u.id || '';
+      return '<tr>' +
+        '<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:' + rankColor + '">' + (i+1) + '</span></td>' +
+        '<td style="font-weight:500">' + (u.team_name||'—') + '</td>' +
+        '<td style="color:var(--muted)">@' + (u.username||'—') + '</td>' +
+        '<td style="text-align:center">' + emailConf + '</td>' +
+        '<td style="text-align:center;font-family:var(--mono);color:var(--blue)">' + (u.gw_points||0) + '</td>' +
+        '<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--green)">' + (u.total_points||0) + '</td>' +
+        '<td style="text-align:center">' + squadTag + '</td>' +
+        '<td style="color:var(--muted);font-size:12px">' + created + '</td>' +
+        '<td style="white-space:nowrap">' +
+          (uid ? '<button onclick="adminDeleteUser(\''+uid+'\',\''+((u.username||u.team_name||'this user').replace(/'/g,''))+'\',this)" style="background:rgba(255,23,68,.12);border:1px solid rgba(255,23,68,.3);border-radius:5px;color:#ff1744;font-size:11px;padding:3px 9px;cursor:pointer">Delete</button>' : '—') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function filterUserTable(query) {
+    if (!window._adminUserList) return;
+    const q = query.toLowerCase();
+    const filtered = window._adminUserList.filter(function(u) {
+      return !q || (u.username||'').toLowerCase().includes(q) || (u.team_name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
+    });
+    renderUserTable(filtered);
+  }
+
+  async function adminDeleteUser(userId, userName, btn) {
+    if (!confirm('Permanently delete user "' + userName + '"?\n\nThis removes them from auth.users AND profiles. Cannot be undone.')) return;
+    btn.textContent = '…';
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/admin-api?action=delete-user&user_id=' + encodeURIComponent(userId) + '&admin_key=' + encodeURIComponent(ADMIN_KEY), { method: 'DELETE' });
+      const d = await r.json();
+      if (d && d.success) {
+        btn.closest('tr').style.opacity = '0.3';
+        btn.textContent = 'Deleted';
+        showStatus('users-status', 'User "' + userName + '" deleted successfully', 'success');
+      } else {
+        btn.textContent = 'Error';
+        btn.disabled = false;
+        showStatus('users-status', 'Delete failed: ' + (d && d.error || 'Unknown error'), 'error');
+      }
+    } catch(e) {
+      btn.textContent = 'Error';
+      btn.disabled = false;
     }
   }
 
