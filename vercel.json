@@ -34,10 +34,6 @@
       "dest": "/api/save-squad.js"
     },
     {
-      "src": "/api/admin-api",
-      "dest": "/api/admin-api.js"
-    },
-    {
       "src": "/api/sitemap",
       "dest": "/api/sitemap.js"
     },
@@ -109,6 +105,43 @@
     {
       "path": "/api/points-cron",
       "schedule": "30 23 * * 5,6,0"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/favicon.ico",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "image/x-icon"
+        }
+      ]
+    },
+    {
+      "source": "/icon-(.*).png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        }
+      ]
+    },
+    {
+      "source": "/logo.png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        }
+      ]
     }
   ]
 }
