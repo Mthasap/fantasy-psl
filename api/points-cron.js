@@ -88,13 +88,55 @@ module.exports = async (req, res) => {
     }
 
     // ── Step 2: Load all match_player_stats for this GW ──────────────────
-    const { data: gwStats, error: statsErr } = await db
-      .from('match_player_stats')
-      .select('apifootball_player_id, player_name, fantasy_points, minutes_played, position')
-      .eq('season', 2025)
+    // STRATEGY: Do NOT rely on gw_number in match_player_stats — apifootball-sync
+    // may not write it.  Instead, get fixture IDs for this GW from the fixtures
+    // table and filter match_player_stats by those IDs.  Fall back to gw_number
+    // filter if no fixture IDs are found (belt-and-suspenders).
+
+    // 2a. Get all fixture IDs for the current GW
+    const { data: gwFixtureRows } = await db
+      .from('fixtures')
+      .select('api_fixture_id, id')
       .eq('gw_number', currentGW);
 
+    const fixtureApiIds = (gwFixtureRows || [])
+      .map(function(r) { return r.api_fixture_id; })
+      .filter(Boolean);
+
+    log.push('GW' + currentGW + ' fixture IDs: ' + (fixtureApiIds.length ? fixtureApiIds.join(', ') : 'none found'));
+
+    let gwStats, statsErr;
+
+    if (fixtureApiIds.length > 0) {
+      // Primary: filter by fixture IDs — works even when gw_number is NULL in stats table
+      const r = await db
+        .from('match_player_stats')
+        .select('apifootball_player_id, player_name, fantasy_points, minutes_played, position, apifootball_fixture_id')
+        .in('apifootball_fixture_id', fixtureApiIds);
+      gwStats  = r.data;
+      statsErr = r.error;
+      log.push('Stats loaded via fixture IDs: ' + (gwStats || []).length + ' rows');
+    } else {
+      // Fallback: filter by gw_number (works if apifootball-sync writes it)
+      log.push('WARN: No fixture IDs for GW' + currentGW + ' — falling back to gw_number filter');
+      const r = await db
+        .from('match_player_stats')
+        .select('apifootball_player_id, player_name, fantasy_points, minutes_played, position')
+        .eq('season', 2025)
+        .eq('gw_number', currentGW);
+      gwStats  = r.data;
+      statsErr = r.error;
+      log.push('Stats loaded via gw_number fallback: ' + (gwStats || []).length + ' rows');
+    }
+
     if (statsErr) throw new Error('match_player_stats load: ' + statsErr.message);
+
+    // DIAGNOSTIC: warn if 0 stats found — this is the #1 cause of zero points
+    if (!gwStats || gwStats.length === 0) {
+      log.push('⚠️  ZERO stats found for GW' + currentGW + '.');
+      log.push('   → Run /api/sync?action=force-sync&admin_key=XXX to sync fixtures');
+      log.push('   → Then run /api/points-cron?admin_key=XXX&gw=' + currentGW + ' again');
+    }
 
     // Aggregate per player by API id
     const gwStatsByApiId = {};
@@ -340,19 +382,9 @@ module.exports = async (req, res) => {
             }
           }
 
-          if (gwOverride) {
-            const { data: existing } = await db.from('gw_scores')
-              .select('points, player_scores')
-              .eq('user_id', prof.id)
-              .eq('gameweek', currentGW)
-              .single();
-
-            if (existing) {
-              gwTotal = gwTotal + (existing.points || 0);
-              const existingBreakdown = existing.player_scores || [];
-              playerBreakdown.push(...existingBreakdown);
-            }
-          }
+          // NOTE: gwOverride used to ADD points to existing — this caused doubling
+          // on re-runs. Now we always REPLACE (upsert overwrites) which is correct.
+          // The upsert below handles both new and re-run cases safely.
 
           await db.from('gw_scores').upsert({
             user_id:        prof.id,
@@ -434,14 +466,24 @@ module.exports = async (req, res) => {
     }
 
     // ── Step 7: Advance GW if all fixtures finished ───────────────────────
-    const { data: gwFixtures } = await db
-      .from('fixtures')
-      .select('status')
-      .eq('gw_number', currentGW)
-      .eq('season', 2025);
-
-    const allFT = gwFixtures && gwFixtures.length > 0 &&
-      gwFixtures.every(function(f) { return f.status === 'FT'; });
+    // Use the same fixture IDs we already loaded — no second query needed
+    let allFT = false;
+    if (fixtureApiIds.length > 0) {
+      const { data: gwFixturesStatus } = await db
+        .from('fixtures')
+        .select('status')
+        .in('api_fixture_id', fixtureApiIds);
+      allFT = !!(gwFixturesStatus && gwFixturesStatus.length > 0 &&
+        gwFixturesStatus.every(function(f) { return f.status === 'FT'; }));
+    } else {
+      // Fallback: query by gw_number column
+      const { data: gwFixturesStatus } = await db
+        .from('fixtures')
+        .select('status')
+        .eq('gw_number', currentGW);
+      allFT = !!(gwFixturesStatus && gwFixturesStatus.length > 0 &&
+        gwFixturesStatus.every(function(f) { return f.status === 'FT'; }));
+    }
 
     if (allFT) {
       log.push('All GW' + currentGW + ' fixtures finished — marking GW complete');
