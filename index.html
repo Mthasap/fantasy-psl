@@ -76,18 +76,32 @@
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/favicon.png">
+  <!-- ═══════════════════════════════════════════════════════════════
+       FAVICONS — all sizes so every browser + Google picks the right one
+       IMPORTANT: /favicon.ico MUST exist in your project root.
+       Copy your logo PNG and save it as favicon.ico, favicon-32.png,
+       favicon-16.png in the root. Google reads /favicon.ico first.
+  ═══════════════════════════════════════════════════════════════ -->
+  <!-- Standard ICO — Google Search uses this first -->
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <!-- PNG fallbacks — listed largest-first so browsers pick the sharpest -->
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="96x96"   href="/icon-96.png">
+  <link rel="icon" type="image/png" sizes="32x32"   href="/icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16"   href="/icon-16.png">
 
-  <!-- Apple Touch Icons (iPhone & iPad home screen) -->
-  <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png">
+  <!-- Apple Touch Icons (iPhone / iPad home screen) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.png">
 
-  <!-- Windows / Android -->
-  <meta name="msapplication-TileImage" content="/icon-144.png">
+  <!-- Windows tile -->
+  <meta name="msapplication-TileImage" content="/icon-192.png">
   <meta name="msapplication-TileColor" content="#0C0F14">
+
+  <!-- Prevent Google from using an old cached favicon — use canonical -->
+  <link rel="canonical" href="https://www.fantasypsl.co.za/">
   <title>Fantasy PSL -- South Africa's No.1 Fantasy Football</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
