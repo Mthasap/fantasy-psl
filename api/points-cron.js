@@ -230,7 +230,11 @@ module.exports = async (req, res) => {
 
       for (const prof of batch) {
         try {
-          if (prof.entry_gw && currentGW <= prof.entry_gw) {
+          // Only skip if GW being scored is BEFORE the user joined.
+          // entry_gw = the first GW the user is eligible for.
+          // So: if currentGW < entry_gw → not yet eligible → write 0 and skip.
+          // If currentGW >= entry_gw → user is eligible → score them fully.
+          if (prof.entry_gw && currentGW < prof.entry_gw) {
             await db.from('gw_scores').upsert({
               user_id:        prof.id,
               gameweek:       currentGW,
@@ -240,7 +244,7 @@ module.exports = async (req, res) => {
               transfer_deduction: 0,
               calculated_at:  new Date().toISOString()
             }, { onConflict: 'user_id,gameweek' });
-            
+            log.push('Profile ' + prof.id + ' not yet eligible for GW' + currentGW + ' (entry_gw=' + prof.entry_gw + ')');
             profilesUpdated++;
             continue; 
           }
