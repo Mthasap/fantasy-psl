@@ -164,7 +164,99 @@ module.exports = async (req, res) => {
     }
   }
 
-  return res.status(400).json({ error: 'Unknown action: ' + action });
+
+  // ── CRUD OPERATIONS ─────────────────────────────────────────────────────
+  // Actions: insert | update | update_not | delete | upsert | select
+  // Used by admin panel for articles, gameweeks, fixtures, players, etc.
+  const body      = req.body || {};
+  const table     = body.table || q.table || '';
+  const data      = body.data  || null;
+  const match     = body.match || null;
+  const notMatch  = body.notMatch   || null;
+  const onConflict= body.onConflict || null;
+
+  const ALLOWED_TABLES = new Set([
+    'news_posts','gameweeks','fixtures','players','profiles',
+    'announcements','api_cache','standings','match_player_stats',
+    'leagues','league_members','gw_scores'
+  ]);
+
+  if (!table) return res.status(400).json({ error: 'table required' });
+  if (!ALLOWED_TABLES.has(table)) return res.status(403).json({ error: 'Table not permitted: ' + table });
+
+  function applyEq(query, obj) {
+    if (!obj || typeof obj !== 'object') return query;
+    Object.entries(obj).forEach(function([c,v]){ query = query.eq(c,v); });
+    return query;
+  }
+  function applyNeq(query, obj) {
+    if (!obj || typeof obj !== 'object') return query;
+    Object.entries(obj).forEach(function([c,v]){ query = query.neq(c,v); });
+    return query;
+  }
+
+  try {
+    if (action === 'select') {
+      let q2 = db.from(table).select(body.select || '*');
+      q2 = applyEq(q2, match);
+      if (body.limit) q2 = q2.limit(parseInt(body.limit));
+      const { data: rows, error: e } = await q2;
+      if (e) throw new Error(e.message);
+      return res.json({ success: true, data: rows });
+    }
+
+    if (action === 'insert') {
+      if (!data) return res.status(400).json({ error: 'data required' });
+      const { data: ins, error: e } = await db.from(table).insert(data).select();
+      if (e) throw new Error(e.message);
+      return res.json({ success: true, data: ins });
+    }
+
+    if (action === 'update') {
+      if (!data) return res.status(400).json({ error: 'data required' });
+      const hasFilter = (match && Object.keys(match).length) || (notMatch && Object.keys(notMatch).length);
+      if (!hasFilter) return res.status(400).json({ error: 'update requires match or notMatch' });
+      let q2 = db.from(table).update(data);
+      q2 = applyEq(q2, match);
+      q2 = applyNeq(q2, notMatch);
+      const { error: e } = await q2;
+      if (e) throw new Error(e.message);
+      return res.json({ success: true });
+    }
+
+    if (action === 'update_not') {
+      if (!data) return res.status(400).json({ error: 'data required' });
+      let q2 = db.from(table).update(data);
+      q2 = applyNeq(q2, notMatch);
+      q2 = applyEq(q2, match);
+      const { error: e } = await q2;
+      if (e) throw new Error(e.message);
+      return res.json({ success: true });
+    }
+
+    if (action === 'delete') {
+      if (!match || !Object.keys(match).length) return res.status(400).json({ error: 'delete requires match' });
+      let q2 = db.from(table).delete();
+      q2 = applyEq(q2, match);
+      const { error: e } = await q2;
+      if (e) throw new Error(e.message);
+      return res.json({ success: true });
+    }
+
+    if (action === 'upsert') {
+      if (!data) return res.status(400).json({ error: 'data required' });
+      const opts = onConflict ? { onConflict } : {};
+      const { data: ups, error: e } = await db.from(table).upsert(data, opts).select();
+      if (e) throw new Error(e.message);
+      return res.json({ success: true, data: ups });
+    }
+
+    return res.status(400).json({ error: 'Unknown action: ' + action });
+
+  } catch (err) {
+    console.error('[admin-api] CRUD error:', action, table, err.message);
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 // ── Shared deletion logic ─────────────────────────────────────────────────
