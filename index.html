@@ -4630,17 +4630,15 @@ function loadLeagues() {
 
 // ── NEW FUNCTION: Automated Team League Builder ──
 function loadTeamLeague() {
-  // First, we need to know the user's favorite team.
-  // We grab it from their profile in the database.
+  // Read supported_team — this is what the signup form saves to profiles
+  // (not favorite_team — that field doesn't exist on the profiles table)
   db.from('profiles')
-    .select('favorite_team')
+    .select('supported_team, team_name')
     .eq('id', ST.user.id)
     .single()
     .then(function(res) {
-      var favTeam = res.data && res.data.favorite_team;
+      var favTeam = res.data && (res.data.supported_team || res.data.team_name);
       
-      // We need a place to put this in the UI. We will create a container 
-      // dynamically right above the private leagues wrap.
       var myLeaguesWrap = document.getElementById('my-leagues-wrap');
       var teamWrapId = 'auto-team-league-wrap';
       var teamWrap = document.getElementById(teamWrapId);
@@ -4652,19 +4650,32 @@ function loadTeamLeague() {
         myLeaguesWrap.parentNode.insertBefore(teamWrap, myLeaguesWrap);
       }
       
-      if (!teamWrap) return; // Failsafe if UI isn't ready
+      if (!teamWrap) return;
 
       if (!favTeam) {
-        teamWrap.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.4);">Update your profile with a Favorite Team to join the fan league!</div>';
+        teamWrap.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.4);">Set a favourite team on your profile to join the fan league!</div>';
         return;
       }
 
       teamWrap.innerHTML = '<div class="fpsl-loader" style="padding:2rem 0"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
 
-      // Query the top 50 fans of this specific team
+      // Also auto-join the team league if not already a member
+      var leagueName = favTeam + ' Fans';
+      db.from('leagues').select('id, name').eq('name', leagueName).eq('is_public', true).limit(1)
+        .then(function(lRes) {
+          var league = lRes.data && lRes.data[0];
+          if (league) {
+            // Silently ensure membership (upsert so no duplicate error)
+            db.from('league_members')
+              .upsert({ league_id: league.id, user_id: ST.user.id }, { onConflict: 'league_id,user_id', ignoreDuplicates: true })
+              .then(function() {}).catch(function() {});
+          }
+        }).catch(function() {});
+
+      // Fetch all registered fans of this team ordered by points
       db.from('profiles')
-        .select('id, display_name, total_points')
-        .eq('favorite_team', favTeam)
+        .select('id, team_name, username, total_points, squad_registered')
+        .eq('supported_team', favTeam)
         .eq('squad_registered', true)
         .order('total_points', { ascending: false })
         .limit(50)
@@ -4672,35 +4683,36 @@ function loadTeamLeague() {
           var fans = lbRes.data || [];
           
           var html = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;">';
-          
-          // Header with gold accent
           html += '<div style="background:rgba(219,169,74,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(219,169,74,.2);display:flex;align-items:center;gap:10px;">';
           html += '<div style="font-size:1.5rem;">🔥</div>';
           html += '<div>';
-          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + favTeam + ' Fans</div>';
-          html += '<div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px">Global Mini-League</div>';
+          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + esc(favTeam) + ' Fans</div>';
+          html += '<div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px">Auto Fan League · ' + fans.length + ' member' + (fans.length !== 1 ? 's' : '') + '</div>';
           html += '</div></div>';
 
           if (fans.length === 0) {
-            html += '<div style="padding:1.5rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.3);">No fans registered yet. You are the first!</div>';
+            html += '<div style="padding:1.5rem;text-align:center;font-size:.85rem;color:rgba(255,255,255,.3);">No fans registered yet — you are the first!</div>';
           } else {
-            // Render the ranks
             html += fans.map(function(fan, i) {
-              var rank = i + 1;
-              var isMe = fan.id === ST.user.id;
-              var bg = isMe ? 'background:rgba(255,255,255,.03);' : '';
-              var bold = isMe ? 'color:#fff;font-weight:700;' : 'color:rgba(255,255,255,.7);';
-              var goldRank = rank <= 3 ? 'color:#DBA94A;font-weight:900;' : 'color:rgba(255,255,255,.3);';
-              
+              var rank  = i + 1;
+              var isMe  = fan.id === ST.user.id;
+              var bg    = isMe ? 'background:rgba(255,255,255,.03);' : '';
+              var bold  = isMe ? 'color:#fff;font-weight:700;' : 'color:rgba(255,255,255,.7);';
+              var goldR = rank <= 3 ? 'color:#DBA94A;font-weight:900;' : 'color:rgba(255,255,255,.3);';
               return '<div style="' + bg + 'display:flex;align-items:center;padding:.7rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--font-ui);font-size:.85rem;">' +
-                '<div style="width:30px;' + goldRank + '">' + rank + '</div>' +
-                '<div style="flex:1;' + bold + ' white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(fan.display_name || 'Anonymous Fan') + (isMe ? ' <span style="font-size:.65rem;background:rgba(255,255,255,.1);padding:2px 5px;border-radius:4px;margin-left:5px;">YOU</span>' : '') + '</div>' +
-                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#DBA94A' : '#fff') + '">' + (fan.total_points || 0) + '</div>' +
+                '<div style="width:30px;' + goldR + '">' + rank + '</div>' +
+                '<div style="flex:1;' + bold + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                  esc(fan.team_name || 'Anonymous') +
+                  (isMe ? ' <span style="font-size:.65rem;background:rgba(255,255,255,.1);padding:2px 5px;border-radius:4px;margin-left:5px;">YOU</span>' : '') +
+                '</div>' +
+                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#DBA94A' : 'rgba(255,255,255,.4)') + '">' + (fan.total_points || 0) + '</div>' +
               '</div>';
             }).join('');
           }
           html += '</div>';
           teamWrap.innerHTML = html;
+        }).catch(function() {
+          teamWrap.innerHTML = '';
         });
     });
 }
@@ -4767,8 +4779,7 @@ function loadGlobalLB() {
   }
   if (rateLimited()) return;
 
-  // Fetch ALL profiles that have squad_registered=true OR squad_count>=15
-  // Using two queries and merging deduped — catches users whose flag is stale
+  // Fetch registered + non-registered profiles so everyone appears (registered on top by sort)
   Promise.all([
     db.from('profiles')
       .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
@@ -4779,11 +4790,16 @@ function loadGlobalLB() {
       .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
       .gte('squad_count', 15)
       .order('total_points', { ascending: false })
-      .limit(200)
+      .limit(200),
+    db.from('profiles')
+      .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
+      .eq('squad_registered', false)
+      .order('created_at', { ascending: false })
+      .limit(100)
   ]).then(function(results) {
     var seen = {};
     var merged = [];
-    (results[0].data || []).concat(results[1].data || []).forEach(function(p) {
+    (results[0].data || []).concat(results[1].data || []).concat(results[2].data || []).forEach(function(p) {
       if (!seen[p.id]) { seen[p.id] = true; merged.push(p); }
     });
     // Also auto-fix squad_registered flag for any user with squad_count=15 but flag=false
@@ -4793,8 +4809,13 @@ function loadGlobalLB() {
         db.from('profiles').update({ squad_registered: true }).eq('id', p.id).then(function() {});
       }
     });
-    // Sort by total_points desc
-    merged.sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
+    // Sort: full squad users first (by total_points desc), then incomplete squads at bottom
+    merged.sort(function(a, b) {
+      var aFull = (a.squad_registered || (a.squad_count || 0) >= 15) ? 1 : 0;
+      var bFull = (b.squad_registered || (b.squad_count || 0) >= 15) ? 1 : 0;
+      if (bFull !== aFull) return bFull - aFull; // full squads first
+      return (b.total_points || 0) - (a.total_points || 0); // then by points
+    });
     var rows = merged.slice(0, 100);
     if (!rows.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 1.2rem">Be the first manager!</div>'; return; }
     CACHE.leaderboard = { data: rows, ts: Date.now() };
@@ -4823,24 +4844,48 @@ function loadGlobalLB() {
 // ====================================================
 function renderGlobalLBRows(c, rows) {
   if (!c || !rows || !rows.length) return;
-  // Header row
   var header = '<div style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;padding:.35rem 1rem;background:rgba(255,255,255,.03);font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.06)">' +
     '<div>#</div><div>Team</div><div style="text-align:center">GW</div><div style="text-align:right">Total</div>' +
   '</div>';
-  var bodyRows = rows.map(function(p, i) {
-    var isYou = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
-    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
-    var gwPts = p.gw_points !== undefined && p.gw_points !== null ? p.gw_points : 0;
-    return '<div onclick="openPublicProfile(\'' + esc(p.username) + '\')" style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;align-items:center;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent;' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-      '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
+
+  // Only full-squad users get a rank number; incomplete users get a dash
+  var rankCounter = 0;
+  var bodyRows = rows.map(function(p) {
+    var isFull  = p.squad_registered || (p.squad_count || 0) >= 15;
+    var isYou   = ST.user && ST.user.user_metadata && p.username === ST.user.user_metadata.username;
+    var gwPts   = (p.gw_points !== undefined && p.gw_points !== null) ? p.gw_points : 0;
+
+    var rankDisp;
+    if (isFull) {
+      rankCounter++;
+      rankDisp = rankCounter <= 3
+        ? (rankCounter === 1 ? '🥇' : rankCounter === 2 ? '🥈' : '🥉')
+        : String(rankCounter);
+    } else {
+      rankDisp = '—';
+    }
+
+    var rankColor  = (!isFull) ? 'rgba(255,255,255,.2)' : rankCounter <= 3 ? '#DBA94A' : 'rgba(255,255,255,.3)';
+    var rowBg      = isYou ? 'background:rgba(185,28,58,.04);' : (!isFull ? 'background:rgba(255,255,255,.01);opacity:.65;' : '');
+    var nameColor  = isFull ? '#fff' : 'rgba(255,255,255,.45)';
+    var ptsColor   = gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)';
+    var totColor   = isFull ? '#DBA94A' : 'rgba(255,255,255,.25)';
+
+    // Badge for incomplete squads
+    var badge = !isFull
+      ? ' <span style="font-size:.48rem;background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:.5px">NO SQUAD</span>'
+      : (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle">YOU</span>' : '');
+
+    return '<div onclick="openPublicProfile(\'' + esc(p.username) + '\')" style="display:grid;grid-template-columns:32px 1fr 60px 60px;gap:.3rem;align-items:center;padding:.55rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent;' + rowBg + '">' +
+      '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + rankColor + ';text-align:center">' + rankDisp + '</div>' +
       '<div style="min-width:0;overflow:hidden">' +
-        '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
-          (p.team_name || 'Unknown') + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle">YOU</span>' : '') +
+        '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:' + nameColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+          esc(p.team_name || 'Unknown') + badge +
         '</div>' +
-        '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@' + (p.username || '') + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@' + esc(p.username || '') + '</div>' +
       '</div>' +
-      '<div style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:' + (gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + gwPts + '</div>' +
-      '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A;text-align:right">' + (p.total_points || 0) + '</div>' +
+      '<div style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:' + ptsColor + ';text-align:center">' + (isFull ? gwPts : '—') + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:' + totColor + ';text-align:right">' + (isFull ? (p.total_points || 0) : '—') + '</div>' +
     '</div>';
   }).join('');
   c.innerHTML = header + bodyRows;
