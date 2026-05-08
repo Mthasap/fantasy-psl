@@ -210,16 +210,47 @@ module.exports = async (req, res) => {
       rosterPtsMap[p.id] = p.total_points || 0;
     }
 
-    // ── Step 5: Load all profiles with squads ────────────────────────────
-    const { data: profiles, error: profErr } = await db
-      .from('profiles')
-      .select('id, squad_data, squad_count, entry_gw, squad_registered, active_chip, used_chips, free_transfers, transfers_this_gw, fh_snapshot')
-      .not('squad_data', 'is', null)
-      .eq('squad_registered', true)
-      .gte('squad_count', 15);
+    // ── Step 5: Load ALL profiles with 15+ players ───────────────────────
+    // IMPORTANT: Query by squad_count >= 15 NOT just squad_registered = true
+    // Some users have full squads but squad_registered was never set to true
+    // (race condition on first save, or legacy registrations).
+    // We use OR logic: squad_registered=true OR squad_count>=15
+    // Supabase doesn't support OR across columns in one query, so we fetch both
+    // and deduplicate.
+
+    const [regRes, countRes] = await Promise.all([
+      db.from('profiles')
+        .select('id, squad_data, squad_count, entry_gw, squad_registered, active_chip, used_chips, free_transfers, transfers_this_gw, fh_snapshot')
+        .eq('squad_registered', true)
+        .not('squad_data', 'is', null),
+      db.from('profiles')
+        .select('id, squad_data, squad_count, entry_gw, squad_registered, active_chip, used_chips, free_transfers, transfers_this_gw, fh_snapshot')
+        .gte('squad_count', 15)
+        .not('squad_data', 'is', null)
+    ]);
+
+    if (regRes.error)   throw new Error('profiles load (registered): '  + regRes.error.message);
+    if (countRes.error) throw new Error('profiles load (count>=15): ' + countRes.error.message);
+
+    // Deduplicate by id — union of both result sets
+    const profileMap = {};
+    for (const p of [...(regRes.data || []), ...(countRes.data || [])]) {
+      profileMap[p.id] = p;
+    }
+    const profiles = Object.values(profileMap);
+
+    // Auto-heal: fix squad_registered flag for anyone with 15+ players
+    const toHeal = profiles.filter(function(p) { return !p.squad_registered && (p.squad_count || 0) >= 15; });
+    if (toHeal.length > 0) {
+      log.push('Auto-healing ' + toHeal.length + ' profiles: setting squad_registered=true');
+      for (const p of toHeal) {
+        await db.from('profiles').update({ squad_registered: true }).eq('id', p.id);
+        p.squad_registered = true;
+      }
+    }
 
     if (profErr) throw new Error('profiles load: ' + profErr.message);
-    log.push('Profiles to process: ' + (profiles || []).length);
+    log.push('Profiles to process: ' + profiles.length + ' (' + toHeal.length + ' auto-healed)');
 
     let profilesUpdated = 0;
     let profileErrors   = 0;
@@ -264,19 +295,23 @@ module.exports = async (req, res) => {
             continue; 
           }
 
-          // Auto-heal: if entry_gw was never recorded (race condition during signup),
-          // assign the current GW now so this user starts scoring and appears in rankings.
+          // Auto-heal: if entry_gw was never recorded, set it to GW1
+          // so the user is eligible for all past GWs when backfilling.
+          // (Setting it to currentGW would permanently block backfill.)
           if (prof.entry_gw === null || prof.entry_gw === undefined) {
+            const healGW = gwOverride ? Math.min(currentGW, 1) : 1;
             try {
               await db.from('profiles').update({
-                entry_gw:            currentGW,
+                entry_gw:            healGW,
+                squad_registered:    true,
                 squad_registered_at: new Date().toISOString()
               }).eq('id', prof.id);
-              prof.entry_gw = currentGW;
-              log.push('Auto-set entry_gw=' + currentGW + ' for profile ' + prof.id);
+              prof.entry_gw = healGW;
+              log.push('Auto-healed entry_gw=' + healGW + ' for profile ' + prof.id);
             } catch (e) {
-              log.push('Could not auto-set entry_gw for ' + prof.id + ': ' + e.message);
-              continue;
+              log.push('Could not auto-heal entry_gw for ' + prof.id + ': ' + e.message);
+              // Still try to score — don't skip
+              prof.entry_gw = 1;
             }
           }
 
@@ -448,13 +483,19 @@ module.exports = async (req, res) => {
 
     log.push('Profiles updated: ' + profilesUpdated + ' | Errors: ' + profileErrors);
 
-    // ── Step 6: Update overall_rank on profiles (FAST PARALLEL BATCHING) ──
-    const { data: ranked } = await db
-      .from('profiles')
-      .select('id, total_points')
-      .eq('squad_registered', true)
-      .order('total_points', { ascending: false })
-      .limit(5000);
+    // ── Step 6: Update overall_rank (catches ALL users with 15+ players) ──
+    const [rankedReg, rankedCount] = await Promise.all([
+      db.from('profiles').select('id, total_points').eq('squad_registered', true),
+      db.from('profiles').select('id, total_points').gte('squad_count', 15)
+    ]);
+    const rankedMap = {};
+    for (const p of [...(rankedReg.data || []), ...(rankedCount.data || [])]) {
+      rankedMap[p.id] = p;
+    }
+    // Sort by total_points desc so rank numbers are correct
+    const ranked = Object.values(rankedMap).sort(function(a, b) {
+      return (b.total_points || 0) - (a.total_points || 0);
+    });
 
     if (ranked && ranked.length) {
       const rankUpdates = ranked.map((r, i) => ({ id: r.id, overall_rank: i + 1 }));
