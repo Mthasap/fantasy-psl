@@ -293,6 +293,16 @@ async function runProxy(endpoint) {
 async function upsertFixture(db, f, status) {
   var fix = f.fixture || {}, teams = f.teams || {}, goals = f.goals || {}, league = f.league || {};
   var isFT = status === 'FT';
+
+  // Extract gw_number from round string e.g. "Regular Season - 26" → 26
+  // API-Football round format: "Regular Season - N"
+  var round = league.round || null;
+  var gwNumber = null;
+  if (round) {
+    var m = round.match(/(\d+)\s*$/);
+    if (m) gwNumber = parseInt(m[1], 10);
+  }
+
   await db.from('fixtures').upsert({
     api_fixture_id: fix.id,
     home_team:  (teams.home && teams.home.name) || 'TBD',
@@ -303,7 +313,8 @@ async function upsertFixture(db, f, status) {
     away_score: isFT ? goals.away : null,
     status,
     kickoff_at: fix.date,
-    round:      league.round || null,
+    round:      round,
+    gw_number:  gwNumber,
     updated_at: new Date().toISOString()
   }, { onConflict: 'api_fixture_id' });
 }
