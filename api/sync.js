@@ -303,20 +303,48 @@ async function upsertFixture(db, f, status) {
     if (m) gwNumber = parseInt(m[1], 10);
   }
 
-  await db.from('fixtures').upsert({
+  var homeName  = (teams.home && teams.home.name) || 'TBD';
+  var awayName  = (teams.away && teams.away.name) || 'TBD';
+  var homeLogo  = (teams.home && teams.home.logo) || null;
+  var awayLogo  = (teams.away && teams.away.logo) || null;
+
+  // Write BOTH home_team (string name) and home_team_name to cover both schemas
+  var payload = {
     api_fixture_id: fix.id,
-    home_team:  (teams.home && teams.home.name) || 'TBD',
-    away_team:  (teams.away && teams.away.name) || 'TBD',
-    home_logo:  (teams.home && teams.home.logo) || null,
-    away_logo:  (teams.away && teams.away.logo) || null,
-    home_score: isFT ? goals.home : null,
-    away_score: isFT ? goals.away : null,
+    home_team:      homeName,
+    away_team:      awayName,
+    home_team_name: homeName,
+    away_team_name: awayName,
+    home_logo:      homeLogo,
+    away_logo:      awayLogo,
+    home_score:     isFT ? goals.home : null,
+    away_score:     isFT ? goals.away : null,
     status,
-    kickoff_at: fix.date,
-    round:      round,
-    gw_number:  gwNumber,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'api_fixture_id' });
+    kickoff_at:     fix.date,
+    round:          round,
+    gw_number:      gwNumber,
+    updated_at:     new Date().toISOString()
+  };
+
+  var { error: upsErr } = await db.from('fixtures')
+    .upsert(payload, { onConflict: 'api_fixture_id' });
+
+  // If a column doesn't exist, retry with only the safe minimal set
+  if (upsErr && upsErr.message && upsErr.message.includes('does not exist')) {
+    var minimal = {
+      api_fixture_id: fix.id,
+      home_score:     isFT ? goals.home : null,
+      away_score:     isFT ? goals.away : null,
+      status,
+      kickoff_at:     fix.date,
+      gw_number:      gwNumber,
+      updated_at:     new Date().toISOString()
+    };
+    var { error: minErr } = await db.from('fixtures').upsert(minimal, { onConflict: 'api_fixture_id' });
+    if (minErr) throw new Error('upsertFixture minimal: ' + minErr.message);
+  } else if (upsErr) {
+    throw new Error('upsertFixture: ' + upsErr.message);
+  }
 }
 
 function normImportPos(raw) {
