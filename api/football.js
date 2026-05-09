@@ -378,24 +378,57 @@ function formatFixture(f) {
 }
 
 // Format Supabase fixture row → standard shape
+// Handles both naming conventions:
+//   home_team (string) — written by sync.js
+//   home_team_name / home_team_id — written by apifootball-sync.js
 function formatSupabaseFixture(f) {
-  var isLive = ['LIVE','1H','2H','HT'].indexOf(f.status) > -1;
-  var isFT   = f.status === 'FT';
+  var isLive = ['LIVE','1H','2H','HT','ET','P'].indexOf(f.status) > -1;
+  var isFT   = ['FT','AET','PEN'].indexOf(f.status) > -1;
+
+  // Resolve team names — try every known column variant
+  var home = f.home_team      ||
+             f.home_team_name  ||
+             f.homeTeam        ||
+             f.home            ||
+             (f.home_team_id   ? 'Team ' + f.home_team_id : 'TBD');
+
+  var away = f.away_team      ||
+             f.away_team_name  ||
+             f.awayTeam        ||
+             f.away            ||
+             (f.away_team_id   ? 'Team ' + f.away_team_id : 'TBD');
+
+  // Resolve logos
+  var homeLogo = f.home_logo || f.home_team_logo || f.homeLogo || null;
+  var awayLogo = f.away_logo || f.away_team_logo || f.awayLogo || null;
+
+  // Resolve scores
+  var hg = f.home_score !== undefined ? f.home_score :
+           f.homeScore  !== undefined ? f.homeScore  :
+           f.goals_home !== undefined ? f.goals_home : null;
+  var ag = f.away_score !== undefined ? f.away_score :
+           f.awayScore  !== undefined ? f.awayScore  :
+           f.goals_away !== undefined ? f.goals_away : null;
+
+  // Resolve fixture id
+  var fid = f.api_fixture_id || f.fixture_id || f.apifootball_id || f.id;
+
   return {
-    fixture_id:    f.api_fixture_id || f.id,
-    api_fixture_id: f.api_fixture_id || f.id,
+    fixture_id:    fid,
+    api_fixture_id: fid,
     status:        f.status || 'NS',
-    date:          f.kickoff_at,
-    home:          normTeam(f.home_team || ''),
-    away:          normTeam(f.away_team || ''),
-    home_logo:     f.home_logo || null,
-    away_logo:     f.away_logo || null,
-    hg:            (isFT || isLive) ? f.home_score : null,
-    ag:            (isFT || isLive) ? f.away_score : null,
+    date:          f.kickoff_at || f.date || f.kickoff || null,
+    home:          normTeam(home),
+    away:          normTeam(away),
+    home_logo:     homeLogo,
+    away_logo:     awayLogo,
+    hg:            (isFT || isLive) ? hg : null,
+    ag:            (isFT || isLive) ? ag : null,
     is_live:       isLive,
     is_ft:         isFT,
     elapsed:       f.elapsed || null,
-    round:         f.round   || null
+    round:         f.round   || null,
+    gw_number:     f.gw_number || null
   };
 }
 
