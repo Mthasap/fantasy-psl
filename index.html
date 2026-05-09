@@ -215,6 +215,10 @@
     /* -- Stats page -- */
     #stats-body { }
     /* -- Table view override for full table -- */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.85); }
+    }
     .lt-row, .lt-header { display:grid; align-items:center; padding:.55rem .8rem; gap:.3rem; }
     .lt-header { background:rgba(255,255,255,.04); font-family:var(--font-ui); font-size:.6rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.35); border-bottom:1px solid rgba(255,255,255,.06); }
     .lt-row { border-bottom:1px solid rgba(255,255,255,.04); transition:background .15s; }
@@ -5948,7 +5952,50 @@ var PSL_ROSTER = [
 // ====================================================
 //  LEAGUE TABLE — TABLE_VIEW state + setTableView
 // ====================================================
-var TABLE_VIEW = 'short'; // 'short' | 'full' | 'form'
+var TABLE_VIEW = 'full'; // 'short' | 'full' | 'form' — default to full EPL-style
+
+// ── Live table auto-refresh ────────────────────────────────────────────
+var _liveTableTimer = null;
+
+function startLiveTableRefresh(c, table) {
+  // Clear any existing timer
+  if (_liveTableTimer) { clearInterval(_liveTableTimer); _liveTableTimer = null; }
+
+  // Only poll if there are live matches
+  var hasLive = LIVE_STATS && LIVE_STATS.live && LIVE_STATS.live.some(function(m) {
+    return m.is_live || m.status === 'LIVE' || m.status === '1H' || m.status === '2H' || m.status === 'HT';
+  });
+
+  if (!hasLive) return;
+
+  // Refresh standings every 5 minutes when live
+  _liveTableTimer = setInterval(function() {
+    // Only refresh if table is visible
+    var tableEl = document.getElementById('table-body');
+    if (!tableEl || !tableEl.closest('.page.active')) return;
+
+    // Invalidate cache and re-fetch
+    if (window._standingsCache) delete window._standingsCache;
+    fetch('/api/football?type=standings&_t=' + Date.now())
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (data && data.standings && data.standings.length) {
+          if (LIVE_STATS) LIVE_STATS.table = data.standings;
+          renderTableFull(c, data.standings);
+        }
+      })
+      .catch(function() {});
+  }, 5 * 60 * 1000); // every 5 minutes
+}
+
+// Also set default table view active button on page load
+(function() {
+  var btn = document.getElementById('ttab-full');
+  if (btn) {
+    document.querySelectorAll('#ttab-short,#ttab-full,#ttab-form').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+  }
+})();
 
 function setTableView(view, el) {
   TABLE_VIEW = view;
@@ -6440,37 +6487,151 @@ function renderTableShort(c, table) {
 
 // FULL: Pos | Club | P | W | D | L | GF | GA | GD | Pts
 function renderTableFull(c, table) {
-  // Use a scrollable wrapper; give club col a fixed min-width so name never disappears
-  var cols = '28px minmax(110px,1fr) repeat(8,28px)';
-  var header = '<div class="lt-header" style="grid-template-columns:' + cols + '">' +
-    '<div>#</div><div>Club</div><div style="text-align:center">P</div><div style="text-align:center">W</div><div style="text-align:center">D</div><div style="text-align:center">L</div>' +
-    '<div style="text-align:center">GF</div><div style="text-align:center">GA</div><div style="text-align:center">GD</div><div style="text-align:right">Pts</div>' +
+  if (!c || !table || !table.length) return;
+
+  // Detect if any live matches are currently playing (for live dot indicator)
+  var liveTeams = new Set();
+  if (LIVE_STATS && LIVE_STATS.live && LIVE_STATS.live.length) {
+    LIVE_STATS.live.forEach(function(m) {
+      if (m.is_live || m.status === 'LIVE' || m.status === '1H' || m.status === '2H' || m.status === 'HT') {
+        if (m.home) liveTeams.add((m.home || '').toLowerCase());
+        if (m.away) liveTeams.add((m.away || '').toLowerCase());
+      }
+    });
+  }
+
+  // Get user's supported team for highlighting
+  var userTeam = '';
+  if (CACHE._profile && CACHE._profile.supported_team) {
+    userTeam = (CACHE._profile.supported_team || '').toLowerCase();
+  } else if (ST.user && ST.user.user_metadata) {
+    userTeam = (ST.user.user_metadata.supported_team || '').toLowerCase();
+  }
+
+  // ── Header ────────────────────────────────────────────────────────────
+  var cols = '28px minmax(120px,1fr) 26px 26px 26px 26px 26px 26px 32px 36px auto';
+  var hdr = '<div style="display:grid;grid-template-columns:' + cols + ';gap:0;padding:.35rem .75rem;' +
+    'background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);' +
+    'font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.2px;' +
+    'text-transform:uppercase;color:rgba(255,255,255,.3)">' +
+    '<div></div>' +
+    '<div>Club</div>' +
+    '<div style="text-align:center" title="Played">P</div>' +
+    '<div style="text-align:center" title="Won">W</div>' +
+    '<div style="text-align:center" title="Drawn">D</div>' +
+    '<div style="text-align:center" title="Lost">L</div>' +
+    '<div style="text-align:center" title="Goals For">GF</div>' +
+    '<div style="text-align:center" title="Goals Against">GA</div>' +
+    '<div style="text-align:center" title="Goal Difference">GD</div>' +
+    '<div style="text-align:right" title="Points">Pts</div>' +
+    '<div style="text-align:center;padding-left:.4rem">Form</div>' +
   '</div>';
+
+  // ── Rows ──────────────────────────────────────────────────────────────
   var rows = table.map(function(t, i) {
-    var pos   = t.pos || (i + 1);
-    var pclr  = pos <= 2 ? '#22895A' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.35)';
-    var bg    = pos <= 2 ? 'background:rgba(34,137,90,.06);' : pos >= 15 ? 'background:rgba(212,39,79,.05);' : ';';
-    var logo  = t.logo || getTeamLogo(t.team);
-    var gd    = (t.gd !== undefined ? t.gd : (t.gf || 0) - (t.ga || 0));
-    var gdStr = gd > 0 ? '+' + gd : '' + gd;
-    var gdClr = gd > 0 ? '#22895A' : gd < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-    return '<div class="lt-row" style="grid-template-columns:' + cols + ';' + bg + 'cursor:pointer" onclick="openClubProfile(\'' + t.team + '\')">  ' +
-      '<div class="lt-pos" style="color:' + pclr + '">' + pos + '</div>' +
-      '<div class="lt-club" style="min-width:0">' +
-        (logo ? '<img src="' + logo + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">' : '') +
-        '<span class="lt-club-name" style="font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.abbr || t.team) + '</span>' +
+    var pos      = t.pos || (i + 1);
+    var teamLow  = (t.team || '').toLowerCase();
+    var logo     = t.logo || getTeamLogo(t.team);
+    var gd       = t.gd !== undefined ? t.gd : ((t.gf || 0) - (t.ga || 0));
+    var gdStr    = gd > 0 ? '+' + gd : String(gd);
+    var gdClr    = gd > 0 ? '#22895A' : gd < 0 ? '#D4274F' : 'rgba(255,255,255,.45)';
+    var tid      = 'st_' + teamLow.replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+
+    // Position colour: top 2 = Champions, 3 = Africa, bottom 2 = Relegation
+    var posClr   = pos <= 2 ? '#22895A' : pos === 3 ? '#3B82F6' : pos >= 15 ? '#D4274F' : 'rgba(255,255,255,.4)';
+    var posBold  = pos <= 3 || pos >= 15 ? 'font-weight:900;' : '';
+    var rowBg    = pos <= 2 ? 'background:rgba(34,137,90,.05);'
+                 : pos >= 15 ? 'background:rgba(212,39,79,.04);'
+                 : '';
+
+    // Highlight user's supported team
+    var isMyTeam = userTeam && teamLow === userTeam;
+    if (isMyTeam) rowBg = 'background:rgba(219,169,74,.06);';
+
+    // Live indicator — team is currently playing
+    var isLiveNow = liveTeams.has(teamLow);
+    var liveDot = isLiveNow
+      ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#D4274F;margin-right:3px;flex-shrink:0;animation:pulse 1.4s ease-in-out infinite" title="Playing now"></span>'
+      : '';
+
+    // Form badges — last 5 results
+    var formArr;
+    if (Array.isArray(t.form) && t.form.length) {
+      formArr = t.form.slice(-5);
+    } else if (typeof t.form === 'string' && t.form.indexOf(',') !== -1) {
+      formArr = t.form.split(',').map(function(x){ return x.trim()[0] || 'N'; }).slice(-5);
+    } else if (typeof t.form === 'string' && t.form.length) {
+      formArr = t.form.replace(/[^WDLwdl]/g,'').toUpperCase().slice(-5).split('');
+    } else {
+      formArr = [];
+    }
+    while (formArr.length < 5) formArr.unshift('N');
+
+    var formBadges = formArr.map(function(r) {
+      r = (r || 'N').toUpperCase();
+      var bg  = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#B45309' : 'rgba(255,255,255,.07)';
+      var txt = r === 'N' ? '·' : r;
+      var tc  = r === 'N' ? 'rgba(255,255,255,.2)' : '#fff';
+      return '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+        'width:18px;height:18px;border-radius:4px;background:' + bg + ';' +
+        'font-family:var(--font-ui);font-size:.52rem;font-weight:800;color:' + tc + ';' +
+        'margin-left:2px;flex-shrink:0">' + txt + '</span>';
+    }).join('');
+
+    // Left border line for position groups
+    var borderLeft = pos <= 2 ? 'border-left:3px solid #22895A;' :
+                     pos === 3 ? 'border-left:3px solid #3B82F6;' :
+                     pos >= 15 ? 'border-left:3px solid #D4274F;' :
+                     'border-left:3px solid transparent;';
+
+    var myTeamIndicator = isMyTeam
+      ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#DBA94A;margin-left:3px;vertical-align:middle;flex-shrink:0"></span>'
+      : '';
+
+    return '<div style="border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<div style="display:grid;grid-template-columns:' + cols + ';gap:0;align-items:center;' +
+        'padding:.5rem .75rem;' + rowBg + borderLeft + 'cursor:pointer;' +
+        '-webkit-tap-highlight-color:transparent;transition:background .15s"' +
+        ' onclick="toggleTeamRow(\'' + tid + '\',\'' + esc(t.team) + '\')">' +
+        '<div style="font-family:var(--font-ui);font-size:.78rem;' + posBold + 'color:' + posClr + ';text-align:center">' +
+          (isLiveNow ? liveDot : '') + pos +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:.4rem;min-width:0">' +
+          (logo ? '<img src="' + esc(logo) + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<div style="width:20px;flex-shrink:0"></div>') +
+          '<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:' + (isMyTeam ? '800' : '600') + ';' +
+            'color:' + (isMyTeam ? '#DBA94A' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            esc(t.abbr || t.team) + myTeamIndicator +
+          '</span>' +
+        '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.65);text-align:center">' + (t.p || 0) + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.65);text-align:center">' + (t.w || 0) + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.65);text-align:center">' + (t.d || 0) + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.65);text-align:center">' + (t.l || 0) + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.55);text-align:center">' + (t.gf !== undefined ? t.gf : '—') + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;color:rgba(255,255,255,.55);text-align:center">' + (t.ga !== undefined ? t.ga : '—') + '</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.73rem;font-weight:700;color:' + gdClr + ';text-align:center">' + (t.gf !== undefined ? gdStr : '—') + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff;text-align:right">' + (t.pts || 0) + '</div>' +
+        '<div style="display:flex;align-items:center;padding-left:.4rem">' + formBadges + '</div>' +
       '</div>' +
-      '<div class="lt-stat">' + t.p + '</div>' +
-      '<div class="lt-stat">' + t.w + '</div>' +
-      '<div class="lt-stat">' + t.d + '</div>' +
-      '<div class="lt-stat">' + t.l + '</div>' +
-      '<div class="lt-stat">' + (t.gf !== undefined ? t.gf : '--') + '</div>' +
-      '<div class="lt-stat">' + (t.ga !== undefined ? t.ga : '--') + '</div>' +
-      '<div class="lt-stat" style="color:' + gdClr + '">' + (t.gf !== undefined ? gdStr : '--') + '</div>' +
-      '<div class="lt-pts">' + t.pts + '</div>' +
+      '<div id="' + tid + '" style="max-height:0;overflow:hidden;transition:max-height .35s ease"></div>' +
     '</div>';
   }).join('');
-  c.innerHTML = '<div class="league-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">' + header + rows + '</div>';
+
+  // ── Legend ────────────────────────────────────────────────────────────
+  var legend = '<div style="display:flex;gap:.75rem;flex-wrap:wrap;padding:.5rem .75rem;' +
+    'border-top:1px solid rgba(255,255,255,.06);font-family:var(--font-ui);font-size:.58rem;color:rgba(255,255,255,.3)">' +
+    '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#22895A;margin-right:3px;vertical-align:middle"></span>Champions</span>' +
+    '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3B82F6;margin-right:3px;vertical-align:middle"></span>Africa</span>' +
+    '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#D4274F;margin-right:3px;vertical-align:middle"></span>Relegation</span>' +
+    (liveTeams.size > 0 ? '<span style="margin-left:auto;color:#D4274F;font-weight:700">● LIVE — table updates in 15min</span>' : '') +
+  '</div>';
+
+  c.innerHTML = '<div class="league-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">' +
+    hdr + rows + legend +
+  '</div>';
+
+  // ── Auto-refresh when matches are live ────────────────────────────────
+  startLiveTableRefresh(c, table);
 }
 
 // FORM: Pos | Club | Last 5 results as dots
