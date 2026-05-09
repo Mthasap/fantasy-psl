@@ -249,7 +249,6 @@ module.exports = async (req, res) => {
       }
     }
 
-    if (profErr) throw new Error('profiles load: ' + profErr.message);
     log.push('Profiles to process: ' + profiles.length + ' (' + toHeal.length + ' auto-healed)');
 
     let profilesUpdated = 0;
