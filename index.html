@@ -2215,6 +2215,10 @@ function loadGW(cb) {
     .then(function(res) {
       var gwRow = res.data && Array.isArray(res.data) ? res.data[0] : res.data;
       if (gwRow) {
+        // Normalise: DB column is 'deadline', code uses 'deadline_at'
+        // Support both so it works regardless of schema variant
+        gwRow.deadline_at = gwRow.deadline_at || gwRow.deadline || null;
+
         ST.gw = gwRow;
         var n = gwRow.gw_number || gwRow.number;
         ST.gw.number = n;
@@ -2240,10 +2244,9 @@ function loadGW(cb) {
           }
         }
       } else {
-        // No gameweek marked is_current — find the most recent one instead of
-        // using a hardcoded number that gets stale as the season progresses
+        // No gameweek marked is_current — find the most recent one
         db.from('gameweeks')
-          .select('gw_number, number, deadline_at')
+          .select('gw_number, number, deadline, deadline_at, start_date')
           .eq('season', 2025)
           .order('gw_number', { ascending: false })
           .limit(1)
@@ -2251,13 +2254,26 @@ function loadGW(cb) {
           .then(function(r) {
             var latest = r.data;
             var n = latest ? (latest.gw_number || latest.number || 1) : 1;
-            ST.gw = { number: n, gw_number: n, deadline_at: latest ? latest.deadline_at : null };
+            // Normalise deadline column name
+            var dl = latest ? (latest.deadline_at || latest.deadline || null) : null;
+            ST.gw = { number: n, gw_number: n, deadline_at: dl };
             ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
               var el = document.getElementById(elId);
               if (el) el.textContent = n;
             });
+            // Also mark this GW as current in DB so it persists
+            db.from('gameweeks')
+              .update({ is_current: true })
+              .eq('gw_number', n)
+              .eq('season', 2025)
+              .then(function() {})
+              .catch(function() {});
           }).catch(function() {
-            ST.gw = { number: 1, gw_number: 1, deadline_at: null };
+            ST.gw = { number: 27, gw_number: 27, deadline_at: null };
+            ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+              var el = document.getElementById(elId);
+              if (el) el.textContent = 27;
+            });
           });
       }
 
