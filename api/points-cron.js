@@ -83,52 +83,71 @@ module.exports = async (req, res) => {
         currentGW = gwCurrent.gw_number || gwCurrent.number;
         log.push('Current GW: ' + currentGW + ' (from is_current flag)');
       } else {
-        // Try 2: no is_current flag set — find most recent non-finished GW
-        log.push('WARN: No is_current GW found — searching for most recent active GW...');
+        // Try 2: find GW whose date window contains TODAY
+        // This prevents picking a future GW (e.g. GW30 when GW29 is current)
+        const now = new Date().toISOString();
+        log.push('WARN: No is_current GW — searching by date: ' + now.substring(0,10));
 
-        const { data: gwLatest } = await db
+        const { data: gwByDate } = await db
           .from('gameweeks')
           .select('*')
           .eq('season', 2025)
-          .eq('is_finished', false)
+          .lte('start_date', now)
+          .gte('end_date',   now)
           .order('gw_number', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (gwLatest) {
-          gwData    = gwLatest;
-          currentGW = gwLatest.gw_number || gwLatest.number;
-          log.push('Found unfinished GW: ' + currentGW + ' — auto-setting is_current=true');
+        if (gwByDate) {
+          gwData    = gwByDate;
+          currentGW = gwByDate.gw_number || gwByDate.number;
+          log.push('Found GW by date range: GW' + currentGW);
         } else {
-          // Try 3: all GWs are finished — use the highest gw_number
-          const { data: gwAny } = await db
-            .from('gameweeks')
-            .select('*')
+          // Try 3: most recent GW that has actual match stats in DB
+          // Prevents picking GW30 when only GW28 has data
+          log.push('No GW in date range — finding most recent GW with match data...');
+          const { data: gwWithStats } = await db
+            .from('match_player_stats')
+            .select('gw_number')
             .eq('season', 2025)
+            .not('gw_number', 'is', null)
             .order('gw_number', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          if (gwAny) {
-            gwData    = gwAny;
-            currentGW = gwAny.gw_number || gwAny.number;
-            log.push('Using latest GW: ' + currentGW + ' (all GWs show finished)');
+          if (gwWithStats && gwWithStats.gw_number) {
+            currentGW = gwWithStats.gw_number;
+            log.push('Found GW from match stats: GW' + currentGW);
+            const { data: gwRow } = await db
+              .from('gameweeks').select('*')
+              .eq('season', 2025).eq('gw_number', currentGW).maybeSingle();
+            gwData = gwRow;
+          } else {
+            // Last resort: highest gw_number that is marked finished
+            const { data: gwFinished } = await db
+              .from('gameweeks').select('*')
+              .eq('season', 2025).eq('is_finished', true)
+              .order('gw_number', { ascending: false }).limit(1).maybeSingle();
+            if (gwFinished) {
+              gwData    = gwFinished;
+              currentGW = gwFinished.gw_number || gwFinished.number;
+              log.push('Using last finished GW: GW' + currentGW);
+            }
           }
         }
 
-        // Auto-fix: set is_current = true so next run finds it instantly
+        // Auto-fix: persist the found GW as is_current so next run is instant
         if (currentGW) {
           await db.from('gameweeks')
-            .update({ is_current: true, is_finished: false })
-            .eq('gw_number', currentGW)
-            .eq('season', 2025);
-          log.push('Auto-set GW' + currentGW + ' as is_current=true in DB');
+            .update({ is_current: true })
+            .eq('gw_number', currentGW).eq('season', 2025);
+          log.push('Auto-set GW' + currentGW + ' as is_current=true');
         }
       }
 
       if (!currentGW) {
-        log.push('FATAL: No gameweeks found for season 2025 in DB');
-        return res.status(500).json({ error: 'No gameweeks in DB for season 2025', log });
+        log.push('FATAL: Cannot determine GW. Run: UPDATE gameweeks SET is_current=true WHERE gw_number=29 AND season=2025');
+        return res.status(500).json({ error: 'Cannot determine current GW', log });
       }
     }
 
