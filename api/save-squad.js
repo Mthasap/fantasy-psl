@@ -53,13 +53,17 @@ module.exports = async (req, res) => {
     try {
       const { data: gw } = await db
         .from('gameweeks')
-        .select('deadline_at, gw_number')
+        .select('deadline, deadline_at, gw_number')
         .eq('is_current', true)
         .limit(1)
         .single();
-      if (gw && gw.deadline_at && new Date() >= new Date(gw.deadline_at)) {
-        console.warn('[save-squad] 403: Deadline passed for GW', gw.gw_number, 'user:', user.id);
-        return res.status(403).json({ error: 'Gameweek deadline has passed. Squad is locked.' });
+      if (gw) {
+        // Normalise: actual column is 'deadline', handle both variants
+        const deadlineVal = gw.deadline_at || gw.deadline || null;
+        if (deadlineVal && new Date() >= new Date(deadlineVal)) {
+          console.warn('[save-squad] 403: Deadline passed for GW', gw.gw_number, 'user:', user.id);
+          return res.status(403).json({ error: 'Gameweek deadline has passed. Squad is locked.' });
+        }
       }
     } catch (gwErr) {
       // No current gameweek found — allow save to proceed
