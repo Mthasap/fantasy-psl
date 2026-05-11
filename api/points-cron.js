@@ -136,12 +136,12 @@ module.exports = async (req, res) => {
           }
         }
 
-        // Auto-fix: persist the found GW as is_current so next run is instant
+        // NOTE: We intentionally do NOT write is_current=true here.
+        // The cron must never modify the gameweeks is_current flag —
+        // only an admin SQL update should set which GW is current.
+        // Auto-writing here caused GW1 to be wrongly set as current.
         if (currentGW) {
-          await db.from('gameweeks')
-            .update({ is_current: true })
-            .eq('gw_number', currentGW).eq('season', 2025);
-          log.push('Auto-set GW' + currentGW + ' as is_current=true');
+          log.push('Using GW' + currentGW + ' (not modifying DB flags)');
         }
       }
 
