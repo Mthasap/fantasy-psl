@@ -2923,14 +2923,11 @@ function loadUserGWPoints() {
   if (!ST.user) return;
   var _gwNum = (ST.gw && ST.gw.number) ? ST.gw.number : null;
   if (!_gwNum) {
-    // GW not loaded yet — wait for it and retry
     setTimeout(loadUserGWPoints, 1000);
     return;
   }
 
   // Query specifically for the CURRENT gameweek row.
-  // Using order+limit(1) would return the previous GW when the new GW has
-  // no score row yet — causing the stale-points display bug.
   db.from('gw_scores')
     .select('points, player_scores, calculated_at, gameweek')
     .eq('user_id', ST.user.id)
@@ -2942,21 +2939,35 @@ function loadUserGWPoints() {
       if (row && row.points !== undefined && row.points !== null) {
         CACHE._profile.gw_points = row.points;
         renderBudget();
-        // Use server's player breakdown for the pitch display — authoritative source
         var ps = row.player_scores;
         if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
         if (ps && ps.length) {
           window._gwScoresPs = ps;
           showPointsBreakdown(ps);
         } else {
-          // Server breakdown empty — fall back to match_player_stats name matching
           loadGWPointsFromMatchStats(_gwNum);
         }
       } else {
-        // No cron row yet for this GW — show 0 and try match_player_stats
+        // No cron row for this GW yet.
+        // Try match_player_stats for current GW first.
+        // If that GW has no data either, find the most recent GW with data.
         CACHE._profile.gw_points = 0;
         renderBudget();
-        loadGWPointsFromMatchStats(_gwNum);
+        db.from('match_player_stats')
+          .select('gw_number')
+          .eq('season', 2025)
+          .not('gw_number', 'is', null)
+          .order('gw_number', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then(function(statRes) {
+            var bestGW = (statRes.data && statRes.data.gw_number) ? statRes.data.gw_number : _gwNum;
+            // Use current GW if it has data, otherwise use most recent GW with data
+            loadGWPointsFromMatchStats(bestGW);
+          })
+          .catch(function() {
+            loadGWPointsFromMatchStats(_gwNum);
+          });
       }
     })
     .catch(function(e) {
