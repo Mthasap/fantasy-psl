@@ -111,6 +111,9 @@ module.exports = async (req, res) => {
   var staticPages = [
     { url: '/',        priority: '1.0', changefreq: 'daily',  lastmod: now },
     { url: '/news',    priority: '0.9', changefreq: 'hourly', lastmod: now },
+    { url: '/about',   priority: '0.8', changefreq: 'monthly', lastmod: now },
+    { url: '/privacy', priority: '0.4', changefreq: 'yearly', lastmod: now },
+    { url: '/terms',   priority: '0.4', changefreq: 'yearly', lastmod: now },
     { url: '/confirm', priority: '0.3', changefreq: 'yearly', lastmod: now },
   ];
 
