@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0C0F14">
+  <title>About Fantasy PSL — South Africa's Betway Premiership Fantasy Football</title>
+  <meta name="description" content="Fantasy PSL is South Africa's dedicated fantasy football game for the Betway Premiership. Pick your squad of 15 PSL players, earn points from real match performance, and compete in leagues with fans across South Africa.">
+  <link rel="canonical" href="https://www.fantasypsl.co.za/about">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;900&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "About Fantasy PSL",
+    "description": "South Africa's dedicated fantasy football platform for the Betway Premiership",
+    "url": "https://www.fantasypsl.co.za/about",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Fantasy PSL",
+      "url": "https://www.fantasypsl.co.za",
+      "logo": { "@type": "ImageObject", "url": "https://www.fantasypsl.co.za/icon-512.png" }
+    }
+  }
+  </script>
+  <style>
+    :root{--red:#B91C3A;--gold:#DBA94A;--green:#22895A;--bg:#0C0F14;--card:#191C25;--text:rgba(255,255,255,.82);--muted:rgba(255,255,255,.45)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.8;font-size:16px}
+    a{color:var(--gold);text-decoration:none}a:hover{text-decoration:underline}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(12,15,20,.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .nav-logo{font-family:'Montserrat Alternates',sans-serif;font-size:1.1rem;font-weight:900;color:#fff;text-decoration:none}
+    .nav-logo span{color:var(--red)}
+    .nav-cta{font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:1px;background:var(--red);color:#fff;padding:.45rem 1.1rem;border-radius:7px;text-transform:uppercase}
+
+    /* Hero */
+    .hero{text-align:center;padding:4rem 1.5rem 3rem;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(185,28,58,.18) 0%,transparent 60%)}
+    .hero-badge{display:inline-block;background:rgba(185,28,58,.1);border:1px solid rgba(185,28,58,.2);color:var(--red);font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:.3rem .8rem;border-radius:20px;margin-bottom:1.5rem}
+    .hero h1{font-family:'Montserrat Alternates',sans-serif;font-size:2.4rem;font-weight:900;color:#fff;line-height:1.15;margin-bottom:1rem;max-width:600px;margin-left:auto;margin-right:auto}
+    .hero p{font-size:1.1rem;color:rgba(255,255,255,.6);max-width:540px;margin:0 auto 2rem}
+    .hero-btn{display:inline-block;background:var(--red);color:#fff;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.9rem 2.2rem;border-radius:10px;box-shadow:0 4px 20px rgba(185,28,58,.35)}
+
+    /* Stats strip */
+    .stats-strip{display:flex;justify-content:center;gap:0;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+    .stat{flex:1;min-width:120px;text-align:center;padding:1.5rem 1rem;border-right:1px solid rgba(255,255,255,.06)}
+    .stat:last-child{border-right:none}
+    .stat-val{font-family:'Montserrat Alternates',sans-serif;font-size:1.8rem;font-weight:900;color:var(--gold);display:block}
+    .stat-lbl{font-family:'Rajdhani',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:.2rem;display:block}
+
+    /* Content */
+    .wrap{max-width:780px;margin:0 auto;padding:3rem 1.5rem 5rem}
+    h2{font-family:'Montserrat Alternates',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;margin:3rem 0 .8rem}
+    h2:first-child{margin-top:0}
+    p{margin-bottom:1rem}
+
+    /* Feature grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1.5rem 0}
+    .feat-card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1.4rem}
+    .feat-icon{font-size:1.8rem;margin-bottom:.7rem}
+    .feat-title{font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.5px;color:#fff;margin-bottom:.4rem;text-transform:uppercase}
+    .feat-desc{font-size:.85rem;color:var(--muted);line-height:1.6}
+
+    /* How it works */
+    .steps{counter-reset:step;margin:1.5rem 0}
+    .step{display:flex;gap:1.2rem;margin-bottom:1.5rem;align-items:flex-start}
+    .step-num{counter-increment:step;content:counter(step);flex-shrink:0;width:36px;height:36px;border-radius:50%;background:rgba(185,28,58,.15);border:2px solid rgba(185,28,58,.3);display:flex;align-items:center;justify-content:center;font-family:'Montserrat Alternates',sans-serif;font-size:.9rem;font-weight:900;color:var(--red)}
+    .step-body h3{font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;color:#fff;text-transform:uppercase;margin-bottom:.25rem}
+    .step-body p{font-size:.88rem;color:var(--muted);margin:0}
+
+    /* Scoring table */
+    .scoring-table{width:100%;border-collapse:collapse;margin:1rem 0}
+    .scoring-table th{font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:.6rem .8rem;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    .scoring-table td{padding:.6rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);font-size:.88rem;color:var(--text)}
+    .scoring-table tr:last-child td{border-bottom:none}
+    .pts{font-weight:700;color:var(--green)}
+    .pts.neg{color:var(--red)}
+
+    /* CTA band */
+    .cta-band{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:2.5rem;text-align:center;margin:3rem 0}
+    .cta-band h2{margin:0 0 .6rem}
+    .cta-band p{color:var(--muted);margin-bottom:1.5rem}
+    .cta-band a{display:inline-block;background:var(--red);color:#fff;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:.9rem 2.4rem;border-radius:10px;box-shadow:0 4px 20px rgba(185,28,58,.35)}
+
+    footer{text-align:center;padding:2rem 1rem;font-size:.78rem;color:var(--muted);border-top:1px solid rgba(255,255,255,.06)}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">Fantasy <span>PSL</span></a>
+  <a href="/" class="nav-cta">Play Free →</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">About Fantasy PSL</div>
+  <h1>South Africa's Fantasy Football Game for the Betway Premiership</h1>
+  <p>Pick your squad of 15 PSL players, earn points from real match performance, and compete with football fans across South Africa — completely free.</p>
+  <a href="/" class="hero-btn">Build Your Squad →</a>
+</section>
+
+<!-- Stats strip -->
+<div class="stats-strip">
+  <div class="stat"><span class="stat-val">16</span><span class="stat-lbl">PSL Clubs</span></div>
+  <div class="stat"><span class="stat-val">R100M</span><span class="stat-lbl">Transfer Budget</span></div>
+  <div class="stat"><span class="stat-val">30</span><span class="stat-lbl">Gameweeks</span></div>
+  <div class="stat"><span class="stat-val">Free</span><span class="stat-lbl">To Play</span></div>
+</div>
+
+<!-- Main content -->
+<div class="wrap">
+
+  <h2>What Is Fantasy PSL?</h2>
+  <p>Fantasy PSL is South Africa's dedicated fantasy football platform built specifically for the Betway Premiership — the top tier of South African professional football. Unlike international fantasy games that ignore the PSL, Fantasy PSL is built entirely around local football, featuring every player from all 16 Betway Premiership clubs.</p>
+  <p>The game is free to play, requires no downloads, and works on any device. Simply register, pick your 15-player squad within a R100 million budget, and watch your points grow every gameweek as your chosen players perform in real matches.</p>
+  <p>Fantasy PSL was created by football fans, for football fans. We are not affiliated with the Premier Soccer League, Betway, or any official football body — we are an independent fan platform dedicated to making PSL football more engaging for supporters across South Africa.</p>
+
+  <h2>Key Features</h2>
+  <div class="grid">
+    <div class="feat-card">
+      <div class="feat-icon">⚽</div>
+      <div class="feat-title">All 16 PSL Clubs</div>
+      <div class="feat-desc">Full rosters from every Betway Premiership club — from Mamelodi Sundowns to Magesi FC.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <div class="feat-title">Real Match Stats</div>
+      <div class="feat-desc">Points calculated from actual goals, assists, clean sheets, saves and more from real PSL matches.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🏆</div>
+      <div class="feat-title">Leagues</div>
+      <div class="feat-desc">Compete in the global leaderboard or create a private league to play against your friends and colleagues.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔄</div>
+      <div class="feat-title">Weekly Transfers</div>
+      <div class="feat-desc">Make 1 free transfer per gameweek to react to injuries, form, and fixtures. Additional transfers cost 4 points each.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📱</div>
+      <div class="feat-title">Mobile First</div>
+      <div class="feat-desc">Built to work perfectly on your phone browser. No app download required — add to your home screen for the best experience.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📰</div>
+      <div class="feat-title">PSL News</div>
+      <div class="feat-desc">Stay up to date with Betway Premiership news, player injuries, and gameweek previews to help inform your picks.</div>
+    </div>
+  </div>
+
+  <h2>How to Play</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Register for Free</h3>
+        <p>Create your account with an email address. Name your fantasy team and pick your favourite PSL club.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Pick Your Squad</h3>
+        <p>Select 15 players from across all 16 PSL clubs within a R100 million budget. You need at least 2 goalkeepers, 5 defenders, 5 midfielders, and 3 forwards.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Choose Your Captain</h3>
+        <p>Pick a captain to earn double points. Choose wisely — your captain's performance can make or break your gameweek.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Earn Points Each Gameweek</h3>
+        <p>Points are awarded automatically after each round of PSL matches based on real player performance data.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Make Transfers and Compete</h3>
+        <p>Use your weekly free transfer to keep your squad competitive. Climb the global rankings and compete in leagues with friends.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Points Scoring System</h2>
+  <p>Points are calculated automatically after every Betway Premiership match based on the following criteria:</p>
+  <table class="scoring-table">
+    <thead>
+      <tr><th>Action</th><th>GK</th><th>DEF</th><th>MID</th><th>FWD</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Playing up to 60 minutes</td><td class="pts">+1</td><td class="pts">+1</td><td class="pts">+1</td><td class="pts">+1</td></tr>
+      <tr><td>Playing 60+ minutes</td><td class="pts">+2</td><td class="pts">+2</td><td class="pts">+2</td><td class="pts">+2</td></tr>
+      <tr><td>Goal scored</td><td class="pts">+6</td><td class="pts">+6</td><td class="pts">+5</td><td class="pts">+4</td></tr>
+      <tr><td>Assist</td><td class="pts">+3</td><td class="pts">+3</td><td class="pts">+3</td><td class="pts">+3</td></tr>
+      <tr><td>Clean sheet (60+ mins)</td><td class="pts">+4</td><td class="pts">+4</td><td class="pts">+1</td><td>—</td></tr>
+      <tr><td>Every 3 saves (GK)</td><td class="pts">+1</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Penalty saved</td><td class="pts">+5</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Penalty missed</td><td class="pts neg">-2</td><td class="pts neg">-2</td><td class="pts neg">-2</td><td class="pts neg">-2</td></tr>
+      <tr><td>Yellow card</td><td class="pts neg">-1</td><td class="pts neg">-1</td><td class="pts neg">-1</td><td class="pts neg">-1</td></tr>
+      <tr><td>Red card</td><td class="pts neg">-3</td><td class="pts neg">-3</td><td class="pts neg">-3</td><td class="pts neg">-3</td></tr>
+      <tr><td>Every 2 goals conceded (GK/DEF)</td><td class="pts neg">-1</td><td class="pts neg">-1</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h2>About the Betway Premiership</h2>
+  <p>The Betway Premiership (formerly the DStv Premiership and Absa Premiership) is the top division of South African professional football, featuring 16 clubs competing across a 30-gameweek season from August to May. The league is administered by the Premier Soccer League (PSL) and is home to iconic clubs including Mamelodi Sundowns, Orlando Pirates, Kaizer Chiefs, AmaZulu FC, and Cape Town City.</p>
+  <p>Fantasy PSL provides the only dedicated fantasy football experience built around this league, giving South African football fans a way to engage more deeply with every match, every player, and every gameweek of the Betway Premiership season.</p>
+
+  <div class="cta-band">
+    <h2>Ready to Play?</h2>
+    <p>Join thousands of South African football fans competing in Fantasy PSL this season. It's free, it's local, and it makes every PSL match more exciting.</p>
+    <a href="/">Build Your Squad — It's Free →</a>
+  </div>
+
+</div>
+
+<footer>
+  <a href="/">Fantasy PSL</a> &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms">Terms of Service</a> &nbsp;·&nbsp; <a href="/about">About</a><br>
+  <span style="margin-top:.4rem;display:block">Fan-made · Not affiliated with the PSL or Betway · © 2026 Fantasy PSL</span>
+</footer>
+
+</body>
+</html>
