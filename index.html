@@ -758,6 +758,12 @@
         <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
       <div class="auth-error" id="r-err"></div>
       <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account -- Free</button>
+      <p style="font-size:.68rem;color:rgba(255,255,255,.3);text-align:center;margin-top:.75rem;line-height:1.6">
+        By creating an account you agree to our
+        <a href="/terms" target="_blank" rel="noopener" style="color:rgba(255,255,255,.5)">Terms of Service</a>
+        and
+        <a href="/privacy" target="_blank" rel="noopener" style="color:rgba(255,255,255,.5)">Privacy Policy</a>.
+      </p>
       <div class="auth-switch">Already registered? <a onclick="openAuth('login')">Login →</a></div>
     </div>
   </div>
@@ -1478,9 +1484,10 @@
   <div class="foot-inner">
     <div class="foot-logo"><img id="footer-logo" src="/logo.png" alt="Fantasy PSL" style="height:28px;opacity:.4;filter:grayscale(1)" onerror="this.style.display='none'"></div>
     <ul class="foot-links">
-      <li><a href="#" onclick="openTermsModal('terms');return false;">Terms</a></li>
-      <li><a href="#" onclick="openTermsModal('privacy');return false;">Privacy</a></li>
-      <li><a href="#">Contact</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/terms" target="_blank" rel="noopener">Terms</a></li>
+      <li><a href="/privacy" target="_blank" rel="noopener">Privacy</a></li>
+      <li><a href="mailto:support@fantasypsl.co.za">Contact</a></li>
     </ul>
     <div class="foot-copy">
       © 2026 <strong>Fantasy PSL</strong> &nbsp;.&nbsp;
@@ -1491,17 +1498,14 @@
       <strong>DISCLAIMER:</strong> Fantasy PSL is an independent fan-made application and is
       <strong>not affiliated with, endorsed by, or officially connected</strong> to the Premier Soccer
       League (PSL), Betway, or any PSL club. Player data, statistics, fixtures and results are sourced
-      from publicly available third-party sources including Goal.com and ESPN. All club names, logos
+      from publicly available third-party sources. All club names, logos
       and trademarks are the property of their respective owners. This application is for
       <strong>entertainment purposes only</strong> and does not facilitate real-money gambling.
       Fantasy PSL does not guarantee the accuracy, completeness or timeliness of any data displayed.
-      Live scores and statistics may be delayed. By using this application you agree to our Terms of
-      Service and acknowledge that Fantasy PSL bears no responsibility for decisions made based on
-      information displayed herein. &nbsp;.&nbsp;
-      <strong>Data sources:</strong> Goal.com . ESPN . Soccer Laduma . PSL Official
+      By using this application you agree to our <a href="/terms" style="color:rgba(255,255,255,.5)">Terms of Service</a> and <a href="/privacy" style="color:rgba(255,255,255,.5)">Privacy Policy</a>.
     </div>
     <div style="font-size:.58rem;color:rgba(255,255,255,.18);text-align:center;margin-top:.6rem;padding:0 1rem">
-      Headway Projects (PTY) LTD . Registered in South Africa . www.fantasypsl.co.za
+      Headway Projects (PTY) LTD · Registered in South Africa · www.fantasypsl.co.za
     </div>
   </div>
 </footer>
