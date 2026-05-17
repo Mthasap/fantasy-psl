@@ -2873,7 +2873,7 @@
         return;
       }
       list.innerHTML = posts.map(function(p) {
-        const catColors = {Tips:'#DBA94A',Gameweek:'#B91C3A',Table:'#22895A',Transfer:'#3B82F6',Injury:'#E8732A',News:'#6B7280'};
+        const catColors = {Tips:'#88FF00',Gameweek:'#B91C3A',Table:'#22895A',Transfer:'#3B82F6',Injury:'#E8732A',News:'#6B7280'};
         const catColor = catColors[p.category] || catColors.News;
         const dateStr = p.published_at ? new Date(p.published_at).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '';
         return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">' +
