@@ -17,7 +17,7 @@
   --red-border:   rgba(185,28,58,0.25);
 
   --gold:         #C9963A;
-  --gold-soft:    #DBA94A;
+  --gold-soft:    #88FF00;
   --gold-muted:   rgba(201,150,58,0.12);
   --gold-border:  rgba(201,150,58,0.22);
 
@@ -181,7 +181,7 @@ body {
 .pc { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; transition:transform .15s; min-width:62px; }
 .pc:hover { transform:translateY(-4px); }
 .pc-shirt { width:54px; height:54px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; border:2px solid rgba(255,255,255,.15); position:relative; transition:border-color .2s, box-shadow .2s; box-shadow:0 3px 10px rgba(0,0,0,.4); }
-.pc:hover .pc-shirt { border-color:var(--gold-soft); box-shadow:0 4px 16px rgba(219,169,74,.3); }
+.pc:hover .pc-shirt { border-color:var(--gold-soft); box-shadow:0 4px 16px rgba(136,255,0,.3); }
 .pc-shirt.s1 { background:linear-gradient(135deg,#1a3a6b,#2a5298); }
 .pc-shirt.s2 { background:linear-gradient(135deg,#8b0000,#cc0000); }
 .pc-shirt.s3 { background:linear-gradient(135deg,#1a5c1a,#267326); }
@@ -434,7 +434,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
   box-shadow:0 3px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
   flex-shrink:0;
 }
-.pc:hover .pc-shirt { border-color:var(--gold-soft); box-shadow:0 4px 16px rgba(219,169,74,.35); }
+.pc:hover .pc-shirt { border-color:var(--gold-soft); box-shadow:0 4px 16px rgba(136,255,0,.35); }
 .pc-shirt.s1 { background:linear-gradient(145deg,#1a3a6b,#2a5298); }
 .pc-shirt.s2 { background:linear-gradient(145deg,#8b0000,#cc0000); }
 .pc-shirt.s3 { background:linear-gradient(145deg,#1a5c1a,#267326); }
@@ -594,7 +594,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
   flex-shrink:0;
   white-space:nowrap;
 }
-.pos-gk  { background:rgba(201,150,58,.18); color:#DBA94A; }
+.pos-gk  { background:rgba(201,150,58,.18); color:#88FF00; }
 .pos-def { background:rgba(34,137,90,.18);  color:#22895A; }
 .pos-mid { background:rgba(185,28,58,.18);  color:#E05C7A; }
 .pos-fwd { background:rgba(80,140,220,.15); color:#6eaadd; }
@@ -639,7 +639,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
 .lt-club img { width:22px; height:22px; object-fit:contain; flex-shrink:0; }
 .lt-club-name { font-family:var(--font-ui); font-size:.8rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .lt-stat { font-family:var(--font-ui); font-size:.8rem; font-weight:600; color:rgba(255,255,255,.6); text-align:center; }
-.lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#DBA94A; text-align:right; }
+.lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#88FF00; text-align:right; }
 
 /* =====================================================
    FIXTURE / RESULT ROWS
