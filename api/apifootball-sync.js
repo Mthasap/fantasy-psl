@@ -572,6 +572,70 @@ async function recalculateTotals(log) {
   return updated;
 }
 
+// ─── Phase 4: Sync Injuries + Sidelined from Pro Tier ────────────────────────
+// Uses /injuries endpoint (Pro plan) to mark players as injured/available in DB
+
+async function syncInjuries(log) {
+  log.push('Phase 4: Syncing injuries from API-Football Pro');
+
+  const { data: injData, error: injErr } = await apiFetch(
+    `/injuries?league=${PSL_LEAGUE}&season=${PSL_SEASON}`
+  ).then(d => ({ data: d, error: null })).catch(e => ({ data: null, error: e }));
+
+  if (injErr) {
+    log.push('  ⚠️  Injuries fetch failed: ' + injErr.message);
+    return 0;
+  }
+
+  const injured = new Set();
+  const injDetails = {};
+
+  for (const entry of (injData && injData.response || [])) {
+    const pid = entry.player && entry.player.id;
+    if (!pid) continue;
+    injured.add(pid);
+    injDetails[pid] = {
+      type:   entry.player.type   || 'Injured',
+      reason: entry.player.reason || ''
+    };
+  }
+
+  log.push(`  Injured players: ${injured.size}`);
+
+  // Batch update injured players
+  let updated = 0;
+  for (const pid of Array.from(injured)) {
+    const det = injDetails[pid];
+    const { error } = await supabase
+      .from('players')
+      .update({
+        is_injured:    true,
+        is_available:  false,
+        injury_type:   det.type,
+        injury_reason: det.reason,
+        updated_at:    new Date().toISOString()
+      })
+      .eq('apifootball_id', pid);
+    if (!error) updated++;
+  }
+
+  // Mark all OTHER PSL players as available (clear stale injury flags)
+  // Guard: if no injured players found, clear everyone. If some found, exclude them.
+  let clearQuery = supabase
+    .from('players')
+    .update({ is_injured: false, is_available: true, injury_type: null, injury_reason: null })
+    .not('apifootball_id', 'is', null);
+  if (injured.size > 0) {
+    clearQuery = clearQuery.not('apifootball_id', 'in', `(${Array.from(injured).join(',')})`);
+  }
+  const { error: clearErr } = await clearQuery;
+
+  if (clearErr) log.push('  ⚠️  Clear non-injured error: ' + clearErr.message);
+
+  log.push(`  ✅ Injury sync complete: ${updated} injured, rest cleared`);
+  return updated;
+}
+
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async (req, res) => {
@@ -670,6 +734,10 @@ module.exports = async (req, res) => {
 
     if (phase === 'all' || phase === 3) {
       playersUpdated += await recalculateTotals(log);
+    }
+
+    if (phase === 'all' || phase === 4) {
+      playersUpdated += await syncInjuries(log);
     }
 
   } catch (err) {
