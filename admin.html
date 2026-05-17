@@ -948,26 +948,43 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title"><span class="dot dot-blue"></span>📊 Update Player Stats (Manual)</div>
+            <div style="font-size:12px;color:var(--muted)">Override or add stats — fantasy points recalculated automatically</div>
           </div>
           <div class="card-body">
             <label>Search Player</label>
             <input type="text" id="stats-player-search" placeholder="e.g. Rayners, Grobler…" oninput="searchStatsPlayers()">
             <div id="stats-player-results" class="search-dropdown"></div>
             <div id="stats-edit-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
-              <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--blue)" id="stats-player-name"></div>
-              <div class="row-3">
-                <div><label>Goals</label><input type="number" id="s-goals" min="0" value="0"></div>
-                <div><label>Assists</label><input type="number" id="s-assists" min="0" value="0"></div>
-                <div><label>Clean Sheets</label><input type="number" id="s-cs" min="0" value="0"></div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--blue)" id="stats-player-name"></div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:12px;background:rgba(41,121,255,.07);border:1px solid rgba(41,121,255,.2);border-radius:6px;padding:8px 12px;line-height:1.7">
+                <strong style="color:#60A5FA">Points:</strong> ≥60min=2pts / &lt;60=1pt · Goals GK/DEF=6, MID=5, FWD=4 · Assist=3 · Clean sheet GK/DEF=4, MID=1 · Saves/3=1 · Pen saved=5, missed=−2 · Yellow=−1, Red=−3
               </div>
               <div class="row-3">
-                <div><label>Yellow Cards</label><input type="number" id="s-yellow" min="0" value="0"></div>
-                <div><label>Red Cards</label><input type="number" id="s-red" min="0" value="0"></div>
-                <div><label>Apps</label><input type="number" id="s-apps" min="0" value="0"></div>
+                <div><label>Appearances</label><input type="number" id="s-apps" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Minutes Played</label><input type="number" id="s-minutes" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Goals</label><input type="number" id="s-goals" min="0" value="0" oninput="calcEstPts()"></div>
               </div>
-              <div class="row">
-                <button class="btn btn-blue btn-full" onclick="savePlayerStats(false)">Set (Replace)</button>
-                <button class="btn btn-amber btn-full" onclick="savePlayerStats(true)">Add to Existing</button>
+              <div class="row-3">
+                <div><label>Assists</label><input type="number" id="s-assists" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Clean Sheets</label><input type="number" id="s-cs" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Goals Conceded</label><input type="number" id="s-gconceded" min="0" value="0" oninput="calcEstPts()"></div>
+              </div>
+              <div class="row-3">
+                <div><label>Saves (GK only)</label><input type="number" id="s-saves" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Penalties Saved</label><input type="number" id="s-pensaved" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Penalties Missed</label><input type="number" id="s-penmissed" min="0" value="0" oninput="calcEstPts()"></div>
+              </div>
+              <div class="row-3">
+                <div><label>Yellow Cards</label><input type="number" id="s-yellow" min="0" value="0" oninput="calcEstPts()"></div>
+                <div><label>Red Cards</label><input type="number" id="s-red" min="0" value="0" oninput="calcEstPts()"></div>
+                <div>
+                  <label>Est. Fantasy Pts</label>
+                  <input type="number" id="s-estimated-pts" readonly style="background:rgba(41,121,255,.1);border-color:rgba(41,121,255,.3);color:#60A5FA;font-weight:700;cursor:default" value="0">
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:4px;">
+                <button class="btn btn-blue btn-full" onclick="savePlayerStats(false)">💾 Set (Replace All)</button>
+                <button class="btn btn-amber btn-full" onclick="savePlayerStats(true)">➕ Add to Existing</button>
               </div>
               <div class="status-msg" id="stats-status"></div>
             </div>
@@ -1586,7 +1603,8 @@
 
   let STATE = { gw: null, fixtures: [] };
   let editingPlayerId   = null;
-  let statsPlayerId     = null;
+  let statsPlayerId       = null;
+  let statsPlayerPosition = 'MID';
   let searchTimeout     = null;
   let statsSearchTimeout = null;
 
@@ -2022,36 +2040,48 @@
     const status = document.getElementById('af-confirm-status');
 
     // Read the (possibly edited) form values
-    const payload = {
-      action:         'add_player',
-      display_name:   document.getElementById('af-name').value.trim(),
-      team:           document.getElementById('af-team-name').value.trim(),
-      position:       document.getElementById('af-position').value,
-      apifootball_id: afPlayerBuffer.apifootball_id,
-      price:          parseFloat(document.getElementById('af-price').value) || 6.5,
-      is_available:   true
-    };
+    const displayName = document.getElementById('af-name').value.trim();
+    const teamName    = document.getElementById('af-team-name').value.trim();
+    const position    = document.getElementById('af-position').value;
+    const price       = parseFloat(document.getElementById('af-price').value) || 6.5;
 
-    if (!payload.display_name) { showStatus('af-confirm-status', 'error', 'Name is required'); return; }
-    if (!payload.team)         { showStatus('af-confirm-status', 'error', 'Team is required'); return; }
+    if (!displayName) { showStatus('af-confirm-status', 'error', 'Name is required'); return; }
+    if (!teamName)    { showStatus('af-confirm-status', 'error', 'Team is required'); return; }
 
     showStatus('af-confirm-status', 'info', 'Adding player…');
 
-    try {
-      const res  = await fetch('/api/admin-api', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body:    JSON.stringify(payload)
-      });
-      const data = await res.json();
+    // Generate a unique psl_roster_id — use timestamp-based int to avoid collision
+    const newRosterId = 20000 + Math.floor(Date.now() % 100000);
 
-      if (!res.ok || data.error) {
-        showStatus('af-confirm-status', 'error', '❌ ' + (data.error || 'Failed'));
-        return;
-      }
+    // Generate slug from name
+    const slug = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    const playerRow = {
+      display_name:   displayName,
+      team:           teamName,
+      position:       position,
+      apifootball_id: afPlayerBuffer.apifootball_id || null,
+      price:          price,
+      is_available:   true,
+      psl_roster_id:  newRosterId,
+      slug:           slug,
+      goals:          0,
+      assists:        0,
+      clean_sheets:   0,
+      yellow_cards:   0,
+      red_cards:      0,
+      saves:          0,
+      apps:           0,
+      total_points:   0,
+      created_at:     new Date().toISOString(),
+      updated_at:     new Date().toISOString()
+    };
+
+    try {
+      await sbWrite('insert', 'players', playerRow);
 
       showStatus('af-confirm-status', 'ok',
-        `✅ ${payload.display_name} (${payload.position}, ${payload.team}) added! ` +
+        `✅ ${displayName} (${position}, ${teamName}) added! ` +
         `They are now visible in the app and can be selected in squads.`);
 
       // Reset form
@@ -2066,7 +2096,14 @@
       setTimeout(loadPlayerTable, 800);
 
     } catch (err) {
-      showStatus('af-confirm-status', 'error', '❌ ' + err.message);
+      // If duplicate name/slug, give a clear message
+      const msg = err.message || '';
+      if (msg.includes('duplicate') || msg.includes('unique')) {
+        showStatus('af-confirm-status', 'error',
+          '❌ A player with this name already exists. Edit their record instead of adding a duplicate.');
+      } else {
+        showStatus('af-confirm-status', 'error', '❌ ' + msg);
+      }
     }
   }
 
@@ -2232,7 +2269,7 @@
       if (q.length < 2) { dd.style.display = 'none'; return; }
       try {
         const data = await sb('GET', 'players', null,
-          'display_name=ilike.*' + encodeURIComponent(q) + '*&select=id,display_name,position,team,goals,assists,clean_sheets,yellow_cards,red_cards,apps&limit=8'
+          'display_name=ilike.*' + encodeURIComponent(q) + '*&select=id,display_name,position,team,goals,assists,clean_sheets,yellow_cards,red_cards,apps,saves,penalties_saved,penalties_missed,goals_conceded,minutes_played,total_points&limit=8'
         );
         renderStatsResults(data || [], dd);
       } catch(e) { console.error('searchStatsPlayers:', e); }
@@ -2249,69 +2286,154 @@
       return '<div class="search-dropdown-item" onclick="selectStatsPlayer(' + JSON.stringify(JSON.stringify(p)) + ')">' +
         '<strong>' + p.display_name + '</strong>' +
         '<span style="font-size:11px;color:var(--muted);margin-left:8px">' + p.position + ' · ' + (p.team||'') + '</span>' +
-        '<span style="float:right;font-size:11px;color:var(--muted)">' + (p.goals||0) + 'G ' + (p.assists||0) + 'A ' + (p.apps||0) + ' apps</span>' +
+        '<span style="float:right;font-size:11px;color:var(--muted)">' + (p.goals||0) + 'G ' + (p.assists||0) + 'A ' + (p.apps||0) + 'apps · ' + (p.total_points||0) + 'pts</span>' +
       '</div>';
     }).join('');
   }
 
   function selectStatsPlayer(jsonStr) {
     const p = JSON.parse(jsonStr);
-    statsPlayerId = p.id;
+    statsPlayerId       = p.id;
+    statsPlayerPosition = p.position || 'MID';
     document.getElementById('stats-player-name').textContent = p.display_name + ' — ' + p.position + ' · ' + (p.team||'');
-    document.getElementById('s-goals').value   = p.goals   || 0;
-    document.getElementById('s-assists').value = p.assists || 0;
-    document.getElementById('s-cs').value      = p.clean_sheets || 0;
-    document.getElementById('s-yellow').value  = p.yellow_cards || 0;
-    document.getElementById('s-red').value     = p.red_cards    || 0;
-    document.getElementById('s-apps').value    = p.apps  || 0;
+    document.getElementById('s-goals').value     = p.goals        || 0;
+    document.getElementById('s-assists').value   = p.assists      || 0;
+    document.getElementById('s-cs').value        = p.clean_sheets || 0;
+    document.getElementById('s-yellow').value    = p.yellow_cards || 0;
+    document.getElementById('s-red').value       = p.red_cards    || 0;
+    document.getElementById('s-apps').value      = p.apps         || 0;
+    document.getElementById('s-saves').value     = p.saves        || 0;
+    document.getElementById('s-pensaved').value  = p.penalties_saved  || 0;
+    document.getElementById('s-penmissed').value = p.penalties_missed || 0;
+    document.getElementById('s-gconceded').value = p.goals_conceded   || 0;
+    document.getElementById('s-minutes').value   = p.minutes_played   || (p.apps ? p.apps * 70 : 0);
     document.getElementById('stats-edit-form').style.display = 'block';
     document.getElementById('stats-player-results').style.display = 'none';
     document.getElementById('stats-player-search').value = '';
+    calcEstPts();
+  }
+
+  // Live fantasy points estimator — mirrors football_scoring.js rules exactly
+  function calcEstPts() {
+    const pos       = statsPlayerPosition || 'MID';
+    const goals     = parseInt(document.getElementById('s-goals').value)     || 0;
+    const assists   = parseInt(document.getElementById('s-assists').value)   || 0;
+    const cs        = parseInt(document.getElementById('s-cs').value)        || 0;
+    const yellow    = parseInt(document.getElementById('s-yellow').value)    || 0;
+    const red       = parseInt(document.getElementById('s-red').value)       || 0;
+    const apps      = parseInt(document.getElementById('s-apps').value)      || 0;
+    const saves     = parseInt(document.getElementById('s-saves').value)     || 0;
+    const penSaved  = parseInt(document.getElementById('s-pensaved').value)  || 0;
+    const penMissed = parseInt(document.getElementById('s-penmissed').value) || 0;
+    const gconceded = parseInt(document.getElementById('s-gconceded').value) || 0;
+    const minutes   = parseInt(document.getElementById('s-minutes').value)   || 0;
+
+    let pts = 0;
+    // Appearance points (use minutes if provided, otherwise estimate 70min per app)
+    const estMins = minutes > 0 ? minutes : apps * 70;
+    if (apps > 0 || estMins > 0) {
+      pts += estMins >= 60 ? 2 * apps : 1 * apps;
+    }
+    // Goals
+    const gPts = (pos==='GK'||pos==='DEF') ? 6 : pos==='MID' ? 5 : 4;
+    pts += goals * gPts;
+    // Assists
+    pts += assists * 3;
+    // Clean sheets
+    if (pos==='GK'||pos==='DEF') pts += cs * 4;
+    else if (pos==='MID') pts += cs * 1;
+    // Goals conceded (GK/DEF only: -1 per 2 conceded)
+    if (pos==='GK'||pos==='DEF') pts -= Math.floor(gconceded / 2);
+    // Saves (GK: +1 per 3 saves)
+    if (pos==='GK') pts += Math.floor(saves / 3);
+    // Penalties
+    pts += penSaved  *  5;
+    pts += penMissed * -2;
+    // Cards
+    pts += yellow * -1;
+    pts += red    * -3;
+
+    document.getElementById('s-estimated-pts').value = pts;
   }
 
   async function savePlayerStats(additive) {
     if (!statsPlayerId) { showStatus('stats-status', 'error', 'No player selected'); return; }
-    const goals   = parseInt(document.getElementById('s-goals').value)   || 0;
-    const assists = parseInt(document.getElementById('s-assists').value) || 0;
-    const cs      = parseInt(document.getElementById('s-cs').value)      || 0;
-    const yellow  = parseInt(document.getElementById('s-yellow').value)  || 0;
-    const red     = parseInt(document.getElementById('s-red').value)     || 0;
-    const apps    = parseInt(document.getElementById('s-apps').value)    || 0;
+
+    const goals     = parseInt(document.getElementById('s-goals').value)     || 0;
+    const assists   = parseInt(document.getElementById('s-assists').value)   || 0;
+    const cs        = parseInt(document.getElementById('s-cs').value)        || 0;
+    const yellow    = parseInt(document.getElementById('s-yellow').value)    || 0;
+    const red       = parseInt(document.getElementById('s-red').value)       || 0;
+    const apps      = parseInt(document.getElementById('s-apps').value)      || 0;
+    const saves     = parseInt(document.getElementById('s-saves').value)     || 0;
+    const penSaved  = parseInt(document.getElementById('s-pensaved').value)  || 0;
+    const penMissed = parseInt(document.getElementById('s-penmissed').value) || 0;
+    const gconceded = parseInt(document.getElementById('s-gconceded').value) || 0;
+    const minutes   = parseInt(document.getElementById('s-minutes').value)   || 0;
 
     // Fetch current stats if additive
-    let base = { goals:0, assists:0, clean_sheets:0, yellow_cards:0, red_cards:0, apps:0, position:'MID' };
+    let base = { goals:0, assists:0, clean_sheets:0, yellow_cards:0, red_cards:0,
+                 apps:0, saves:0, penalties_saved:0, penalties_missed:0,
+                 goals_conceded:0, minutes_played:0, position:'MID' };
     if (additive) {
       try {
-        const curr = await sb('GET', 'players', null, 'id=eq.' + statsPlayerId + '&select=goals,assists,clean_sheets,yellow_cards,red_cards,apps,position&limit=1');
+        const curr = await sb('GET', 'players', null,
+          'id=eq.' + statsPlayerId +
+          '&select=goals,assists,clean_sheets,yellow_cards,red_cards,apps,saves,penalties_saved,penalties_missed,goals_conceded,minutes_played,position&limit=1');
         if (curr && curr[0]) base = curr[0];
       } catch(e) {}
     }
 
-    const newGoals   = additive ? (base.goals   ||0) + goals   : goals;
-    const newAssists = additive ? (base.assists  ||0) + assists : assists;
-    const newCS      = additive ? (base.clean_sheets||0) + cs  : cs;
-    const newYellow  = additive ? (base.yellow_cards||0) + yellow : yellow;
-    const newRed     = additive ? (base.red_cards   ||0) + red  : red;
-    const newApps    = additive ? (base.apps    ||0) + apps    : apps;
+    const pos = base.position || statsPlayerPosition || 'MID';
 
-    // Recalculate fantasy points
-    const pos = base.position || 'MID';
-    const gPts = (pos==='GK'||pos==='DEF' ? 6 : pos==='MID' ? 5 : 4) * newGoals;
-    const aPts = 3 * newAssists;
-    const csPts = (pos==='GK'||pos==='DEF') ? 4 * newCS : (pos==='MID' ? 1 * newCS : 0);
-    const yPts = -1 * newYellow;
-    const rPts = -3 * newRed;
-    const appPts = newApps * 2;
-    const newTotal = appPts + gPts + aPts + csPts + yPts + rPts;
+    const newGoals     = additive ? (base.goals||0)             + goals     : goals;
+    const newAssists   = additive ? (base.assists||0)           + assists   : assists;
+    const newCS        = additive ? (base.clean_sheets||0)      + cs        : cs;
+    const newYellow    = additive ? (base.yellow_cards||0)      + yellow    : yellow;
+    const newRed       = additive ? (base.red_cards||0)         + red       : red;
+    const newApps      = additive ? (base.apps||0)              + apps      : apps;
+    const newSaves     = additive ? (base.saves||0)             + saves     : saves;
+    const newPenSaved  = additive ? (base.penalties_saved||0)   + penSaved  : penSaved;
+    const newPenMissed = additive ? (base.penalties_missed||0)  + penMissed : penMissed;
+    const newGConceded = additive ? (base.goals_conceded||0)    + gconceded : gconceded;
+    const newMinutes   = additive ? (base.minutes_played||0)    + minutes   : minutes;
+
+    // Recalculate season fantasy points using exact same rules as football_scoring.js
+    let newTotal = 0;
+    const estMins = newMinutes > 0 ? newMinutes / Math.max(newApps,1) : 70;
+    if (newApps > 0) newTotal += estMins >= 60 ? 2 * newApps : 1 * newApps;
+    const gPts = (pos==='GK'||pos==='DEF') ? 6 : pos==='MID' ? 5 : 4;
+    newTotal += newGoals * gPts;
+    newTotal += newAssists * 3;
+    if (pos==='GK'||pos==='DEF') newTotal += newCS * 4;
+    else if (pos==='MID') newTotal += newCS * 1;
+    if (pos==='GK'||pos==='DEF') newTotal -= Math.floor(newGConceded / 2);
+    if (pos==='GK') newTotal += Math.floor(newSaves / 3);
+    newTotal += newPenSaved  *  5;
+    newTotal += newPenMissed * -2;
+    newTotal += newYellow * -1;
+    newTotal += newRed    * -3;
 
     try {
       await sbWrite('update', 'players', {
-        goals: newGoals, assists: newAssists, clean_sheets: newCS,
-        yellow_cards: newYellow, red_cards: newRed, apps: newApps,
-        total_points: newTotal, updated_at: new Date().toISOString()
+        goals:            newGoals,
+        assists:          newAssists,
+        clean_sheets:     newCS,
+        yellow_cards:     newYellow,
+        red_cards:        newRed,
+        apps:             newApps,
+        saves:            newSaves,
+        penalties_saved:  newPenSaved,
+        penalties_missed: newPenMissed,
+        goals_conceded:   newGConceded,
+        minutes_played:   newMinutes,
+        total_points:     newTotal,
+        updated_at:       new Date().toISOString()
       }, { id: String(statsPlayerId) });
+
+      document.getElementById('s-estimated-pts').value = newTotal;
       showStatus('stats-status', 'ok',
-        '✓ Updated — ' + newGoals + 'G ' + newAssists + 'A ' + newCS + 'CS ' + newYellow + 'YC · Est. ' + newTotal + ' fantasy pts'
+        `✓ Saved — ${newGoals}G ${newAssists}A ${newCS}CS ${newSaves}Sv ${newYellow}YC ${newRed}RC → ${newTotal} pts`
       );
     } catch(e) { showStatus('stats-status', 'error', '✗ ' + e.message); }
   }
