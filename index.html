@@ -883,38 +883,88 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
-<!-- HOME PAGE MID-FEED AD ════════════════════════════════════════════════
-     Shown between hero and fixtures section. Uses house-ad until AdSense fills.
+<!-- HOME LIVE MATCHES WIDGET ═══════════════════════════════════════════════
+     Shows live/upcoming fixtures inline on home page — same data as Matches tab
 -->
-<div id="home-mid-ad" style="margin:.8rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;border-radius:12px;overflow:hidden">
-  <ins class="adsbygoogle"
-       style="display:block;min-height:100px"
-       data-ad-client="ca-pub-6398135174637589"
-       data-ad-slot="REPLACE_HOME_SLOT_ID"
-       data-ad-format="fluid"
-       data-ad-layout-key="-fb+5w+4e-db+86"
-       data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  <!-- House-ad fallback -->
-  <div id="home-house-ad" style="background:linear-gradient(120deg,rgba(14,20,32,.95),rgba(25,28,37,.95));border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
-    <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#7B0D14);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0">⚽</div>
-    <div style="flex:1;min-width:0">
-      <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff;letter-spacing:.5px">Share Fantasy PSL with your friends!</div>
-      <div style="font-family:var(--font-body,sans-serif);font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">South Africa's #1 fantasy football game — free to play</div>
+<div id="home-live-widget" style="margin:.8rem auto;max-width:520px;width:calc(100% - 1.5rem)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem">
+    <div style="display:flex;align-items:center;gap:.45rem">
+      <span id="home-live-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(212,39,79,.35);flex-shrink:0"></span>
+      <span style="font-family:var(--font-ui);font-size:.62rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45)" id="home-matches-label">Fixtures</span>
     </div>
-    <button onclick="if(navigator.share){navigator.share({title:'Fantasy PSL',text:'Play Fantasy PSL with me — South Africa\u2019s #1 fantasy football game!',url:'https://www.fantasypsl.co.za'})}else{navigator.clipboard&&navigator.clipboard.writeText('https://www.fantasypsl.co.za');showToast('Link copied!','success');}" style="flex-shrink:0;background:rgba(185,28,58,.85);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Share</button>
+    <button onclick="goPage('fixtures')" style="background:none;border:none;font-family:var(--font-ui);font-size:.6rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:0">View all →</button>
+  </div>
+  <div id="home-matches-list" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden">
+    <div style="text-align:center;padding:1.2rem;font-family:var(--font-ui);font-size:.78rem;color:rgba(255,255,255,.3)">Loading fixtures…</div>
   </div>
 </div>
 <script>
-(function(){
-  function checkHomeFilled(){
-    var ins=document.querySelector('#home-mid-ad ins.adsbygoogle');
-    var house=document.getElementById('home-house-ad');
-    if(!ins||!house)return;
-    if(ins.getAttribute('data-ad-status')==='filled'){house.style.display='none';}
+// Load live/upcoming fixtures for home widget
+function loadHomeMatchWidget() {
+  var listEl = document.getElementById('home-matches-list');
+  var labelEl = document.getElementById('home-matches-label');
+  var dotEl   = document.getElementById('home-live-dot');
+  if (!listEl) return;
+
+  // Try live first, fall back to upcoming
+  fetch('/api/football?type=live')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var live = data.matches || data.fixtures || [];
+      if (live.length) {
+        if (dotEl) { dotEl.style.background='#D4274F'; dotEl.style.animation='livePulse 1s infinite'; }
+        if (labelEl) labelEl.textContent = 'Live Now';
+        renderHomeMatches(listEl, live, true);
+      } else {
+        // No live games — show upcoming
+        fetch('/api/football?type=fixtures')
+          .then(function(r){ return r.json(); })
+          .then(function(d2) {
+            var upcoming = (d2.fixtures || []).slice(0, 5);
+            if (labelEl) labelEl.textContent = 'Upcoming Fixtures';
+            renderHomeMatches(listEl, upcoming, false);
+          }).catch(function(){
+            listEl.innerHTML = '<div style="text-align:center;padding:1rem;font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.25)">No fixtures available</div>';
+          });
+      }
+    }).catch(function(){
+      listEl.innerHTML = '<div style="text-align:center;padding:1rem;font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.25)">Check Matches tab for fixtures</div>';
+    });
+}
+
+function renderHomeMatches(el, matches, isLive) {
+  if (!matches || !matches.length) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.25)">No fixtures to show</div>';
+    return;
   }
-  setTimeout(checkHomeFilled,2500);setTimeout(checkHomeFilled,5000);
-})();
+  var html = matches.slice(0,6).map(function(f) {
+    var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : '';
+    var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : '';
+    var score = isLive ? (hg + ' – ' + ag) : 'vs';
+    var scoreClr = isLive ? '#D4274F' : 'rgba(255,255,255,.45)';
+    var hl = f.home_logo || getTeamLogo && getTeamLogo(f.home) || '';
+    var al = f.away_logo || getTeamLogo && getTeamLogo(f.away) || '';
+    var imgS = 'width:22px;height:22px;object-fit:contain;flex-shrink:0;';
+    var hImg = hl ? '<img src="'+hl+'" style="'+imgS+'" onerror="this.style.display=\'none\'">' : '';
+    var aImg = al ? '<img src="'+al+'" style="'+imgS+'" onerror="this.style.display=\'none\'">' : '';
+    var elapsed = isLive && f.elapsed ? '<span style="font-size:.5rem;font-weight:700;color:#D4274F;display:block;text-align:center">'+(f.status==='HT'?'HT':f.elapsed+"'")+'</span>' : '';
+    var timeStr = !isLive && f.date ? new Date(f.date).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div onclick="goPage(\'fixtures\')" style="display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;padding:.6rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer" onmouseenter="this.style.background=\'rgba(255,255,255,.03)\'" onmouseleave="this.style.background=\'\'">'
+      + '<div style="display:flex;align-items:center;gap:.4rem;justify-content:flex-end">'+hImg+'<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:#fff;text-align:right">'+(f.home||'')+'</span></div>'
+      + '<div style="text-align:center"><span style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:'+scoreClr+'">'+score+'</span>'+elapsed+(timeStr?'<span style="font-size:.52rem;color:rgba(255,255,255,.3);display:block">'+timeStr+'</span>':'')+'</div>'
+      + '<div style="display:flex;align-items:center;gap:.4rem"><span style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:#fff">'+(f.away||'')+'</span>'+aImg+'</div>'
+      + '</div>';
+  }).join('');
+  el.innerHTML = html;
+}
+
+setTimeout(loadHomeMatchWidget, 400);
+// Refresh live scores every 60s when on home page
+setInterval(function(){
+  if (document.getElementById('page-home') && document.getElementById('page-home').classList.contains('active')) {
+    loadHomeMatchWidget();
+  }
+}, 60000);
 </script>
 
 <!-- == BREAKING NEWS MODAL (popup on app open) ========================== -->
@@ -1343,7 +1393,7 @@
          Step 3: change data-ad-client to match your publisher ID if different
     -->
     <div id="leagues-ad-banner" style="width:100%;margin-bottom:1.5rem;border-radius:12px;overflow:hidden;min-height:90px;position:relative">
-      <!-- AdSense leaderboard — replace REPLACE_LEADERBOARD_SLOT_ID with your real slot -->
+      <!-- AdSense — replace REPLACE_LEADERBOARD_SLOT_ID with your real slot from Google AdSense dashboard -->
       <ins class="adsbygoogle"
            style="display:block;width:100%;min-height:90px"
            data-ad-client="ca-pub-6398135174637589"
@@ -1351,25 +1401,22 @@
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
       <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-      <!-- House-ad fallback shown until AdSense fills the slot -->
-      <div id="leagues-house-ad" style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(185,28,58,.18) 0%,rgba(136,255,0,.12) 100%);border:1px solid rgba(136,255,0,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:.9rem 1.2rem;gap:1rem">
-        <div style="font-size:1.6rem">🏆</div>
-        <div>
-          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(136,255,0,.9)">Create a Private League</div>
-          <div style="font-family:var(--font-body,sans-serif);font-size:.8rem;color:rgba(255,255,255,.55);margin-top:.2rem">Challenge your friends — winner gets ultimate bragging rights</div>
+      <!-- House-ad fallback shown until ad network fills the slot -->
+      <div id="leagues-house-ad" style="position:absolute;inset:0;background:linear-gradient(120deg,rgba(14,20,32,.95),rgba(25,28,37,.95));border:1px solid rgba(255,255,255,.07);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:.9rem 1.2rem;gap:1rem">
+        <div style="font-size:1.4rem">📣</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3)">Advertisement</div>
+          <div style="font-family:var(--font-body,sans-serif);font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.2rem">Your ad could be here — contact admin@fantasypsl.co.za</div>
         </div>
-        <button onclick="goPage('leagues')" style="flex-shrink:0;background:var(--red,#B91C3A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:.55rem .9rem;cursor:pointer;white-space:nowrap">Create →</button>
       </div>
     </div>
     <script>
-    // Hide the house-ad once AdSense fills the slot
     (function() {
       function checkLeaguesAdFilled() {
         var ins = document.querySelector('#leagues-ad-banner ins.adsbygoogle');
         var house = document.getElementById('leagues-house-ad');
         if (!ins || !house) return;
-        var filled = ins.getAttribute('data-ad-status') === 'filled';
-        if (filled) { house.style.display = 'none'; }
+        if (ins.getAttribute('data-ad-status') === 'filled') { house.style.display = 'none'; }
       }
       setTimeout(checkLeaguesAdFilled, 2500);
       setTimeout(checkLeaguesAdFilled, 5000);
@@ -2163,19 +2210,39 @@ function autoJoinTeamLeague(userId, teamName) {
     .then(function(res) {
       var league = res.data && res.data[0];
       if (league) {
-        db.from('league_members').insert({ league_id: league.id, user_id: userId })
+        // League already exists — just join it (ignore duplicate errors)
+        db.from('league_members').upsert({ league_id: league.id, user_id: userId }, { onConflict: 'league_id,user_id' })
           .then(function() {}).catch(function() {});
       } else {
-        var letters = teamName.replace(/[^A-Za-z]/g, '').substring(0,3).toUpperCase();
+        // Create the fan league for this team — only if it doesn't exist yet
+        // Use a deterministic code so concurrent signups don't create duplicates
+        var letters = teamName.replace(/[^A-Za-z]/g, '').substring(0,4).toUpperCase();
         var code = letters + '-FANS';
-        db.from('leagues').insert({ name: leagueName, code: code, created_by: userId, is_public: true })
+        db.from('leagues').insert({
+          name:       leagueName,
+          code:       code,
+          created_by: userId,
+          is_public:  true,
+          description: 'Official fan league for supporters of ' + teamName,
+          created_at:  new Date().toISOString()
+        })
           .select('id').single()
           .then(function(r) {
             if (r.data && r.data.id) {
               db.from('league_members').insert({ league_id: r.data.id, user_id: userId })
                 .then(function() {}).catch(function() {});
             }
-          }).catch(function() {});
+          })
+          .catch(function(err) {
+            // Race condition: another user created it at the same time — try joining
+            if (err && (err.message || '').includes('duplicate')) {
+              db.from('leagues').select('id').eq('name', leagueName).eq('is_public', true).limit(1)
+                .then(function(r2) {
+                  var lg = r2.data && r2.data[0];
+                  if (lg) db.from('league_members').insert({ league_id: lg.id, user_id: userId }).catch(function(){});
+                }).catch(function(){});
+            }
+          });
       }
     }).catch(function() {});
 }
@@ -2261,11 +2328,28 @@ function loadGW(cb) {
               .then(function() {})
               .catch(function() {});
           }).catch(function() {
-            ST.gw = { number: 27, gw_number: 27, deadline_at: null };
-            ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
-              var el = document.getElementById(elId);
-              if (el) el.textContent = 27;
-            });
+            // Final fallback: check fixtures table for highest gw_number
+            db.from('fixtures')
+              .select('gw_number')
+              .not('gw_number', 'is', null)
+              .order('gw_number', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+              .then(function(fr) {
+                var n = (fr.data && fr.data.gw_number) ? fr.data.gw_number : 1;
+                ST.gw = { number: n, gw_number: n, deadline_at: null };
+                ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+                  var el = document.getElementById(elId);
+                  if (el) el.textContent = n;
+                });
+              })
+              .catch(function() {
+                ST.gw = { number: 1, gw_number: 1, deadline_at: null };
+                ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
+                  var el = document.getElementById(elId);
+                  if (el) el.textContent = '--';
+                });
+              });
           });
       }
 
@@ -2394,8 +2478,14 @@ function renderPlayerList() {
     var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
     var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
     var ptsDisplay = p.total_points ? p.total_points + ' pts' : '—';
+    // Player photo — use photo column if available, else club badge, else position icon
+    var photoSrc = p.photo || '';
+    var avatarHtml = photoSrc
+      ? '<img src="' + photoSrc + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.07)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
+        '<div class="pli-shirt s' + ((p.id % 6) + 1) + '" style="display:none">' + icon + '</div>'
+      : '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>';
     return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
-      '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
+      avatarHtml +
       '<div class="pli-info">' +
         '<div class="pli-name">' + name + ownership + '</div>' +
         '<div class="pli-club">' + club + '</div>' +
@@ -2920,17 +3010,28 @@ function loadUserGWPoints() {
   }
 
   // Query specifically for the CURRENT gameweek row.
+  // Also fetch ALL rows to compute accurate season total (avoids stale profile.total_points)
   db.from('gw_scores')
     .select('points, player_scores, calculated_at, gameweek')
     .eq('user_id', ST.user.id)
-    .eq('gameweek', _gwNum)
-    .maybeSingle()
-    .then(function(res) {
-      if (!CACHE._profile) CACHE._profile = {};
-      var row = res.data;
+    .order('gameweek', { ascending: false })
+    .then(function(allRes) {
+      if (!CACHE._profile) CACHE._profile = {};\n
+      var allRows = allRes.data || [];
+      var currentRow = allRows.find(function(r) { return r.gameweek === _gwNum; }) || null;
+
+      // Always compute total from gw_scores — never trust stale profiles.total_points
+      var entryGW = (CACHE._profile && CACHE._profile.entry_gw) || 1;
+      var seasonTotal = allRows.reduce(function(sum, r) {
+        return r.gameweek >= entryGW ? sum + (r.points || 0) : sum;
+      }, 0);
+      if (seasonTotal > 0 || allRows.length > 0) {
+        CACHE._profile.total_points = seasonTotal;
+      }
+
+      var row = currentRow;
       if (row && row.points !== undefined && row.points !== null) {
-        CACHE._profile.gw_points = row.points;
-        renderBudget();
+        CACHE._profile.gw_points = row.points;\n        renderBudget();
         var ps = row.player_scores;
         if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
         if (ps && ps.length) {
