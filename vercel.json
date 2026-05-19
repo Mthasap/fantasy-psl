@@ -90,6 +90,10 @@
       "dest": "/about.html"
     },
     {
+      "src": "/api/player-crawler",
+      "dest": "/api/player-crawler.js"
+    },
+    {
       "handle": "filesystem"
     },
     {
