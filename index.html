@@ -2282,6 +2282,15 @@ function loadGW(cb) {
         var n = gwRow.gw_number || gwRow.number;
         ST.gw.number = n;
 
+        // Invalidate stale GW-specific caches whenever GW number changes
+        if (ST._lastKnownGW && ST._lastKnownGW !== n) {
+          CACHE._profile = null;      // force fresh profile points load
+          CACHE.leaderboard = null;   // force fresh leaderboard
+          CACHE.myLeagues   = null;   // force fresh league standings
+          window._gwScoresPs = null;  // clear last GW's player breakdown
+        }
+        ST._lastKnownGW = n;
+
         // Update every GW number element on the page
         ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
           var el = document.getElementById(elId);
@@ -3016,7 +3025,7 @@ function loadUserGWPoints() {
     .eq('user_id', ST.user.id)
     .order('gameweek', { ascending: false })
     .then(function(allRes) {
-      if (!CACHE._profile) CACHE._profile = {};\n
+      if (!CACHE._profile) CACHE._profile = {};
       var allRows = allRes.data || [];
       var currentRow = allRows.find(function(r) { return r.gameweek === _gwNum; }) || null;
 
@@ -3031,7 +3040,8 @@ function loadUserGWPoints() {
 
       var row = currentRow;
       if (row && row.points !== undefined && row.points !== null) {
-        CACHE._profile.gw_points = row.points;\n        renderBudget();
+        CACHE._profile.gw_points = row.points;
+        renderBudget();
         var ps = row.player_scores;
         if (typeof ps === 'string') { try { ps = JSON.parse(ps); } catch(e) { ps = null; } }
         if (ps && ps.length) {
