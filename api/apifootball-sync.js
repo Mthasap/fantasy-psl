@@ -572,38 +572,37 @@ async function recalculateTotals(log) {
   return updated;
 }
 
-// ─── Phase 4: Sync Injuries + Sidelined from Pro Tier ────────────────────────
-// Uses /injuries endpoint (Pro plan) to mark players as injured/available in DB
+// ─── Phase 4: Sync Injuries ──────────────────────────────────────────────────
+// Marks players as injured/available using the Pro-tier /injuries endpoint.
+// Safe to run independently: ?phase=4
 
 async function syncInjuries(log) {
   log.push('Phase 4: Syncing injuries from API-Football Pro');
 
-  const { data: injData, error: injErr } = await apiFetch(
-    `/injuries?league=${PSL_LEAGUE}&season=${PSL_SEASON}`
-  ).then(d => ({ data: d, error: null })).catch(e => ({ data: null, error: e }));
-
-  if (injErr) {
-    log.push('  ⚠️  Injuries fetch failed: ' + injErr.message);
+  let injData;
+  try {
+    injData = await apiFetch(`/injuries?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
+  } catch (e) {
+    log.push('  ⚠️  Injuries fetch failed: ' + e.message);
     return 0;
   }
 
-  const injured = new Set();
+  const injured    = new Set();
   const injDetails = {};
 
-  for (const entry of (injData && injData.response || [])) {
+  for (const entry of (injData.response || [])) {
     const pid = entry.player && entry.player.id;
     if (!pid) continue;
     injured.add(pid);
     injDetails[pid] = {
-      type:   entry.player.type   || 'Injured',
-      reason: entry.player.reason || ''
+      type:   (entry.player.type   || 'Injured'),
+      reason: (entry.player.reason || ''),
     };
   }
 
-  log.push(`  Injured players: ${injured.size}`);
+  log.push(`  Injured players found: ${injured.size}`);
 
-  // Batch update injured players
-  let updated = 0;
+  let updatedInjured = 0;
   for (const pid of Array.from(injured)) {
     const det = injDetails[pid];
     const { error } = await supabase
@@ -613,27 +612,28 @@ async function syncInjuries(log) {
         is_available:  false,
         injury_type:   det.type,
         injury_reason: det.reason,
-        updated_at:    new Date().toISOString()
+        updated_at:    new Date().toISOString(),
       })
       .eq('apifootball_id', pid);
-    if (!error) updated++;
+    if (!error) updatedInjured++;
   }
 
-  // Mark all OTHER PSL players as available (clear stale injury flags)
-  // Guard: if no injured players found, clear everyone. If some found, exclude them.
+  // Clear stale injury flags on non-injured players
+  // Guard: skip the .not('in') clause if the set is empty to avoid invalid SQL
   let clearQuery = supabase
     .from('players')
     .update({ is_injured: false, is_available: true, injury_type: null, injury_reason: null })
     .not('apifootball_id', 'is', null);
+
   if (injured.size > 0) {
     clearQuery = clearQuery.not('apifootball_id', 'in', `(${Array.from(injured).join(',')})`);
   }
-  const { error: clearErr } = await clearQuery;
 
+  const { error: clearErr } = await clearQuery;
   if (clearErr) log.push('  ⚠️  Clear non-injured error: ' + clearErr.message);
 
-  log.push(`  ✅ Injury sync complete: ${updated} injured, rest cleared`);
-  return updated;
+  log.push(`  ✅ Injury sync: ${updatedInjured} injured marked, rest cleared`);
+  return updatedInjured;
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
