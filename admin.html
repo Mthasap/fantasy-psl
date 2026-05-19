@@ -1516,13 +1516,44 @@
 
     <!-- ══════════════════ SQUAD IMPORT TAB ══════════════════ -->
     <div id="tab-squad-import" class="tab-page">
+
+      <!-- ══ PLAYER CRAWLER ══════════════════════════════════════════════ -->
+      <div class="card" style="border-color:rgba(136,255,0,.25)">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:#88FF00"></span>🤖 Auto Player Crawler</div>
+          <div style="font-size:12px;color:var(--muted)">Fetches ALL active PSL players from API-Football Pro and syncs them to your DB automatically</div>
+        </div>
+        <div class="card-body">
+          <div style="font-size:12px;color:var(--muted);background:rgba(136,255,0,.06);border:1px solid rgba(136,255,0,.15);border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.8">
+            <strong style="color:#88FF00">What this does:</strong><br>
+            • Fetches all 16 PSL clubs' full squads via API-Football Pro<br>
+            • NEW players are inserted automatically with correct position, price and photo<br>
+            • EXISTING players get their photo, position and team updated<br>
+            • Players no longer in any squad are marked inactive<br>
+            • Run a <strong>dry run</strong> first to preview changes
+          </div>
+          <div class="row-3" style="margin-bottom:12px">
+            <div><label>Season</label><input type="number" id="crawler-season" value="2025" min="2020" max="2030" style="width:100%"></div>
+            <div><label>Single Team ID (optional)</label><input type="number" id="crawler-team-id" placeholder="e.g. 496" style="width:100%"></div>
+            <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+              <button class="btn btn-blue btn-full" onclick="runPlayerCrawler(false)">🔍 Dry Run (Preview)</button>
+              <button class="btn btn-green btn-full" onclick="runPlayerCrawler(true)">✅ Apply to DB</button>
+            </div>
+          </div>
+          <div class="status-msg" id="crawler-status"></div>
+          <div id="crawler-results" style="display:none;margin-top:12px">
+            <div id="crawler-summary" style="font-size:12px;font-weight:600;padding:8px 10px;background:rgba(136,255,0,.08);border:1px solid rgba(136,255,0,.2);border-radius:6px;margin-bottom:10px"></div>
+            <div id="crawler-log" style="font-size:11px;font-family:monospace;background:#0a0c10;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px;max-height:260px;overflow-y:auto;white-space:pre-wrap;color:rgba(255,255,255,.65)"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title"><span class="dot" style="background:#f59e0b"></span>PSL Squad Import</div>
           <div style="font-size:12px;color:var(--muted)">Fetch all registered PSL players from API-Football · approve new ones to add to your roster</div>
         </div>
         <div class="card-body">
-
           <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,.75);line-height:1.7">
             <strong style="color:#f59e0b">How this works:</strong><br>
             1. Click <strong>Fetch All Squads</strong> — pulls every registered player from API-Football for all 16 PSL clubs.<br>
@@ -1968,6 +1999,58 @@
   // ═══════════════════════════════════════════════════════════════
 
   let afPlayerBuffer = null; // holds the looked-up player data until confirmed
+
+  // ── Player Crawler ──────────────────────────────────────────────────────
+  async function runPlayerCrawler(apply) {
+    const statusEl  = document.getElementById('crawler-status');
+    const resultsEl = document.getElementById('crawler-results');
+    const summaryEl = document.getElementById('crawler-summary');
+    const logEl     = document.getElementById('crawler-log');
+    const season    = document.getElementById('crawler-season').value  || '2025';
+    const teamId    = document.getElementById('crawler-team-id').value || '';
+
+    if (apply && !confirm(
+      'This will INSERT new players and UPDATE existing ones in the DB.\n\n' +
+      'Run the dry run first to preview changes.\n\nContinue?'
+    )) return;
+
+    showStatus('crawler-status', 'info', (apply ? '🔄 Applying' : '🔍 Running dry run') + '… this may take 30-60s');
+    if (resultsEl) resultsEl.style.display = 'none';
+
+    try {
+      let url = `/api/player-crawler?admin_key=${encodeURIComponent(adminKey)}`;
+      if (apply)  url += '&apply=1';
+      if (teamId) url += '&team_id=' + encodeURIComponent(teamId);
+
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        showStatus('crawler-status', 'error', '❌ ' + (data.error || 'Request failed'));
+        return;
+      }
+
+      showStatus('crawler-status', apply ? 'ok' : 'info',
+        apply
+          ? `✅ Done — ${data.inserted} inserted, ${data.updated} updated, ${data.deactivated} deactivated`
+          : `Preview: ${data.new_count} new, ${data.update_count} updates, ${data.deactivate_count} to deactivate`
+      );
+
+      if (summaryEl) {
+        summaryEl.innerHTML =
+          `<span style="color:#88FF00">API total: ${data.api_total}</span> &nbsp;·&nbsp; ` +
+          `<span style="color:#60A5FA">New: ${data.new_count}</span> &nbsp;·&nbsp; ` +
+          `<span style="color:#f59e0b">Updates: ${data.update_count}</span> &nbsp;·&nbsp; ` +
+          `<span style="color:rgba(255,255,255,.4)">Deactivate: ${data.deactivate_count}</span>` +
+          (data.fetch_errors && data.fetch_errors.length ? ` &nbsp;·&nbsp; <span style="color:#ef4444">Errors: ${data.fetch_errors.length}</span>` : '');
+      }
+      if (logEl)     logEl.textContent = (data.log || []).join('\n');
+      if (resultsEl) resultsEl.style.display = 'block';
+
+    } catch (err) {
+      showStatus('crawler-status', 'error', '❌ ' + err.message);
+    }
+  }
 
   async function lookupAPIPlayer() {
     const playerId = document.getElementById('af-player-id').value.trim();
