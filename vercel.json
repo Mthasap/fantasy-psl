@@ -7,7 +7,7 @@
     },
     {
       "src": "/api/sync",
-      "dest": "/api/sync.js"
+      "dest": "/api/football.js"
     },
     {
       "src": "/api/points-cron",
@@ -22,14 +22,6 @@
       "dest": "/api/admin-api.js"
     },
     {
-      "src": "/api/squad-import",
-      "dest": "/api/squad-import.js"
-    },
-    {
-      "src": "/api/link-player-ids",
-      "dest": "/api/link-player-ids.js"
-    },
-    {
       "src": "/api/save-squad",
       "dest": "/api/save-squad.js"
     },
@@ -38,8 +30,20 @@
       "dest": "/api/sitemap.js"
     },
     {
+      "src": "/api/squad-import",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/link-player-ids",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/player-crawler",
+      "dest": "/api/admin-api.js"
+    },
+    {
       "src": "/api/robots",
-      "dest": "/api/robots.js"
+      "dest": "/api/sitemap.js"
     },
     {
       "src": "/sitemap.xml",
@@ -47,7 +51,7 @@
     },
     {
       "src": "/robots.txt",
-      "dest": "/api/robots.js"
+      "dest": "/api/sitemap.js"
     },
     {
       "src": "/sw.js",
@@ -90,8 +94,8 @@
       "dest": "/about.html"
     },
     {
-      "src": "/api/player-crawler",
-      "dest": "/api/player-crawler.js"
+      "src": "/confirm",
+      "dest": "/confirm.html"
     },
     {
       "handle": "filesystem"
