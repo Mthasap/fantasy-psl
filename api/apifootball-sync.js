@@ -29,10 +29,19 @@ const API_BASE     = 'https://v3.football.api-sports.io';
 const PSL_LEAGUE   = 288;
 const PSL_SEASON   = 2025;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY  // use service key for server-side writes
-);
+// Lazy-initialised so missing env vars don't crash the module at import time
+let _supabase = null;
+function getSupabase() {
+  if (!_supabase) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      throw new Error('SUPABASE_URL or SUPABASE_SERVICE_KEY env var is not set');
+    }
+    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  }
+  return _supabase;
+}
+// Keep backward-compat alias used throughout this file
+const supabase = new Proxy({}, { get(_, prop) { return getSupabase()[prop]; } });
 
 // ─── API-Football fetch helper ────────────────────────────────────────────────
 
@@ -40,8 +49,7 @@ async function apiFetch(endpoint) {
   const url = `${API_BASE}${endpoint}`;
   const res = await fetch(url, {
     headers: {
-      'x-rapidapi-key':  API_KEY,
-      'x-rapidapi-host': 'v3.football.api-sports.io',
+      'x-apisports-key': API_KEY,
     },
   });
   if (!res.ok) throw new Error(`API-Football ${res.status}: ${url}`);
