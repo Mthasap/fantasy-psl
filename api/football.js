@@ -58,6 +58,14 @@ module.exports = async (req, res) => {
       case 'status':         return res.json(await getStatus());
       case 'fixture_detail': return res.json(await getFixtureDetail(req.query.fixture_id));
       case 'team_fixtures':  return res.json(await getTeamFixtures(req.query.team, req.query.team_id));
+      // ── Migrated from sync.js ─────────────────────────────────────────
+      case 'psl-data':       return res.json(await getPslData());
+      case 'seasons':        return res.json(await getSeasons());
+      case 'proxy': {
+        const ep = req.query.endpoint;
+        if (!ep) return res.status(400).json({ error: 'endpoint required' });
+        return res.json(await apiFetch('/' + ep.replace(/^\//, ''), TOKEN));
+      }
       // ── Pro Tier Endpoints ───────────────────────────────────────────
       case 'injuries':        return res.json(await getInjuries(req.query.fixture_id));
       case 'predictions':     return res.json(await getPredictions(req.query.fixture_id));
@@ -1019,4 +1027,46 @@ async function getPreMatchOdds(fixtureId) {
     bookmakers,
     fetched_at: new Date().toISOString()
   });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MIGRATED FROM sync.js
+// ══════════════════════════════════════════════════════════════════════════
+
+// PSL Data Bundle — gameweek + fixtures + standings in one call
+async function getPslData() {
+  if (!SB_URL) throw new Error('SUPABASE_URL not set');
+  async function sbGet(path) {
+    var r = await fetch(SB_URL + '/rest/v1' + path, {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept': 'application/json' }
+    });
+    if (!r.ok) throw new Error('Supabase HTTP ' + r.status);
+    return r.json();
+  }
+  var [gwRes, fixturesRes, standingsRes] = await Promise.all([
+    sbGet('/gameweeks?is_current=eq.true&limit=1'),
+    sbGet('/fixtures?order=kickoff_time.asc&limit=100'),
+    sbGet('/profiles?select=username,team_name,total_points&order=total_points.desc&limit=100')
+  ]);
+  var currentGW = (gwRes[0] || {}).gw_number || (gwRes[0] || {}).number || null;
+  return {
+    currentGW,
+    FT:        fixturesRes.filter(function(f) { return f.status === 'FT'; }),
+    NS:        fixturesRes.filter(function(f) { return f.status === 'NS'; }),
+    live:      fixturesRes.filter(function(f) { return ['LIVE','1H','2H','HT'].includes(f.status); }),
+    standings: standingsRes,
+    ts:        Date.now()
+  };
+}
+
+// PSL Seasons list
+async function getSeasons() {
+  var d = await apiFetch('/leagues?id=' + PSL_LEAGUE, TOKEN);
+  var league = (d.response || [])[0];
+  var seasons = league && league.seasons ? league.seasons.slice().reverse() : [];
+  return {
+    type: 'seasons',
+    league: league && league.league && league.league.name,
+    seasons: seasons.map(function(s) { return { year: s.year, current: s.current }; })
+  };
 }
