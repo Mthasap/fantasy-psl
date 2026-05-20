@@ -885,37 +885,112 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
-<!-- HOME PAGE MID-FEED AD ════════════════════════════════════════════════
-     Shown between hero and fixtures section. Uses house-ad until AdSense fills.
+<!-- == HOME NEWS STRIP ══════════════════════════════════════════════════
+     EPL-style horizontal scrolling news cards with cover images.
+     Loads from the same news_posts + announcements sources as the News tab.
+     "See All" navigates to the full News tab.
 -->
-<div id="home-mid-ad" style="margin:.8rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;border-radius:12px;overflow:hidden">
-  <ins class="adsbygoogle"
-       style="display:block;min-height:100px"
-       data-ad-client="ca-pub-6398135174637589"
-       data-ad-slot="REPLACE_HOME_SLOT_ID"
-       data-ad-format="fluid"
-       data-ad-layout-key="-fb+5w+4e-db+86"
-       data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  <!-- House-ad fallback -->
-  <div id="home-house-ad" style="background:linear-gradient(120deg,rgba(14,20,32,.95),rgba(25,28,37,.95));border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
-    <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#7B0D14);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0">⚽</div>
-    <div style="flex:1;min-width:0">
-      <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff;letter-spacing:.5px">Invite a friend — earn bonus points</div>
-      <div style="font-family:var(--font-body,sans-serif);font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Share Fantasy PSL &amp; climb the leaderboard together</div>
+<div id="home-news-section" style="margin:0;padding:.85rem 0 .6rem;background:var(--bg-surface,#0E1420);border-bottom:1px solid var(--border,rgba(255,255,255,.07))">
+  <!-- Section header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 1rem .65rem;max-width:960px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:.55rem">
+      <div style="width:3px;height:18px;background:var(--red,#B91C3A);border-radius:2px;flex-shrink:0"></div>
+      <span style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff">Latest News</span>
     </div>
-    <button onclick="if(navigator.share){navigator.share({title:'Fantasy PSL',text:'Play Fantasy PSL with me!',url:'https://www.fantasypsl.co.za'})}else{navigator.clipboard&&navigator.clipboard.writeText('https://www.fantasypsl.co.za')}" style="flex-shrink:0;background:rgba(185,28,58,.85);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Share</button>
+    <button onclick="goPage('news')" style="background:none;border:none;font-family:var(--font-ui,sans-serif);font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red,#B91C3A);cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">See All →</button>
+  </div>
+
+  <!-- Horizontal scroll track -->
+  <div id="home-news-scroll" style="display:flex;gap:.75rem;overflow-x:auto;padding:0 1rem .3rem;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">
+    <!-- Skeleton cards shown while loading -->
+    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
+    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
+    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
   </div>
 </div>
+<style>
+#home-news-scroll::-webkit-scrollbar{display:none}
+@keyframes hnPulse{0%,100%{opacity:.45}50%{opacity:.9}}
+.hn-skeleton{animation:hnPulse 1.4s ease-in-out infinite}
+</style>
 <script>
 (function(){
-  function checkHomeFilled(){
-    var ins=document.querySelector('#home-mid-ad ins.adsbygoogle');
-    var house=document.getElementById('home-house-ad');
-    if(!ins||!house)return;
-    if(ins.getAttribute('data-ad-status')==='filled'){house.style.display='none';}
+  var _hnLoaded=false;
+  var NEWS_CAT_COLORS_HN={'Gameweek':'#B91C3A','Tips':'#DBA94A','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','default':'#6B7280'};
+
+  function renderHomeNews(posts){
+    var track=document.getElementById('home-news-scroll');
+    if(!track)return;
+    if(!posts||!posts.length){
+      track.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.8rem;padding:.5rem">No news yet.</div>';
+      return;
+    }
+    function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});}catch(e){return'';}}
+    function catPill(cat){var c=NEWS_CAT_COLORS_HN[cat]||NEWS_CAT_COLORS_HN['default'];return'<span style="display:inline-block;font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+c+';padding:2px 7px;border-radius:3px;line-height:1.6">'+(cat||'News')+'</span>';}
+    track.innerHTML=posts.slice(0,8).map(function(post,i){
+      var imgHtml=post.image_url
+        ?'<img src="'+post.image_url+'" alt="" style="width:100%;height:120px;object-fit:cover;display:block;flex-shrink:0" loading="lazy" onerror="this.parentNode.querySelector(\'.hn-img-fallback\').style.display=\'flex\';this.style.display=\'none\'">'
+        :'';
+      var fallback='<div class="hn-img-fallback" style="'+(post.image_url?'display:none;':'')+'width:100%;height:120px;background:linear-gradient(135deg,rgba(185,28,58,.28),rgba(219,169,74,.12));display:flex;align-items:center;justify-content:center;font-size:2.2rem;flex-shrink:0">📰</div>';
+      return '<div onclick="window._hnOpenPost('+i+')" style="flex:0 0 220px;border-radius:12px;overflow:hidden;background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);cursor:pointer;display:flex;flex-direction:column;scroll-snap-align:start;-webkit-tap-highlight-color:transparent;transition:transform .15s" onmousedown="this.style.transform=\'scale(.97)\'" onmouseup="this.style.transform=\'\'">'+imgHtml+fallback+'<div style="padding:.6rem .75rem .75rem;flex:1;display:flex;flex-direction:column;gap:.3rem"><div style="display:flex;align-items:center;justify-content:space-between;gap:.3rem">'+catPill(post.category)+'<span style="font-size:.58rem;color:rgba(255,255,255,.3);flex-shrink:0">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.8rem;font-weight:900;line-height:1.28;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div></div></div>';
+    }).join('');
+    // Keep a local reference so click handler can resolve the post
+    window._hnPosts=posts;
   }
-  setTimeout(checkHomeFilled,2500);setTimeout(checkHomeFilled,5000);
+
+  window._hnOpenPost=function(idx){
+    var post=(window._hnPosts||[])[idx];
+    if(!post)return;
+    // Sync into global _newsPosts so openNewsPost works normally
+    if(window._newsPosts&&window._newsPosts.length){
+      var gi=window._newsPosts.findIndex(function(p){return p.id===post.id;});
+      if(gi>-1){goPage('news');setTimeout(function(){openNewsPost(gi);},200);return;}
+    }
+    goPage('news');
+    setTimeout(function(){
+      if(window._newsPosts){
+        var gi2=window._newsPosts.findIndex(function(p){return p.id===post.id;});
+        if(gi2>-1)openNewsPost(gi2);
+      }
+    },600);
+  };
+
+  function loadHomeNews(){
+    if(_hnLoaded)return;
+    _hnLoaded=true;
+    function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
+    Promise.allSettled([
+      db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug').eq('published',true).order('published_at',{ascending:false}).limit(8),
+      db.from('announcements').select('id,title,heading,body,content,message,summary,published_at,created_at,category,type,image_url,image').order('id',{ascending:false}).limit(8)
+    ]).then(function(results){
+      var posts=(results[0].status==='fulfilled'?results[0].value.data:null)||[];
+      var anns=((results[1].status==='fulfilled'?results[1].value.data:null)||[]).map(normAnn);
+      var all=posts.concat(anns);
+      all.sort(function(a,b){return new Date(b.published_at)-new Date(a.published_at);});
+      if(!all.length){
+        all=[
+          {id:1,title:'GW Deadline Reminder — Make Your Transfers Now',published_at:new Date().toISOString(),category:'Gameweek',image_url:''},
+          {id:2,title:'Mamelodi Sundowns Lead the Betway Premiership',published_at:new Date(Date.now()-86400000).toISOString(),category:'Table',image_url:''},
+          {id:3,title:'Form Guide: Best Picks for This Gameweek',published_at:new Date(Date.now()-2*86400000).toISOString(),category:'Tips',image_url:''},
+        ];
+      }
+      renderHomeNews(all);
+    }).catch(function(){renderHomeNews([]);});
+  }
+
+  // Load when the home page is first visible
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(loadHomeNews,400);});
+  }else{
+    setTimeout(loadHomeNews,400);
+  }
+
+  // Also hook into goPage so re-visiting Home refreshes if stale
+  var _origGoPage=window.goPage;
+  window.goPage=function(id){
+    if(typeof _origGoPage==='function')_origGoPage(id);
+    if(id==='home'&&!_hnLoaded)loadHomeNews();
+  };
 })();
 </script>
 
