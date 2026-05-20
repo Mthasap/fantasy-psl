@@ -2018,7 +2018,7 @@
     if (resultsEl) resultsEl.style.display = 'none';
 
     try {
-      let url = `/api/player-crawler?admin_key=${encodeURIComponent(adminKey)}`;
+      let url = `/api/admin-api?action=player-crawler&admin_key=?admin_key=${encodeURIComponent(adminKey)}`;
       if (apply)  url += '&apply=1';
       if (teamId) url += '&team_id=' + encodeURIComponent(teamId);
 
@@ -2067,7 +2067,7 @@
 
     try {
       // Call our backend proxy (avoids exposing API key in browser)
-      const url = `/api/sync?action=proxy&endpoint=players%3Fid%3D${playerId}%26season%3D${season}` +
+      const url = `/api/football?type=proxy&endpoint=players%3Fid%3D${playerId}%26season%3D${season}` +
                   (teamId ? `%26team%3D${teamId}` : '');
       const res  = await fetch(url, { headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
@@ -3346,7 +3346,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     stat.className = 'status-msg info';
 
     try {
-      let url = '/api/squad-import';
+      let url = '/api/admin-api?action=squad-import&admin_key=';
       if (club) url += '&club=' + encodeURIComponent(club);
 
       const res  = await fetch(url);
