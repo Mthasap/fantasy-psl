@@ -84,7 +84,7 @@ async function getPslData() {
     sbGet('/fixtures?order=kickoff_at.asc&limit=100'),
     sbGet('/profiles?select=username,team_name,total_points&order=total_points.desc&limit=100')
   ]);
-  var currentGW = (gwRes[0] || {}).number || null;
+  var currentGW = (gwRes[0] || {}).gw_number || (gwRes[0] || {}).number || null;
   return {
     currentGW,
     FT:        fixturesRes.filter(function(f) { return f.status === 'FT'; }),
