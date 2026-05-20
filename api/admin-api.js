@@ -251,6 +251,21 @@ module.exports = async (req, res) => {
       return res.json({ success: true, data: ups });
     }
 
+    // ── SQUAD IMPORT (migrated from squad-import.js) ──────────────────────
+    if (action === 'squad-import') {
+      return await handleSquadImport(db, q, res);
+    }
+
+    // ── LINK PLAYER IDS (migrated from link-player-ids.js) ────────────────
+    if (action === 'link-player-ids') {
+      return await handleLinkPlayerIds(db, q, res);
+    }
+
+    // ── PLAYER CRAWLER (migrated from player-crawler.js) ──────────────────
+    if (action === 'player-crawler') {
+      return await handlePlayerCrawler(db, q, res);
+    }
+
     return res.status(400).json({ error: 'Unknown action: ' + action });
 
   } catch (err) {
@@ -301,5 +316,318 @@ async function deleteUserById(db, userId, res, source) {
   } catch(err) {
     log.push('FATAL: ' + err.message);
     return res.status(500).json({ success: false, error: err.message, log });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SQUAD IMPORT HANDLER (migrated from squad-import.js)
+// GET /api/admin-api?action=squad-import&admin_key=XXX[&club=NAME]
+// ══════════════════════════════════════════════════════════════════════════
+
+const SQUAD_IMPORT_TEAM_MAP = {
+  'Orlando Pirates':'Orlando Pirates','Mamelodi Sundowns':'Mamelodi Sundowns',
+  'Golden Arrows':'Golden Arrows','Sekhukhune United':'Sekhukhune United',
+  'AmaZulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
+  'Stellenbosch':'Stellenbosch FC','Stellenbosch FC':'Stellenbosch FC',
+  'TS Galaxy':'TS Galaxy','Richards Bay':'Richards Bay','Polokwane City':'Polokwane City',
+  'Chippa United':'Chippa United','Marumo Gallants':'Marumo Gallants FC',
+  'Marumo Gallants FC':'Marumo Gallants FC','Magesi':'Magesi FC','Magesi FC':'Magesi FC',
+  'Siwelele':'Siwelele FC','Siwelele FC':'Siwelele FC','Cape Town City':'Cape Town City',
+  'Durban City':'Durban City','Orbit College':'Orbit College FC','Orbit College FC':'Orbit College FC',
+};
+
+async function handleSquadImport(db, q, res) {
+  const TOKEN      = process.env.APIFOOTBALL_KEY || '';
+  const PSL_LEAGUE = 288;
+  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2025', 10);
+  const filterClub = q.club || null;
+  const log        = [];
+
+  if (!TOKEN) return res.status(500).json({ error: 'APIFOOTBALL_KEY not set' });
+
+  function normPos(raw) {
+    if (!raw) return 'MID';
+    const r = raw.toUpperCase();
+    if (r.includes('GOAL')||r==='G'||r==='GK') return 'GK';
+    if (r.includes('DEFEND')||r==='D'||r==='DEF') return 'DEF';
+    if (r.includes('FORWARD')||r.includes('ATTACK')||r==='F'||r==='FWD') return 'FWD';
+    return 'MID';
+  }
+  function normName(s) {
+    return (s||'').toLowerCase().replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+      .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o').replace(/[ùúûü]/g,'u')
+      .replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim();
+  }
+
+  async function apiFetchLocal(endpoint) {
+    const url = `https://v3.football.api-sports.io${endpoint}`;
+    const r = await fetch(url, { headers: { 'x-rapidapi-key': TOKEN, 'x-rapidapi-host': 'v3.football.api-sports.io' } });
+    if (!r.ok) throw new Error(`API-Football ${r.status}`);
+    const d = await r.json();
+    if (d.errors && Object.keys(d.errors).length && !JSON.stringify(d.errors).includes('{}'))
+      throw new Error('API error: ' + JSON.stringify(d.errors));
+    return d;
+  }
+
+  try {
+    const { data: existingPlayers } = await db.from('players')
+      .select('id, display_name, team, position, psl_roster_id');
+    const existingByNorm = {};
+    const existingIds = [];
+    for (const p of (existingPlayers||[])) {
+      existingByNorm[normName(p.display_name)] = p;
+      if (p.psl_roster_id) existingIds.push(p.psl_roster_id);
+    }
+
+    const teamsRes = await apiFetchLocal(`/teams?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
+    const teams    = teamsRes.response || [];
+    log.push(`Teams: ${teams.length}`);
+
+    const allFetched = [];
+    for (const te of teams) {
+      const team = te.team || {};
+      const teamName = SQUAD_IMPORT_TEAM_MAP[team.name] || team.name || 'Unknown';
+      if (filterClub && !teamName.toLowerCase().includes(filterClub.toLowerCase())) continue;
+      try {
+        const sr = await apiFetchLocal(`/players/squads?team=${team.id}`);
+        const squad = (sr.response||[])[0];
+        const players = squad ? (squad.players||[]) : [];
+        for (const p of players) {
+          allFetched.push({
+            api_player_id: String(p.id), display_name: p.name||'Unknown',
+            team: teamName, position: normPos(p.position||''),
+            photo: p.photo||null, name_normalised: normName(p.name||'')
+          });
+        }
+        await new Promise(r=>setTimeout(r,150));
+      } catch(e) { log.push(`Error ${teamName}: ${e.message}`); }
+    }
+
+    const seen = new Set(); const known = []; const newPlayers = [];
+    let sid = Math.max(20000,...existingIds)+1;
+    for (const p of allFetched) {
+      if (seen.has(p.api_player_id)) continue;
+      seen.add(p.api_player_id);
+      const ex = existingByNorm[p.name_normalised];
+      if (ex) known.push({...p,status:'known',db_id:ex.id,psl_roster_id:ex.psl_roster_id});
+      else newPlayers.push({...p,status:'new',suggested_psl_id:sid++});
+    }
+
+    log.push(`Known: ${known.length} | New: ${newPlayers.length}`);
+    return res.json({ success:true, known_count:known.length, new_count:newPlayers.length,
+      known, new_players:newPlayers, log });
+  } catch(err) {
+    return res.status(500).json({ error: err.message, log });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// LINK PLAYER IDS HANDLER (migrated from link-player-ids.js)
+// GET /api/admin-api?action=link-player-ids&admin_key=XXX[&apply=1]
+// ══════════════════════════════════════════════════════════════════════════
+
+async function handleLinkPlayerIds(db, q, res) {
+  const apply = q.apply === '1';
+  const log   = [];
+
+  function normLPI(s) {
+    return (s||'').toLowerCase().replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+      .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o').replace(/[ùúûü]/g,'u')
+      .replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim();
+  }
+  function surnameOf(n) { const p=n.split(' '); return p[p.length-1]; }
+  function initKeyOf(n) { const p=n.split(' '); return p.length<2?null:p[0][0]+'_'+p[p.length-1]; }
+
+  try {
+    const { data: statsPlayers } = await db.from('match_player_stats')
+      .select('apifootball_player_id,player_name').not('apifootball_player_id','is',null).not('player_name','is',null);
+
+    const apiPlayerMap = {};
+    for (const row of (statsPlayers||[])) {
+      if (!apiPlayerMap[row.apifootball_player_id]) {
+        const n = normLPI(row.player_name);
+        apiPlayerMap[row.apifootball_player_id] = { api_id:row.apifootball_player_id, name:row.player_name, norm:n, surname:surnameOf(n), initKey:initKeyOf(n) };
+      }
+    }
+    const apiPlayers = Object.values(apiPlayerMap);
+    const byNorm={}, bySurname={}, byInit={};
+    for (const ap of apiPlayers) {
+      byNorm[ap.norm]=ap;
+      if (ap.surname&&ap.surname.length>=4) { if (!bySurname[ap.surname]) bySurname[ap.surname]=ap; else bySurname[ap.surname]=null; }
+      if (ap.initKey) { if (!byInit[ap.initKey]) byInit[ap.initKey]=ap; else byInit[ap.initKey]=null; }
+    }
+
+    const { data: ourPlayers } = await db.from('players').select('id,display_name,team,position,apifootball_id,psl_roster_id');
+    const matched=[],unmatched=[],already=[];
+
+    for (const p of (ourPlayers||[])) {
+      if (p.apifootball_id && p.apifootball_id>1000) { already.push({id:p.id,name:p.display_name,apifootball_id:p.apifootball_id}); continue; }
+      const pn=normLPI(p.display_name),ps=surnameOf(pn),pk=initKeyOf(pn);
+      let hit=null,tier=0;
+      if (!hit&&byNorm[pn]) { hit=byNorm[pn]; tier=1; }
+      if (!hit&&ps.length>=4&&bySurname[ps]) { hit=bySurname[ps]; tier=2; }
+      if (!hit&&pk&&byInit[pk]) { hit=byInit[pk]; tier=3; }
+      if (!hit) {
+        const fn=pn.split(' ')[0];
+        if (fn&&fn.length>=5) {
+          const cands=apiPlayers.filter(ap=>ap.norm.split(' ')[0]===fn);
+          if (cands.length===1) { hit=cands[0]; tier=4; }
+        }
+      }
+      if (hit) matched.push({db_id:p.id,our_name:p.display_name,api_name:hit.name,apifootball_id:hit.api_id,tier});
+      else unmatched.push({db_id:p.id,name:p.display_name,team:p.team});
+    }
+
+    let updated=0;
+    if (apply) {
+      for (const m of matched) {
+        const { error } = await db.from('players').update({apifootball_id:m.apifootball_id}).eq('id',m.db_id);
+        if (!error) updated++;
+      }
+    }
+
+    return res.json({ success:true, dry_run:!apply, matched:matched.length, already_had:already.length,
+      unmatched:unmatched.length, updated, log, matches:matched, unmatched_players:unmatched });
+  } catch(err) {
+    return res.status(500).json({ error: err.message, log });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PLAYER CRAWLER HANDLER (migrated from player-crawler.js)
+// GET /api/admin-api?action=player-crawler&admin_key=XXX[&apply=1][&team_id=N]
+// ══════════════════════════════════════════════════════════════════════════
+
+async function handlePlayerCrawler(db, q, res) {
+  const TOKEN      = process.env.APIFOOTBALL_KEY || '';
+  const PSL_LEAGUE = 288;
+  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2025', 10);
+  const apply      = q.apply === '1';
+  const teamIdFilter = q.team_id ? parseInt(q.team_id, 10) : null;
+  const log        = [];
+
+  if (!TOKEN) return res.status(500).json({ error: 'APIFOOTBALL_KEY not set' });
+
+  function normPos(raw) {
+    if (!raw) return 'MID';
+    const r = raw.toUpperCase();
+    if (r.includes('GOAL')||r==='G'||r==='GK') return 'GK';
+    if (r.includes('DEFEND')||r==='D'||r==='DEF') return 'DEF';
+    if (r.includes('FORWARD')||r.includes('ATTACK')||r==='F'||r==='FWD') return 'FWD';
+    return 'MID';
+  }
+  function normName(s) {
+    return (s||'').toLowerCase().replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+      .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o').replace(/[ùúûü]/g,'u')
+      .replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim();
+  }
+  function makeSlug(name) { return (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function defaultPrice(pos) { return pos==='GK'?5.0:pos==='DEF'?5.5:pos==='MID'?6.5:7.0; }
+
+  const CRAWL_TEAM_MAP = {
+    'Orlando Pirates':'Orlando Pirates','Mamelodi Sundowns':'Mamelodi Sundowns',
+    'Golden Arrows':'Golden Arrows','Sekhukhune United':'Sekhukhune United',
+    'AmaZulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
+    'Stellenbosch':'Stellenbosch FC','Stellenbosch FC':'Stellenbosch FC',
+    'TS Galaxy':'TS Galaxy','Richards Bay':'Richards Bay','Polokwane City':'Polokwane City',
+    'Chippa United':'Chippa United','Marumo Gallants':'Marumo Gallants FC',
+    'Marumo Gallants FC':'Marumo Gallants FC','Magesi':'Magesi FC','Magesi FC':'Magesi FC',
+    'Siwelele':'Siwelele FC','Siwelele FC':'Siwelele FC','Cape Town City':'Cape Town City',
+    'Durban City':'Durban City','Orbit College':'Orbit College FC','Orbit College FC':'Orbit College FC',
+  };
+
+  async function apiFetchLocal(endpoint) {
+    const url = `https://v3.football.api-sports.io${endpoint}`;
+    const r = await fetch(url, { headers: { 'x-rapidapi-key': TOKEN, 'x-rapidapi-host': 'v3.football.api-sports.io' } });
+    if (!r.ok) throw new Error(`API-Football ${r.status}`);
+    const d = await r.json();
+    if (d.errors && Object.keys(d.errors).length && !JSON.stringify(d.errors).includes('{}'))
+      throw new Error('API error: ' + JSON.stringify(d.errors));
+    return d;
+  }
+
+  try {
+    const { data: existingPlayers } = await db.from('players')
+      .select('id,display_name,team,position,apifootball_id,psl_roster_id,photo,is_active');
+    const byApiId={}, byNormName={};
+    const allRosterIds = new Set();
+    for (const p of (existingPlayers||[])) {
+      if (p.apifootball_id) byApiId[p.apifootball_id]=p;
+      byNormName[normName(p.display_name)]=p;
+      if (p.psl_roster_id) allRosterIds.add(p.psl_roster_id);
+    }
+    let nextRosterId = Math.max(20000,...Array.from(allRosterIds))+1;
+
+    const teamsData = await apiFetchLocal(`/teams?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
+    const teams = teamsData.response||[];
+    log.push(`Teams: ${teams.length}`);
+
+    const allApiPlayers=[], fetchErrors=[];
+    for (const entry of teams) {
+      const team=entry.team||{};
+      const teamName=CRAWL_TEAM_MAP[team.name]||team.name||'Unknown';
+      if (teamIdFilter && team.id!==teamIdFilter) continue;
+      try {
+        const sd = await apiFetchLocal(`/players/squads?team=${team.id}`);
+        const squad=(sd.response||[])[0];
+        const players=squad?(squad.players||[]):[];
+        log.push(`${teamName}: ${players.length}`);
+        for (const p of players) {
+          allApiPlayers.push({ apifootball_id:p.id, display_name:p.name||'Unknown',
+            team:teamName, position:normPos(p.position||''), age:p.age||null,
+            photo:p.photo||null, norm_name:normName(p.name||'') });
+        }
+        await new Promise(r=>setTimeout(r,150));
+      } catch(e) { fetchErrors.push(`${teamName}: ${e.message}`); }
+    }
+
+    const seenIds=new Set(), dedupPlayers=[];
+    for (const p of allApiPlayers) { if (!seenIds.has(p.apifootball_id)){seenIds.add(p.apifootball_id);dedupPlayers.push(p);} }
+
+    const toInsert=[],toUpdate=[];
+    for (const ap of dedupPlayers) {
+      const ex=byApiId[ap.apifootball_id]||byNormName[ap.norm_name];
+      if (ex) toUpdate.push({id:ex.id,display_name:ap.display_name,team:ap.team,position:ap.position,
+        photo:ap.photo||ex.photo||null,age:ap.age||null,apifootball_id:ap.apifootball_id,
+        is_active:true,updated_at:new Date().toISOString()});
+      else toInsert.push({display_name:ap.display_name,team:ap.team,position:ap.position,
+        apifootball_id:ap.apifootball_id,photo:ap.photo||null,age:ap.age||null,
+        price:defaultPrice(ap.position),psl_roster_id:nextRosterId++,
+        slug:makeSlug(ap.display_name)+'-'+ap.apifootball_id,
+        is_available:true,is_active:true,goals:0,assists:0,clean_sheets:0,
+        yellow_cards:0,red_cards:0,saves:0,apps:0,total_points:0,
+        created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
+    }
+    const activeApiIds=new Set(dedupPlayers.map(p=>p.apifootball_id));
+    const toDeactivate=(existingPlayers||[]).filter(p=>p.apifootball_id&&!activeApiIds.has(p.apifootball_id)&&p.is_active!==false);
+
+    let inserted=0,updated=0,deactivated=0,errors=0;
+    if (apply) {
+      for (let i=0;i<toInsert.length;i+=25) {
+        const batch=toInsert.slice(i,i+25);
+        const {error}=await db.from('players').insert(batch);
+        if (!error) inserted+=batch.length;
+        else { errors++; log.push('Insert error: '+error.message); }
+      }
+      for (const row of toUpdate) {
+        const {id,...fields}=row;
+        const {error}=await db.from('players').update(fields).eq('id',id);
+        if (!error) updated++; else errors++;
+      }
+      if (toDeactivate.length>0) {
+        const ids=toDeactivate.map(p=>p.id);
+        await db.from('players').update({is_active:false,is_available:false,updated_at:new Date().toISOString()}).in('id',ids);
+        deactivated=ids.length;
+      }
+    }
+
+    return res.json({ success:true, dry_run:!apply, season:PSL_SEASON,
+      api_total:dedupPlayers.length, new_count:toInsert.length, update_count:toUpdate.length,
+      deactivate_count:toDeactivate.length, inserted, updated, deactivated, errors,
+      fetch_errors:fetchErrors, log,
+      new_players_preview:toInsert.slice(0,20).map(p=>({name:p.display_name,team:p.team,pos:p.position})),
+    });
+  } catch(err) {
+    return res.status(500).json({ error: err.message, log });
   }
 }
