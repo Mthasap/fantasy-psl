@@ -298,7 +298,7 @@ async function getTopScorers() {
       name:  p.name || 'Unknown',
       club:  stat.team && stat.team.name || '',
       goals: stat.goals && stat.goals.total || 0,
-      apps:  stat.games && stat.games.appearences || 0,
+      apps:  stat.games && (stat.games.appearences || stat.games.appearances) || 0,
       photo: p.photo || null
     };
   });
@@ -845,7 +845,7 @@ async function getPlayerInfo(playerId) {
     league:      stat.league && stat.league.name || '',
     position:    stat.games && stat.games.position || '',
     season_stats: {
-      appearances:  stat.games && stat.games.appearences || 0,
+      appearances:  stat.games && (stat.games.appearences || stat.games.appearances) || 0,
       lineups:      stat.games && stat.games.lineups     || 0,
       minutes:      stat.games && stat.games.minutes     || 0,
       rating:       parseFloat(stat.games && stat.games.rating || 0) || null,
@@ -872,7 +872,7 @@ async function getPlayerInfo(playerId) {
       yellow_red:   stat.cards && stat.cards.yellowred   || 0,
       red_cards:    stat.cards && stat.cards.red         || 0,
       pen_won:      stat.penalty && stat.penalty.won     || 0,
-      pen_committed:stat.penalty && stat.penalty.commited || 0,
+      pen_committed:stat.penalty && stat.penalty.committed || 0,
       pen_scored:   stat.penalty && stat.penalty.scored  || 0,
       pen_missed:   stat.penalty && stat.penalty.missed  || 0,
       pen_saved:    stat.penalty && stat.penalty.saved   || 0,
