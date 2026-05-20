@@ -145,7 +145,7 @@ module.exports = async (req, res) => {
 
     try {
       // Update auth user to disable them
-      await db.auth.admin.updateUserById(userId, { ban_duration: 'none' });
+      await db.auth.admin.updateUserById(userId, { ban_duration: '876000h' }); // ~100 years = permanent ban
 
       // Clear their squad and points
       await db.from('profiles').update({
