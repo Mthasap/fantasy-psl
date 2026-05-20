@@ -38,6 +38,24 @@ function xmlEscape(s) {
 
 module.exports = async (req, res) => {
   var type = (req.query && req.query.type) || 'index';
+
+  // ── robots.txt — served via this same function ────────────────────────
+  if (type === 'robots' || req.url === '/robots.txt' ||
+      (req.headers && req.headers['x-original-url'] === '/robots.txt')) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 's-maxage=86400');
+    return res.status(200).send([
+      'User-agent: *',
+      'Allow: /',
+      '',
+      '# Block admin panel from indexing',
+      'Disallow: /admin',
+      'Disallow: /api/',
+      '',
+      '# Sitemap location',
+      'Sitemap: ' + BASE_URL + '/sitemap.xml',
+    ].join('\n'));
+  }
   var now  = new Date().toISOString().split('T')[0];
 
   // ── Sitemap Index (default) ──────────────────────────────────────────────
