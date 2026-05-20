@@ -254,6 +254,72 @@ async function syncFixtures(log) {
     else log.push(`  ✅ Upserted ${gwRows.length} gameweeks`);
   }
 
+  // ── AUTO-SET is_current ───────────────────────────────────────────────────
+  // Determine which GW is "current" based on today's date:
+  //   • A GW is current if today falls between its start_date and end_date
+  //   • If no GW window contains today, pick the GW with the highest gw_number
+  //     whose start_date is in the past (i.e. the most recently started GW)
+  // Then: clear is_current on ALL other GWs and set it only on the correct one.
+  try {
+    const now = new Date().toISOString();
+
+    // First: find a GW whose window contains today
+    const { data: inWindow } = await supabase
+      .from('gameweeks')
+      .select('gw_number')
+      .eq('season', PSL_SEASON)
+      .lte('start_date', now)
+      .gte('end_date', now)
+      .order('gw_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let currentGwNum = inWindow ? inWindow.gw_number : null;
+
+    // Second fallback: highest GW whose start_date has passed
+    if (!currentGwNum) {
+      const { data: started } = await supabase
+        .from('gameweeks')
+        .select('gw_number')
+        .eq('season', PSL_SEASON)
+        .lte('start_date', now)
+        .order('gw_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      currentGwNum = started ? started.gw_number : null;
+    }
+
+    // Third fallback: just the highest gw_number we have
+    if (!currentGwNum && gwRows.length > 0) {
+      currentGwNum = Math.max(...gwRows.map(r => r.gw_number));
+    }
+
+    if (currentGwNum) {
+      // Clear is_current on all GWs for this season
+      await supabase
+        .from('gameweeks')
+        .update({ is_current: false })
+        .eq('season', PSL_SEASON)
+        .neq('gw_number', currentGwNum);
+
+      // Set is_current only on the correct GW
+      const { error: setErr } = await supabase
+        .from('gameweeks')
+        .update({ is_current: true })
+        .eq('season', PSL_SEASON)
+        .eq('gw_number', currentGwNum);
+
+      if (setErr) {
+        log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
+      } else {
+        log.push(`  ✅ is_current set to GW${currentGwNum} (auto-detected from date)`);
+      }
+    }
+  } catch (e) {
+    log.push(`  ⚠️  is_current auto-set failed: ${e.message}`);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   log.push(`  ✅ Upserted ${upserted} fixtures`);
   return upserted;
 }
@@ -572,70 +638,6 @@ async function recalculateTotals(log) {
   return updated;
 }
 
-// ─── Phase 4: Sync Injuries ──────────────────────────────────────────────────
-// Marks players as injured/available using the Pro-tier /injuries endpoint.
-// Safe to run independently: ?phase=4
-
-async function syncInjuries(log) {
-  log.push('Phase 4: Syncing injuries from API-Football Pro');
-
-  let injData;
-  try {
-    injData = await apiFetch(`/injuries?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
-  } catch (e) {
-    log.push('  ⚠️  Injuries fetch failed: ' + e.message);
-    return 0;
-  }
-
-  const injured    = new Set();
-  const injDetails = {};
-
-  for (const entry of (injData.response || [])) {
-    const pid = entry.player && entry.player.id;
-    if (!pid) continue;
-    injured.add(pid);
-    injDetails[pid] = {
-      type:   (entry.player.type   || 'Injured'),
-      reason: (entry.player.reason || ''),
-    };
-  }
-
-  log.push(`  Injured players found: ${injured.size}`);
-
-  let updatedInjured = 0;
-  for (const pid of Array.from(injured)) {
-    const det = injDetails[pid];
-    const { error } = await supabase
-      .from('players')
-      .update({
-        is_injured:    true,
-        is_available:  false,
-        injury_type:   det.type,
-        injury_reason: det.reason,
-        updated_at:    new Date().toISOString(),
-      })
-      .eq('apifootball_id', pid);
-    if (!error) updatedInjured++;
-  }
-
-  // Clear stale injury flags on non-injured players
-  // Guard: skip the .not('in') clause if the set is empty to avoid invalid SQL
-  let clearQuery = supabase
-    .from('players')
-    .update({ is_injured: false, is_available: true, injury_type: null, injury_reason: null })
-    .not('apifootball_id', 'is', null);
-
-  if (injured.size > 0) {
-    clearQuery = clearQuery.not('apifootball_id', 'in', `(${Array.from(injured).join(',')})`);
-  }
-
-  const { error: clearErr } = await clearQuery;
-  if (clearErr) log.push('  ⚠️  Clear non-injured error: ' + clearErr.message);
-
-  log.push(`  ✅ Injury sync: ${updatedInjured} injured marked, rest cleared`);
-  return updatedInjured;
-}
-
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async (req, res) => {
@@ -734,10 +736,6 @@ module.exports = async (req, res) => {
 
     if (phase === 'all' || phase === 3) {
       playersUpdated += await recalculateTotals(log);
-    }
-
-    if (phase === 'all' || phase === 4) {
-      playersUpdated += await syncInjuries(log);
     }
 
   } catch (err) {
