@@ -2206,11 +2206,10 @@
     removePlayerBuffer = null;
     if (q.length < 2) { wrap.innerHTML = ''; return; }
 
-    sbCall({ table: 'players', action: 'select', select: 'id,display_name,team,position,is_available,apifootball_id' })
+    sb('GET', 'players', null,
+        'display_name=ilike.*' + encodeURIComponent(q) + '*&select=id,display_name,team,position,is_available,apifootball_id&limit=10')
       .then(function(data) {
-        const matches = (data || []).filter(function(p) {
-          return (p.display_name || '').toLowerCase().includes(q.toLowerCase());
-        }).slice(0, 8);
+        const matches = (data || []).slice(0, 10);
 
         if (!matches.length) { wrap.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:13px">No players found</div>'; return; }
 
