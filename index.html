@@ -885,112 +885,37 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
-<!-- == HOME NEWS STRIP ══════════════════════════════════════════════════
-     EPL-style horizontal scrolling news cards with cover images.
-     Loads from the same news_posts + announcements sources as the News tab.
-     "See All" navigates to the full News tab.
+<!-- HOME PAGE MID-FEED AD ════════════════════════════════════════════════
+     Shown between hero and fixtures section. Uses house-ad until AdSense fills.
 -->
-<div id="home-news-section" style="margin:0;padding:.85rem 0 .6rem;background:var(--bg-surface,#0E1420);border-bottom:1px solid var(--border,rgba(255,255,255,.07))">
-  <!-- Section header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 1rem .65rem;max-width:960px;margin:0 auto">
-    <div style="display:flex;align-items:center;gap:.55rem">
-      <div style="width:3px;height:18px;background:var(--red,#B91C3A);border-radius:2px;flex-shrink:0"></div>
-      <span style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff">Latest News</span>
+<div id="home-mid-ad" style="margin:.8rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;border-radius:12px;overflow:hidden">
+  <ins class="adsbygoogle"
+       style="display:block;min-height:100px"
+       data-ad-client="ca-pub-6398135174637589"
+       data-ad-slot="REPLACE_HOME_SLOT_ID"
+       data-ad-format="fluid"
+       data-ad-layout-key="-fb+5w+4e-db+86"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <!-- House-ad fallback -->
+  <div id="home-house-ad" style="background:linear-gradient(120deg,rgba(14,20,32,.95),rgba(25,28,37,.95));border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
+    <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#7B0D14);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0">⚽</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff;letter-spacing:.5px">Invite a friend — earn bonus points</div>
+      <div style="font-family:var(--font-body,sans-serif);font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Share Fantasy PSL &amp; climb the leaderboard together</div>
     </div>
-    <button onclick="goPage('news')" style="background:none;border:none;font-family:var(--font-ui,sans-serif);font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red,#B91C3A);cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">See All →</button>
-  </div>
-
-  <!-- Horizontal scroll track -->
-  <div id="home-news-scroll" style="display:flex;gap:.75rem;overflow-x:auto;padding:0 1rem .3rem;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">
-    <!-- Skeleton cards shown while loading -->
-    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
-    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
-    <div class="hn-skeleton" style="flex:0 0 220px;height:195px;border-radius:12px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
+    <button onclick="if(navigator.share){navigator.share({title:'Fantasy PSL',text:'Play Fantasy PSL with me!',url:'https://www.fantasypsl.co.za'})}else{navigator.clipboard&&navigator.clipboard.writeText('https://www.fantasypsl.co.za')}" style="flex-shrink:0;background:rgba(185,28,58,.85);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Share</button>
   </div>
 </div>
-<style>
-#home-news-scroll::-webkit-scrollbar{display:none}
-@keyframes hnPulse{0%,100%{opacity:.45}50%{opacity:.9}}
-.hn-skeleton{animation:hnPulse 1.4s ease-in-out infinite}
-</style>
 <script>
 (function(){
-  var _hnLoaded=false;
-  var NEWS_CAT_COLORS_HN={'Gameweek':'#B91C3A','Tips':'#DBA94A','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','default':'#6B7280'};
-
-  function renderHomeNews(posts){
-    var track=document.getElementById('home-news-scroll');
-    if(!track)return;
-    if(!posts||!posts.length){
-      track.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.8rem;padding:.5rem">No news yet.</div>';
-      return;
-    }
-    function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});}catch(e){return'';}}
-    function catPill(cat){var c=NEWS_CAT_COLORS_HN[cat]||NEWS_CAT_COLORS_HN['default'];return'<span style="display:inline-block;font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+c+';padding:2px 7px;border-radius:3px;line-height:1.6">'+(cat||'News')+'</span>';}
-    track.innerHTML=posts.slice(0,8).map(function(post,i){
-      var imgHtml=post.image_url
-        ?'<img src="'+post.image_url+'" alt="" style="width:100%;height:120px;object-fit:cover;display:block;flex-shrink:0" loading="lazy" onerror="this.parentNode.querySelector(\'.hn-img-fallback\').style.display=\'flex\';this.style.display=\'none\'">'
-        :'';
-      var fallback='<div class="hn-img-fallback" style="'+(post.image_url?'display:none;':'')+'width:100%;height:120px;background:linear-gradient(135deg,rgba(185,28,58,.28),rgba(219,169,74,.12));display:flex;align-items:center;justify-content:center;font-size:2.2rem;flex-shrink:0">📰</div>';
-      return '<div onclick="window._hnOpenPost('+i+')" style="flex:0 0 220px;border-radius:12px;overflow:hidden;background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);cursor:pointer;display:flex;flex-direction:column;scroll-snap-align:start;-webkit-tap-highlight-color:transparent;transition:transform .15s" onmousedown="this.style.transform=\'scale(.97)\'" onmouseup="this.style.transform=\'\'">'+imgHtml+fallback+'<div style="padding:.6rem .75rem .75rem;flex:1;display:flex;flex-direction:column;gap:.3rem"><div style="display:flex;align-items:center;justify-content:space-between;gap:.3rem">'+catPill(post.category)+'<span style="font-size:.58rem;color:rgba(255,255,255,.3);flex-shrink:0">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.8rem;font-weight:900;line-height:1.28;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div></div></div>';
-    }).join('');
-    // Keep a local reference so click handler can resolve the post
-    window._hnPosts=posts;
+  function checkHomeFilled(){
+    var ins=document.querySelector('#home-mid-ad ins.adsbygoogle');
+    var house=document.getElementById('home-house-ad');
+    if(!ins||!house)return;
+    if(ins.getAttribute('data-ad-status')==='filled'){house.style.display='none';}
   }
-
-  window._hnOpenPost=function(idx){
-    var post=(window._hnPosts||[])[idx];
-    if(!post)return;
-    // Sync into global _newsPosts so openNewsPost works normally
-    if(window._newsPosts&&window._newsPosts.length){
-      var gi=window._newsPosts.findIndex(function(p){return p.id===post.id;});
-      if(gi>-1){goPage('news');setTimeout(function(){openNewsPost(gi);},200);return;}
-    }
-    goPage('news');
-    setTimeout(function(){
-      if(window._newsPosts){
-        var gi2=window._newsPosts.findIndex(function(p){return p.id===post.id;});
-        if(gi2>-1)openNewsPost(gi2);
-      }
-    },600);
-  };
-
-  function loadHomeNews(){
-    if(_hnLoaded)return;
-    _hnLoaded=true;
-    function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
-    Promise.allSettled([
-      db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug').eq('published',true).order('published_at',{ascending:false}).limit(8),
-      db.from('announcements').select('id,title,heading,body,content,message,summary,published_at,created_at,category,type,image_url,image').order('id',{ascending:false}).limit(8)
-    ]).then(function(results){
-      var posts=(results[0].status==='fulfilled'?results[0].value.data:null)||[];
-      var anns=((results[1].status==='fulfilled'?results[1].value.data:null)||[]).map(normAnn);
-      var all=posts.concat(anns);
-      all.sort(function(a,b){return new Date(b.published_at)-new Date(a.published_at);});
-      if(!all.length){
-        all=[
-          {id:1,title:'GW Deadline Reminder — Make Your Transfers Now',published_at:new Date().toISOString(),category:'Gameweek',image_url:''},
-          {id:2,title:'Mamelodi Sundowns Lead the Betway Premiership',published_at:new Date(Date.now()-86400000).toISOString(),category:'Table',image_url:''},
-          {id:3,title:'Form Guide: Best Picks for This Gameweek',published_at:new Date(Date.now()-2*86400000).toISOString(),category:'Tips',image_url:''},
-        ];
-      }
-      renderHomeNews(all);
-    }).catch(function(){renderHomeNews([]);});
-  }
-
-  // Load when the home page is first visible
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(loadHomeNews,400);});
-  }else{
-    setTimeout(loadHomeNews,400);
-  }
-
-  // Also hook into goPage so re-visiting Home refreshes if stale
-  var _origGoPage=window.goPage;
-  window.goPage=function(id){
-    if(typeof _origGoPage==='function')_origGoPage(id);
-    if(id==='home'&&!_hnLoaded)loadHomeNews();
-  };
+  setTimeout(checkHomeFilled,2500);setTimeout(checkHomeFilled,5000);
 })();
 </script>
 
@@ -2498,54 +2423,74 @@ function renderPlayerList() {
   var c = document.getElementById('player-list'); if (!c) return;
   if (!ST.filtered.length) { c.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.3)">No players found</div>'; return; }
 
-  // -- PAGINATION: only render PAGE_SIZE players at a time --------------
   var PAGE_SIZE = 20;
   var page = ST.playerPage || 0;
   var start = page * PAGE_SIZE;
-  var slice = ST.filtered.slice(0, start + PAGE_SIZE);   // cumulative slice
+  var slice = ST.filtered.slice(0, start + PAGE_SIZE);
   var hasMore = slice.length < ST.filtered.length;
 
   var pickedIds = {};
   ST.squad.forEach(function(p) { pickedIds[p.id] = true; });
 
-  var rows = slice.map(function(p) {
-    var inSquad  = !!pickedIds[p.id];
-    var name     = playerName(p);
-    var club     = (p.clubs && p.clubs.name) || p.club || p.team || '--';
-    var icon     = posIcon(p.position);
-    var posClass = 'pos-' + (p.position || 'mid').toLowerCase();
-    var addStyle = inSquad ? 'background:#1A6B42;cursor:default' : '';
+  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var POS_BG     = { GK:'rgba(219,169,74,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
 
-    var btnStyle = inSquad ? 'background:#1A6B42;border-color:#1A6B42' : '';
-    var btnLabel = inSquad ? '✓' : '+';
+  var rows = slice.map(function(p) {
+    var inSquad   = !!pickedIds[p.id];
+    var name      = playerName(p);
+    var club      = (p.clubs && p.clubs.name) || p.club || p.team || '--';
+    var pos       = (p.position || 'MID').toUpperCase();
+    var posColor  = POS_COLORS[pos] || '#6B7280';
+    var posBg     = POS_BG[pos]     || 'rgba(107,114,128,.15)';
     var priceChange = p.price_change || 0;
     var pcHtml = priceChange > 0
-      ? '<span style="font-size:.58rem;color:#22895A;font-weight:700;margin-left:2px">▲</span>'
+      ? '<span style="font-size:.56rem;color:#22895A;font-weight:800">▲</span>'
       : priceChange < 0
-      ? '<span style="font-size:.58rem;color:#D4274F;font-weight:700;margin-left:2px">▼</span>'
+      ? '<span style="font-size:.56rem;color:#D4274F;font-weight:800">▼</span>'
       : '';
-    var ownership = p.ownership ? '<span style="font-size:.62rem;color:rgba(255,255,255,.3);margin-left:3px">' + p.ownership + '%</span>' : '';
-    var ppg = p.total_points && p.apps ? (p.total_points / p.apps).toFixed(1) : null;
+    var ownership = p.ownership ? '<span style="font-size:.6rem;color:rgba(255,255,255,.28);margin-left:3px">' + p.ownership + '%</span>' : '';
     var ptsDisplay = p.total_points ? p.total_points + ' pts' : '—';
-    return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')">' +
-      '<div class="pli-shirt s' + ((p.id % 6) + 1) + '">' + icon + '</div>' +
-      '<div class="pli-info">' +
-        '<div class="pli-name">' + name + ownership + '</div>' +
-        '<div class="pli-club">' + club + '</div>' +
+    var watched = ST.watchlist.indexOf(p.id) !== -1;
+
+    // ── Avatar: photo > initials fallback ───────────────────────────────
+    var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+    var avatarHtml = p.photo
+      ? '<img src="' + p.photo + '" alt="' + initials + '" ' +
+        'style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" ' +
+        'loading="lazy" ' +
+        'onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.pli-initials\').style.display=\'flex\'">' +
+        '<span class="pli-initials" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.75rem;font-weight:900;color:#fff;border-radius:50%">' + initials + '</span>'
+      : '<span class="pli-initials" style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.75rem;font-weight:900;color:#fff;border-radius:50%">' + initials + '</span>';
+
+    var avatarBg = 'background:linear-gradient(135deg,' + (posColor) + '55,' + (posColor) + '22)';
+
+    return '<div class="pli' + (inSquad ? ' pli-picked' : '') + '" onclick="openPmodal(' + p.id + ')" style="' + (inSquad ? 'background:rgba(26,107,66,.12);border-color:rgba(26,107,66,.3)' : '') + '">' +
+      // Avatar
+      '<div style="position:relative;flex-shrink:0;width:42px;height:42px;border-radius:50%;' + avatarBg + ';border:2px solid ' + posColor + '44;overflow:hidden">' +
+        avatarHtml +
+        // Position badge on avatar
+        '<div style="position:absolute;bottom:-1px;right:-2px;background:' + posColor + ';color:#fff;font-family:var(--font-ui);font-size:.42rem;font-weight:900;letter-spacing:.5px;padding:1px 3px;border-radius:3px;line-height:1.4;text-transform:uppercase;border:1px solid rgba(0,0,0,.3)">' + pos + '</div>' +
       '</div>' +
-      '<span class="pli-pos ' + posClass + '">' + p.position + '</span>' +
-      '<span style="font-family:var(--font-display);font-size:.78rem;font-weight:900;color:#DBA94A;min-width:44px;text-align:right">' + ptsDisplay + '</span>' +
-      '<span class="pli-price">R' + (p.price || 0) + 'M' + pcHtml + '</span>' +
-      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 4px;color:' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'rgba(255,255,255,.2)') + ';display:flex;align-items:center">' +
-        '<svg viewBox="0 0 24 24" fill="' + (ST.watchlist.indexOf(p.id)!==-1?'#D4274F':'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+      // Info
+      '<div class="pli-info" style="flex:1;min-width:0">' +
+        '<div class="pli-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + ownership + '</div>' +
+        '<div class="pli-club" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + club + '</div>' +
+      '</div>' +
+      // Points
+      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#DBA94A;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
+      // Price
+      '<span class="pli-price" style="flex-shrink:0">' + pcHtml + 'R' + (p.price || 0) + 'M</span>' +
+      // Watchlist heart
+      '<button onclick="event.stopPropagation();toggleWatchlist(' + p.id + ',event)" title="Watchlist" style="background:none;border:none;cursor:pointer;padding:0 3px;flex-shrink:0;color:' + (watched ? '#D4274F' : 'rgba(255,255,255,.2)') + ';display:flex;align-items:center;-webkit-tap-highlight-color:transparent">' +
+        '<svg viewBox="0 0 24 24" fill="' + (watched ? '#D4274F' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
       '</button>' +
-      '<button class="add-btn" style="' + btnStyle + '" title="' + (inSquad ? 'Remove from squad' : 'Add to squad') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
-        btnLabel +
+      // Add/remove button
+      '<button class="add-btn" style="flex-shrink:0;' + (inSquad ? 'background:#1A6B42;border-color:#1A6B42' : '') + '" title="' + (inSquad ? 'Remove' : 'Add') + '" onclick="event.stopPropagation();togglePlayerFromList(' + p.id + ')">' +
+        (inSquad ? '✓' : '+') +
       '</button>' +
     '</div>';
   }).join('');
 
-  // Load More button
   var loadMoreBtn = hasMore
     ? '<button onclick="loadMorePlayers()" style="width:100%;padding:.75rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.7);font-family:var(--font-ui);font-size:.8rem;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:.5rem">LOAD MORE (' + (ST.filtered.length - slice.length) + ' remaining)</button>'
     : '';
@@ -2650,17 +2595,32 @@ function _renderPmodal(p) {
   var id   = p.id;
   var name = playerName(p);
   var club = p.clubs ? p.clubs.name : (p.club || 'Unknown Club');
-  var icon = posIcon(p.position);
+  var pos  = (p.position || 'MID').toUpperCase();
+  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var posColor = POS_COLORS[pos] || '#6B7280';
+  var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
 
   var shirtEl = document.getElementById('pm-shirt');
   if (p.photo) {
-    shirtEl.innerHTML = '<img src="' + p.photo + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)" onerror="this.style.display=\'none\'">';
+    shirtEl.innerHTML =
+      '<div style="position:relative;width:72px;height:72px">' +
+        '<img src="' + p.photo + '" alt="' + initials + '" ' +
+          'style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid ' + posColor + ';box-shadow:0 0 0 3px rgba(0,0,0,.4)" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+        '<div style="display:none;width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,' + posColor + '99,' + posColor + '44);border:3px solid ' + posColor + ';align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>' +
+        '<div style="position:absolute;bottom:0;right:-4px;background:' + posColor + ';color:#fff;font-family:var(--font-ui);font-size:.55rem;font-weight:900;padding:2px 5px;border-radius:4px;border:1.5px solid rgba(0,0,0,.3);text-transform:uppercase">' + pos + '</div>' +
+      '</div>';
   } else {
-    shirtEl.innerHTML = icon;
+    shirtEl.innerHTML =
+      '<div style="position:relative;width:72px;height:72px">' +
+        '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,' + posColor + '99,' + posColor + '33);border:3px solid ' + posColor + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:#fff">' + initials + '</div>' +
+        '<div style="position:absolute;bottom:0;right:-4px;background:' + posColor + ';color:#fff;font-family:var(--font-ui);font-size:.55rem;font-weight:900;padding:2px 5px;border-radius:4px;border:1.5px solid rgba(0,0,0,.3);text-transform:uppercase">' + pos + '</div>' +
+      '</div>';
   }
-  shirtEl.className = 'pm-shirt s' + ((id % 6) + 1);
+  shirtEl.className = 'pm-shirt';
+  shirtEl.style.background = 'none';
   document.getElementById('pm-name').textContent   = name;
-  document.getElementById('pm-meta').textContent   = club + ' . ' + p.position;
+  document.getElementById('pm-meta').textContent   = club + ' · ' + pos;
 
   var ppg = (p.total_points && p.apps) ? (p.total_points / p.apps).toFixed(1) : '--';
   var ownership = p.ownership ? p.ownership + '%' : '--';
@@ -8770,25 +8730,66 @@ function showChatRules() {
 }
 </script>
 <script>
-// ── Privacy consent banner ────────────────────────────────────────────────
+// ── Privacy consent banner (POPIA-compliant) ──────────────────────────────
 (function() {
   try {
-    var _accepted = localStorage.getItem('fpsl_consent_v1');
-    if (!_accepted) {
-      var _banner = document.getElementById('consent-banner');
-      if (_banner) _banner.style.display = 'block';
+    var stored = localStorage.getItem('fpsl_consent_v2');
+    if (!stored) {
+      // First visit — show banner after short delay
+      setTimeout(function() {
+        var _banner = document.getElementById('consent-banner');
+        if (_banner) _banner.style.display = 'block';
+      }, 1500);
+    } else {
+      // Apply stored preferences
+      var prefs = JSON.parse(stored);
+      applyConsentPrefs(prefs);
     }
   } catch(e) {}
 })();
 
-function acceptConsent() {
-  try { localStorage.setItem('fpsl_consent_v1', '1'); } catch(e) {}
+function applyConsentPrefs(prefs) {
+  try {
+    // Disable GA if analytics not consented
+    if (!prefs.analytics) {
+      window['ga-disable-G-XXXXXXXXXX'] = true; // replace with your GA4 ID
+    }
+  } catch(e) {}
+}
+
+function acceptAllConsent() {
+  var prefs = { essential: true, analytics: true, ads: true, ts: Date.now() };
+  try { localStorage.setItem('fpsl_consent_v2', JSON.stringify(prefs)); } catch(e) {}
+  applyConsentPrefs(prefs);
   closeBanner();
 }
 
+function saveConsentChoices() {
+  var analytics = document.getElementById('cb-analytics');
+  var ads       = document.getElementById('cb-ads');
+  var prefs = {
+    essential: true,
+    analytics: analytics ? analytics.checked : true,
+    ads:       ads       ? ads.checked       : true,
+    ts: Date.now()
+  };
+  try { localStorage.setItem('fpsl_consent_v2', JSON.stringify(prefs)); } catch(e) {}
+  applyConsentPrefs(prefs);
+  closeBanner();
+}
+
+function rejectNonEssential() {
+  var prefs = { essential: true, analytics: false, ads: false, ts: Date.now() };
+  try { localStorage.setItem('fpsl_consent_v2', JSON.stringify(prefs)); } catch(e) {}
+  applyConsentPrefs(prefs);
+  closeBanner();
+}
+
+function acceptConsent() { acceptAllConsent(); } // backward compat
+
 function closeBanner() {
   var _b = document.getElementById('consent-banner');
-  if (_b) _b.style.display = 'none';
+  if (_b) { _b.style.animation = 'slideUpConsent .25s ease reverse'; setTimeout(function(){ _b.style.display = 'none'; }, 230); }
 }
 </script>
 
@@ -8844,37 +8845,73 @@ function closeBanner() {
 
 <!-- ══ PRIVACY / DATA CONSENT BANNER ══════════════════════════════════════ -->
 <!-- Shown ONCE on first visit. Stored in localStorage. POPIA compliant.     -->
-<div id="consent-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;
-  background:#0E1219;border-top:2px solid #C41B38;padding:1rem 1.2rem;
-  box-shadow:0 -4px 24px rgba(0,0,0,.6)">
-  <div style="max-width:700px;margin:0 auto">
-    <div style="font-family:'Rajdhani',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:2px;
-      text-transform:uppercase;color:#C41B38;margin-bottom:.4rem">Privacy & Data Notice</div>
-    <p style="font-family:'DM Sans',sans-serif;font-size:.78rem;color:rgba(240,244,250,.75);
-      line-height:1.55;margin-bottom:.8rem">
-      Fantasy PSL collects your email address and squad data to run the fantasy game.
-      We store this securely in Supabase (EU servers). We do not sell your data, show ads,
-      or share your information with third parties. Your data is used only to calculate
-      fantasy points and display leaderboards. You can delete your account at any time
-      from your Profile page. By continuing you agree to these terms.
-      <a href="#" onclick="goPage('profile');closeBanner();return false;"
-        style="color:#F0B840;text-decoration:underline">View full privacy policy</a>
-    </p>
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-      <button onclick="acceptConsent()"
-        style="background:#C41B38;border:none;border-radius:8px;color:#fff;
-          font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;
-          letter-spacing:1px;padding:.55rem 1.4rem;cursor:pointer">
-        I Understand — Continue
-      </button>
-      <button onclick="closeBanner()"
-        style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-          border-radius:8px;color:rgba(255,255,255,.5);font-family:'Rajdhani',sans-serif;
-          font-size:.78rem;font-weight:600;padding:.55rem 1rem;cursor:pointer">
-        Dismiss
-      </button>
+<div id="consent-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;background:#0E1219;border-top:2px solid #B91C3A;box-shadow:0 -8px 32px rgba(0,0,0,.7);animation:slideUpConsent .3s ease">
+<style>
+@keyframes slideUpConsent{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#consent-banner *{box-sizing:border-box}
+.cb-toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.cb-toggle input{opacity:0;width:0;height:0;position:absolute}
+.cb-slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:20px;cursor:pointer;transition:.2s}
+.cb-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.cb-toggle input:checked+.cb-slider{background:#22895A}
+.cb-toggle input:checked+.cb-slider:before{transform:translateX(16px)}
+.cb-toggle input:disabled+.cb-slider{opacity:.5;cursor:not-allowed}
+</style>
+<div style="max-width:600px;margin:0 auto;padding:1.2rem 1.2rem 1.4rem">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
+    <div style="width:3px;height:18px;background:#B91C3A;border-radius:2px;flex-shrink:0"></div>
+    <span style="font-family:'Rajdhani',sans-serif;font-size:.65rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#B91C3A">Privacy &amp; Cookie Notice — POPIA</span>
+  </div>
+  <p style="font-family:'DM Sans',sans-serif;font-size:.8rem;color:rgba(255,255,255,.65);line-height:1.55;margin-bottom:1rem">
+    Fantasy PSL stores your email and squad data to run the game. We also use analytics to improve the platform. Choose which data uses you're comfortable with. You can change this any time in your profile settings.
+    <a href="/privacy" style="color:#DBA94A;text-decoration:underline">Full Privacy Policy →</a>
+  </p>
+
+  <!-- Toggles -->
+  <div style="display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.1rem">
+    <!-- Essential (always on) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(34,137,90,.08);border:1px solid rgba(34,137,90,.2);border-radius:8px;padding:.55rem .8rem">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:800;color:#fff;letter-spacing:.5px">Essential Cookies <span style="font-size:.6rem;color:#22895A;background:rgba(34,137,90,.2);padding:1px 6px;border-radius:10px;margin-left:4px">Always On</span></div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1px">Authentication, squad saves, game state — required for the app to work</div>
+      </div>
+      <label class="cb-toggle"><input type="checkbox" checked disabled><span class="cb-slider"></span></label>
+    </div>
+    <!-- Analytics -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:.55rem .8rem">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:800;color:#fff;letter-spacing:.5px">Analytics (Google Analytics 4)</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1px">Anonymised usage data — helps us fix bugs and improve features</div>
+      </div>
+      <label class="cb-toggle"><input type="checkbox" id="cb-analytics" checked><span class="cb-slider"></span></label>
+    </div>
+    <!-- Advertising -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:.55rem .8rem">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:800;color:#fff;letter-spacing:.5px">Advertising (Google AdSense)</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1px">Relevant ads that help keep Fantasy PSL free to play</div>
+      </div>
+      <label class="cb-toggle"><input type="checkbox" id="cb-ads" checked><span class="cb-slider"></span></label>
     </div>
   </div>
+
+  <!-- Buttons -->
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+    <button onclick="acceptAllConsent()" style="flex:1;min-width:140px;background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:.65rem 1.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      Accept All
+    </button>
+    <button onclick="saveConsentChoices()" style="flex:1;min-width:140px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:.65rem 1.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      Save My Choices
+    </button>
+    <button onclick="rejectNonEssential()" style="background:none;border:none;color:rgba(255,255,255,.35);font-family:'DM Sans',sans-serif;font-size:.75rem;padding:.65rem .5rem;cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent">
+      Essential Only
+    </button>
+  </div>
+  <p style="font-size:.65rem;color:rgba(255,255,255,.2);margin-top:.7rem;line-height:1.4">
+    Protected under POPIA (Act 4 of 2013). Fan-made platform — not affiliated with the PSL or Betway. © 2026 Fantasy PSL
+  </p>
+</div>
 </div>
 
 
