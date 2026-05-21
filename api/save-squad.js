@@ -12,13 +12,37 @@ const { createClient } = require('@supabase/supabase-js');
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+// ── Simple in-memory rate limiter ─────────────────────────────────────────
+const _rl = new Map();
+function rateLimit(ip, max, windowMs) {
+  const now = Date.now();
+  const rec = _rl.get(ip) || { count: 0, reset: now + windowMs };
+  if (now > rec.reset) { rec.count = 0; rec.reset = now + windowMs; }
+  rec.count++;
+  _rl.set(ip, rec);
+  return rec.count > max;
+}
+
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://www.fantasypsl.co.za';
+  const origin = req.headers.origin || '';
+  const isAllowed = origin === ALLOWED_ORIGIN || origin === 'https://fantasypsl.co.za'
+    || (process.env.NODE_ENV !== 'production');
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'POST only' });
+
+  // ── Rate limit: 20 saves/min per IP ──────────────────────────────────────
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (rateLimit(clientIp, 20, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests — please wait a moment' });
+  }
 
   // ── Guard: env vars must be set ──────────────────────────────────────────
   if (!SB_URL || !SB_KEY) {
