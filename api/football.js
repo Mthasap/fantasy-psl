@@ -35,18 +35,50 @@ const TTL = {
   topscorers:30  * 60 * 1000,  // 30 min
 };
 
+// ── Simple in-memory rate limiter ─────────────────────────────────────────
+const _rl = new Map();
+function rateLimit(ip, max, windowMs) {
+  const now = Date.now();
+  const rec = _rl.get(ip) || { count: 0, reset: now + windowMs };
+  if (now > rec.reset) { rec.count = 0; rec.reset = now + windowMs; }
+  rec.count++;
+  _rl.set(ip, rec);
+  return rec.count > max;
+}
+
+// Allowed query param values
+const ALLOWED_TYPES = new Set([
+  'live','fixtures','results','standings','topscorers','status',
+  'players','team_players','fixture_detail','team_fixtures','proxy',
+  'injuries','predictions','player_transfers','sidelined','player_info',
+  'coaches','trophies','odds','player_stats_season'
+]);
+
 // ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || 'https://www.fantasypsl.co.za');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+
+  // Rate limit: 120 req/min per IP for the public data endpoint
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (rateLimit(clientIp, 120, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
 
   if (!TOKEN) {
     return res.status(500).json({ error: 'APIFOOTBALL_KEY not set in Vercel Environment Variables' });
   }
 
   var type = (req.query && req.query.type) || 'live';
+
+  // Validate type param against allowlist
+  if (!ALLOWED_TYPES.has(type)) {
+    return res.status(400).json({ error: 'Invalid type parameter' });
+  }
 
   try {
     switch (type) {
