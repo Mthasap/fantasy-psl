@@ -26,6 +26,10 @@
       "dest": "/api/save-squad.js"
     },
     {
+      "src": "/api/news-crawler",
+      "dest": "/api/news-crawler.js"
+    },
+    {
       "src": "/api/sitemap",
       "dest": "/api/sitemap.js"
     },
@@ -106,6 +110,10 @@
     }
   ],
   "crons": [
+    {
+      "path": "/api/news-crawler?action=fetch",
+      "schedule": "0 */4 * * *"
+    },
     {
       "path": "/api/apifootball-sync",
       "schedule": "0 2 * * *"
