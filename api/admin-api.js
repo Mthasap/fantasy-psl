@@ -32,13 +32,45 @@ const SB_URL = process.env.SUPABASE_URL          || '';
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
 const ADMIN  = process.env.ADMIN_SECRET;
 
+// ── Simple in-memory rate limiter (per IP, resets on cold start) ──────────
+const _rl = new Map();
+function rateLimit(ip, max, windowMs) {
+  const now = Date.now();
+  const rec = _rl.get(ip) || { count: 0, reset: now + windowMs };
+  if (now > rec.reset) { rec.count = 0; rec.reset = now + windowMs; }
+  rec.count++;
+  _rl.set(ip, rec);
+  return rec.count > max;
+}
+
+// ── Input sanitiser — strip control chars, limit length ──────────────────
+function san(v, maxLen = 500) {
+  if (v === null || v === undefined) return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  return String(v).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, maxLen);
+}
+
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // ── Security headers ────────────────────────────────────────────────────
+  const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://www.fantasypsl.co.za';
+  const origin = req.headers.origin || '';
+  const isAllowed = origin === ALLOWED_ORIGIN || origin === 'https://fantasypsl.co.za'
+    || (process.env.NODE_ENV !== 'production');
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-key');
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // ── Rate limit: 60 req/min per IP for admin endpoint ───────────────────
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (rateLimit(clientIp, 60, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests — slow down' });
+  }
 
   if (!SB_URL || !SB_KEY) {
     return res.status(500).json({ error: 'Server misconfiguration: Supabase env vars missing' });
@@ -46,7 +78,9 @@ module.exports = async (req, res) => {
 
   const db     = createClient(SB_URL, SB_KEY);
   const q      = req.query || {};
-  const action = q.action || '';
+  const _body0 = req.body  || {};
+  // action can come from query string (?action=delete-self) OR POST body
+  const action = q.action || _body0.action || '';
 
   // ── SELF DELETION — user deletes their own account ──────────────────────
   // Requires valid JWT in Authorization header (no admin key needed)
@@ -199,7 +233,10 @@ module.exports = async (req, res) => {
     if (action === 'select') {
       let q2 = db.from(table).select(body.select || '*');
       q2 = applyEq(q2, match);
-      if (body.limit) q2 = q2.limit(parseInt(body.limit));
+      // Default to 1000 rows so all players are returned; caller can override
+      const rowLimit = body.limit ? parseInt(body.limit) : 1000;
+      q2 = q2.limit(rowLimit);
+      if (body.order) q2 = q2.order(body.order, { ascending: body.ascending !== false });
       const { data: rows, error: e } = await q2;
       if (e) throw new Error(e.message);
       return res.json({ success: true, data: rows });
