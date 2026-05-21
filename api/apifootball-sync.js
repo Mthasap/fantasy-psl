@@ -29,19 +29,10 @@ const API_BASE     = 'https://v3.football.api-sports.io';
 const PSL_LEAGUE   = 288;
 const PSL_SEASON   = 2025;
 
-// Lazy-initialised so missing env vars don't crash the module at import time
-let _supabase = null;
-function getSupabase() {
-  if (!_supabase) {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-      throw new Error('SUPABASE_URL or SUPABASE_SERVICE_KEY env var is not set');
-    }
-    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  }
-  return _supabase;
-}
-// Keep backward-compat alias used throughout this file
-const supabase = new Proxy({}, { get(_, prop) { return getSupabase()[prop]; } });
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY  // use service key for server-side writes
+);
 
 // ─── API-Football fetch helper ────────────────────────────────────────────────
 
@@ -185,6 +176,54 @@ function parseGwNumber(roundStr) {
   // "Regular Season - 5" → 5
   const match = roundStr?.match(/Regular Season - (\d+)/);
   return match ? parseInt(match[1]) : null;
+}
+
+// ─── Phase 0: Sync Player Photos ─────────────────────────────────────────────
+// Fetches squad lists for all PSL teams and stores photo URLs in the players table.
+// Runs once per day at most (cached in api_cache). Safe to skip if API quota is low.
+
+const PSL_TEAM_IDS = [
+  569,  // Mamelodi Sundowns
+  570,  // Orlando Pirates
+  571,  // Kaizer Chiefs
+  572,  // AmaZulu FC
+  573,  // SuperSport United
+  574,  // Stellenbosch FC
+  575,  // Cape Town City
+  576,  // Chippa United
+  577,  // TS Galaxy
+  578,  // Richards Bay
+  579,  // Sekhukhune United
+  580,  // Marumo Gallants
+  581,  // Golden Arrows
+  582,  // Magesi FC
+  583,  // Cape Town Spurs
+  584,  // Polokwane City
+];
+
+async function syncPlayerPhotos(API_KEY, log) {
+  log.push('Phase 0: Syncing player photos');
+  let updated = 0;
+  for (const teamId of PSL_TEAM_IDS) {
+    try {
+      const url = `https://v3.football.api-sports.io/players/squads?team=${teamId}`;
+      const r = await fetch(url, { headers: { 'x-apisports-key': API_KEY } });
+      if (!r.ok) continue;
+      const json = await r.json();
+      const players = (json.response?.[0]?.players) || [];
+      for (const pl of players) {
+        if (!pl.id || !pl.photo) continue;
+        await supabase.from('players')
+          .update({ photo: pl.photo, updated_at: new Date().toISOString() })
+          .eq('apifootball_id', pl.id)
+          .is('photo', null); // only fill missing photos — don't overwrite manually set ones
+        updated++;
+      }
+    } catch (e) {
+      log.push(`  ⚠️ Photo sync failed for team ${teamId}: ${e.message}`);
+    }
+  }
+  log.push(`  ✅ Phase 0 complete: ${updated} player photos updated`);
 }
 
 // ─── Phase 1: Sync Fixtures ──────────────────────────────────────────────────
@@ -729,6 +768,11 @@ module.exports = async (req, res) => {
   const syncLogId = syncLogRow?.id;
 
   try {
+    // Phase 0: sync player photos (runs only on 'all' to save API quota)
+    if (phase === 'all' || phase === 0) {
+      await syncPlayerPhotos(API_KEY, log);
+    }
+
     if (phase === 'all' || phase === 1) {
       fixturesProcessed = await syncFixtures(log);
     }
