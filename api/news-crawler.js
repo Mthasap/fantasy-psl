@@ -221,9 +221,11 @@ module.exports = async (req, res) => {
 
   // ── FETCH — admin only, actually hits RSS feeds ───────────────────────
   if (action === 'fetch') {
-    // Require admin key for the crawl action (prevent abuse)
-    const key = req.headers['x-admin-key'] || req.query.admin_key || '';
-    if (!ADMIN_KEY || key !== ADMIN_KEY) {
+    // Allow: 1) admin key  2) Vercel cron header  3) internal (no origin = server-to-server)
+    const key        = req.headers['x-admin-key'] || req.query.admin_key || '';
+    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const isInternal   = !req.headers.origin;
+    if (!isVercelCron && !isInternal && (!ADMIN_KEY || key !== ADMIN_KEY)) {
       return res.status(401).json({ error: 'Admin key required for fetch action' });
     }
 
