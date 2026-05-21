@@ -1,0 +1,187 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/football",
+      "dest": "/api/football.js"
+    },
+    {
+      "src": "/api/sync",
+      "dest": "/api/football.js"
+    },
+    {
+      "src": "/api/points-cron",
+      "dest": "/api/points-cron.js"
+    },
+    {
+      "src": "/api/apifootball-sync",
+      "dest": "/api/apifootball-sync.js"
+    },
+    {
+      "src": "/api/admin-api",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/save-squad",
+      "dest": "/api/save-squad.js"
+    },
+    {
+      "src": "/api/news-crawler",
+      "dest": "/api/news-crawler.js"
+    },
+    {
+      "src": "/api/sitemap",
+      "dest": "/api/sitemap.js"
+    },
+    {
+      "src": "/api/squad-import",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/link-player-ids",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/player-crawler",
+      "dest": "/api/admin-api.js"
+    },
+    {
+      "src": "/api/robots",
+      "dest": "/api/sitemap.js"
+    },
+    {
+      "src": "/sitemap.xml",
+      "dest": "/api/sitemap.js"
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/api/sitemap.js"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/admin.html",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/privacy",
+      "dest": "/privacy.html"
+    },
+    {
+      "src": "/privacy.html",
+      "dest": "/privacy.html"
+    },
+    {
+      "src": "/terms",
+      "dest": "/terms.html"
+    },
+    {
+      "src": "/terms.html",
+      "dest": "/terms.html"
+    },
+    {
+      "src": "/about",
+      "dest": "/about.html"
+    },
+    {
+      "src": "/about.html",
+      "dest": "/about.html"
+    },
+    {
+      "src": "/confirm",
+      "dest": "/confirm.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/news-crawler?action=fetch",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/apifootball-sync",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/apifootball-sync",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/apifootball-sync",
+      "schedule": "30 16 * * 5,6,0"
+    },
+    {
+      "path": "/api/apifootball-sync",
+      "schedule": "30 22 * * 5,6,0"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 17 * * 5,6,0"
+    },
+    {
+      "path": "/api/points-cron",
+      "schedule": "30 23 * * 5,6,0"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/favicon.ico",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "image/x-icon"
+        }
+      ]
+    },
+    {
+      "source": "/icon-(.*).png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        }
+      ]
+    },
+    {
+      "source": "/logo.png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
