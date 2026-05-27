@@ -228,7 +228,7 @@
     .lt-club img { width:22px; height:22px; object-fit:contain; flex-shrink:0; }
     .lt-club-name { font-family:var(--font-ui); font-size:.8rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .lt-stat { font-family:var(--font-ui); font-size:.8rem; font-weight:600; color:rgba(255,255,255,.6); text-align:center; }
-    .lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#DBA94A; text-align:right; }
+    .lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#88FF00; text-align:right; }
 
     /* -- Tab buttons -- SVG + label alignment -- */
     .ftab { display:inline-flex; align-items:center; gap:0; }
@@ -237,7 +237,7 @@
     /* -- Club profile modal -- */
     #club-modal { -webkit-overflow-scrolling:touch; }
     .cp-tile { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.9rem .8rem;text-align:center; }
-    .cp-tile-val { font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#DBA94A;line-height:1; }
+    .cp-tile-val { font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#88FF00;line-height:1; }
     .cp-tile-lbl { font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px; }
     .cp-stat-card { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center; }
     .cp-stat-card-lbl { font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6); }
@@ -684,8 +684,8 @@
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
       <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span style="font-family:var(--font-ui);font-size:.68rem;color:#88FF00;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
@@ -752,8 +752,6 @@
           <option value="Google">Google</option><option value="Other">Other</option>
         </select>
       </div>
-      <div class="auth-field"><label>Referral Code <span style="font-weight:400;color:rgba(255,255,255,.3);text-transform:none;letter-spacing:0">(optional)</span></label>
-        <input id="signup-referral" type="text" placeholder="FPSL-XXXXXX" style="text-transform:uppercase"></div>
       <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
         <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
       <div class="auth-error" id="r-err"></div>
@@ -885,8 +883,8 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
-<!-- ═══ HOME: AdSense Banner ══════════════════════════════════════════════ -->
-<div style="margin:.6rem auto;max-width:520px;width:calc(100% - 1.5rem)">
+<!-- ═══ HOME: AdSense Banner + House Ad Fallback ══════════════════════════ -->
+<div id="home-ad-wrap" style="margin:.6rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;min-height:60px">
   <ins class="adsbygoogle"
        style="display:block;min-height:50px"
        data-ad-client="ca-pub-6398135174637589"
@@ -894,7 +892,28 @@
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
   <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <!-- House ad — shown when AdSense slot is unfilled -->
+  <div id="home-house-ad" style="background:linear-gradient(135deg,rgba(136,255,0,.08),rgba(14,20,32,.95));border:1px solid rgba(136,255,0,.2);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer" onclick="goPage('news')">
+    <div style="font-size:1.6rem;flex-shrink:0">📰</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#88FF00;letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem">Fantasy PSL News</div>
+      <div style="font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest PSL updates, injury news & GW tips →</div>
+    </div>
+  </div>
 </div>
+<script>
+(function(){
+  function checkHomeAd(){
+    var ins = document.querySelector('#home-ad-wrap ins.adsbygoogle');
+    var house = document.getElementById('home-house-ad');
+    if (!ins || !house) return;
+    if (ins.getAttribute('data-ad-status') === 'filled') house.style.display = 'none';
+    else house.style.display = 'flex';
+  }
+  setTimeout(checkHomeAd, 2000);
+  setTimeout(checkHomeAd, 4000);
+})();
+</script>
 
 <!-- ═══ HOME: Latest News Strip (EPL-style horizontal scroll) ════════════ -->
 <div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
@@ -919,7 +938,7 @@
 <script>
 (function(){
 var _hnDone=false;
-var _HN_CAT={'Gameweek':'#B91C3A','Tips':'#DBA94A','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','PSL News':'#8B5CF6','Sport':'#06B6D4'};
+var _HN_CAT={'Gameweek':'#B91C3A','Tips':'#88FF00','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','PSL News':'#8B5CF6','Sport':'#06B6D4'};
 function _hnFmt(d){try{return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});}catch(e){return '';}}
 function _hnCat(cat){var c=_HN_CAT[cat]||'#6B7280';return'<span style="font-size:.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+c+';padding:1px 5px;border-radius:3px">'+((cat||'News').slice(0,10))+'</span>';}
 
@@ -960,7 +979,7 @@ function loadHomeNews(){
   function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
   var queries=[
     db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug').eq('published',true).order('published_at',{ascending:false}).limit(6),
-    db.from('announcements').select('id,title,heading,body,content,message,summary,published_at,created_at,category,type,image_url,image').order('id',{ascending:false}).limit(4)
+    db.from('announcements').select('id, title, body, content, message, category, type, image_url, created_at, is_active').order('id',{ascending:false}).limit(4)
   ];
   // Also try external_news (crawler output)
   queries.push(
@@ -1070,9 +1089,9 @@ else setTimeout(loadHomeNews,500);
   <div id="potm-home-card" style="display:none;margin:0;background:linear-gradient(135deg,rgba(185,28,58,.18),rgba(201,150,58,.10));border-top:1px solid rgba(185,28,58,.2);border-bottom:1px solid rgba(185,28,58,.2);padding:.9rem 1.2rem">
     <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
-        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#B91C3A,#DBA94A);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(185,28,58,.35)"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#fff"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#B91C3A,#88FF00);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(185,28,58,.35)"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#fff"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         <div>
-          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A">Community POTM</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#88FF00">Community POTM</div>
           <div style="font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.4);letter-spacing:1px">YOUR VOTES DECIDED</div>
         </div>
       </div>
@@ -1083,7 +1102,7 @@ else setTimeout(loadHomeNews,500);
       <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
         <div id="potm-vote-bar" style="display:flex;gap:2px;align-items:flex-end;height:24px"></div>
         <div style="text-align:center">
-          <div id="potm-vote-pct" style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#DBA94A;line-height:1"></div>
+          <div id="potm-vote-pct" style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#88FF00;line-height:1"></div>
           <div style="font-family:var(--font-ui);font-size:.5rem;color:rgba(255,255,255,.35);letter-spacing:1px">VOTES</div>
         </div>
       </div>
@@ -1098,8 +1117,8 @@ else setTimeout(loadHomeNews,500);
         <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4274F;white-space:nowrap" id="home-gw-fixtures-btn">GW<span id="gw-fixtures-num">--</span> Fixtures</span>
       </button>
       <button onclick="openPOTMFromHome()" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--gold-muted);border:1px solid var(--gold-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(201,150,58,.18)'" onmouseout="this.style.background='rgba(201,150,58,.12)'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#DBA94A;white-space:nowrap">Vote POTM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
+        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#88FF00;white-space:nowrap">Vote POTM</span>
       </button>
       <button onclick="goPage('squad')" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--green-muted);border:1px solid var(--green-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(26,107,66,.18)'" onmouseout="this.style.background='rgba(26,107,66,.12)'">
         <svg viewBox="0 0 24 24" fill="none" stroke="#22895A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0113 0"/></svg>
@@ -1195,7 +1214,7 @@ else setTimeout(loadHomeNews,500);
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Squad Value</div>
-          <div class="meta-pill-val" id="squad-value-display" style="color:#DBA94A">R0.0M</div>
+          <div class="meta-pill-val" id="squad-value-display" style="color:#88FF00">R0.0M</div>
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Players</div>
@@ -1203,20 +1222,20 @@ else setTimeout(loadHomeNews,500);
         </div>
         <div class="meta-pill" id="gw-pts-pill" style="display:none">
           <div class="meta-pill-label">GW Points</div>
-          <div class="meta-pill-val" id="gw-pts-display" style="color:#DBA94A">--</div>
+          <div class="meta-pill-val" id="gw-pts-display" style="color:#88FF00">--</div>
         </div>
         <div class="meta-pill" id="total-pts-pill" style="display:none">
           <div class="meta-pill-label">Total Pts</div>
-          <div class="meta-pill-val" id="total-pts-display" style="color:#DBA94A">--</div>
+          <div class="meta-pill-val" id="total-pts-display" style="color:#88FF00">--</div>
         </div>
         <div class="meta-pill" id="rank-pts-pill" style="display:none">
           <div class="meta-pill-label">SA Rank</div>
-          <div class="meta-pill-val" id="rank-pts-display" style="color:#DBA94A">--</div>
+          <div class="meta-pill-val" id="rank-pts-display" style="color:#88FF00">--</div>
         </div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <div id="xfer-badge" style="display:none;font-family:var(--font-ui);font-size:.7rem;font-weight:700;padding:.3rem .7rem;border-radius:6px;letter-spacing:.5px"></div>
           <button id="save-btn" class="btn-hero-primary" style="font-size:.8rem;padding:.6rem 1.2rem" onclick="saveSquad()">Save Squad</button>
-          <button onclick="openAutoSquadModal()" style="background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:800;padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.3px" title="Auto-create a squad for me">
+          <button onclick="openAutoSquadModal()" style="background:linear-gradient(135deg,#88FF00,#C8962A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:800;padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.3px" title="Auto-create a squad for me">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             Auto Squad
           </button>
@@ -1239,10 +1258,10 @@ else setTimeout(loadHomeNews,500);
     </div>
 
     <!-- Captain/VC hint -- shown when squad is full but cap/VC not set -->
-    <div id="cap-vc-hint" style="display:none;background:rgba(219,169,74,.07);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#DBA94A;margin:.4rem 0 0"></div>
+    <div id="cap-vc-hint" style="display:none;background:rgba(136,255,0,.07);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#88FF00;margin:.4rem 0 0"></div>
 
     <div id="xfer-banner" class="xfer-banner">
-      <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#DBA94A;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
+      <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#88FF00;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
       <button onclick="cancelTransfer()" style="background:none;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:rgba(255,255,255,.4);font-size:.75rem;padding:.3rem .8rem;cursor:pointer">Cancel</button>
     </div>
 
@@ -1534,12 +1553,13 @@ else setTimeout(loadHomeNews,500);
       <li><a href="/about">About</a></li>
       <li><a href="/terms" target="_blank" rel="noopener">Terms</a></li>
       <li><a href="/privacy" target="_blank" rel="noopener">Privacy</a></li>
-      <li><a href="mailto:support@fantasypsl.co.za">Contact</a></li>
+      <li><a href="mailto:admin@fantasypsl.co.za">Email</a></li>
+      <li><a href="tel:+27784026007">+27 78 402 6007</a></li>
     </ul>
     <div class="foot-copy">
-      © 2026 <strong>Fantasy PSL</strong> &nbsp;.&nbsp;
+      © 2026 <strong>Fantasy PSL</strong> &nbsp;·&nbsp;
       Developed by <strong style="color:rgba(255,255,255,.7)">Headway Projects (PTY) LTD</strong>
-      &nbsp;.&nbsp; All Rights Reserved
+      &nbsp;·&nbsp; admin@fantasypsl.co.za &nbsp;·&nbsp; +27 78 402 6007
     </div>
     <div class="foot-disclaimer">
       <strong>DISCLAIMER:</strong> Fantasy PSL is an independent fan-made application and is
@@ -2129,12 +2149,6 @@ function doLogin() {
   });
 }
 
-function generateReferralCode() {
-  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  var code = 'FPSL-';
-  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
 
 function doRegister() {
   var btn   = document.getElementById('r-btn');
@@ -2153,9 +2167,6 @@ function doRegister() {
   var country      = (document.getElementById('signup-country')    || {}).value || 'South Africa';
   var suppTeam     = (document.getElementById('signup-team')       || {}).value || null;
   var discovery    = (document.getElementById('signup-discovery')  || {}).value || null;
-  var referralUsed = (document.getElementById('signup-referral')   || {}).value || null;
-  var referralCode = generateReferralCode();
-
   db.auth.signUp({
     email: email, password: pass,
     options: { data: { username: user, team_name: team } }
@@ -2175,8 +2186,6 @@ function doRegister() {
         country: country,
         supported_team: suppTeam,
         discovery_source: discovery,
-        referral_code: referralCode,
-        referred_by: referralUsed || null
       }).then(function() {
         if (suppTeam) autoJoinTeamLeague(userId, suppTeam);
       });
@@ -2343,10 +2352,12 @@ function loadGW(cb) {
         if (n && n > 0) {
           applyGW(n, null);
         } else {
-          // All DB sources failed — show dashes, do not show wrong number
+          // All DB sources failed — use GW27 as best guess (season almost over)
+          var fallbackGW = 27;
+          ST.gw = { number: fallbackGW, gw_number: fallbackGW, deadline_at: null };
           ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
             var el = document.getElementById(elId);
-            if (el) el.textContent = '--';
+            if (el) el.textContent = fallbackGW;
           });
           var dlEl = document.getElementById('gw-deadline');
           if (dlEl) dlEl.textContent = 'Unavailable';
@@ -2375,6 +2386,7 @@ function loadGW(cb) {
       if (gwRow) {
         var n = gwRow.gw_number || gwRow.number;
         var dl = gwRow.deadline_at || gwRow.deadline || null;
+        gwRow.deadline_at = dl; // normalise for ST.gw usage
 
         // Sanity check: if is_current row returns GW1 but fixtures show higher GWs,
         // it means is_current is stale — fall through to date-based detection
@@ -2479,8 +2491,8 @@ function renderPlayerList() {
   var pickedIds = {};
   ST.squad.forEach(function(p) { pickedIds[p.id] = true; });
 
-  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
-  var POS_BG     = { GK:'rgba(219,169,74,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
+  var POS_COLORS = { GK:'#88FF00', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var POS_BG     = { GK:'rgba(136,255,0,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
 
   var rows = slice.map(function(p) {
     var inSquad   = !!pickedIds[p.id];
@@ -2524,7 +2536,7 @@ function renderPlayerList() {
         '<div class="pli-club" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + club + '</div>' +
       '</div>' +
       // Points
-      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#DBA94A;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
+      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#88FF00;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
       // Price
       '<span class="pli-price" style="flex-shrink:0">' + pcHtml + 'R' + (p.price || 0) + 'M</span>' +
       // Watchlist heart
@@ -2643,7 +2655,7 @@ function _renderPmodal(p) {
   var name = playerName(p);
   var club = p.clubs ? p.clubs.name : (p.club || 'Unknown Club');
   var pos  = (p.position || 'MID').toUpperCase();
-  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var POS_COLORS = { GK:'#88FF00', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
   var posColor = POS_COLORS[pos] || '#6B7280';
   var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
 
@@ -2688,7 +2700,7 @@ function _renderPmodal(p) {
   document.getElementById('pm-stats').style.gridTemplateColumns = 'repeat(3,1fr)';
   document.getElementById('pm-stats').innerHTML = stats.map(function(s) {
     return '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.65rem;text-align:center">' +
-      '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A;line-height:1">' + s.val + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00;line-height:1">' + s.val + '</div>' +
       '<div style="font-family:var(--font-ui);font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px">' + s.lbl + '</div>' +
     '</div>';
   }).join('') +
@@ -2929,6 +2941,25 @@ function getUserDashboard(forceRefresh) {
           if (a.onBench && !b.onBench) return 1;
           if (a.onBench && b.onBench) return (a.benchOrder || 0) - (b.benchOrder || 0);
           return 0;
+        });
+
+        // ── DEDUPLICATION: remove any player appearing more than once ──────
+        // This catches cases where the same player resolves via multiple
+        // lookup tiers (e.g. UUID match + roster match give same underlying player)
+        var _seenIds  = {};
+        var _seenName = {};
+        savedSquad = savedSquad.filter(function(p) {
+          // Deduplicate by numeric id first
+          var numId = parseInt(p.id, 10);
+          if (!isNaN(numId) && numId > 0) {
+            if (_seenIds[numId]) return false;
+            _seenIds[numId] = true;
+          }
+          // Also deduplicate by display_name + position (catches roster vs UUID dupes)
+          var nameKey = (p.display_name || p.name || '').toLowerCase().replace(/\s/g,'') + '_' + (p.position || '');
+          if (_seenName[nameKey]) return false;
+          _seenName[nameKey] = true;
+          return true;
         });
       }
     } catch(e) {}
@@ -3252,12 +3283,12 @@ function showPointsBreakdown(playerScores) {
   var allPts = playerScores.reduce(function(t,p){return t+(p.final_pts||0);},0);
 
   var h = '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.5rem;display:flex;justify-content:space-between">' +
-    '<span>GW Points Breakdown</span><span style="color:#DBA94A">' + allPts + ' total</span></div>';
+    '<span>GW Points Breakdown</span><span style="color:#88FF00">' + allPts + ' total</span></div>';
 
   scorers.forEach(function(p) {
     var pts = p.final_pts !== undefined ? p.final_pts : (p.pts || 0);
-    var ptsColor = pts >= 10 ? '#DBA94A' : pts > 0 ? '#22895A' : pts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-    var capBadge = p.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
+    var ptsColor = pts >= 10 ? '#88FF00' : pts > 0 ? '#22895A' : pts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
+    var capBadge = p.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
     var vcBadge  = p.isVC      ? ' <span style="background:#888;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">V</span>' : '';
     var benchBadge = p.onBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.58rem">sub</span>' : '';
     h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
@@ -3751,7 +3782,7 @@ function renderPitch() {
 
     var filled = players.map(function(p) {
       var isOut       = ST.xferOut && ST.xferOut.id === p.id;
-      var outStyle    = isOut ? 'box-shadow:0 0 0 3px #DBA94A;opacity:.7' : '';
+      var outStyle    = isOut ? 'box-shadow:0 0 0 3px #88FF00;opacity:.7' : '';
       var shortName   = (playerName(p)).split(' ').pop();
       var clickFn, titleTxt;
       if (mode === 'locked')        { clickFn = ''; titleTxt = 'Squad locked'; }
@@ -3762,7 +3793,7 @@ function renderPitch() {
       var bottomLabel, ptsStyle = '';
       if (typeof p.gwPoints !== 'undefined' && p.gwPoints !== null) {
         var gpts = p.gwPoints;
-        var ptCol = gpts >= 10 ? '#DBA94A' : gpts > 0 ? '#22895A' : gpts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
+        var ptCol = gpts >= 10 ? '#88FF00' : gpts > 0 ? '#22895A' : gpts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
         ptsStyle = 'color:' + ptCol;
         bottomLabel = (gpts > 0 ? '+' : '') + gpts + ' pts';
       } else {
@@ -3771,10 +3802,14 @@ function renderPitch() {
       var clubShort = p.clubs ? (p.clubs.short_name || p.clubs.name || '') : (p.club || p.team || '');
       // Shorten club name to 3 chars for pitch display
       var clubAbbr = clubShort.length > 6 ? clubShort.substring(0,3).toUpperCase() : clubShort;
-      var priceLabel = p.price ? 'R' + p.price + 'M' : '';
+      // Player photo — show if available, fall back to position icon
+      var photoUrl = p.photo || p.photo_url || p.player_photo || null;
+      var shirtContent = photoUrl
+        ? '<img src="' + photoUrl + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover" loading="lazy" onerror="this.style.display=\'none\'" />'
+        : posIcon(pos);
       return '<div class="pc" ' + clickFn + ' title="' + titleTxt + '">' +
         '<div class="pc-shirt s' + ((p.id % 6) + 1) + '" style="' + outStyle + '">' +
-          posIcon(pos) +
+          shirtContent +
           (p.isCaptain ? '<div class="cap-badge">C</div>' : '') +
           (p.isVC      ? '<div class="vc-badge">V</div>'  : '') +
         '</div>' +
@@ -3809,8 +3844,8 @@ function renderPitch() {
   var bFilled = bench.map(function(p, idx) {
     var shortName  = (playerName(p)).split(' ').pop();
     var isSelected = ST.benchPickFirst && ST.benchPickFirst.id === p.id;
-    var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #DBA94A;' : '';
-    var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#DBA94A;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
+    var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #88FF00;' : '';
+    var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#88FF00;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
     var clickAction = mode === 'bench' ? 'onclick="benchTap(' + p.id + ')"'
                     : mode === 'locked' ? ''
                     : mode === 'transfer' ? ''
@@ -3850,7 +3885,7 @@ function pitchPlayerTap(id) {
 
   var actions = [];
   // Captain & VC always allowed -- even after deadline
-  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double', fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double', fn: 'setCaptain(' + id + ')', accent: '#88FF00' });
   if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) -- scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
   if (p.isCaptain)  actions.push({ label: 'Remove Captain armband',  fn: 'setCaptain(' + id + ')', accent: '#888' });
   if (p.isVC)       actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
@@ -3974,7 +4009,7 @@ function benchPlayerTap(id) {
   sheetTitle.textContent = name + ' (Bench)';
   var actions = [];
   // Captain & VC can always be assigned -- even from bench, even after deadline
-  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double',           fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double',           fn: 'setCaptain(' + id + ')', accent: '#88FF00' });
   if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) -- scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
   if (p.isCaptain) actions.push({ label: 'Remove Captain armband',     fn: 'setCaptain(' + id + ')', accent: '#888' });
   if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
@@ -4139,7 +4174,7 @@ function renderTransferHistory() {
 // -- CHIP MANAGEMENT --------------------------------------------------
 var CHIP_INFO = {
   wc: { name:'Wildcard',      abbr:'WC', color:'#B91C3A', desc:'Make unlimited transfers this GW at no cost' },
-  tc: { name:'Triple Captain',abbr:'TC', color:'#DBA94A', desc:'Your captain scores 3× this GW' },
+  tc: { name:'Triple Captain',abbr:'TC', color:'#88FF00', desc:'Your captain scores 3× this GW' },
   bb: { name:'Bench Boost',   abbr:'BB', color:'#22895A', desc:'All 15 players score this GW' },
   fh: { name:'Free Hit',      abbr:'FH', color:'#6eaadd', desc:'Make unlimited transfers -- squad reverts after GW' }
 };
@@ -4268,7 +4303,7 @@ function checkDeadline() {
     var hLeft = Math.floor(msLeft / 3600000);
     var mLeft = Math.floor((msLeft % 3600000) / 60000);
     dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
-    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
+    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#88FF00';
   }
 
   // Update banner GW number
@@ -4400,7 +4435,7 @@ function getNextFixture(team) {
 }
 
 function fdrColor(fdr) {
-  return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#DBA94A' : fdr === 2 ? '#88c541' : '#22895A';
+  return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#88FF00' : fdr === 2 ? '#88c541' : '#22895A';
 }
 
 // ── Club info: metadata + official website links ──────────────────────────
@@ -4517,7 +4552,7 @@ function loadNews() {
 
 var NEWS_CAT_COLORS = {
   'Gameweek': '#B91C3A',
-  'Tips':     '#DBA94A',
+  'Tips':     '#88FF00',
   'Table':    '#22895A',
   'Transfer': '#3B82F6',
   'Injury':   '#E8732A',
@@ -4535,11 +4570,11 @@ function renderNews(grid, posts) {
   function fmtDate(d){if(!d)return'';return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});}
   function catPill(cat){var color=NEWS_CAT_COLORS[cat]||NEWS_CAT_COLORS['default'];return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+color+';padding:2px 8px;border-radius:3px">'+(cat||'News')+'</span>';}
   var featured=posts[0];
-  var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
+  var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(136,255,0,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
   var featHtml='<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+featImg+'<div style="padding:.9rem 1rem 1.1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div><div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div></div></div>';
   var gridCards=posts.slice(1).map(function(post,i){
     var idx=i+1;
-    var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
+    var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(136,255,0,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
     return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+cardImg+'<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem"><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div><div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div></div></div>';
   }).join('');
   grid.style.display='block';grid.style.gridTemplateColumns='';grid.style.gap='';
@@ -4550,7 +4585,11 @@ function openNewsPost(postOrIdx) {
   var post = (typeof postOrIdx === 'number' && window._newsPosts)
     ? window._newsPosts[postOrIdx]
     : postOrIdx;
-  if (!post) return;
+  if (!post) { console.warn('[openNewsPost] no post data'); return; }
+  post.title    = post.title    || 'Untitled';
+  post.summary  = post.summary  || post.excerpt || post.body || '';
+  post.content  = post.content  || post.body    || post.summary || '';
+  post.category = post.category || 'News';
 
   // Update URL and meta tags for SEO / sharing
   var slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -4686,14 +4725,14 @@ function loadInjuries() {
   var c = document.getElementById('injury-list'); if (!c) return;
   // Show real injuries immediately
   c.innerHTML = REAL_INJURIES.map(function(inj) {
-    return '<div class="inj-card" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid ' + (inj.severe ? '#D4274F' : '#DBA94A') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
-      '<div style="font-size:1.2rem;flex-shrink:0;color:' + (inj.severe ? '#D4274F' : '#DBA94A') + '">' + (inj.severe ? '!' : '-') + '</div>' +
+    return '<div class="inj-card" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid ' + (inj.severe ? '#D4274F' : '#88FF00') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
+      '<div style="font-size:1.2rem;flex-shrink:0;color:' + (inj.severe ? '#D4274F' : '#88FF00') + '">' + (inj.severe ? '!' : '-') + '</div>' +
       '<div>' +
         '<div class="inj-player-name" style="font-family:var(--font-ui);font-size:.9rem;font-weight:700">' + inj.name + '</div>' +
         '<div class="inj-desc-text" style="font-size:.78rem;margin:.2rem 0">' + inj.type + ' -- ' + inj.reason + '</div>' +
         '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' +
           '<span class="inj-club-text" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;background:rgba(128,128,128,.12)">' + inj.team + '</span>' +
-          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;background:' + (inj.severe ? 'rgba(185,28,58,.12)' : 'rgba(201,150,58,.12)') + ';color:' + (inj.severe ? '#D4274F' : '#DBA94A') + '">' + (inj.severe ? '4-6 weeks' : 'Day to Day') + '</span>' +
+          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;background:' + (inj.severe ? 'rgba(185,28,58,.12)' : 'rgba(201,150,58,.12)') + ';color:' + (inj.severe ? '#D4274F' : '#88FF00') + '">' + (inj.severe ? '4-6 weeks' : 'Day to Day') + '</span>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -4853,10 +4892,10 @@ function loadTeamLeague() {
           var fans = lbRes.data || [];
           
           var html = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;">';
-          html += '<div style="background:rgba(219,169,74,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(219,169,74,.2);display:flex;align-items:center;gap:10px;">';
+          html += '<div style="background:rgba(136,255,0,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(136,255,0,.2);display:flex;align-items:center;gap:10px;">';
           html += '<div style="font-size:1.5rem;">🔥</div>';
           html += '<div>';
-          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + esc(favTeam) + ' Fans</div>';
+          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#88FF00">' + esc(favTeam) + ' Fans</div>';
           html += '<div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px">Auto Fan League · ' + fans.length + ' member' + (fans.length !== 1 ? 's' : '') + '</div>';
           html += '</div></div>';
 
@@ -4868,14 +4907,14 @@ function loadTeamLeague() {
               var isMe  = fan.id === ST.user.id;
               var bg    = isMe ? 'background:rgba(255,255,255,.03);' : '';
               var bold  = isMe ? 'color:#fff;font-weight:700;' : 'color:rgba(255,255,255,.7);';
-              var goldR = rank <= 3 ? 'color:#DBA94A;font-weight:900;' : 'color:rgba(255,255,255,.3);';
+              var goldR = rank <= 3 ? 'color:#88FF00;font-weight:900;' : 'color:rgba(255,255,255,.3);';
               return '<div style="' + bg + 'display:flex;align-items:center;padding:.7rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--font-ui);font-size:.85rem;">' +
                 '<div style="width:30px;' + goldR + '">' + rank + '</div>' +
                 '<div style="flex:1;' + bold + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
                   esc(fan.team_name || 'Anonymous') +
                   (isMe ? ' <span style="font-size:.65rem;background:rgba(255,255,255,.1);padding:2px 5px;border-radius:4px;margin-left:5px;">YOU</span>' : '') +
                 '</div>' +
-                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#DBA94A' : 'rgba(255,255,255,.4)') + '">' + (fan.total_points || 0) + '</div>' +
+                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#88FF00' : 'rgba(255,255,255,.4)') + '">' + (fan.total_points || 0) + '</div>' +
               '</div>';
             }).join('');
           }
@@ -4900,7 +4939,7 @@ function renderLeaguesList(leagues) {
         logoHtml +
         '<div>' +
           '<div style="font-family:var(--font-ui);font-size:.95rem;font-weight:700;color:#fff">' + l.name + '</div>' +
-          '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private . Code: <span style="color:#DBA94A;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
+          '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private . Code: <span style="color:#88FF00;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
         '</div>' +
       '</div>' +
       '<div id="ls-' + l.id + '"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>' +
@@ -4925,7 +4964,7 @@ function loadLeagueStandings(lid) {
       var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
       var gwPts = (p.gw_points !== undefined && p.gw_points !== null) ? p.gw_points : 0;
       return '<div style="display:grid;grid-template-columns:28px 1fr 52px 58px;gap:.3rem;align-items:center;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-        '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#88FF00' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
         '<div style="min-width:0;overflow:hidden">' +
           '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             (p.team_name||'Unknown') + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle;margin-left:3px">YOU</span>' : '') +
@@ -4933,7 +4972,7 @@ function loadLeagueStandings(lid) {
           '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.32)">@' + (p.username||'') + '</div>' +
         '</div>' +
         '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.28)') + ';text-align:center">' + gwPts + '</div>' +
-        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A;text-align:right">' + (p.total_points||0) + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#88FF00;text-align:right">' + (p.total_points||0) + '</div>' +
       '</div>';
     }).join('');
     c.innerHTML = lbHeader + lbRows;
@@ -5003,7 +5042,7 @@ function loadGlobalLB() {
         '<div style="font-size:' + sz + '">' + emojis[idx] + '</div>' +
         '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:.2rem 0">' + prizes[idx] + '</div>' +
         '<div style="font-size:.72rem;color:rgba(255,255,255,.45)">' + p2.team_name + '</div>' +
-        '<div style="font-size:.7rem;color:#DBA94A;font-weight:700">' + (p2.total_points || 0) + ' pts</div>' +
+        '<div style="font-size:.7rem;color:#88FF00;font-weight:700">' + (p2.total_points || 0) + ' pts</div>' +
       '</div>';
     }).join('');
   });
@@ -5035,11 +5074,11 @@ function renderGlobalLBRows(c, rows) {
       rankDisp = '—';
     }
 
-    var rankColor  = (!isFull) ? 'rgba(255,255,255,.2)' : rankCounter <= 3 ? '#DBA94A' : 'rgba(255,255,255,.3)';
+    var rankColor  = (!isFull) ? 'rgba(255,255,255,.2)' : rankCounter <= 3 ? '#88FF00' : 'rgba(255,255,255,.3)';
     var rowBg      = isYou ? 'background:rgba(185,28,58,.04);' : (!isFull ? 'background:rgba(255,255,255,.01);opacity:.65;' : '');
     var nameColor  = isFull ? '#fff' : 'rgba(255,255,255,.45)';
     var ptsColor   = gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)';
-    var totColor   = isFull ? '#DBA94A' : 'rgba(255,255,255,.25)';
+    var totColor   = isFull ? '#88FF00' : 'rgba(255,255,255,.25)';
 
     // Badge for incomplete squads
     var badge = !isFull
@@ -5107,7 +5146,7 @@ function openPublicProfile(username) {
         var pname = pl ? playerName(pl) : (s.name || s.display_name || 'Unknown');
         var pos   = pl ? pl.position : (s.position || '--');
         var club  = pl ? (pl.team || '') : (s.club || '');
-        var cap   = s.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+        var cap   = s.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
         var vc    = s.isVC ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
         var bench = isBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.6rem">bench</span>' : '';
         return '<div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isBench ? 'opacity:.65' : '') + '">'
@@ -5129,9 +5168,9 @@ function openPublicProfile(username) {
           + '<div><div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff">' + (p.team_name||'Unknown') + '</div>'
           + '<div style="font-size:.78rem;color:rgba(255,255,255,.4)">@' + (p.username||'') + '</div></div></div>'
         + '<div style="display:flex;gap:.6rem;margin-bottom:1.2rem">'
-          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">' + (p.total_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00">' + (p.total_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>'
           + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#22895A">' + (p.gw_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Pts</div></div>'
-          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">#' + (p.overall_rank||'--') + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00">#' + (p.overall_rank||'--') + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>'
         + '</div>'
         + '<div style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.5rem">Squad</div>'
         + '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">' + squadHtml + '</div>';
@@ -5159,15 +5198,15 @@ function loadGWHistory() {
       container.innerHTML =
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.8rem">' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + best + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + best + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Best GW</div>' +
           '</div>' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + avg + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + avg + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Average</div>' +
           '</div>' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + rows.length + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + rows.length + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GWs Played</div>' +
           '</div>' +
         '</div>' +
@@ -5177,7 +5216,7 @@ function loadGWHistory() {
           '</div>' +
           rows.map(function(r) {
             var pct = Math.min(100, Math.round((r.points / (best || 1)) * 100));
-            var col = r.points >= best * 0.8 ? '#DBA94A' : r.points >= best * 0.5 ? '#22895A' : '#B91C3A';
+            var col = r.points >= best * 0.8 ? '#88FF00' : r.points >= best * 0.5 ? '#22895A' : '#B91C3A';
             return '<div style="display:grid;grid-template-columns:60px 1fr 80px;padding:.5rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);align-items:center">' +
               '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.5)">GW' + r.gameweek + '</div>' +
               '<div style="padding-right:.8rem">' +
@@ -5185,7 +5224,7 @@ function loadGWHistory() {
                   '<div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:3px"></div>' +
                 '</div>' +
               '</div>' +
-              '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#DBA94A;text-align:right">' + r.points + '</div>' +
+              '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#88FF00;text-align:right">' + r.points + '</div>' +
             '</div>';
           }).join('') +
         '</div>';
@@ -5267,7 +5306,7 @@ function loadProfile() {
             '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
           : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
         ) +
-        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#88FF00;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
         '</div>' +
         '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
@@ -5276,9 +5315,9 @@ function loadProfile() {
           '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">' + p.team_name + '</div>' +
           '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + p.username + '</div>' +
           '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank || '--') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + ST.squad.length + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.overall_rank || '--') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + ST.squad.length + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -5288,11 +5327,11 @@ function loadProfile() {
           var icon = posIcon(pl.position);
           var name = playerName(pl);
           var club = pl.clubs ? pl.clubs.name : (pl.team || '--');
-          var capBadge = pl.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+          var capBadge = pl.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
           var vcBadge  = pl.isVC      ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
           var gwPts    = (pl.gwPoints !== undefined && pl.gwPoints !== null) ? pl.gwPoints : null;
           var ptsLabel = gwPts !== null ? (gwPts > 0 ? '+' + gwPts : String(gwPts)) + ' pts' : (pl.total_points || 0) + ' pts';
-          var ptsColor = gwPts !== null ? (gwPts >= 6 ? '#DBA94A' : gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') : '#DBA94A';
+          var ptsColor = gwPts !== null ? (gwPts >= 6 ? '#88FF00' : gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') : '#88FF00';
           return '<div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
             '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">' + icon + '</div>' +
             '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' + name + capBadge + vcBadge + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + club + '</div></div>' +
@@ -5732,10 +5771,10 @@ function renderNewChatMessage(fid, msg) {
         </span>
         ${msg.favorite_team ? `<span style="font-size:.55rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px; color:rgba(255,255,255,0.2)">${msg.favorite_team}</span>` : ''}
       </div>
-      <div style="background: ${isMe ? 'rgba(219,169,74,0.15)' : 'rgba(255,255,255,0.05)'}; 
-                  color: ${isMe ? '#DBA94A' : '#fff'}; 
+      <div style="background: ${isMe ? 'rgba(136,255,0,0.15)' : 'rgba(255,255,255,0.05)'}; 
+                  color: ${isMe ? '#88FF00' : '#fff'}; 
                   padding: .6rem .8rem; border-radius: 12px; font-size: .8rem; max-width: 85%;
-                  border: 1px solid ${isMe ? 'rgba(219,169,74,0.2)' : 'rgba(255,255,255,0.05)'}">
+                  border: 1px solid ${isMe ? 'rgba(136,255,0,0.2)' : 'rgba(255,255,255,0.05)'}">
         ${escHtml(msg.message)}
       </div>
     </div>
@@ -6298,7 +6337,7 @@ function renderFixtureList(c, matches) {
     var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : '';
     var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : '';
     var scoreStr   = (isLive || isFT) ? (hg + ' - ' + ag) : 'vs';
-    var scoreColor = isLive ? '#D4274F' : isFT ? '#DBA94A' : 'rgba(255,255,255,.4)';
+    var scoreColor = isLive ? '#D4274F' : isFT ? '#88FF00' : 'rgba(255,255,255,.4)';
     var hl = f.home_logo || getTeamLogo(f.home) || '';
     var al = f.away_logo || getTeamLogo(f.away) || '';
     var imgS = 'width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0;';
@@ -6308,7 +6347,7 @@ function renderFixtureList(c, matches) {
     var stateLabel = isLive ? (f.status==='HT'?'HT':f.elapsed ? f.elapsed+"'" : 'LIVE') : '';
     var liveBadge = isLive
       ? '<span style="display:block;background:#D4274F;color:#fff;font-size:.5rem;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:1px;margin-top:2px;width:fit-content;margin:2px auto 0">'+stateLabel+'</span>'
-      : (isFT ? '<span style="display:block;font-size:.5rem;color:#DBA94A;font-weight:700;margin-top:2px;text-align:center">FT</span>' : '');
+      : (isFT ? '<span style="display:block;font-size:.5rem;color:#88FF00;font-weight:700;margin-top:2px;text-align:center">FT</span>' : '');
     var fidStr = String(fid);
     return '<div style="border-bottom:1px solid rgba(255,255,255,.05)">' +
       '<div onclick="toggleFix(\''+fidStr+'\')" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.85rem 1rem;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent" onmouseenter="this.style.background=\'rgba(255,255,255,.03)\'" onmouseleave="this.style.background=\'\'">' +
@@ -6394,7 +6433,7 @@ function buildFixDetailBasic(f) {
   var round  = f.round ? '<div style="text-align:center;padding:.3rem 1rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.3);text-transform:uppercase">'+esc(f.round)+'</div>' : '';
   var period = '';
   if (isLive) period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#D4274F;letter-spacing:1px">' + (f.elapsed ? f.elapsed+"'" : 'LIVE') + '</div>';
-  if (isFT)   period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#DBA94A;letter-spacing:1px">FULL TIME</div>';
+  if (isFT)   period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#88FF00;letter-spacing:1px">FULL TIME</div>';
   out += round + period;
   if (!isFT && !isLive) out += '<div style="text-align:center;padding:.6rem 1rem;'+base+'color:rgba(255,255,255,.4)">Upcoming match — stats appear when the game is live</div>';
   else out += '<div style="text-align:center;padding:.6rem 1rem;'+base+'color:rgba(255,255,255,.35)">Detailed stats not available for this match</div>';
@@ -6417,7 +6456,7 @@ function buildFixDetailFull(d) {
 
   // Live indicator
   if (isLive) out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#D4274F;letter-spacing:1px">' + (d.elapsed ? d.elapsed+"'" : 'LIVE') + '</div>';
-  if (isFT)   out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#DBA94A;letter-spacing:1px">FULL TIME</div>';
+  if (isFT)   out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#88FF00;letter-spacing:1px">FULL TIME</div>';
   if (d.ht_score && d.ht_score.home !== null) {
     out += '<div style="text-align:center;font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.3);padding:.1rem">HT: ' + d.ht_score.home + ' - ' + d.ht_score.away + '</div>';
   }
@@ -6434,7 +6473,7 @@ function buildFixDetailFull(d) {
       var isHome  = g.team === d.home;
       var side    = isHome ? 'flex-start' : 'flex-end';
       var assist  = g.assist ? '<span style="font-size:.65rem;color:rgba(255,255,255,.35)"> ('+esc(g.assist)+')</span>' : '';
-      var penalty = g.detail === 'Penalty' ? ' <span style="font-size:.6rem;color:#DBA94A">PEN</span>' : '';
+      var penalty = g.detail === 'Penalty' ? ' <span style="font-size:.6rem;color:#88FF00">PEN</span>' : '';
       var og      = g.detail === 'Own Goal' ? ' <span style="font-size:.6rem;color:#D4274F">OG</span>' : '';
       out += '<div style="display:flex;justify-content:'+side+';align-items:center;padding:.25rem 1.2rem;gap:.4rem">';
       out += '<span style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff">'+esc(g.player)+penalty+og+'</span>';
@@ -6449,7 +6488,7 @@ function buildFixDetailFull(d) {
     cards.forEach(function(c) {
       var isHome = c.team===d.home;
       var side   = isHome ? 'flex-start' : 'flex-end';
-      var col    = c.detail.includes('Red') ? '#D4274F' : '#DBA94A';
+      var col    = c.detail.includes('Red') ? '#D4274F' : '#88FF00';
       var icon   = c.detail.includes('Red') ? '🟥' : '🟨';
       out += '<div style="display:flex;justify-content:'+side+';align-items:center;padding:.25rem 1.2rem;gap:.4rem">';
       out += '<span style="font-size:.9rem">'+icon+'</span>';
@@ -6577,7 +6616,7 @@ function buildTeamRow(data, teamName) {
       var opp    = isHome ? (f.away||'') : (f.home||'');
       var oppLogo= isHome ? (f.away_logo||getTeamLogo(f.away)||'') : (f.home_logo||getTeamLogo(f.home)||'');
       var venue  = isHome ? 'H' : 'A';
-      var vColor = isHome ? '#22895A' : '#DBA94A';
+      var vColor = isHome ? '#22895A' : '#88FF00';
       var d      = f.date ? new Date(f.date) : null;
       var dStr   = d ? d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : '';
       out += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04)">';
@@ -6600,13 +6639,13 @@ function buildTeamRow(data, teamName) {
       var opp    = isHome ? (f.away||'') : (f.home||'');
       var oppLogo= isHome ? (f.away_logo||getTeamLogo(f.away)||'') : (f.home_logo||getTeamLogo(f.home)||'');
       var venue  = isHome ? 'H' : 'A';
-      var vColor = isHome ? '#22895A' : '#DBA94A';
+      var vColor = isHome ? '#22895A' : '#88FF00';
       var hg = f.hg !== null && f.hg !== undefined ? parseInt(f.hg) : null;
       var ag = f.ag !== null && f.ag !== undefined ? parseInt(f.ag) : null;
       var scored   = isHome ? hg : ag;
       var conceded = isHome ? ag : hg;
       var outcome  = (scored !== null && conceded !== null) ? (scored > conceded ? 'W' : scored < conceded ? 'L' : 'D') : '?';
-      var outCol   = outcome==='W' ? '#22895A' : outcome==='L' ? '#D4274F' : '#DBA94A';
+      var outCol   = outcome==='W' ? '#22895A' : outcome==='L' ? '#D4274F' : '#88FF00';
       var scoreDisp= (hg !== null && ag !== null) ? (hg + ' – ' + ag) : 'vs';
       out += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04)">';
       out += '<span style="'+b+'color:'+vColor+';font-weight:700;font-size:.64rem;min-width:12px">'+venue+'</span>';
@@ -6712,7 +6751,7 @@ function renderTableFull(c, table) {
 
     // Highlight user's supported team
     var isMyTeam = userTeam && teamLow === userTeam;
-    if (isMyTeam) rowBg = 'background:rgba(219,169,74,.06);';
+    if (isMyTeam) rowBg = 'background:rgba(136,255,0,.06);';
 
     // Live indicator — team is currently playing
     var isLiveNow = liveTeams.has(teamLow);
@@ -6751,7 +6790,7 @@ function renderTableFull(c, table) {
                      'border-left:3px solid transparent;';
 
     var myTeamIndicator = isMyTeam
-      ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#DBA94A;margin-left:3px;vertical-align:middle;flex-shrink:0"></span>'
+      ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#88FF00;margin-left:3px;vertical-align:middle;flex-shrink:0"></span>'
       : '';
 
     return '<div style="border-bottom:1px solid rgba(255,255,255,.04)">' +
@@ -6765,7 +6804,7 @@ function renderTableFull(c, table) {
         '<div style="display:flex;align-items:center;gap:.4rem;min-width:0">' +
           (logo ? '<img src="' + esc(logo) + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<div style="width:20px;flex-shrink:0"></div>') +
           '<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:' + (isMyTeam ? '800' : '600') + ';' +
-            'color:' + (isMyTeam ? '#DBA94A' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            'color:' + (isMyTeam ? '#88FF00' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             esc(t.abbr || t.team) + myTeamIndicator +
           '</span>' +
         '</div>' +
@@ -6823,7 +6862,7 @@ function renderTableForm(c, table) {
     }
     while (formArr.length < 5) formArr.unshift('N');
     var dots = formArr.map(function(r) {
-      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#DBA94A' : 'rgba(255,255,255,.1)';
+      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#88FF00' : 'rgba(255,255,255,.1)';
       var lbl = r === 'W' ? 'W' : r === 'L' ? 'L' : r === 'D' ? 'D' : '–';
       var txtCol = (r === 'N' || r === '') ? 'rgba(255,255,255,.3)' : '#fff';
       return '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:' + col + ';font-family:var(--font-ui);font-size:.62rem;font-weight:800;color:' + txtCol + ';margin-right:2px;border:1px solid rgba(255,255,255,.08)">' + lbl + '</span>';
@@ -6991,7 +7030,7 @@ function renderStats() {
 function statRow(rank, name, club, clubLogo, val, valLabel, sub) {
   var logo = clubLogo || getTeamLogo(club);
   var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':(rank+'.');
-  var goldClr = rank <= 3 ? '#DBA94A' : 'rgba(255,255,255,.3)';
+  var goldClr = rank <= 3 ? '#88FF00' : 'rgba(255,255,255,.3)';
   return '<div style="display:flex;align-items:center;gap:.75rem;padding:.82rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
     '<div style="font-family:var(--font-display);font-size:' + (rank<=3?'1rem':'.8rem') + ';font-weight:900;width:26px;text-align:center;flex-shrink:0;color:' + goldClr + '">' + medal + '</div>' +
     (logo ? '<img src="' + logo + '" style="width:26px;height:26px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">' : '<div style="width:26px"></div>') +
@@ -7000,7 +7039,7 @@ function statRow(rank, name, club, clubLogo, val, valLabel, sub) {
       '<div style="font-size:.68rem;color:rgba(255,255,255,.38);margin-top:1px">' + (sub||club) + '</div>' +
     '</div>' +
     '<div style="text-align:right;flex-shrink:0">' +
-      '<div style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#DBA94A;line-height:1">' + val + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#88FF00;line-height:1">' + val + '</div>' +
       '<div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:1px">' + valLabel + '</div>' +
     '</div>' +
   '</div>';
@@ -7370,7 +7409,7 @@ function openClubProfile(teamName) {
   // Form dots
   var formStr = tbl.form || 'NNNNN';
   var formDots = formStr.slice(-5).split('').map(function(r){
-    var bg  = r==='W'?'#22895A':r==='L'?'#D4274F':r==='D'?'#DBA94A':'rgba(255,255,255,.15)';
+    var bg  = r==='W'?'#22895A':r==='L'?'#D4274F':r==='D'?'#88FF00':'rgba(255,255,255,.15)';
     var lbl = r==='N'?'?':r;
     return '<div style="display:flex;flex-direction:column;align-items:center;gap:.25rem">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#fff">'+lbl+'</div>' +
@@ -7432,7 +7471,7 @@ function openClubProfile(teamName) {
       '</div>' +
       '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:'+pcBg+';color:#fff;letter-spacing:.5px">'+p.position+'</span>' +
       '<div style="text-align:right;flex-shrink:0">' +
-        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div>' +
+        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">'+p.total_points+'</div>' +
         '<div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">pts</div>' +
       '</div>' +
     '</div>';
@@ -7455,7 +7494,7 @@ function openClubProfile(teamName) {
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.goals+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">G</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.assists+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">A</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.apps+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Apps</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#88FF00">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
         '</div>' +
       '</div>';
     });
@@ -7541,7 +7580,7 @@ function renderProfileData(c, p) {
             '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
           : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
         ) +
-        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#88FF00;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
         '</div>' +
         '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
@@ -7550,9 +7589,9 @@ function renderProfileData(c, p) {
         '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff">' + (p.team_name||'--') + '</div>' +
         '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + (p.username||'--') + '</div>' +
         '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points||0) + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank||'--') + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + ST.squad.length + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.total_points||0) + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.overall_rank||'--') + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + ST.squad.length + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -7563,7 +7602,7 @@ function renderProfileData(c, p) {
           '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem">' + posIcon(pl.position) + '</div>' +
           '<div style="flex:1"><div style="font-size:.88rem;font-weight:700;color:#fff">' + playerName(pl) + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + (pl.clubs?pl.clubs.name:pl.club||'--') + '</div></div>' +
           '<span class="pli-pos pos-' + (pl.position||'mid').toLowerCase() + '">' + pl.position + '</span>' +
-          '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points||0) + ' pts</span>' +
+          '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#88FF00">' + (pl.total_points||0) + ' pts</span>' +
         '</div>';
       }).join('') : '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem;color:rgba(255,255,255,.35)">No squad yet — go pick yours! ⚽</div>') +
     '</div>' +
@@ -7618,7 +7657,7 @@ function loadPOTMHomeCard() {
     var maxV = sorted[0][1];
     barEl.innerHTML = sorted.map(function(e,i){
       var h = Math.max(6, Math.round((e[1]/maxV)*22));
-      var col = i===0 ? '#DBA94A' : 'rgba(255,255,255,.2)';
+      var col = i===0 ? '#88FF00' : 'rgba(255,255,255,.2)';
       return '<div style="width:5px;height:'+h+'px;background:'+col+';border-radius:2px"></div>';
     }).join('');
     card.style.display = 'block';
@@ -7666,17 +7705,17 @@ function openMiniPoll() {
   var counts = {}; try { counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}'); } catch(e) {}
   var total = Object.values(counts).reduce(function(s,v){return s+(v||0);},0);
 
-  var html = '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A;margin-bottom:.7rem">📣 Fan Poll</div>';
+  var html = '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#88FF00;margin-bottom:.7rem">📣 Fan Poll</div>';
   html += '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1.1rem;line-height:1.3">' + poll.q + '</div>';
   poll.opts.forEach(function(opt) {
     var pct = total ? Math.round(((counts[opt]||0)/total)*100) : 0;
     var isVoted = voted === opt;
     if (voted) {
       html += '<div style="margin-bottom:.55rem">';
-      html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#DBA94A':'rgba(255,255,255,.5)') + ';margin-bottom:.22rem">';
+      html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#88FF00':'rgba(255,255,255,.5)') + ';margin-bottom:.22rem">';
       html += '<span>' + (isVoted?'✓ ':'') + opt + '</span><span data-opt-pct="' + opt + '">' + pct + '%</span></div>';
       html += '<div style="height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden">';
-      html += '<div data-opt-bar="' + opt + '" style="height:100%;width:' + pct + '%;background:' + (isVoted?'#DBA94A':'rgba(255,255,255,.18)') + ';border-radius:4px;transition:width .5s ease"></div>';
+      html += '<div data-opt-bar="' + opt + '" style="height:100%;width:' + pct + '%;background:' + (isVoted?'#88FF00':'rgba(255,255,255,.18)') + ';border-radius:4px;transition:width .5s ease"></div>';
       html += '</div></div>';
     } else {
       html += '<button onclick="castPoll(\'' + key + '\',\'' + opt.replace(/'/g,"\\'") + '\')" style="width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.65rem .95rem;margin-bottom:.45rem;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.8);-webkit-tap-highlight-color:transparent;display:block">' + opt + '</button>';
@@ -7802,9 +7841,9 @@ function renderPOTMStrip(matchKey, home, away) {
 
   var parts = '';
   if (official) {
-    parts += '<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(219,169,74,.08);border-top:1px solid rgba(219,169,74,.12)">' +
+    parts += '<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(136,255,0,.08);border-top:1px solid rgba(136,255,0,.12)">' +
       '<span style="font-size:.7rem">\u{1F3C6}</span>' +
-      '<span style="font-size:.68rem;font-weight:700;color:#DBA94A;letter-spacing:1px;text-transform:uppercase">Official POTM:</span>' +
+      '<span style="font-size:.68rem;font-weight:700;color:#88FF00;letter-spacing:1px;text-transform:uppercase">Official POTM:</span>' +
       '<span style="font-size:.75rem;color:#fff">' + official + '</span>' +
     '</div>';
   }
@@ -7839,7 +7878,7 @@ function openPOTMVote(matchKey, home, away) {
         'style="display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.07);margin-bottom:.4rem;background:var(--bg-card)">' +
         '<div style="width:30px;height:30px;border-radius:50%;background:rgba(185,28,58,.2);display:flex;align-items:center;justify-content:center;font-size:.8rem">' + posIcon(p.position) + '</div>' +
         '<div style="flex:1"><div style="font-weight:700;font-size:.85rem;color:#fff">' + (p.display_name||p.name) + '</div><div style="font-size:.68rem;color:rgba(255,255,255,.4)">' + (p.club||'--') + ' . ' + p.position + '</div></div>' +
-        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:#DBA94A">' + (p.goals||0) + '\u26BD</span>' +
+        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:#88FF00">' + (p.goals||0) + '\u26BD</span>' +
       '</div>';
     }).join('');
   modal.style.display = 'flex';
@@ -8474,7 +8513,7 @@ var LEGAL_CONTENT = {
       <p>You must be at least 13 years old to use this Service. If you are under 18, you confirm that you have your parent or guardian's permission to use the App. By creating an account, you represent and warrant that you meet these requirements.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">4. Account Registration</h2>
-      <p>You must provide accurate, current and complete information when registering. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately of any unauthorised use at support@fantasypsl.co.za. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+      <p>You must provide accurate, current and complete information when registering. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately of any unauthorised use at admin@fantasypsl.co.za. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">5. Free-to-Play &amp; No Real Money</h2>
       <p>Fantasy PSL is entirely free to play. No real money is wagered, won or lost through this Service. Any points, rankings or prizes mentioned are fantasy game mechanics only and carry no monetary value. This Service does not constitute gambling in any form.</p>
@@ -8513,7 +8552,7 @@ var LEGAL_CONTENT = {
       <p>These Terms are governed by the laws of the Republic of South Africa. Any disputes shall be subject to the exclusive jurisdiction of the South African courts.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">14. Contact</h2>
-      <p>For any questions regarding these Terms, contact us at: <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a></p>
+      <p>For any questions regarding these Terms, contact us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a></p>
     `
   },
   privacy: {
@@ -8560,7 +8599,7 @@ var LEGAL_CONTENT = {
         <li>Object to the processing of your personal information</li>
         <li>Lodge a complaint with the Information Regulator of South Africa</li>
       </ul>
-      <p style="margin-top:.5rem">To exercise these rights, contact us at <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a>.</p>
+      <p style="margin-top:.5rem">To exercise these rights, contact us at <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a>.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">7. Cookies &amp; Local Storage</h2>
       <p>We use browser local storage to save your login session and app preferences. We do not use advertising cookies or third-party tracking pixels. Our Service uses Supabase authentication which may set session cookies. You can clear these at any time through your browser settings.</p>
@@ -8572,7 +8611,7 @@ var LEGAL_CONTENT = {
       <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via the App or email. The "Last updated" date at the top of this policy reflects the most recent revision.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">10. Contact</h2>
-      <p>Questions about this Privacy Policy? Reach us at: <a href="mailto:support@fantasypsl.co.za" style="color:#DBA94A">support@fantasypsl.co.za</a><br>Information Regulator (South Africa): <a href="https://www.justice.gov.za/inforeg/" target="_blank" style="color:#DBA94A">www.justice.gov.za/inforeg</a></p>
+      <p>Questions about this Privacy Policy? Reach us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a><br>Information Regulator (South Africa): <a href="https://www.justice.gov.za/inforeg/" target="_blank" style="color:#88FF00">www.justice.gov.za/inforeg</a></p>
     `
   }
 };
@@ -8889,8 +8928,8 @@ function closeBanner() {
 
     <!-- Style options -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.2rem">
-      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(219,169,74,.15);border:2px solid #DBA94A;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
-        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
+      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(136,255,0,.15);border:2px solid #88FF00;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
         <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Balanced</div>
         <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Best overall squad</div>
       </button>
@@ -8912,11 +8951,11 @@ function closeBanner() {
     </div>
 
     <!-- Warning if squad already has players -->
-    <div id="asq-warning" style="display:none;background:rgba(219,169,74,.1);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#DBA94A;font-family:var(--font-ui);font-weight:700">
+    <div id="asq-warning" style="display:none;background:rgba(136,255,0,.1);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#88FF00;font-family:var(--font-ui);font-weight:700">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>This will replace your current squad
     </div>
 
-    <button onclick="runAutoSquad()" style="width:100%;background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.9rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
+    <button onclick="runAutoSquad()" style="width:100%;background:linear-gradient(135deg,#88FF00,#C8962A);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.9rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Generate My Squad
     </button>
     <button onclick="closeAutoSquadModal()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.7rem;cursor:pointer;margin-top:.3rem">Cancel</button>
@@ -8925,8 +8964,8 @@ function closeBanner() {
 
 <style>
 @keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-.asq-opt.active { background:rgba(219,169,74,.15) !important; border-color:#DBA94A !important; }
-.asq-opt.active div:nth-child(2) { color:#DBA94A !important; }
+.asq-opt.active { background:rgba(136,255,0,.15) !important; border-color:#88FF00 !important; }
+.asq-opt.active div:nth-child(2) { color:#88FF00 !important; }
 </style>
 
 
@@ -8952,7 +8991,7 @@ function closeBanner() {
   </div>
   <p style="font-family:'DM Sans',sans-serif;font-size:.8rem;color:rgba(255,255,255,.65);line-height:1.55;margin-bottom:1rem">
     Fantasy PSL stores your email and squad data to run the game. We also use analytics to improve the platform. Choose which data uses you're comfortable with. You can change this any time in your profile settings.
-    <a href="/privacy" style="color:#DBA94A;text-decoration:underline">Full Privacy Policy →</a>
+    <a href="/privacy" style="color:#88FF00;text-decoration:underline">Full Privacy Policy →</a>
   </p>
 
   <!-- Toggles -->
@@ -9429,7 +9468,7 @@ onReady(function() {
               '</div>';
             }).join('')+'</div>';
             var possHtml='<div class="mc-poss-row">'+
-              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(hPoss,'#DBA94A')+'<div class="mc-poss-pct" style="color:#DBA94A">'+hPoss+'</div></div><div class="mc-poss-lbl">'+(f.home||'Home')+'</div></div>'+
+              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(hPoss,'#88FF00')+'<div class="mc-poss-pct" style="color:#88FF00">'+hPoss+'</div></div><div class="mc-poss-lbl">'+(f.home||'Home')+'</div></div>'+
               '<div class="mc-poss-mid-lbl">Possession</div>'+
               '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(aPoss,'#D4274F')+'<div class="mc-poss-pct" style="color:#D4274F">'+aPoss+'</div></div><div class="mc-poss-lbl">'+(f.away||'Away')+'</div></div>'+
             '</div>';
@@ -9439,7 +9478,7 @@ onReady(function() {
                 var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
                 return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
                   '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
-                  '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
+                  '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
                   '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
                   (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
                   (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
@@ -9448,7 +9487,7 @@ onReady(function() {
                   (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
                   (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
                   (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
-                  '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+                  '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#88FF00':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
                 '</div>';
               }).join('');
             }
@@ -9475,7 +9514,7 @@ onReady(function() {
                     '<span style="font-size:.52rem;font-weight:700;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.5);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLabel+'</span>'+
                     (p.jersey_number?'<span style="font-size:.62rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);min-width:16px;text-align:center">'+p.jersey_number+'</span>':'<span style="min-width:16px"></span>')+
                     '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+
-                      (p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
+                      (p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
                     '</span>'+
                     '<span style="font-size:.75rem">'+evts+'</span>'+
                     '<span style="font-size:.65rem;color:rgba(255,255,255,.3);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
@@ -9498,7 +9537,7 @@ onReady(function() {
             }
             function buildTeamTabs(active){
               var on=function(w){return active===w;};
-              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
+              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(136,255,0,.1)':'transparent')+';color:'+(on(w)?'#88FF00':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
               return '<div style="display:flex;gap:5px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.05)">'+
                 '<button onclick="mpsTab(\''+fid+'\',\'home\')" style="'+bs('home')+'">' + (f.home||'Home') + '</button>'+
                 '<button onclick="mpsTab(\''+fid+'\',\'away\')" style="'+bs('away')+'">' + (f.away||'Away') + '</button>'+
@@ -9583,9 +9622,9 @@ onReady(function() {
     var btns=block.querySelectorAll('button');
     btns.forEach(function(b){
       var isOn=(b.getAttribute('onclick')||'').indexOf("'"+which+"'")>-1;
-      b.style.borderColor=isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)';
-      b.style.background=isOn?'rgba(219,169,74,.1)':'transparent';
-      b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.45)';
+      b.style.borderColor=isOn?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)';
+      b.style.background=isOn?'rgba(136,255,0,.1)':'transparent';
+      b.style.color=isOn?'#88FF00':'rgba(255,255,255,.45)';
     });
     var wrap=document.getElementById('mc-team-rows-'+fid);
     if(!wrap)return;
@@ -9599,7 +9638,7 @@ onReady(function() {
       var bd=p.points_breakdown||{};var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
       return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
         '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
-        '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+'</span>'+
+        '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+'</span>'+
         '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
         (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
         (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
@@ -9608,7 +9647,7 @@ onReady(function() {
         (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
         (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
         (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
-        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#88FF00':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
       '</div>';
     }).join('');
     // Remove old rows, keep header
@@ -9636,7 +9675,68 @@ onReady(function() {
 // ====================================================
 //  BREAKING NEWS — sticky banner + on-open popup
 // ====================================================
+
+// ── Season Over Detection ─────────────────────────────────────────────────
+// Checks if GW30 is complete — if so, shows end-of-season banner
+var _seasonOverChecked = false;
+
+function checkSeasonOver() {
+  if (_seasonOverChecked) return;
+  _seasonOverChecked = true;
+
+  db.from('gameweeks')
+    .select('gw_number, is_finished, is_current')
+    .eq('season', 2025)
+    .eq('gw_number', 30)
+    .maybeSingle()
+    .then(function(res) {
+      var gw30 = res.data;
+      if (!gw30) return;
+      if (gw30.is_finished) showSeasonOverBanner();
+    }).catch(function() {});
+}
+
+function showSeasonOverBanner() {
+  // Show banner on home page
+  var existing = document.getElementById('season-over-banner');
+  if (existing) return;
+  var banner = document.createElement('div');
+  banner.id = 'season-over-banner';
+  banner.style.cssText = [
+    'background:linear-gradient(135deg,#B91C3A 0%,#7C0D1E 100%)',
+    'border-bottom:1px solid rgba(255,255,255,.15)',
+    'padding:1.1rem 1.25rem',
+    'text-align:center',
+    'position:relative',
+    'z-index:5'
+  ].join(';');
+  banner.innerHTML = [
+    '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:.3rem">',
+    '🏆 2025/26 Betway Premiership Season Complete!',
+    '</div>',
+    '<div style="font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.8);margin-bottom:.6rem">',
+    'All 30 gameweeks have been played. Final points are being calculated.',
+    '</div>',
+    '<div style="font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.6)">',
+    'Fantasy PSL will reset for the new season. Your final ranking has been saved.',
+    '</div>'
+  ].join('');
+
+  // Insert at top of home page content
+  var homePage = document.getElementById('page-home');
+  if (homePage && homePage.firstChild) {
+    homePage.insertBefore(banner, homePage.firstChild);
+  }
+
+  // Lock transfers and squad editing
+  ST.deadlinePassed = true;
+  ST.seasonOver     = true;
+  renderPitch();
+  renderBudget();
+}
+
 var _breakingNewsData = null;
+var _breakingNewsLoaded = false;
 
 function loadBreakingNews() {
   // Promise.allSettled: one failing query (e.g. missing is_breaking column)
