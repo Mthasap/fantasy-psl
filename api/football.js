@@ -35,50 +35,18 @@ const TTL = {
   topscorers:30  * 60 * 1000,  // 30 min
 };
 
-// ── Simple in-memory rate limiter ─────────────────────────────────────────
-const _rl = new Map();
-function rateLimit(ip, max, windowMs) {
-  const now = Date.now();
-  const rec = _rl.get(ip) || { count: 0, reset: now + windowMs };
-  if (now > rec.reset) { rec.count = 0; rec.reset = now + windowMs; }
-  rec.count++;
-  _rl.set(ip, rec);
-  return rec.count > max;
-}
-
-// Allowed query param values
-const ALLOWED_TYPES = new Set([
-  'live','fixtures','results','standings','topscorers','status',
-  'players','team_players','fixture_detail','team_fixtures','proxy',
-  'injuries','predictions','player_transfers','sidelined','player_info',
-  'coaches','trophies','odds','player_stats_season'
-]);
-
 // ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || 'https://www.fantasypsl.co.za');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-
-  // Rate limit: 120 req/min per IP for the public data endpoint
-  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
-  if (rateLimit(clientIp, 120, 60_000)) {
-    return res.status(429).json({ error: 'Too many requests' });
-  }
 
   if (!TOKEN) {
     return res.status(500).json({ error: 'APIFOOTBALL_KEY not set in Vercel Environment Variables' });
   }
 
   var type = (req.query && req.query.type) || 'live';
-
-  // Validate type param against allowlist
-  if (!ALLOWED_TYPES.has(type)) {
-    return res.status(400).json({ error: 'Invalid type parameter' });
-  }
 
   try {
     switch (type) {
@@ -90,24 +58,11 @@ module.exports = async (req, res) => {
       case 'status':         return res.json(await getStatus());
       case 'fixture_detail': return res.json(await getFixtureDetail(req.query.fixture_id));
       case 'team_fixtures':  return res.json(await getTeamFixtures(req.query.team, req.query.team_id));
-      // ── Migrated from sync.js ─────────────────────────────────────────
-      case 'psl-data':       return res.json(await getPslData());
-      case 'seasons':        return res.json(await getSeasons());
-      case 'proxy': {
-        const ep = req.query.endpoint;
-        if (!ep) return res.status(400).json({ error: 'endpoint required' });
-        return res.json(await apiFetch('/' + ep.replace(/^\//, ''), TOKEN));
-      }
-      // ── Pro Tier Endpoints ───────────────────────────────────────────
-      case 'injuries':        return res.json(await getInjuries(req.query.fixture_id));
-      case 'predictions':     return res.json(await getPredictions(req.query.fixture_id));
-      case 'player_transfers':return res.json(await getPlayerTransfers(req.query.player_id, req.query.team_id));
-      case 'sidelined':       return res.json(await getSidelined(req.query.player_id));
-      case 'player_info':     return res.json(await getPlayerInfo(req.query.player_id));
-      case 'coaches':         return res.json(await getCoaches(req.query.team_id));
-      case 'trophies':        return res.json(await getTrophies(req.query.player_id));
-      case 'odds':            return res.json(await getPreMatchOdds(req.query.fixture_id));
-      case 'player_stats_season': return res.json(await getPlayerSeasonStats(req.query.player_id));
+      case 'injuries':       return res.json(await getInjuries(req.query.team));
+      case 'player_stats':   return res.json(await getPlayerStats(req.query.player_id, req.query.season));
+      case 'predictions':    return res.json(await getPredictions(req.query.fixture_id));
+      case 'h2h':            return res.json(await getH2H(req.query.h2h));
+      case 'player_search':  return res.json(await searchPlayer(req.query.name));
       default:               return res.status(400).json({ error: 'Unknown type: ' + type });
     }
   } catch(err) {
@@ -330,7 +285,7 @@ async function getTopScorers() {
       name:  p.name || 'Unknown',
       club:  stat.team && stat.team.name || '',
       goals: stat.goals && stat.goals.total || 0,
-      apps:  stat.games && (stat.games.appearences || stat.games.appearances) || 0,
+      apps:  stat.games && stat.games.appearences || 0,
       photo: p.photo || null
     };
   });
@@ -643,462 +598,178 @@ async function getTeamFixtures(teamName, teamId) {
   });
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// PRO TIER ADDITIONS — Injuries, Predictions, Transfers, Sidelined, etc.
-// All endpoints below require the $19/mo Pro plan (7500 req/day)
-// ══════════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════════
-// INJURIES — GET /api/football?type=injuries&fixture_id=XXX (or no fixture for PSL-wide)
-// Returns all injured/suspended players for a fixture or the whole league
-// ══════════════════════════════════════════════════════════════════════════
-async function getInjuries(fixtureId) {
-  var cacheKey = 'injuries_' + (fixtureId || 'league');
-  var cached   = fromCache(cacheKey);
+// ══════════════════════════════════════════════════════════════════════
+// INJURIES — Pro tier: current injuries for PSL (or specific team)
+// GET /api/football?type=injuries[&team=teamId]
+// ══════════════════════════════════════════════════════════════════════
+async function getInjuries(teamId) {
+  var cacheKey = 'injuries_' + (teamId || 'all');
+  var cached = fromCache(cacheKey);
   if (cached) return cached;
-
-  var sy = await seasonYear();
-  var endpoint = fixtureId
-    ? '/injuries?fixture=' + fixtureId
+  var sy  = await seasonYear();
+  var ep  = teamId
+    ? '/injuries?league=' + PSL_LEAGUE + '&season=' + sy + '&team=' + teamId
     : '/injuries?league=' + PSL_LEAGUE + '&season=' + sy;
-
-  var d = await apiFetch(endpoint, TOKEN);
-
-  var injuries = (d.response || []).map(function(inj) {
-    var p    = inj.player  || {};
-    var team = inj.team    || {};
-    var fix  = inj.fixture || {};
-    return {
-      player_id:   p.id,
-      player_name: p.name,
-      player_photo:p.photo || null,
-      team_id:     team.id,
-      team_name:   normTeam(team.name || ''),
-      team_logo:   team.logo || null,
-      fixture_id:  fix.id   || fixtureId || null,
-      fixture_date:fix.date || null,
-      type:        inj.player && inj.player.type   || 'Unknown',  // Injured / Suspended
-      reason:      inj.player && inj.player.reason || '',
-    };
-  });
-
-  // Also write to Supabase players table so the UI can show injury icons
-  if (SB_URL && SB_KEY && injuries.length) {
-    try {
-      var dbClient = db();
-      // Mark injured players
-      var injured = injuries.filter(function(i) { return i.type !== 'Suspended'; });
-      for (var i = 0; i < injured.length; i++) {
-        var inj = injured[i];
-        if (inj.player_id) {
-          await dbClient.from('players').update({
-            is_injured:   true,
-            is_available: false,
-            injury_type:  inj.type,
-            injury_reason: inj.reason,
-            updated_at:   new Date().toISOString()
-          }).eq('apifootball_id', inj.player_id);
-        }
-      }
-    } catch(e) { console.warn('[injuries] Supabase write error:', e.message); }
-  }
-
-  TTL[cacheKey] = 30 * 60 * 1000; // 30 min
-  return toCache(cacheKey, {
-    type: 'injuries',
-    count: injuries.length,
-    injuries,
-    fetched_at: new Date().toISOString()
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// PREDICTIONS — GET /api/football?type=predictions&fixture_id=XXX
-// Returns AI/model prediction: winner, goals, advice, percentages
-// ══════════════════════════════════════════════════════════════════════════
-async function getPredictions(fixtureId) {
-  if (!fixtureId) throw new Error('fixture_id required for predictions');
-
-  var cacheKey = 'predictions_' + fixtureId;
-  var cached   = fromCache(cacheKey);
-  if (cached) return cached;
-
-  var d = await apiFetch('/predictions?fixture=' + fixtureId, TOKEN);
-  var pred = (d.response || [])[0] || {};
-
+  var data = await apiFetch(ep, TOKEN);
   var result = {
-    type:         'predictions',
-    fixture_id:   fixtureId,
-    winner:       pred.predictions && pred.predictions.winner ? {
-      id:     pred.predictions.winner.id,
-      name:   normTeam(pred.predictions.winner.name || ''),
-      comment: pred.predictions.winner.comment || ''
-    } : null,
-    win_or_draw:  pred.predictions && pred.predictions.win_or_draw,
-    under_over:   pred.predictions && pred.predictions.under_over,
-    goals_home:   pred.predictions && pred.predictions.goals && pred.predictions.goals.home,
-    goals_away:   pred.predictions && pred.predictions.goals && pred.predictions.goals.away,
-    advice:       pred.predictions && pred.predictions.advice || '',
-    percent: {
-      home: pred.predictions && pred.predictions.percent && pred.predictions.percent.home || '0%',
-      draw: pred.predictions && pred.predictions.percent && pred.predictions.percent.draw || '0%',
-      away: pred.predictions && pred.predictions.percent && pred.predictions.percent.away || '0%',
-    },
-    comparison: pred.comparison || null,
-    h2h_last5: (pred.h2h || []).slice(0, 5).map(function(f) {
-      var fix  = f.fixture || {};
-      var gs   = f.goals   || {};
-      var tms  = f.teams   || {};
+    type: 'injuries', season: sy,
+    injuries: (data.response || []).map(function(r) {
       return {
-        date:  fix.date,
-        home:  normTeam(tms.home && tms.home.name || ''),
-        away:  normTeam(tms.away && tms.away.name || ''),
-        hg:    gs.home,
-        ag:    gs.away,
-        status: fix.status && fix.status.short || ''
+        player_id:    r.player && r.player.id,
+        player_name:  r.player && r.player.name,
+        player_photo: r.player && r.player.photo,
+        team_name:    r.team && r.team.name,
+        team_logo:    r.team && r.team.logo,
+        fixture_date: r.fixture && r.fixture.date,
+        type:         r.player && r.player.type,
+        reason:       r.player && r.player.reason,
       };
     }),
-    fetched_at: new Date().toISOString()
+    fetched_at: new Date().toISOString(),
   };
-
-  TTL[cacheKey] = 60 * 60 * 1000; // 1hr — predictions don't change much
+  TTL[cacheKey] = 30 * 60 * 1000;
   return toCache(cacheKey, result);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// PLAYER TRANSFERS — GET /api/football?type=player_transfers&player_id=XXX
-//                  — GET /api/football?type=player_transfers&team_id=XXX
-// ══════════════════════════════════════════════════════════════════════════
-async function getPlayerTransfers(playerId, teamId) {
-  if (!playerId && !teamId) throw new Error('player_id or team_id required');
-
-  var cacheKey = 'transfers_' + (playerId || 'team_' + teamId);
-  var cached   = fromCache(cacheKey);
-  if (cached) return cached;
-
-  var endpoint = playerId
-    ? '/transfers?player=' + playerId
-    : '/transfers?team=' + teamId;
-
-  var d = await apiFetch(endpoint, TOKEN);
-
-  var transfers = (d.response || []).map(function(t) {
-    var p = t.player || {};
-    return {
-      player_id:   p.id,
-      player_name: p.name,
-      transfers: (t.transfers || []).map(function(tr) {
-        return {
-          date:     tr.date,
-          type:     tr.type,
-          from_team: normTeam(tr.teams && tr.teams.out && tr.teams.out.name || ''),
-          from_logo: tr.teams && tr.teams.out && tr.teams.out.logo || null,
-          to_team:   normTeam(tr.teams && tr.teams.in  && tr.teams.in.name  || ''),
-          to_logo:   tr.teams && tr.teams.in  && tr.teams.in.logo  || null,
-        };
-      }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
-    };
-  });
-
-  TTL[cacheKey] = 24 * 60 * 60 * 1000; // 24hr
-  return toCache(cacheKey, {
-    type: 'player_transfers',
-    count: transfers.length,
-    transfers,
-    fetched_at: new Date().toISOString()
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// SIDELINED — GET /api/football?type=sidelined&player_id=XXX
-// Returns a player's full injury history
-// ══════════════════════════════════════════════════════════════════════════
-async function getSidelined(playerId) {
+// ══════════════════════════════════════════════════════════════════════
+// PLAYER STATS — Pro tier: season stats for one player
+// GET /api/football?type=player_stats&player_id=123&season=2025
+// ══════════════════════════════════════════════════════════════════════
+async function getPlayerStats(playerId, season) {
   if (!playerId) throw new Error('player_id required');
-
-  var cacheKey = 'sidelined_' + playerId;
-  var cached   = fromCache(cacheKey);
+  var sy = season || await seasonYear();
+  var cacheKey = 'pstats_' + playerId + '_' + sy;
+  var cached = fromCache(cacheKey);
   if (cached) return cached;
-
-  var d = await apiFetch('/sidelined?player=' + playerId, TOKEN);
-
-  var sidelined = (d.response || []).map(function(s) {
-    return {
-      type:       s.player && s.player.type   || 'Injury',
-      reason:     s.player && s.player.reason || '',
-      start_date: s.player && s.player.start  || null,
-      end_date:   s.player && s.player.end    || null,
-    };
-  });
-
-  TTL[cacheKey] = 12 * 60 * 60 * 1000; // 12hr
-  return toCache(cacheKey, {
-    type: 'sidelined',
-    player_id: playerId,
-    history: sidelined,
-    fetched_at: new Date().toISOString()
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// PLAYER INFO + SEASON STATS — GET /api/football?type=player_info&player_id=XXX
-// Returns player profile + current season statistics
-// ══════════════════════════════════════════════════════════════════════════
-async function getPlayerInfo(playerId) {
-  if (!playerId) throw new Error('player_id required');
-
-  var cacheKey = 'player_info_' + playerId;
-  var cached   = fromCache(cacheKey);
-  if (cached) return cached;
-
-  var sy = await seasonYear();
-  var d  = await apiFetch('/players?id=' + playerId + '&season=' + sy, TOKEN);
-  var entry = (d.response || [])[0] || {};
-  var p    = entry.player     || {};
-  var stat = (entry.statistics || [])[0] || {};
-
+  var data = await apiFetch('/players?id=' + playerId + '&league=' + PSL_LEAGUE + '&season=' + sy, TOKEN);
+  var resp   = (data.response || [])[0] || {};
+  var player = resp.player || {};
+  var stats  = (resp.statistics || [])[0] || {};
   var result = {
-    type:        'player_info',
-    player_id:   playerId,
-    name:        p.name         || '',
-    first_name:  p.firstname    || '',
-    last_name:   p.lastname     || '',
-    age:         p.age          || null,
-    nationality: p.nationality  || '',
-    height:      p.height       || '',
-    weight:      p.weight       || '',
-    photo:       p.photo        || null,
-    injured:     p.injured      || false,
-    birth_date:  p.birth && p.birth.date    || null,
-    birth_place: p.birth && p.birth.place   || null,
-    birth_country: p.birth && p.birth.country || null,
-    team:        normTeam(stat.team && stat.team.name || ''),
-    team_logo:   stat.team && stat.team.logo || null,
-    league:      stat.league && stat.league.name || '',
-    position:    stat.games && stat.games.position || '',
-    season_stats: {
-      appearances:  stat.games && (stat.games.appearences || stat.games.appearances) || 0,
-      lineups:      stat.games && stat.games.lineups     || 0,
-      minutes:      stat.games && stat.games.minutes     || 0,
-      rating:       parseFloat(stat.games && stat.games.rating || 0) || null,
-      captain:      stat.games && stat.games.captain     || false,
-      goals:        stat.goals && stat.goals.total       || 0,
-      assists:      stat.goals && stat.goals.assists     || 0,
-      conceded:     stat.goals && stat.goals.conceded    || 0,
-      saves:        stat.goals && stat.goals.saves       || 0,
-      shots_total:  stat.shots && stat.shots.total       || 0,
-      shots_on:     stat.shots && stat.shots.on          || 0,
-      passes_total: stat.passes && stat.passes.total     || 0,
-      key_passes:   stat.passes && stat.passes.key       || 0,
-      pass_accuracy:parseFloat(stat.passes && stat.passes.accuracy || 0) || null,
-      tackles:      stat.tackles && stat.tackles.total   || 0,
-      blocks:       stat.tackles && stat.tackles.blocks  || 0,
-      interceptions:stat.tackles && stat.tackles.interceptions || 0,
-      duels_total:  stat.duels && stat.duels.total       || 0,
-      duels_won:    stat.duels && stat.duels.won         || 0,
-      dribbles_att: stat.dribbles && stat.dribbles.attempts || 0,
-      dribbles_suc: stat.dribbles && stat.dribbles.success  || 0,
-      fouls_drawn:  stat.fouls && stat.fouls.drawn       || 0,
-      fouls_committed: stat.fouls && stat.fouls.committed || 0,
-      yellow_cards: stat.cards && stat.cards.yellow      || 0,
-      yellow_red:   stat.cards && stat.cards.yellowred   || 0,
-      red_cards:    stat.cards && stat.cards.red         || 0,
-      pen_won:      stat.penalty && stat.penalty.won     || 0,
-      pen_committed:stat.penalty && stat.penalty.committed || 0,
-      pen_scored:   stat.penalty && stat.penalty.scored  || 0,
-      pen_missed:   stat.penalty && stat.penalty.missed  || 0,
-      pen_saved:    stat.penalty && stat.penalty.saved   || 0,
+    type: 'player_stats', player_id: playerId, season: sy,
+    name: player.name, age: player.age, photo: player.photo,
+    nationality: player.nationality,
+    position:    stats.games && stats.games.position,
+    team:        stats.team && stats.team.name,
+    stats: {
+      appearances:   stats.games && stats.games.appearences,
+      minutes:       stats.games && stats.games.minutes,
+      rating:        stats.games && stats.games.rating,
+      goals:         stats.goals && stats.goals.total,
+      assists:       stats.goals && stats.goals.assists,
+      shots_total:   stats.shots && stats.shots.total,
+      shots_on:      stats.shots && stats.shots.on,
+      key_passes:    stats.passes && stats.passes.key,
+      pass_accuracy: stats.passes && stats.passes.accuracy,
+      tackles:       stats.tackles && stats.tackles.total,
+      interceptions: stats.tackles && stats.tackles.interceptions,
+      yellow_cards:  stats.cards && stats.cards.yellow,
+      red_cards:     stats.cards && stats.cards.red,
+      saves:         stats.goals && stats.goals.saves,
+      penalty_saved: stats.penalty && stats.penalty.saved,
     },
-    fetched_at: new Date().toISOString()
+    fetched_at: new Date().toISOString(),
   };
-
-  // Persist rich stats to Supabase players table
-  if (SB_URL && SB_KEY && playerId) {
-    try {
-      await db().from('players').update({
-        photo:          result.photo,
-        nationality:    result.nationality,
-        age:            result.age,
-        height:         result.height,
-        weight:         result.weight,
-        is_injured:     result.injured,
-        is_available:   !result.injured,
-        avg_rating:     result.season_stats.rating,
-        appearances:    result.season_stats.appearances,
-        goals:          result.season_stats.goals,
-        assists:        result.season_stats.assists,
-        saves:          result.season_stats.saves,
-        yellow_cards:   result.season_stats.yellow_cards,
-        red_cards:      result.season_stats.red_cards,
-        updated_at:     new Date().toISOString()
-      }).eq('apifootball_id', parseInt(playerId));
-    } catch(e) {}
-  }
-
-  TTL[cacheKey] = 6 * 60 * 60 * 1000; // 6hr
+  TTL[cacheKey] = 60 * 60 * 1000;
   return toCache(cacheKey, result);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// PLAYER SEASON STATS — shortcut for just stats without full profile
-// ══════════════════════════════════════════════════════════════════════════
-async function getPlayerSeasonStats(playerId) {
-  var full = await getPlayerInfo(playerId);
-  return {
-    type: 'player_stats_season',
-    player_id: playerId,
-    name: full.name,
-    team: full.team,
-    position: full.position,
-    stats: full.season_stats,
-    fetched_at: full.fetched_at
-  };
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// COACHES — GET /api/football?type=coaches&team_id=XXX
-// ══════════════════════════════════════════════════════════════════════════
-async function getCoaches(teamId) {
-  if (!teamId) throw new Error('team_id required');
-
-  var cacheKey = 'coaches_' + teamId;
-  var cached   = fromCache(cacheKey);
-  if (cached) return cached;
-
-  var d = await apiFetch('/coachs?team=' + teamId, TOKEN);
-
-  var coaches = (d.response || []).map(function(c) {
-    return {
-      id:          c.id,
-      name:        c.name,
-      first_name:  c.firstname || '',
-      last_name:   c.lastname  || '',
-      age:         c.age       || null,
-      nationality: c.nationality || '',
-      photo:       c.photo     || null,
-      team:        normTeam(c.team && c.team.name || ''),
-      team_logo:   c.team && c.team.logo || null,
-      career: (c.career || []).map(function(cr) {
-        return {
-          team:  normTeam(cr.team && cr.team.name || ''),
-          logo:  cr.team && cr.team.logo || null,
-          start: cr.start || null,
-          end:   cr.end   || null
-        };
-      })
-    };
-  });
-
-  TTL[cacheKey] = 24 * 60 * 60 * 1000; // 24hr
-  return toCache(cacheKey, {
-    type: 'coaches',
-    team_id: teamId,
-    coaches,
-    fetched_at: new Date().toISOString()
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// TROPHIES — GET /api/football?type=trophies&player_id=XXX
-// Returns all trophies/honours won by a player
-// ══════════════════════════════════════════════════════════════════════════
-async function getTrophies(playerId) {
-  if (!playerId) throw new Error('player_id required');
-
-  var cacheKey = 'trophies_' + playerId;
-  var cached   = fromCache(cacheKey);
-  if (cached) return cached;
-
-  var d = await apiFetch('/trophies?player=' + playerId, TOKEN);
-
-  var trophies = (d.response || []).map(function(t) {
-    return {
-      league:  t.league  || '',
-      country: t.country || '',
-      season:  t.season  || '',
-      place:   t.place   || ''
-    };
-  });
-
-  TTL[cacheKey] = 24 * 60 * 60 * 1000;
-  return toCache(cacheKey, {
-    type: 'trophies',
-    player_id: playerId,
-    trophies,
-    fetched_at: new Date().toISOString()
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// PRE-MATCH ODDS — GET /api/football?type=odds&fixture_id=XXX
-// Returns betting odds from multiple bookmakers
-// ══════════════════════════════════════════════════════════════════════════
-async function getPreMatchOdds(fixtureId) {
+// ══════════════════════════════════════════════════════════════════════
+// PREDICTIONS — Pro tier: match prediction + H2H
+// GET /api/football?type=predictions&fixture_id=123456
+// ══════════════════════════════════════════════════════════════════════
+async function getPredictions(fixtureId) {
   if (!fixtureId) throw new Error('fixture_id required');
-
-  var cacheKey = 'odds_' + fixtureId;
-  var cached   = fromCache(cacheKey);
+  var cacheKey = 'pred_' + fixtureId;
+  var cached = fromCache(cacheKey);
   if (cached) return cached;
-
-  var d = await apiFetch('/odds?fixture=' + fixtureId, TOKEN);
-
-  var bookmakers = (d.response || []).slice(0, 5).map(function(entry) {
-    var bk = entry.bookmakers && entry.bookmakers[0];
-    if (!bk) return null;
-    var matchWinner = (bk.bets || []).find(function(b) { return b.name === 'Match Winner'; });
-    return {
-      bookmaker: bk.name,
-      match_winner: matchWinner ? matchWinner.values : []
-    };
-  }).filter(Boolean);
-
-  TTL[cacheKey] = 30 * 60 * 1000; // 30 min
-  return toCache(cacheKey, {
-    type: 'odds',
-    fixture_id: fixtureId,
-    bookmakers,
-    fetched_at: new Date().toISOString()
-  });
+  var data = await apiFetch('/predictions?fixture=' + fixtureId, TOKEN);
+  var resp = (data.response || [])[0] || {};
+  var result = {
+    type: 'predictions', fixture_id: fixtureId,
+    winner:     resp.predictions && resp.predictions.winner,
+    advice:     resp.predictions && resp.predictions.advice,
+    percent:    resp.predictions && resp.predictions.percent,
+    home_form:  resp.teams && resp.teams.home && resp.teams.home.league && resp.teams.home.league.form,
+    away_form:  resp.teams && resp.teams.away && resp.teams.away.league && resp.teams.away.league.form,
+    h2h: (resp.h2h || []).slice(0, 5).map(function(m) {
+      return {
+        date:       m.fixture && m.fixture.date,
+        home:       m.teams && m.teams.home && m.teams.home.name,
+        away:       m.teams && m.teams.away && m.teams.away.name,
+        home_score: m.goals && m.goals.home,
+        away_score: m.goals && m.goals.away,
+      };
+    }),
+    fetched_at: new Date().toISOString(),
+  };
+  TTL[cacheKey] = 60 * 60 * 1000;
+  return toCache(cacheKey, result);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// MIGRATED FROM sync.js
-// ══════════════════════════════════════════════════════════════════════════
-
-// PSL Data Bundle — gameweek + fixtures + standings in one call
-async function getPslData() {
-  if (!SB_URL) throw new Error('SUPABASE_URL not set');
-  async function sbGet(path) {
-    var r = await fetch(SB_URL + '/rest/v1' + path, {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Accept': 'application/json' }
-    });
-    if (!r.ok) throw new Error('Supabase HTTP ' + r.status);
-    return r.json();
-  }
-  var [gwRes, fixturesRes, standingsRes] = await Promise.all([
-    sbGet('/gameweeks?is_current=eq.true&limit=1'),
-    sbGet('/fixtures?order=kickoff_time.asc&limit=100'),
-    sbGet('/profiles?select=username,team_name,total_points&order=total_points.desc&limit=100')
-  ]);
-  var currentGW = (gwRes[0] || {}).gw_number || (gwRes[0] || {}).number || null;
-  return {
-    currentGW,
-    FT:        fixturesRes.filter(function(f) { return f.status === 'FT'; }),
-    NS:        fixturesRes.filter(function(f) { return f.status === 'NS'; }),
-    live:      fixturesRes.filter(function(f) { return ['LIVE','1H','2H','HT'].includes(f.status); }),
-    standings: standingsRes,
-    ts:        Date.now()
+// ══════════════════════════════════════════════════════════════════════
+// HEAD TO HEAD — Pro tier: last 10 meetings between two teams
+// GET /api/football?type=h2h&h2h=33-34
+// ══════════════════════════════════════════════════════════════════════
+async function getH2H(h2hParam) {
+  if (!h2hParam) throw new Error('h2h param required e.g. h2h=33-34');
+  var cacheKey = 'h2h_' + h2hParam;
+  var cached = fromCache(cacheKey);
+  if (cached) return cached;
+  var data = await apiFetch('/fixtures/headtohead?h2h=' + h2hParam + '&last=10', TOKEN);
+  var result = {
+    type: 'h2h', h2h: h2hParam,
+    matches: (data.response || []).map(function(m) {
+      var fix = m.fixture || {}, teams = m.teams || {}, goals = m.goals || {};
+      return {
+        fixture_id:   fix.id,
+        date:         fix.date,
+        status:       fix.status && fix.status.short,
+        home:         teams.home && teams.home.name,
+        away:         teams.away && teams.away.name,
+        home_logo:    teams.home && teams.home.logo,
+        away_logo:    teams.away && teams.away.logo,
+        home_score:   goals.home,
+        away_score:   goals.away,
+        home_winner:  teams.home && teams.home.winner,
+        away_winner:  teams.away && teams.away.winner,
+      };
+    }),
+    fetched_at: new Date().toISOString(),
   };
+  TTL[cacheKey] = 24 * 60 * 60 * 1000;
+  return toCache(cacheKey, result);
 }
 
-// PSL Seasons list
-async function getSeasons() {
-  var d = await apiFetch('/leagues?id=' + PSL_LEAGUE, TOKEN);
-  var league = (d.response || [])[0];
-  var seasons = league && league.seasons ? league.seasons.slice().reverse() : [];
-  return {
-    type: 'seasons',
-    league: league && league.league && league.league.name,
-    seasons: seasons.map(function(s) { return { year: s.year, current: s.current }; })
+// ══════════════════════════════════════════════════════════════════════
+// PLAYER SEARCH — Pro tier: find player by name in PSL
+// GET /api/football?type=player_search&name=Rayners
+// ══════════════════════════════════════════════════════════════════════
+async function searchPlayer(name) {
+  if (!name) throw new Error('name required');
+  var sy = await seasonYear();
+  var cacheKey = 'psearch_' + name.toLowerCase().replace(/\s/g,'_');
+  var cached = fromCache(cacheKey);
+  if (cached) return cached;
+  var data = await apiFetch('/players?search=' + encodeURIComponent(name) + '&league=' + PSL_LEAGUE + '&season=' + sy, TOKEN);
+  var result = {
+    type: 'player_search', query: name, season: sy,
+    results: (data.response || []).slice(0, 10).map(function(r) {
+      var p = r.player || {}, s = (r.statistics || [])[0] || {};
+      return {
+        id:       p.id,
+        name:     p.name,
+        age:      p.age,
+        photo:    p.photo,
+        team:     s.team && s.team.name,
+        position: s.games && s.games.position,
+        goals:    s.goals && s.goals.total,
+        assists:  s.goals && s.goals.assists,
+        rating:   s.games && s.games.rating,
+      };
+    }),
+    fetched_at: new Date().toISOString(),
   };
+  TTL[cacheKey] = 60 * 60 * 1000;
+  return toCache(cacheKey, result);
 }
