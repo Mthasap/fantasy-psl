@@ -685,6 +685,44 @@ async function recalculateTotals(log) {
   return updated;
 }
 
+
+// ─── Phase 4: Injuries & Sidelined (Pro tier) ────────────────────────────────
+async function syncInjuries(supabase, log) {
+  log.push('Phase 4: Syncing injuries from API-Football Pro tier');
+  const TOKEN   = process.env.APIFOOTBALL_KEY || '';
+  const LEAGUE  = 288;
+  const SEASON  = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2025;
+
+  try {
+    const r = await fetch(`https://v3.football.api-sports.io/injuries?league=${LEAGUE}&season=${SEASON}`, {
+      headers: { 'x-apisports-key': TOKEN }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const injuries = data.response ?? [];
+    log.push(`  Injury records: ${injuries.length}`);
+
+    let updated = 0;
+    for (const rec of injuries) {
+      const pid = rec.player?.id;
+      if (!pid) continue;
+      const isOut = (rec.player?.type || '').toLowerCase().includes('miss');
+      const { error } = await supabase.from('players')
+        .update({
+          is_injured:    isOut,
+          is_available:  !isOut,
+          injury_reason: rec.player?.reason || rec.player?.type || null,
+          updated_at:    new Date().toISOString(),
+        })
+        .eq('apifootball_id', pid);
+      if (!error) updated++;
+    }
+    log.push(`  ✅ Phase 4 complete: ${updated} player injury statuses updated`);
+  } catch (err) {
+    log.push(`  ⚠️  Phase 4 injuries failed: ${err.message} (non-fatal)`);
+  }
+}
+
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async (req, res) => {
@@ -790,6 +828,10 @@ module.exports = async (req, res) => {
       playersUpdated += await recalculateTotals(log);
     }
 
+
+    if (phase === 'all' || phase === 4) {
+      await syncInjuries(supabase, log);
+    }
   } catch (err) {
     log.push('❌ Fatal error: ' + err.message);
     status = 'error';
