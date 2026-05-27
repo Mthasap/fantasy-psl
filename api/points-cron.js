@@ -160,11 +160,11 @@ module.exports = async (req, res) => {
     // 2a. Get all fixture IDs for the current GW
     const { data: gwFixtureRows } = await db
       .from('fixtures')
-      .select('apifootball_fixture_id')
+      .select('api_fixture_id, id')
       .eq('gw_number', currentGW);
 
     const fixtureApiIds = (gwFixtureRows || [])
-      .map(function(r) { return r.apifootball_fixture_id; })
+      .map(function(r) { return r.api_fixture_id; })
       .filter(Boolean);
 
     log.push('GW' + currentGW + ' fixture IDs: ' + (fixtureApiIds.length ? fixtureApiIds.join(', ') : 'none found'));
@@ -580,7 +580,7 @@ module.exports = async (req, res) => {
       const { data: gwFixturesStatus } = await db
         .from('fixtures')
         .select('status')
-        .in('apifootball_fixture_id', fixtureApiIds);
+        .in('api_fixture_id', fixtureApiIds);
       allFT = !!(gwFixturesStatus && gwFixturesStatus.length > 0 &&
         gwFixturesStatus.every(function(f) { return f.status === 'FT'; }));
     } else {
