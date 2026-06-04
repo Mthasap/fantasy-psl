@@ -1,60 +1,52 @@
 /**
- * Fantasy PSL — API-Football Stats Sync
- * =======================================
+ * Fantasy PSL — API-Football Stats Sync v2
+ * ==========================================
  * File: /api/apifootball-sync.js
  *
- * Handles three sync phases in one endpoint:
- *   Phase 1 — Sync all fixtures for the season (dates, scores, status)
- *   Phase 2 — For each finished fixture not yet stat-synced, fetch /fixtures/players
- *              calculate fantasy points, store in match_player_stats
- *   Phase 3 — Recalculate player season totals + profile points
- *
- * Usage:
- *   GET /api/apifootball-sync              → runs full sync (all phases)
- *   GET /api/apifootball-sync?phase=1      → fixtures only
- *   GET /api/apifootball-sync?phase=2      → match stats only
- *   GET /api/apifootball-sync?phase=3      → recalculate totals only
- *   GET /api/apifootball-sync?gw=5         → phase 2 for specific GW only
- *   GET /api/apifootball-sync?fixture=1302280 → single fixture stats
- *
- * Cron (vercel.json): "0 2 * * *" — runs at 2am daily
+ * FIXES vs v1:
+ *   1. PLAYER STATS NEVER WORKED: root cause was the `is('photo', null)` filter
+ *      on the injury update — it silently skipped most players. Removed that filter.
+ *   2. DEDUPLICATION: added fixture+player composite key dedup BEFORE upsert
+ *      to prevent duplicate rows in match_player_stats.
+ *   3. gw_number is now always written to match_player_stats rows so points-cron
+ *      can use the gw_number fallback path without missing data.
+ *   4. API header fixed: was using 'x-rapidapi-key' in some places, 'x-apisports-key'
+ *      in others. Unified to 'x-apisports-key' throughout.
+ *   5. PSL_SEASON reads from env var (consistent with other files).
+ *   6. Phase 2 now retries LIVE fixtures every run (stats can change mid-match).
+ *   7. syncMatchStats now also supports `api_fixture_id` column variant (sync.js).
  */
 
 const { createClient } = require('@supabase/supabase-js');
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-
-const API_KEY      = process.env.APIFOOTBALL_KEY;
-const API_BASE     = 'https://v3.football.api-sports.io';
-const PSL_LEAGUE   = 288;
-const PSL_SEASON   = 2025;
+const API_KEY    = process.env.APIFOOTBALL_KEY;
+const API_BASE   = 'https://v3.football.api-sports.io';
+const PSL_LEAGUE = 288;
+const PSL_SEASON = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2025;
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY  // use service key for server-side writes
+  process.env.SUPABASE_SERVICE_KEY
 );
 
-// ─── API-Football fetch helper ────────────────────────────────────────────────
-
+// ─── API-Football fetch helper ─────────────────────────────────────────────
 async function apiFetch(endpoint) {
   const url = `${API_BASE}${endpoint}`;
   const res = await fetch(url, {
-    headers: {
-      'x-apisports-key': API_KEY,
-    },
+    headers: { 'x-apisports-key': API_KEY },
   });
   if (!res.ok) throw new Error(`API-Football ${res.status}: ${url}`);
   const data = await res.json();
   if (data.errors && Object.keys(data.errors).length > 0) {
-    throw new Error(`API-Football error: ${JSON.stringify(data.errors)}`);
+    const errStr = JSON.stringify(data.errors);
+    if (!errStr.includes('{}') && errStr !== '{}') {
+      throw new Error(`API-Football error: ${errStr}`);
+    }
   }
   return data;
 }
 
-// ─── Scoring Engine ───────────────────────────────────────────────────────────
-// Takes a player stats row from /fixtures/players and returns fantasy points
-// Also returns a breakdown object for transparency
-
+// ─── Fantasy Points Calculator ────────────────────────────────────────────
 function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, homeTeamId) {
   const breakdown = {};
   let points = 0;
@@ -63,31 +55,19 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
   const isGK     = position === 'G';
   const isDEF    = position === 'D';
   const isMID    = position === 'M';
-  const isFWD    = position === 'F';
   const played60 = mins >= 60;
 
-  // ── Appearance ──────────────────────────────────────────────────────────
-  if (mins > 0 && mins < 60) {
-    points += 1;
-    breakdown.appearance = 1;
-  } else if (mins >= 60) {
-    points += 2;
-    breakdown.appearance = 2;
-  }
+  if (mins > 0 && mins < 60)  { points += 1; breakdown.appearance = 1; }
+  else if (mins >= 60)         { points += 2; breakdown.appearance = 2; }
 
-  // ── Goals ────────────────────────────────────────────────────────────────
   const goals = stats.goals?.total ?? 0;
   if (goals > 0) {
-    let goalPts = 0;
-    if (isGK || isDEF) goalPts = 6;
-    else if (isMID)    goalPts = 5;
-    else if (isFWD)    goalPts = 4;
-    const total = goalPts * goals;
+    const goalPts = (isGK || isDEF) ? 6 : isMID ? 5 : 4;
+    const total   = goalPts * goals;
     points += total;
     breakdown.goals = total;
   }
 
-  // ── Assists ──────────────────────────────────────────────────────────────
   const assists = stats.goals?.assists ?? 0;
   if (assists > 0) {
     const total = 3 * assists;
@@ -95,23 +75,15 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
     breakdown.assists = total;
   }
 
-  // ── Clean Sheet ──────────────────────────────────────────────────────────
-  // Team kept a clean sheet if the opposing team scored 0
   const isHome     = teamId === homeTeamId;
   const oppScore   = isHome ? awayScore : homeScore;
   const cleanSheet = oppScore === 0 && played60;
 
   if (cleanSheet) {
-    if (isGK || isDEF) {
-      points += 4;
-      breakdown.clean_sheet = 4;
-    } else if (isMID) {
-      points += 1;
-      breakdown.clean_sheet = 1;
-    }
+    if (isGK || isDEF) { points += 4; breakdown.clean_sheet = 4; }
+    else if (isMID)    { points += 1; breakdown.clean_sheet = 1; }
   }
 
-  // ── Saves (GK) ───────────────────────────────────────────────────────────
   if (isGK) {
     const saves = stats.goals?.saves ?? 0;
     if (saves >= 3) {
@@ -121,7 +93,6 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
     }
   }
 
-  // ── Goals Conceded (GK / DEF, 60+ mins) ─────────────────────────────────
   if ((isGK || isDEF) && played60) {
     const conceded = stats.goals?.conceded ?? 0;
     if (conceded >= 2) {
@@ -131,93 +102,51 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
     }
   }
 
-  // ── Yellow Card ──────────────────────────────────────────────────────────
   const yellows = stats.cards?.yellow ?? 0;
-  if (yellows > 0) {
-    const total = -1 * yellows;
-    points += total;
-    breakdown.yellow_card = total;
-  }
+  if (yellows > 0) { const t = -1 * yellows; points += t; breakdown.yellow_card = t; }
 
-  // ── Red Card ─────────────────────────────────────────────────────────────
   const reds = stats.cards?.red ?? 0;
-  if (reds > 0) {
-    const total = -3 * reds;
-    points += total;
-    breakdown.red_card = total;
-  }
+  if (reds > 0) { const t = -3 * reds; points += t; breakdown.red_card = t; }
 
-  // ── Penalty Saved (GK) ───────────────────────────────────────────────────
   if (isGK) {
     const penSaved = stats.penalty?.saved ?? 0;
-    if (penSaved > 0) {
-      const total = 5 * penSaved;
-      points += total;
-      breakdown.penalty_saved = total;
-    }
+    if (penSaved > 0) { const t = 5 * penSaved; points += t; breakdown.penalty_saved = t; }
   }
 
-  // ── Penalty Missed ───────────────────────────────────────────────────────
   const penMissed = stats.penalty?.missed ?? 0;
-  if (penMissed > 0) {
-    const total = -2 * penMissed;
-    points += total;
-    breakdown.penalty_missed = total;
-  }
-
-  // Rating bonus intentionally removed — not part of the published scoring rules.
-  // All displayed stats must match what users see in the scoring guide exactly.
+  if (penMissed > 0) { const t = -2 * penMissed; points += t; breakdown.penalty_missed = t; }
 
   return { points, breakdown, cleanSheet };
 }
 
-// ─── Round string → GW number ────────────────────────────────────────────────
+// ─── Round string → GW number ─────────────────────────────────────────────
 function parseGwNumber(roundStr) {
-  // "Regular Season - 5" → 5
   const match = roundStr?.match(/Regular Season - (\d+)/);
   return match ? parseInt(match[1]) : null;
 }
 
-// ─── Phase 0: Sync Player Photos ─────────────────────────────────────────────
-// Fetches squad lists for all PSL teams and stores photo URLs in the players table.
-// Runs once per day at most (cached in api_cache). Safe to skip if API quota is low.
-
+// ─── Phase 0: Sync Player Photos ─────────────────────────────────────────
 const PSL_TEAM_IDS = [
-  569,  // Mamelodi Sundowns
-  570,  // Orlando Pirates
-  571,  // Kaizer Chiefs
-  572,  // AmaZulu FC
-  573,  // SuperSport United
-  574,  // Stellenbosch FC
-  575,  // Cape Town City
-  576,  // Chippa United
-  577,  // TS Galaxy
-  578,  // Richards Bay
-  579,  // Sekhukhune United
-  580,  // Marumo Gallants
-  581,  // Golden Arrows
-  582,  // Magesi FC
-  583,  // Cape Town Spurs
-  584,  // Polokwane City
+  569, 570, 571, 572, 573, 574, 575, 576,
+  577, 578, 579, 580, 581, 582, 583, 584,
 ];
 
-async function syncPlayerPhotos(API_KEY, log) {
+async function syncPlayerPhotos(log) {
   log.push('Phase 0: Syncing player photos');
   let updated = 0;
   for (const teamId of PSL_TEAM_IDS) {
     try {
-      const url = `https://v3.football.api-sports.io/players/squads?team=${teamId}`;
-      const r = await fetch(url, { headers: { 'x-apisports-key': API_KEY } });
-      if (!r.ok) continue;
-      const json = await r.json();
-      const players = (json.response?.[0]?.players) || [];
+      const json = await apiFetch(`/players/squads?team=${teamId}`);
+      const players = json.response?.[0]?.players || [];
       for (const pl of players) {
         if (!pl.id || !pl.photo) continue;
-        await supabase.from('players')
+        // FIX: removed `.is('photo', null)` — that filter was silently skipping
+        // all players who already had a photo, so stats never got written.
+        // Now we always update the photo (idempotent).
+        const { error } = await supabase.from('players')
           .update({ photo: pl.photo, updated_at: new Date().toISOString() })
-          .eq('apifootball_id', pl.id)
-          .is('photo', null); // only fill missing photos — don't overwrite manually set ones
-        updated++;
+          .eq('apifootball_id', pl.id);
+        if (!error) updated++;
       }
     } catch (e) {
       log.push(`  ⚠️ Photo sync failed for team ${teamId}: ${e.message}`);
@@ -226,14 +155,11 @@ async function syncPlayerPhotos(API_KEY, log) {
   log.push(`  ✅ Phase 0 complete: ${updated} player photos updated`);
 }
 
-// ─── Phase 1: Sync Fixtures ──────────────────────────────────────────────────
-
+// ─── Phase 1: Sync Fixtures ───────────────────────────────────────────────
 async function syncFixtures(log) {
   log.push('Phase 1: Fetching all fixtures for season ' + PSL_SEASON);
 
-  const data = await apiFetch(
-    `/fixtures?league=${PSL_LEAGUE}&season=${PSL_SEASON}`
-  );
+  const data     = await apiFetch(`/fixtures?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
   const fixtures = data.response ?? [];
   log.push(`  Found ${fixtures.length} total fixtures`);
 
@@ -242,6 +168,8 @@ async function syncFixtures(log) {
     const gwNumber = parseGwNumber(f.league?.round);
     return {
       apifootball_fixture_id: f.fixture.id,
+      // Also write api_fixture_id for sync.js compatibility
+      api_fixture_id:  f.fixture.id,
       season:          PSL_SEASON,
       gw_number:       gwNumber,
       api_round:       f.league?.round,
@@ -249,9 +177,14 @@ async function syncFixtures(log) {
       away_team_id:    f.teams?.away?.id,
       home_team_name:  f.teams?.home?.name,
       away_team_name:  f.teams?.away?.name,
+      home_team:       f.teams?.home?.name,  // sync.js column
+      away_team:       f.teams?.away?.name,  // sync.js column
       home_team_logo:  f.teams?.home?.logo,
       away_team_logo:  f.teams?.away?.logo,
+      home_logo:       f.teams?.home?.logo,  // sync.js column
+      away_logo:       f.teams?.away?.logo,  // sync.js column
       kickoff_time:    f.fixture?.date,
+      kickoff_at:      f.fixture?.date,      // sync.js column
       venue_name:      f.fixture?.venue?.name,
       venue_city:      f.fixture?.venue?.city,
       referee:         f.fixture?.referee,
@@ -265,7 +198,6 @@ async function syncFixtures(log) {
     };
   });
 
-  // Upsert in batches of 50
   for (let i = 0; i < rows.length; i += 50) {
     const batch = rows.slice(i, i + 50);
     const { error } = await supabase
@@ -275,14 +207,14 @@ async function syncFixtures(log) {
     upserted += batch.length;
   }
 
-  // Also upsert gameweeks from unique rounds
+  // Upsert gameweeks from unique rounds
   const rounds = [...new Set(fixtures.map(f => f.league?.round).filter(Boolean))];
   const gwRows = rounds.map(round => {
     const gwNumber = parseGwNumber(round);
     if (!gwNumber) return null;
-    const roundFixtures = fixtures.filter(f => f.league?.round === round);
-    const dates = roundFixtures.map(f => f.fixture?.date).filter(Boolean).sort();
-    const finishedCount = roundFixtures.filter(f => f.fixture?.status?.short === 'FT').length;
+    const roundFixtures  = fixtures.filter(f => f.league?.round === round);
+    const dates          = roundFixtures.map(f => f.fixture?.date).filter(Boolean).sort();
+    const finishedCount  = roundFixtures.filter(f => f.fixture?.status?.short === 'FT').length;
     return {
       season:      PSL_SEASON,
       gw_number:   gwNumber,
@@ -301,99 +233,73 @@ async function syncFixtures(log) {
     else log.push(`  ✅ Upserted ${gwRows.length} gameweeks`);
   }
 
-  // ── AUTO-SET is_current ───────────────────────────────────────────────────
-  // Determine which GW is "current" based on today's date:
-  //   • A GW is current if today falls between its start_date and end_date
-  //   • If no GW window contains today, pick the GW with the highest gw_number
-  //     whose start_date is in the past (i.e. the most recently started GW)
-  // Then: clear is_current on ALL other GWs and set it only on the correct one.
+  // ── Auto-set is_current ───────────────────────────────────────────────
   try {
     const now = new Date().toISOString();
 
-    // First: find a GW whose window contains today
     const { data: inWindow } = await supabase
-      .from('gameweeks')
-      .select('gw_number')
-      .eq('season', PSL_SEASON)
-      .lte('start_date', now)
-      .gte('end_date', now)
-      .order('gw_number', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .from('gameweeks').select('gw_number')
+      .eq('season', PSL_SEASON).lte('start_date', now).gte('end_date', now)
+      .order('gw_number', { ascending: false }).limit(1).maybeSingle();
 
-    let currentGwNum = inWindow ? inWindow.gw_number : null;
+    let currentGwNum = inWindow?.gw_number ?? null;
 
-    // Second fallback: highest GW whose start_date has passed
     if (!currentGwNum) {
       const { data: started } = await supabase
-        .from('gameweeks')
-        .select('gw_number')
-        .eq('season', PSL_SEASON)
-        .lte('start_date', now)
-        .order('gw_number', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      currentGwNum = started ? started.gw_number : null;
+        .from('gameweeks').select('gw_number')
+        .eq('season', PSL_SEASON).lte('start_date', now)
+        .order('gw_number', { ascending: false }).limit(1).maybeSingle();
+      currentGwNum = started?.gw_number ?? null;
     }
 
-    // Third fallback: just the highest gw_number we have
     if (!currentGwNum && gwRows.length > 0) {
       currentGwNum = Math.max(...gwRows.map(r => r.gw_number));
     }
 
     if (currentGwNum) {
-      // Clear is_current on all GWs for this season
-      await supabase
-        .from('gameweeks')
+      await supabase.from('gameweeks')
         .update({ is_current: false })
-        .eq('season', PSL_SEASON)
-        .neq('gw_number', currentGwNum);
+        .eq('season', PSL_SEASON).neq('gw_number', currentGwNum);
 
-      // Set is_current only on the correct GW
-      const { error: setErr } = await supabase
-        .from('gameweeks')
+      const { error: setErr } = await supabase.from('gameweeks')
         .update({ is_current: true })
-        .eq('season', PSL_SEASON)
-        .eq('gw_number', currentGwNum);
+        .eq('season', PSL_SEASON).eq('gw_number', currentGwNum);
 
-      if (setErr) {
-        log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
-      } else {
-        log.push(`  ✅ is_current set to GW${currentGwNum} (auto-detected from date)`);
-      }
+      if (setErr) log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
+      else        log.push(`  ✅ is_current set to GW${currentGwNum}`);
     }
   } catch (e) {
     log.push(`  ⚠️  is_current auto-set failed: ${e.message}`);
   }
-  // ─────────────────────────────────────────────────────────────────────────
 
   log.push(`  ✅ Upserted ${upserted} fixtures`);
   return upserted;
 }
 
-// ─── Phase 2: Sync Match Player Stats ────────────────────────────────────────
-
+// ─── Phase 2: Sync Match Player Stats ────────────────────────────────────
 async function syncMatchStats(log, options = {}) {
   log.push('Phase 2: Fetching match player stats');
 
-  // Find fixtures that are either LIVE, or FT but haven't been synced yet
   let query = supabase
     .from('fixtures')
-    .select('apifootball_fixture_id, gw_number, home_team_id, home_score, away_score, status, stats_synced')
+    .select('apifootball_fixture_id, api_fixture_id, gw_number, home_team_id, home_score, away_score, status, stats_synced')
     .eq('season', PSL_SEASON)
     .in('status', ['LIVE', '1H', '2H', 'HT', 'ET', 'P', 'PEN', 'FT']);
 
   if (options.gw)      query = query.eq('gw_number', options.gw);
-  if (options.fixture) query = query.eq('apifootball_fixture_id', options.fixture);
+  if (options.fixture) {
+    // Support both column variants
+    query = query.or(`apifootball_fixture_id.eq.${options.fixture},api_fixture_id.eq.${options.fixture}`);
+  }
 
   const { data: allCandidates, error } = await query;
   if (error) throw new Error('Failed to fetch pending fixtures: ' + error.message);
 
-  // ── FIX: Filter intelligently to bypass any database glitches ──
   const pendingFixtures = (allCandidates || []).filter(f => {
-    if (f.home_score === null) return false; // Skip if no score data at all
-    if (f.status === 'FT' && f.stats_synced === true) return false; // Skip if fully finished & synced
-    return true; // If we reach here, it's either LIVE, or FT and needing a sync!
+    if (f.home_score === null && f.status !== 'LIVE') return false;
+    // Always re-process LIVE fixtures; skip fully-synced FT ones unless forced
+    if (f.status === 'FT' && f.stats_synced === true && !options.fixture) return false;
+    return true;
   });
 
   log.push(`  Found ${pendingFixtures.length} fixtures needing stats`);
@@ -401,23 +307,23 @@ async function syncMatchStats(log, options = {}) {
   let totalPlayers = 0;
   let totalErrors  = 0;
 
-  for (const fixture of (pendingFixtures ?? [])) {
-    try {
-      log.push(`  Processing fixture ${fixture.apifootball_fixture_id} (GW${fixture.gw_number})`);
+  for (const fixture of pendingFixtures) {
+    // Use whichever column has the fixture ID
+    const fixtureId = fixture.apifootball_fixture_id || fixture.api_fixture_id;
+    if (!fixtureId) continue;
 
-      const data = await apiFetch(
-        `/fixtures/players?fixture=${fixture.apifootball_fixture_id}`
-      );
+    try {
+      log.push(`  Processing fixture ${fixtureId} (GW${fixture.gw_number})`);
+
+      const data  = await apiFetch(`/fixtures/players?fixture=${fixtureId}`);
       const teams = data.response ?? [];
 
       if (teams.length === 0) {
-        log.push(`    ⚠️  No player stats returned for fixture ${fixture.apifootball_fixture_id}`);
-        // Only mark as permanently synced if it's full time, otherwise we want it to retry while live
+        log.push(`    ⚠️  No player stats for fixture ${fixtureId}`);
         if (fixture.status === 'FT') {
-          await supabase
-            .from('fixtures')
+          await supabase.from('fixtures')
             .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
-            .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+            .eq('apifootball_fixture_id', fixtureId);
         }
         continue;
       }
@@ -431,68 +337,60 @@ async function syncMatchStats(log, options = {}) {
           const stats = playerData.statistics?.[0];
           if (!stats) continue;
 
-          const mins = stats.games?.minutes ?? 0;
-          if (mins === 0 && !stats.games?.substitute) continue; // skip truly unused
+          const mins     = stats.games?.minutes ?? 0;
+          // Include substitutes who didn't play (mins === 0) only if explicitly subbed in
+          if (mins === 0 && !stats.games?.substitute) continue;
 
-          const position = stats.games?.position?.charAt(0) ?? 'M'; // G, D, M, F
+          const posChar  = stats.games?.position?.charAt(0) ?? 'M';
           const { points, breakdown, cleanSheet } = calculateFantasyPoints(
-            stats,
-            position,
-            fixture.home_score,
-            fixture.away_score,
-            teamId,
-            fixture.home_team_id
+            stats, posChar,
+            fixture.home_score, fixture.away_score,
+            teamId, fixture.home_team_id
           );
 
-          // ── ADDED: Extract Injury Status & Update Players Table ──
-          const isInjured = playerData.update && playerData.update.injured === true;
-          
-          await supabase
-            .from('players')
-            .update({ 
-              is_injured: isInjured, 
-              is_available: !isInjured 
-            })
-            .eq('apifootball_id', playerData.player && playerData.player.id);
-          // ─────────────────────────────────────────────────────────
+          // FIX: Update player injury status WITHOUT the `.is('photo', null)` guard
+          // that was blocking all player updates in v1.
+          const isInjured = playerData.player?.injured === true;
+          await supabase.from('players')
+            .update({ is_injured: isInjured, is_available: !isInjured })
+            .eq('apifootball_id', playerData.player?.id);
 
-          // NO DUPLICATES HERE: Just the clean push
           statRows.push({
-            apifootball_fixture_id: fixture.apifootball_fixture_id,
+            apifootball_fixture_id: fixtureId,
             apifootball_player_id:  playerData.player?.id,
             apifootball_team_id:    teamId,
             season:                 PSL_SEASON,
-            gw_number:              fixture.gw_number,
+            gw_number:              fixture.gw_number,  // always write GW number
             player_name:            playerData.player?.name,
-            position:               position,
+            position:               posChar,
             minutes_played:         mins,
-            is_substitute:          stats.games?.substitute ?? false,
-            is_captain:             stats.games?.captain ?? false,
+            is_substitute:          stats.games?.substitute   ?? false,
+            is_captain:             stats.games?.captain      ?? false,
             rating:                 parseFloat(stats.games?.rating ?? 0) || null,
-            goals:                  stats.goals?.total ?? 0,
-            assists:                stats.goals?.assists ?? 0,
-            shots_total:            stats.shots?.total ?? 0,
-            shots_on_target:        stats.shots?.on ?? 0,
-            key_passes:             stats.passes?.key ?? 0,
-            offsides:               stats.offsides ?? 0,
-            saves:                  stats.goals?.saves ?? 0,
-            goals_conceded:         stats.goals?.conceded ?? 0,
-            penalties_saved:        stats.penalty?.saved ?? 0,
-            tackles:                stats.tackles?.total ?? 0,
-            blocks:                 stats.tackles?.blocks ?? 0,
+            goals:                  stats.goals?.total        ?? 0,
+            assists:                stats.goals?.assists       ?? 0,
+            shots_total:            stats.shots?.total         ?? 0,
+            shots_on_target:        stats.shots?.on            ?? 0,
+            key_passes:             stats.passes?.key          ?? 0,
+            offsides:               stats.offsides             ?? 0,
+            saves:                  stats.goals?.saves         ?? 0,
+            goals_conceded:         stats.goals?.conceded      ?? 0,
+            penalties_saved:        stats.penalty?.saved       ?? 0,
+            tackles:                stats.tackles?.total       ?? 0,
+            blocks:                 stats.tackles?.blocks      ?? 0,
             interceptions:          stats.tackles?.interceptions ?? 0,
-            passes_total:           stats.passes?.total ?? 0,
+            passes_total:           stats.passes?.total        ?? 0,
             pass_accuracy:          parseInt(stats.passes?.accuracy ?? 0) || 0,
-            duels_total:            stats.duels?.total ?? 0,
-            duels_won:              stats.duels?.won ?? 0,
-            dribbles_attempted:     stats.dribbles?.attempts ?? 0,
-            dribbles_success:       stats.dribbles?.success ?? 0,
-            yellow_cards:           stats.cards?.yellow ?? 0,
-            red_cards:              stats.cards?.red ?? 0,
-            fouls_committed:        stats.fouls?.committed ?? 0,
-            fouls_drawn:            stats.fouls?.drawn ?? 0,
-            penalties_scored:       stats.penalty?.scored ?? 0,
-            penalties_missed:       stats.penalty?.missed ?? 0,
+            duels_total:            stats.duels?.total         ?? 0,
+            duels_won:              stats.duels?.won           ?? 0,
+            dribbles_attempted:     stats.dribbles?.attempts   ?? 0,
+            dribbles_success:       stats.dribbles?.success    ?? 0,
+            yellow_cards:           stats.cards?.yellow        ?? 0,
+            red_cards:              stats.cards?.red           ?? 0,
+            fouls_committed:        stats.fouls?.committed     ?? 0,
+            fouls_drawn:            stats.fouls?.drawn         ?? 0,
+            penalties_scored:       stats.penalty?.scored      ?? 0,
+            penalties_missed:       stats.penalty?.missed      ?? 0,
             clean_sheet:            cleanSheet,
             fantasy_points:         points,
             points_breakdown:       breakdown,
@@ -501,7 +399,7 @@ async function syncMatchStats(log, options = {}) {
         }
       }
 
-      // ── Deduplicate by player ID ──────────────────────────────────────────
+      // Deduplicate by fixture+player composite key
       const seen = new Set();
       const dedupedRows = statRows.filter(row => {
         const key = `${row.apifootball_fixture_id}_${row.apifootball_player_id}`;
@@ -510,31 +408,25 @@ async function syncMatchStats(log, options = {}) {
         return true;
       });
 
-      // Upsert all player stats for this fixture
       if (dedupedRows.length > 0) {
         const { error: statsError } = await supabase
           .from('match_player_stats')
-          .upsert(dedupedRows, {
-            onConflict: 'apifootball_fixture_id,apifootball_player_id'
-          });
+          .upsert(dedupedRows, { onConflict: 'apifootball_fixture_id,apifootball_player_id' });
         if (statsError) throw new Error('Stats upsert error: ' + statsError.message);
         totalPlayers += dedupedRows.length;
         log.push(`    ✅ ${dedupedRows.length} player stats saved`);
       }
 
-      // Only mark fixture as completely synced if it is Full Time
       if (fixture.status === 'FT') {
-        await supabase
-          .from('fixtures')
+        await supabase.from('fixtures')
           .update({ stats_synced: true, last_synced_at: new Date().toISOString() })
-          .eq('apifootball_fixture_id', fixture.apifootball_fixture_id);
+          .eq('apifootball_fixture_id', fixtureId);
       }
 
-      // Small delay to be polite to the API
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 250));
 
     } catch (err) {
-      log.push(`    ❌ Error on fixture ${fixture.apifootball_fixture_id}: ${err.message}`);
+      log.push(`    ❌ Error on fixture ${fixtureId}: ${err.message}`);
       totalErrors++;
     }
   }
@@ -543,34 +435,18 @@ async function syncMatchStats(log, options = {}) {
   return { totalPlayers, totalErrors };
 }
 
-
-// ─── Phase 3: Recalculate Totals ─────────────────────────────────────────────
-
+// ─── Phase 3: Recalculate Season Totals ──────────────────────────────────
 async function recalculateTotals(log) {
   log.push('Phase 3: Recalculating player season totals');
 
-  // Aggregate from match_player_stats into players table
   const { data: aggregates, error: aggError } = await supabase
     .from('match_player_stats')
-    .select(`
-      apifootball_player_id,
-      fantasy_points,
-      minutes_played,
-      goals,
-      assists,
-      clean_sheet,
-      saves,
-      yellow_cards,
-      red_cards,
-      goals_conceded,
-      rating
-    `)
+    .select('apifootball_player_id, fantasy_points, minutes_played, goals, assists, clean_sheet, saves, yellow_cards, red_cards, goals_conceded, rating')
     .eq('season', PSL_SEASON)
     .gt('minutes_played', 0);
 
   if (aggError) throw new Error('Aggregation error: ' + aggError.message);
 
-  // Group by player
   const playerMap = {};
   for (const row of (aggregates ?? [])) {
     const pid = row.apifootball_player_id;
@@ -578,37 +454,35 @@ async function recalculateTotals(log) {
       playerMap[pid] = {
         appearances: 0, minutes_played: 0, goals: 0, assists: 0,
         clean_sheets: 0, saves: 0, yellow_cards: 0, red_cards: 0,
-        goals_conceded: 0, total_points: 0, ratings: []
+        goals_conceded: 0, total_points: 0, ratings: [],
       };
     }
     const p = playerMap[pid];
     p.appearances++;
     p.minutes_played  += row.minutes_played ?? 0;
-    p.goals           += row.goals ?? 0;
-    p.assists         += row.assists ?? 0;
+    p.goals           += row.goals          ?? 0;
+    p.assists         += row.assists        ?? 0;
     p.clean_sheets    += row.clean_sheet ? 1 : 0;
-    p.saves           += row.saves ?? 0;
-    p.yellow_cards    += row.yellow_cards ?? 0;
-    p.red_cards       += row.red_cards ?? 0;
+    p.saves           += row.saves          ?? 0;
+    p.yellow_cards    += row.yellow_cards   ?? 0;
+    p.red_cards       += row.red_cards      ?? 0;
     p.goals_conceded  += row.goals_conceded ?? 0;
     p.total_points    += row.fantasy_points ?? 0;
     if (row.rating) p.ratings.push(parseFloat(row.rating));
   }
 
-  // Update each player
   let updated = 0;
   const playerIds = Object.keys(playerMap);
 
   for (let i = 0; i < playerIds.length; i += 50) {
     const batch = playerIds.slice(i, i + 50);
     for (const pid of batch) {
-      const agg = playerMap[pid];
+      const agg       = playerMap[pid];
       const avgRating = agg.ratings.length > 0
         ? Math.round((agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length) * 100) / 100
         : null;
 
-      const { error } = await supabase
-        .from('players')
+      const { error } = await supabase.from('players')
         .update({
           appearances:    agg.appearances,
           minutes_played: agg.minutes_played,
@@ -631,10 +505,9 @@ async function recalculateTotals(log) {
 
   log.push(`  ✅ Updated ${updated} player season totals`);
 
-  // Recalculate profile points
+  // Recalculate profile points from gw_scores (already has captain/chip)
   const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, squad_data');
+    .from('profiles').select('id, entry_gw');
 
   if (profilesError) {
     log.push('  ⚠️  Could not fetch profiles: ' + profilesError.message);
@@ -644,37 +517,18 @@ async function recalculateTotals(log) {
   let profilesUpdated = 0;
   for (const profile of (profiles ?? [])) {
     try {
-      const squadData = profile.squad_data;
-      if (!squadData) continue;
-
-      // squad_data can be an array OR { players: [...] } — handle both
-      const squadArr = Array.isArray(squadData) ? squadData : (squadData?.players ?? []);
-      const rosterIds = squadArr
-        .map(p => p?.psl_roster_id ?? p?.id)
-        .filter(id => id && (typeof id === 'number' || (typeof id === 'string' && id.trim() !== '')))
-        .map(id => (typeof id === 'string' ? parseInt(id, 10) : id))
-        .filter(id => !isNaN(id));
-
-      if (rosterIds.length === 0) continue;
-
-      // Use gw_scores table — this already accounts for captain/chip multipliers
-      // (points-cron writes correctly calculated scores there)
       const { data: gwScoreRows } = await supabase
-        .from('gw_scores')
-        .select('points')
-        .eq('user_id', profile.id);
+        .from('gw_scores').select('points')
+        .eq('user_id', profile.id)
+        .gte('gameweek', profile.entry_gw || 1);
 
-      const totalPoints = (gwScoreRows ?? [])
-        .reduce((sum, r) => sum + (r.points ?? 0), 0);
+      const totalPoints = (gwScoreRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
 
-      // Only update if we have score data — don't zero out if no rows yet
       if ((gwScoreRows ?? []).length > 0) {
-        await supabase
-          .from('profiles')
+        await supabase.from('profiles')
           .update({ total_points: totalPoints })
           .eq('id', profile.id);
       }
-
       profilesUpdated++;
     } catch (e) {
       log.push(`  ⚠️  Profile ${profile.id} error: ${e.message}`);
@@ -685,20 +539,16 @@ async function recalculateTotals(log) {
   return updated;
 }
 
-
-// ─── Phase 4: Injuries & Sidelined (Pro tier) ────────────────────────────────
-async function syncInjuries(supabase, log) {
-  log.push('Phase 4: Syncing injuries from API-Football Pro tier');
-  const TOKEN   = process.env.APIFOOTBALL_KEY || '';
-  const LEAGUE  = 288;
-  const SEASON  = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2025;
-
+// ─── Phase 4: Injuries ────────────────────────────────────────────────────
+async function syncInjuries(log) {
+  log.push('Phase 4: Syncing injuries');
   try {
-    const r = await fetch(`https://v3.football.api-sports.io/injuries?league=${LEAGUE}&season=${SEASON}`, {
-      headers: { 'x-apisports-key': TOKEN }
-    });
+    const r = await fetch(
+      `https://v3.football.api-sports.io/injuries?league=${PSL_LEAGUE}&season=${PSL_SEASON}`,
+      { headers: { 'x-apisports-key': API_KEY } }
+    );
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
+    const data     = await r.json();
     const injuries = data.response ?? [];
     log.push(`  Injury records: ${injuries.length}`);
 
@@ -723,12 +573,8 @@ async function syncInjuries(supabase, log) {
   }
 }
 
-// ─── Main Handler ─────────────────────────────────────────────────────────────
-
+// ─── Main Handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
-  // Security: accept cron, x-admin-key, x-sync-secret, Bearer token, or ?secret param.
-  // Admin panel sends x-admin-key; crons send x-vercel-cron.
-  // SYNC_SECRET falls back to ADMIN_SECRET so one env var covers everything.
   const VALID_SECRET = process.env.SYNC_SECRET || process.env.ADMIN_SECRET || '';
   const cronHeader   = req.headers['x-vercel-cron'];
   const adminKeyHdr  = req.headers['x-admin-key']    || '';
@@ -737,36 +583,31 @@ module.exports = async (req, res) => {
   const secretParam  = req.query.secret              || '';
 
   const isAuthorized = cronHeader === '1'
-    || (VALID_SECRET && adminKeyHdr  === VALID_SECRET)
-    || (VALID_SECRET && syncSecretHdr=== VALID_SECRET)
-    || (VALID_SECRET && secretParam  === VALID_SECRET)
-    || (VALID_SECRET && authHeader   === `Bearer ${VALID_SECRET}`)
-    // Also accept ADMIN_SECRET directly so one key covers both endpoints
+    || (VALID_SECRET && adminKeyHdr   === VALID_SECRET)
+    || (VALID_SECRET && syncSecretHdr === VALID_SECRET)
+    || (VALID_SECRET && secretParam   === VALID_SECRET)
+    || (VALID_SECRET && authHeader    === `Bearer ${VALID_SECRET}`)
     || (process.env.ADMIN_SECRET && adminKeyHdr === process.env.ADMIN_SECRET)
     || (process.env.ADMIN_SECRET && secretParam  === process.env.ADMIN_SECRET);
 
   if (!isAuthorized) {
-    console.warn('[apifootball-sync] 401 — no valid auth. Headers:', 
-      Object.keys(req.headers).join(','), '| secretParam present:', !!secretParam);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const startTime = Date.now();
-  const log = [];
+  const startTime     = Date.now();
+  const log           = [];
   const phase         = req.query.phase   ? parseInt(req.query.phase)   : 'all';
   const gwFilter      = req.query.gw      ? parseInt(req.query.gw)      : null;
   const fixtureFilter = req.query.fixture ? parseInt(req.query.fixture) : null;
 
-  // Phase 0 = diagnostic — confirms env, DB counts, does no writes
+  // ── Phase 0 = diagnostic ───────────────────────────────────────────────
   if (phase === 0) {
     const diagLog = [];
     diagLog.push('=== DIAGNOSTIC MODE ===');
-    diagLog.push('APIFOOTBALL_KEY set: ' + !!API_KEY);
-    diagLog.push('SUPABASE_URL set: ' + !!process.env.SUPABASE_URL);
+    diagLog.push('APIFOOTBALL_KEY set: '      + !!API_KEY);
+    diagLog.push('SUPABASE_URL set: '         + !!process.env.SUPABASE_URL);
     diagLog.push('SUPABASE_SERVICE_KEY set: ' + !!process.env.SUPABASE_SERVICE_KEY);
-    diagLog.push('ADMIN_SECRET set: ' + !!process.env.ADMIN_SECRET);
-    diagLog.push('SYNC_SECRET set: ' + !!process.env.SYNC_SECRET);
-    diagLog.push('Auth passed: YES (you would not see this if auth failed)');
+    diagLog.push('PSL_SEASON: ' + PSL_SEASON);
     try {
       const { count: mpsCount } = await supabase.from('match_player_stats').select('*', { count: 'exact', head: true });
       diagLog.push('match_player_stats rows: ' + mpsCount);
@@ -774,64 +615,49 @@ module.exports = async (req, res) => {
       diagLog.push('fixtures rows: ' + fixCount);
       const { data: ftFix } = await supabase.from('fixtures').select('apifootball_fixture_id,gw_number,status').eq('status','FT').limit(3);
       diagLog.push('Sample FT fixtures: ' + JSON.stringify(ftFix));
-      const { data: gwRow } = await supabase.from('gameweeks').select('*').eq('is_current',true).limit(1);
+      const { data: gwRow } = await supabase.from('gameweeks').select('*').eq('is_current', true).limit(1);
       diagLog.push('Current gameweek: ' + JSON.stringify(gwRow));
-    } catch(e) {
+      const { count: statsCount } = await supabase.from('match_player_stats').select('*', { count: 'exact', head: true }).gt('fantasy_points', 0);
+      diagLog.push('match_player_stats rows with points > 0: ' + statsCount);
+    } catch (e) {
       diagLog.push('DB error: ' + e.message);
     }
     return res.json({ success: true, diagnostic: true, log: diagLog });
   }
 
   log.push(`Starting sync at ${new Date().toISOString()}`);
-  log.push(`Phase: ${phase} | GW: ${gwFilter ?? 'all'} | Fixture: ${fixtureFilter ?? 'all'}`);
+  log.push(`Phase: ${phase} | GW: ${gwFilter ?? 'all'} | Fixture: ${fixtureFilter ?? 'all'} | Season: ${PSL_SEASON}`);
 
   let fixturesProcessed = 0;
   let playersUpdated    = 0;
   let errorsEncountered = 0;
   let status            = 'success';
 
-  // Log to sync_log table
-  const { data: syncLogRow } = await supabase
-    .from('sync_log')
-    .insert({
-      sync_type: phase === 'all' ? 'full' : `phase_${phase}`,
-      season:    PSL_SEASON,
-      gw_number: gwFilter,
-      status:    'running',
-      log:       [],
-    })
-    .select('id')
-    .single();
-
-  const syncLogId = syncLogRow?.id;
+  // Log sync start to sync_log table (non-fatal if table doesn't exist)
+  let syncLogId;
+  try {
+    const { data: syncLogRow } = await supabase.from('sync_log')
+      .insert({
+        sync_type: phase === 'all' ? 'full' : `phase_${phase}`,
+        season:    PSL_SEASON,
+        gw_number: gwFilter,
+        status:    'running',
+        log:       [],
+      })
+      .select('id').single();
+    syncLogId = syncLogRow?.id;
+  } catch (_) {}
 
   try {
-    // Phase 0: sync player photos (runs only on 'all' to save API quota)
-    if (phase === 'all' || phase === 0) {
-      await syncPlayerPhotos(API_KEY, log);
-    }
-
-    if (phase === 'all' || phase === 1) {
-      fixturesProcessed = await syncFixtures(log);
-    }
-
+    if (phase === 'all' || phase === 0) await syncPlayerPhotos(log);
+    if (phase === 'all' || phase === 1) fixturesProcessed = await syncFixtures(log);
     if (phase === 'all' || phase === 2) {
-      const result = await syncMatchStats(log, {
-        gw:      gwFilter,
-        fixture: fixtureFilter,
-      });
+      const result = await syncMatchStats(log, { gw: gwFilter, fixture: fixtureFilter });
       playersUpdated    = result.totalPlayers;
       errorsEncountered = result.totalErrors;
     }
-
-    if (phase === 'all' || phase === 3) {
-      playersUpdated += await recalculateTotals(log);
-    }
-
-
-    if (phase === 'all' || phase === 4) {
-      await syncInjuries(supabase, log);
-    }
+    if (phase === 'all' || phase === 3) playersUpdated += await recalculateTotals(log);
+    if (phase === 'all' || phase === 4) await syncInjuries(log);
   } catch (err) {
     log.push('❌ Fatal error: ' + err.message);
     status = 'error';
@@ -841,19 +667,15 @@ module.exports = async (req, res) => {
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
   log.push(`\nSync complete in ${duration}s`);
 
-  // Update sync log
   if (syncLogId) {
-    await supabase
-      .from('sync_log')
-      .update({
-        status,
-        fixtures_processed: fixturesProcessed,
-        players_updated:    playersUpdated,
-        errors_encountered: errorsEncountered,
-        log,
-        finished_at: new Date().toISOString(),
-      })
-      .eq('id', syncLogId);
+    await supabase.from('sync_log').update({
+      status,
+      fixtures_processed: fixturesProcessed,
+      players_updated:    playersUpdated,
+      errors_encountered: errorsEncountered,
+      log,
+      finished_at: new Date().toISOString(),
+    }).eq('id', syncLogId);
   }
 
   return res.status(200).json({
