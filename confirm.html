@@ -4,209 +4,88 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0C0F14">
+  <meta name="robots" content="noindex">
   <title>Confirming your account — Fantasy PSL</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;800;900&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --red:    #B91C3A;
-      --gold:   #DBA94A;
-      --green:  #22895A;
-      --bg:     #0C0F14;
-      --card:   #191C25;
+    :root { --red:#B91C3A; --gold:#DBA94A; --green:#22895A; --bg:#0C0F14; --card:#191C25; }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html,body{ height:100%; background:var(--bg); color:#fff; font-family:'DM Sans',sans-serif; }
+    body{
+      display:flex; align-items:center; justify-content:center;
+      min-height:100vh; padding:1.5rem;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(185,28,58,.18) 0%, transparent 60%), #0C0F14;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: #fff;
-      font-family: 'DM Sans', sans-serif;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 1.5rem;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(185,28,58,.18) 0%, transparent 60%),
-        #0C0F14;
-    }
+    .wrap{ width:100%; max-width:420px; text-align:center; animation:fadeUp .4s ease both; }
+    @keyframes fadeUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
-    .wrap {
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-      animation: fadeUp .4s ease both;
-    }
+    .logo-area{ margin-bottom:2.5rem; }
+    .logo-img{ width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 0 18px rgba(185,28,58,.5)); margin-bottom:.8rem; }
+    .logo-wordmark{ font-family:'Montserrat Alternates',sans-serif; font-size:1.5rem; font-weight:900; letter-spacing:1px; }
+    .logo-wordmark span{ color:var(--red); }
+    .logo-sub{ font-family:'Rajdhani',sans-serif; font-size:.72rem; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,.3); margin-top:.25rem; }
 
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(16px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
+    .card{ background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:20px; padding:2.2rem 1.8rem 2rem; margin-bottom:1.5rem; }
 
-    /* ── Logo / Wordmark ── */
-    .logo-area {
-      margin-bottom: 2.5rem;
-    }
-    .logo-img {
-      width: 64px;
-      height: 64px;
-      object-fit: contain;
-      filter: drop-shadow(0 0 18px rgba(185,28,58,.5));
-      margin-bottom: .8rem;
-    }
-    .logo-wordmark {
-      font-family: 'Montserrat Alternates', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 900;
-      letter-spacing: 1px;
-      line-height: 1;
-    }
-    .logo-wordmark span { color: var(--red); }
-    .logo-sub {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: .72rem;
-      font-weight: 600;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.3);
-      margin-top: .25rem;
-    }
+    .icon-ring{ width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.2rem; font-size:2rem; }
+    .icon-ring.loading{ background:rgba(219,169,74,.12); border:2px solid rgba(219,169,74,.3); }
+    .icon-ring.success{ background:rgba(34,137,90,.12);  border:2px solid rgba(34,137,90,.3); }
+    .icon-ring.error{   background:rgba(185,28,58,.12);  border:2px solid rgba(185,28,58,.3); }
 
-    /* ── Card ── */
-    .card {
-      background: var(--card);
-      border: 1px solid rgba(255,255,255,.07);
-      border-radius: 20px;
-      padding: 2.2rem 1.8rem 2rem;
-      margin-bottom: 1.5rem;
-    }
+    .spinner{ width:32px; height:32px; border:3px solid rgba(219,169,74,.2); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin{ to{transform:rotate(360deg)} }
 
-    /* ── Icon states ── */
-    .icon-ring {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1.2rem;
-      font-size: 2rem;
-    }
-    .icon-ring.loading { background: rgba(219,169,74,.12); border: 2px solid rgba(219,169,74,.3); }
-    .icon-ring.success { background: rgba(34,137,90,.12);  border: 2px solid rgba(34,137,90,.3); }
-    .icon-ring.error   { background: rgba(185,28,58,.12);  border: 2px solid rgba(185,28,58,.3); }
+    .state-title{ font-family:'Montserrat Alternates',sans-serif; font-size:1.35rem; font-weight:900; color:#fff; margin-bottom:.5rem; line-height:1.2; }
+    .state-sub{ font-size:.88rem; color:rgba(255,255,255,.45); line-height:1.6; }
+    .state-sub strong{ color:rgba(255,255,255,.7); }
 
-    /* ── Spinner ── */
-    .spinner {
-      width: 32px; height: 32px;
-      border: 3px solid rgba(219,169,74,.2);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .cta-btn{ display:inline-block; margin-top:1.4rem; background:var(--red); color:#fff; font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:.85rem 2.2rem; border-radius:10px; text-decoration:none; border:none; cursor:pointer; transition:opacity .2s,transform .15s; box-shadow:0 4px 20px rgba(185,28,58,.35); }
+    .cta-btn:hover{ opacity:.88; transform:translateY(-1px); }
 
-    .state-title {
-      font-family: 'Montserrat Alternates', sans-serif;
-      font-size: 1.35rem;
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: .5rem;
-      line-height: 1.2;
-    }
-    .state-sub {
-      font-size: .88rem;
-      color: rgba(255,255,255,.45);
-      line-height: 1.6;
-    }
-    .state-sub strong { color: rgba(255,255,255,.7); }
+    /* Password reset form */
+    .reset-form{ display:none; flex-direction:column; gap:.9rem; margin-top:1.2rem; text-align:left; }
+    .reset-form.visible{ display:flex; }
+    .reset-form label{ font-family:'Rajdhani',sans-serif; font-size:.78rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.45); display:block; margin-bottom:.3rem; }
+    .reset-form input{ width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:.75rem 1rem; color:#fff; font-size:.95rem; font-family:'DM Sans',sans-serif; outline:none; }
+    .reset-form input:focus{ border-color:rgba(185,28,58,.5); }
+    .pw-error{ font-size:.8rem; color:var(--red); margin-top:-.4rem; display:none; }
 
-    /* ── CTA button ── */
-    .cta-btn {
-      display: inline-block;
-      margin-top: 1.4rem;
-      background: var(--red);
-      color: #fff;
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      padding: .85rem 2.2rem;
-      border-radius: 10px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: opacity .2s, transform .15s;
-      box-shadow: 0 4px 20px rgba(185,28,58,.35);
-    }
-    .cta-btn:hover { opacity:.88; transform:translateY(-1px); }
-
-    /* ── Features strip ── */
-    .features {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .feat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: .3rem;
-    }
-    .feat-val {
-      font-family: 'Montserrat Alternates', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 900;
-      color: var(--gold);
-    }
-    .feat-lbl {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: .65rem;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.3);
-    }
-
-    .divider {
-      width: 1px; height: 28px;
-      background: rgba(255,255,255,.08);
-      align-self: center;
-    }
-
-    .foot-note {
-      font-size: .72rem;
-      color: rgba(255,255,255,.2);
-      margin-top: 1.2rem;
-    }
+    .features{ display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap; }
+    .feat{ display:flex; flex-direction:column; align-items:center; gap:.3rem; }
+    .feat-val{ font-family:'Montserrat Alternates',sans-serif; font-size:1.1rem; font-weight:900; color:var(--gold); }
+    .feat-lbl{ font-family:'Rajdhani',sans-serif; font-size:.65rem; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.3); }
+    .divider{ width:1px; height:28px; background:rgba(255,255,255,.08); align-self:center; }
+    .foot-note{ font-size:.72rem; color:rgba(255,255,255,.2); margin-top:1.2rem; }
   </style>
 </head>
 <body>
 <div class="wrap">
-
-  <!-- Logo -->
   <div class="logo-area">
-    <img src="/logo.png" alt="Fantasy PSL" class="logo-img"
-         onerror="this.style.display='none'">
+    <img src="/logo.png" alt="Fantasy PSL" class="logo-img" onerror="this.style.display='none'">
     <div class="logo-wordmark">Fantasy <span>PSL</span></div>
     <div class="logo-sub">South Africa's No.1 Fantasy Football</div>
   </div>
 
-  <!-- State card — swapped by JS -->
   <div class="card" id="state-card">
-    <div class="icon-ring loading" id="icon-ring">
-      <div class="spinner"></div>
-    </div>
+    <div class="icon-ring loading" id="icon-ring"><div class="spinner"></div></div>
     <div class="state-title" id="state-title">Confirming your account…</div>
-    <div class="state-sub" id="state-sub">
-      Just a moment while we verify your email address.
-    </div>
+    <div class="state-sub" id="state-sub">Just a moment while we verify your email address.</div>
+
+    <!-- Password reset form (shown only for recovery tokens) -->
+    <form class="reset-form" id="reset-form" autocomplete="off">
+      <div>
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" placeholder="At least 8 characters" minlength="8" required>
+      </div>
+      <div>
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" placeholder="Repeat your password" minlength="8" required>
+        <div class="pw-error" id="pw-error">Passwords do not match.</div>
+      </div>
+      <button type="submit" class="cta-btn" id="reset-btn">Set New Password →</button>
+    </form>
   </div>
 
-  <!-- Stats strip -->
   <div class="features">
     <div class="feat"><div class="feat-val">16</div><div class="feat-lbl">PSL Clubs</div></div>
     <div class="divider"></div>
@@ -220,60 +99,196 @@
   <div class="foot-note">Fantasy PSL · fan-made · not affiliated with the PSL or Betway</div>
 </div>
 
+<!-- Supabase JS (needed to exchange PKCE code and set session) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-  var card      = document.getElementById('state-card');
-  var iconRing  = document.getElementById('icon-ring');
-  var titleEl   = document.getElementById('state-title');
-  var subEl     = document.getElementById('state-sub');
+(async function () {
+  // ── Supabase client ──────────────────────────────────────────────────────
+  // REPLACE these values with your actual project URL and anon key.
+  // They are safe to expose in the browser — only the anon key, never the service key.
+  var SUPABASE_URL     = window.__SUPABASE_URL__  || 'https://YOUR_PROJECT.supabase.co';
+  var SUPABASE_ANON_KEY= window.__SUPABASE_ANON__ || 'YOUR_ANON_KEY';
 
-  function setState(type, title, sub, showBtn) {
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+  });
+
+  var card     = document.getElementById('state-card');
+  var iconRing = document.getElementById('icon-ring');
+  var titleEl  = document.getElementById('state-title');
+  var subEl    = document.getElementById('state-sub');
+  var resetForm= document.getElementById('reset-form');
+
+  function setState(type, title, sub, showBtn, btnLabel, btnHref) {
     iconRing.className = 'icon-ring ' + type;
     iconRing.innerHTML = type === 'loading'
       ? '<div class="spinner"></div>'
       : type === 'success' ? '✅' : '❌';
     titleEl.textContent = title;
-    subEl.innerHTML = sub;
+    subEl.innerHTML     = sub;
+    // Remove any existing button
+    var old = card.querySelector('.cta-btn:not(#reset-btn)');
+    if (old) old.remove();
     if (showBtn) {
       var btn = document.createElement('a');
-      btn.href      = '/';
+      btn.href      = btnHref || '/';
       btn.className = 'cta-btn';
-      btn.textContent = type === 'success' ? 'Build My Squad →' : 'Go to Homepage';
+      btn.textContent = btnLabel || 'Go to App →';
       card.appendChild(btn);
     }
   }
 
-  // Check for Supabase confirmation hash in URL
-  var hash   = window.location.hash;
-  var params = new URLSearchParams(window.location.search);
-  var hasToken = hash && (hash.includes('access_token') || hash.includes('type=signup') || hash.includes('type=recovery'));
-  var hasError = params.get('error') || (hash && hash.includes('error'));
+  // ── Parse URL fragments and query params ───────────────────────────────
+  var hash   = window.location.hash   || '';
+  var search = window.location.search || '';
+  var params = new URLSearchParams(search);
+  var hashParams = new URLSearchParams(hash.replace('#', ''));
 
-  if (hasError) {
-    var errDesc = params.get('error_description') || 'The confirmation link may have expired.';
-    setTimeout(function() {
-      setState('error', 'Confirmation failed', errDesc + '<br><br>Please register again or contact support.', true);
-    }, 600);
-  } else if (hasToken || hash) {
-    // Valid token — redirect to app after short delay
-    setTimeout(function() {
-      setState('success',
-        'Email confirmed! 🎉',
-        'Welcome to <strong>Fantasy PSL</strong>.<br>You\'re ready to pick your squad.',
-        true
-      );
-      // Auto-redirect after 2.5s
-      setTimeout(function() { window.location.href = '/'; }, 2500);
-    }, 800);
-  } else {
-    // No hash at all — probably navigated directly
-    setTimeout(function() {
-      setState('success',
-        'Check your email',
-        'We sent a confirmation link to your inbox.<br>Click it to activate your <strong>Fantasy PSL</strong> account.',
-        true
-      );
-    }, 600);
+  var type       = params.get('type')  || hashParams.get('type')  || '';
+  var errorCode  = params.get('error') || hashParams.get('error') || '';
+  var errorDesc  = params.get('error_description') || hashParams.get('error_description') || '';
+  var code       = params.get('code')  || '';  // PKCE auth code
+  var accessToken= hashParams.get('access_token') || '';
+
+  // ── Error state ─────────────────────────────────────────────────────────
+  if (errorCode) {
+    setTimeout(function () {
+      var msg = errorDesc
+        ? decodeURIComponent(errorDesc).replace(/\+/g, ' ')
+        : 'The confirmation link may have expired or already been used.';
+      setState('error', 'Confirmation Failed', msg + '<br><br>Please try registering again or request a new link.', true, 'Go to Homepage', '/');
+    }, 500);
+    return;
   }
+
+  // ── PASSWORD RESET flow ─────────────────────────────────────────────────
+  // Supabase sends ?type=recovery with either a PKCE code or legacy access_token
+  if (type === 'recovery') {
+    setState('loading', 'Setting up password reset…', 'Verifying your reset link.', false);
+
+    var sessionOk = false;
+
+    // PKCE code exchange (newer Supabase projects)
+    if (code) {
+      try {
+        var { error: exchErr } = await sb.auth.exchangeCodeForSession(code);
+        if (!exchErr) sessionOk = true;
+      } catch (e) { /* fall through */ }
+    }
+
+    // Legacy fragment token (older projects)
+    if (!sessionOk && accessToken) {
+      try {
+        var { error: setErr } = await sb.auth.setSession({
+          access_token:  accessToken,
+          refresh_token: hashParams.get('refresh_token') || '',
+        });
+        if (!setErr) sessionOk = true;
+      } catch (e) { /* fall through */ }
+    }
+
+    if (!sessionOk) {
+      setState('error', 'Reset Link Expired',
+        'This password reset link has expired or already been used.<br>Please request a new one.',
+        true, 'Back to App', '/');
+      return;
+    }
+
+    setState('success', 'Set Your New Password',
+      'Enter and confirm your new password below.', false);
+    resetForm.classList.add('visible');
+
+    // Handle password form submission
+    resetForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var pw1 = document.getElementById('new-password').value;
+      var pw2 = document.getElementById('confirm-password').value;
+      var pwErr = document.getElementById('pw-error');
+
+      if (pw1 !== pw2) {
+        pwErr.style.display = 'block';
+        return;
+      }
+      pwErr.style.display = 'none';
+
+      var btn = document.getElementById('reset-btn');
+      btn.textContent = 'Saving…';
+      btn.disabled    = true;
+
+      var { error: updateErr } = await sb.auth.updateUser({ password: pw1 });
+      if (updateErr) {
+        setState('error', 'Password Update Failed',
+          updateErr.message || 'Could not update your password. Please try again.',
+          true, 'Go to App', '/');
+        return;
+      }
+
+      setState('success', 'Password Updated! 🎉',
+        'Your password has been changed.<br>You can now log in with your new password.',
+        true, 'Log In →', '/');
+    });
+
+    return;
+  }
+
+  // ── EMAIL CONFIRMATION flow ─────────────────────────────────────────────
+  // type=signup (or type=email_change for email updates)
+  if (type === 'signup' || type === 'email_change' || accessToken || code) {
+    setState('loading', 'Confirming your email…', 'Just a moment while we verify your address.', false);
+
+    var confirmed = false;
+
+    // PKCE code exchange
+    if (code) {
+      try {
+        var { error: exchErr2 } = await sb.auth.exchangeCodeForSession(code);
+        if (!exchErr2) confirmed = true;
+      } catch (e) { /* fall through */ }
+    }
+
+    // Legacy fragment token
+    if (!confirmed && accessToken) {
+      try {
+        var { error: setErr2 } = await sb.auth.setSession({
+          access_token:  accessToken,
+          refresh_token: hashParams.get('refresh_token') || '',
+        });
+        if (!setErr2) confirmed = true;
+      } catch (e) { /* fall through */ }
+    }
+
+    // Check current session as a last resort (Supabase may have auto-confirmed)
+    if (!confirmed) {
+      try {
+        var { data: sessionData } = await sb.auth.getSession();
+        if (sessionData?.session) confirmed = true;
+      } catch (e) { /* fall through */ }
+    }
+
+    setTimeout(function () {
+      if (confirmed) {
+        setState('success', 'Email Confirmed! 🎉',
+          'Welcome to <strong>Fantasy PSL</strong>.<br>You\'re ready to build your squad.',
+          true, 'Build My Squad →', '/');
+        // Auto-redirect after 3 seconds
+        setTimeout(function () { window.location.href = '/'; }, 3000);
+      } else {
+        setState('error', 'Confirmation Failed',
+          'The confirmation link may have expired.<br>Please register again or request a new confirmation email.',
+          true, 'Go to Homepage', '/');
+      }
+    }, 800);
+
+    return;
+  }
+
+  // ── No token present — likely navigated here directly ──────────────────
+  setTimeout(function () {
+    setState('success', 'Check Your Email',
+      'We sent a confirmation link to your inbox.<br>Click it to activate your <strong>Fantasy PSL</strong> account.',
+      true, 'Go to Homepage', '/');
+  }, 400);
+})();
 </script>
 </body>
 </html>
