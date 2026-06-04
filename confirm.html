@@ -106,8 +106,8 @@
   // ── Supabase client ──────────────────────────────────────────────────────
   // REPLACE these values with your actual project URL and anon key.
   // They are safe to expose in the browser — only the anon key, never the service key.
-  var SUPABASE_URL     = window.__SUPABASE_URL__  || 'https://YOUR_PROJECT.supabase.co';
-  var SUPABASE_ANON_KEY= window.__SUPABASE_ANON__ || 'YOUR_ANON_KEY';
+  var SUPABASE_URL     = window.__SUPABASE_URL__  || 'https://vkjzwpbkqcckrjwsqxgk.supabase.co';
+  var SUPABASE_ANON_KEY= window.__SUPABASE_ANON__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
 
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
