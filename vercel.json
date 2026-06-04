@@ -1,38 +1,45 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/football",       "dest": "/api/football.js" },
-    { "src": "/api/sync",           "dest": "/api/football.js" },
-    { "src": "/api/points-cron",    "dest": "/api/points-cron.js" },
+    { "src": "/api/football",        "dest": "/api/football.js" },
+    { "src": "/api/sync",            "dest": "/api/football.js" },
+    { "src": "/api/points-cron",     "dest": "/api/points-cron.js" },
     { "src": "/api/apifootball-sync","dest": "/api/apifootball-sync.js" },
-    { "src": "/api/admin-api",      "dest": "/api/admin-api.js" },
-    { "src": "/api/save-squad",     "dest": "/api/save-squad.js" },
-    { "src": "/api/news-crawler",   "dest": "/api/news-crawler.js" },
-    { "src": "/api/sitemap",        "dest": "/api/sitemap.js" },
-    { "src": "/api/squad-import",   "dest": "/api/admin-api.js" },
-    { "src": "/api/link-player-ids","dest": "/api/admin-api.js" },
-    { "src": "/api/player-crawler", "dest": "/api/admin-api.js" },
-    { "src": "/api/robots",         "dest": "/api/sitemap.js" },
-    { "src": "/sitemap.xml",        "dest": "/api/sitemap.js" },
-    { "src": "/robots.txt",         "dest": "/api/sitemap.js" },
-    { "src": "/sw.js",              "dest": "/sw.js" },
-    { "src": "/manifest.json",      "dest": "/manifest.json" },
-    { "src": "/admin",              "dest": "/admin.html" },
-    { "src": "/admin.html",         "dest": "/admin.html" },
-    { "src": "/privacy",            "dest": "/privacy.html" },
-    { "src": "/privacy.html",       "dest": "/privacy.html" },
-    { "src": "/terms",              "dest": "/terms.html" },
-    { "src": "/terms.html",         "dest": "/terms.html" },
-    { "src": "/about",              "dest": "/about.html" },
-    { "src": "/about.html",         "dest": "/about.html" },
-    { "src": "/confirm",            "dest": "/confirm.html" },
+    { "src": "/api/admin-api",       "dest": "/api/admin-api.js" },
+    { "src": "/api/save-squad",      "dest": "/api/save-squad.js" },
+    { "src": "/api/news-crawler",    "dest": "/api/news-crawler.js" },
+    { "src": "/api/sitemap",         "dest": "/api/sitemap.js" },
+    { "src": "/api/squad-import",    "dest": "/api/admin-api.js" },
+    { "src": "/api/link-player-ids", "dest": "/api/admin-api.js" },
+    { "src": "/api/player-crawler",  "dest": "/api/admin-api.js" },
+    { "src": "/api/robots",          "dest": "/api/sitemap.js" },
+    { "src": "/sitemap.xml",         "dest": "/api/sitemap.js" },
+    { "src": "/robots.txt",          "dest": "/api/sitemap.js" },
+    { "src": "/sw.js",               "dest": "/sw.js" },
+    { "src": "/manifest.json",       "dest": "/manifest.json" },
+    { "src": "/admin",               "dest": "/admin.html" },
+    { "src": "/admin.html",          "dest": "/admin.html" },
+    { "src": "/privacy",             "dest": "/privacy.html" },
+    { "src": "/privacy.html",        "dest": "/privacy.html" },
+    { "src": "/terms",               "dest": "/terms.html" },
+    { "src": "/terms.html",          "dest": "/terms.html" },
+    { "src": "/about",               "dest": "/about.html" },
+    { "src": "/about.html",          "dest": "/about.html" },
+    { "src": "/confirm",             "dest": "/confirm.html" },
+    { "src": "/confirm.html",        "dest": "/confirm.html" },
+    { "src": "/.well-known/assetlinks.json", "dest": "/.well-known/assetlinks.json" },
+    { "src": "/.well-known/apple-app-site-association", "dest": "/.well-known/apple-app-site-association" },
     { "handle": "filesystem" },
-    { "src": "/(.*)",               "dest": "/index.html" }
+    { "src": "/(.*)",                "dest": "/index.html" }
   ],
   "crons": [
     {
-      "path": "/api/apifootball-sync?cron=1",
-      "schedule": "0 3 * * *"
+      "path": "/api/apifootball-sync?phase=1",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/apifootball-sync?phase=2",
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/points-cron?cron=1",
@@ -40,7 +47,7 @@
     },
     {
       "path": "/api/news-crawler?action=fetch",
-      "schedule": "0 5 * * *"
+      "schedule": "0 */6 * * *"
     }
   ],
   "headers": [
@@ -62,6 +69,30 @@
       "source": "/logo.png",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control",             "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed",    "value": "/" },
+        { "key": "Content-Type",              "value": "application/javascript" }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        { "key": "Content-Type",  "value": "application/manifest+json" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",     "value": "geolocation=(), microphone=(), camera=()" }
       ]
     }
   ]
