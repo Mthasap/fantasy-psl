@@ -28,11 +28,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const SB_URL = process.env.SUPABASE_URL          || '';
-const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
-const ADMIN  = process.env.ADMIN_SECRET;
-
-// ── Simple in-memory rate limiter (per IP, resets on cold start) ──────────
+// ── Self-contained rate limiter (no external deps needed) ─────────────────
 const _rl = new Map();
 function rateLimit(ip, max, windowMs) {
   const now = Date.now();
@@ -42,6 +38,10 @@ function rateLimit(ip, max, windowMs) {
   _rl.set(ip, rec);
   return rec.count > max;
 }
+
+const SB_URL = process.env.SUPABASE_URL          || '';
+const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
+const ADMIN  = process.env.ADMIN_SECRET;
 
 // ── Input sanitiser — strip control chars, limit length ──────────────────
 function san(v, maxLen = 500) {
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── Rate limit: 60 req/min per IP for admin endpoint ───────────────────
+  // ── Rate limit: 60 req/min per IP ───────────────────────────────────────
   const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
   if (rateLimit(clientIp, 60, 60_000)) {
     return res.status(429).json({ error: 'Too many requests — slow down' });
