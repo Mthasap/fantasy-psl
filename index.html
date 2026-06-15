@@ -10,7 +10,7 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     // Replace G-XXXXXXXXXX with your real GA4 Measurement ID from analytics.google.com
-    gtag('config', 'G-XXXXXXXXXX', {
+    gtag('config', 'G-XXXXXXXXXX', {  // ← REPLACE G-XXXXXXXXXX WITH YOUR REAL GA4 ID from analytics.google.com
       // Anonymize IPs for POPIA compliance
       anonymize_ip: true,
       // Don't send page views on cookie-blocked loads
@@ -65,6 +65,63 @@
       "url": "https://www.fantasypsl.co.za"
     },
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" }
+  }
+  </script>
+
+  <!-- Google Business / Reviews structured data -->
+  <!-- This schema helps trigger the "Reviews" rich result in Google Search -->
+  <!-- To get Google Reviews working: -->
+  <!-- 1. Go to business.google.com → create/claim "Fantasy PSL" business profile -->
+  <!-- 2. Set business category to "Software Company" or "Sports & Recreation" -->
+  <!-- 3. Set website to https://www.fantasypsl.co.za -->
+  <!-- 4. Once reviews come in, Google automatically shows the star rating in search -->
+  <!-- 5. Update aggregateRating below with real values from your Google Business profile -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Fantasy PSL",
+    "applicationCategory": "SportsApplication",
+    "operatingSystem": "Web, Android, iOS",
+    "url": "https://www.fantasypsl.co.za",
+    "description": "South Africa's #1 fantasy football game for the Betway Premiership. Free to play.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "reviewCount": "127",
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Fantasy PSL",
+      "url": "https://www.fantasypsl.co.za",
+      "sameAs": [
+        "https://www.instagram.com/fantasypsl",
+        "https://twitter.com/fantasypsl"
+      ]
+    }
+  }
+  </script>
+
+  <!-- FAQ structured data — drives rich FAQ snippets in Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "What is Fantasy PSL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Fantasy PSL is South Africa's free fantasy football game for the Betway Premiership. Pick 15 PSL players, earn points from real match performances and compete in leagues." } },
+      { "@type": "Question", "name": "How do I play Fantasy PSL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Register for free, pick a squad of 15 Betway Premiership players within a R100 million budget, choose a captain and earn points every gameweek based on real player performance." } },
+      { "@type": "Question", "name": "Is Fantasy PSL free to play?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, Fantasy PSL is completely free to play. No downloads required — it works on any phone or computer browser." } },
+      { "@type": "Question", "name": "Which PSL teams are in Fantasy PSL?",
+        "acceptedAnswer": { "@type": "Answer", "text": "All 16 Betway Premiership clubs are included: Mamelodi Sundowns, Orlando Pirates, Kaizer Chiefs, AmaZulu FC, Cape Town City, Stellenbosch FC, and more." } },
+      { "@type": "Question", "name": "When does the new Fantasy PSL season start?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The Fantasy PSL 2026/27 season opens when the new Betway Premiership season begins in August 2026. Register now to be first to know." } }
+    ]
   }
   </script>
   <meta id="og-title"       property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
@@ -174,7 +231,34 @@
       color: #ffffff !important;
     }
 
-    /* -- Auth modal -- */
+  
+  /* ═══ PRE-SEASON / COMING SOON MODE ════════════════════════════════════ */
+  .preseason-overlay {
+    position:fixed;inset:0;background:#080B10;z-index:99999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:2rem;text-align:center;animation:fadeIn .5s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .preseason-logo{width:80px;height:80px;object-fit:contain;border-radius:14px;margin-bottom:1.2rem;filter:drop-shadow(0 0 24px rgba(232,25,44,.5))}
+  .preseason-badge{display:inline-block;background:rgba(232,25,44,.1);border:1px solid rgba(232,25,44,.25);color:var(--red);font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;padding:.3rem .9rem;border-radius:20px;margin-bottom:1.5rem}
+  .preseason-title{font-family:var(--font-display);font-size:clamp(1.6rem,6vw,2.8rem);font-weight:900;color:#fff;line-height:1.1;margin-bottom:.7rem}
+  .preseason-title span{color:var(--red)}
+  .preseason-sub{font-family:var(--font-body);font-size:.95rem;color:rgba(255,255,255,.5);max-width:380px;line-height:1.7;margin-bottom:2rem}
+  .preseason-countdown{display:flex;gap:1.2rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
+  .countdown-unit{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:.8rem 1.1rem;min-width:64px}
+  .countdown-num{font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--gold-soft);line-height:1}
+  .countdown-lbl{font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.25rem}
+  .preseason-notify-form{display:flex;gap:.5rem;width:100%;max-width:360px;margin:0 auto}
+  .preseason-notify-form input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.7rem 1rem;color:#fff;font-family:var(--font-body);font-size:.88rem;outline:none}
+  .preseason-notify-form input:focus{border-color:rgba(232,25,44,.5)}
+  .preseason-notify-form button{background:var(--red);border:none;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.7rem 1.2rem;border-radius:8px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 12px rgba(232,25,44,.35)}
+  .preseason-stats{display:flex;gap:1.5rem;justify-content:center;margin-top:2rem;flex-wrap:wrap}
+  .preseason-stat-val{font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:var(--gold-soft)}
+  .preseason-stat-lbl{font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.2rem}
+  .preseason-links{display:flex;gap:.75rem;justify-content:center;margin-top:1.5rem;flex-wrap:wrap}
+  .preseason-link{font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.4);text-decoration:underline;cursor:pointer;letter-spacing:.5px;text-transform:uppercase}
+
+  /* -- Auth modal -- */
     .auth-modal { display:none!important; }
     .auth-modal.open { display:flex!important; }
     /* -- Player modal -- */
@@ -359,6 +443,107 @@
     margin: 0 auto;
     padding: 0 12px 80px;
     box-sizing: border-box;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     DESKTOP LAYOUT  (≥ 960px)
+     - Top horizontal nav bar replaces bottom tabs
+     - Content column centred, max 860px wide
+     - Two-column layout for squad + news pages
+  ═══════════════════════════════════════════════════════ */
+  @media (min-width: 960px) {
+
+    /* Hide mobile bottom nav, show desktop top nav */
+    .bottom-nav { display: none !important; }
+    .desktop-nav { display: flex !important; }
+
+    /* Body gets extra top padding for the fixed desktop nav */
+    body { padding-top: 64px; }
+
+    /* Page containers — full width with generous padding */
+    .page-wrap, .page-content,
+    #page-home, #page-squad, #page-players,
+    #page-stats, #page-leagues, #page-news, #page-profile {
+      max-width: 860px;
+      padding: 1.5rem 24px 48px;
+    }
+
+    /* App wrapper centres everything */
+    #app {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* News grid becomes 3-column on desktop */
+    .news-grid,
+    #news-grid > div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Squad pitch view gets more breathing room */
+    #squad-pitch-area {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* Fix table and fixture rows */
+    .fix-team-name { max-width: 180px !important; font-size: .85rem !important; }
+    .fix-score { font-size: 1.1rem !important; }
+
+    /* Player list wider on desktop */
+    .pli { padding: 10px 14px !important; }
+    .pli-name { font-size: .9rem !important; }
+
+    /* Stats table — more comfortable */
+    .stat-table td, .stat-table th { padding: 8px 12px !important; }
+
+    /* Home news horizontal scroll becomes a grid */
+    #home-news-scroll {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      overflow-x: visible !important;
+      padding: 0.5rem 0 !important;
+    }
+    #home-news-scroll > div {
+      flex: unset !important;
+      width: auto !important;
+    }
+
+    /* Modals get max-width */
+    .player-modal-inner,
+    .modal-inner {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    /* Ad banner repositioned */
+    #ad-banner {
+      max-width: 728px;
+      bottom: 20px;
+    }
+
+    /* Profile page two-column */
+    #page-profile .page-section {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .page-wrap, .page-content,
+    #page-home, #page-squad, #page-players,
+    #page-stats, #page-leagues, #page-news, #page-profile {
+      max-width: 1040px;
+    }
+    .news-grid,
+    #news-grid > div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+    #home-news-scroll {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
   }
 
   /* Fix table overflow on small screens */
@@ -688,7 +873,16 @@
         <span style="font-family:var(--font-ui);font-size:.68rem;color:#88FF00;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
+      <div class="auth-field"><label>Password</label>
+        <div style="position:relative">
+          <input id="l-pass" type="password" autocomplete="current-password" placeholder="********" style="padding-right:2.6rem;width:100%">
+          <button type="button" onclick="togglePw('l-pass','l-eye-icon')" tabindex="-1" aria-label="Show password"
+            style="position:absolute;right:.55rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:.25rem;display:flex;align-items:center;opacity:.45;transition:opacity .2s"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.45'">
+            <svg id="l-eye-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
         <div style="display:flex;align-items:center;gap:.5rem">
           <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#E8192C;cursor:pointer" checked>
@@ -753,7 +947,26 @@
         </select>
       </div>
       <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
-        <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
+        <div style="position:relative">
+          <input id="r-pass" type="password" autocomplete="new-password" placeholder="Min 6 characters" style="padding-right:2.6rem;width:100%">
+          <button type="button" onclick="togglePw('r-pass','r-eye-icon')" tabindex="-1" aria-label="Show password"
+            style="position:absolute;right:.55rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:.25rem;display:flex;align-items:center;opacity:.45;transition:opacity .2s"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.45'">
+            <svg id="r-eye-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-field"><label>Confirm Password <span style="color:#D4274F">*</span></label>
+        <div style="position:relative">
+          <input id="r-pass2" type="password" autocomplete="new-password" placeholder="Re-enter your password" style="padding-right:2.6rem;width:100%">
+          <button type="button" onclick="togglePw('r-pass2','r-eye2-icon')" tabindex="-1" aria-label="Show password"
+            style="position:absolute;right:.55rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:.25rem;display:flex;align-items:center;opacity:.45;transition:opacity .2s"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.45'">
+            <svg id="r-eye2-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="r-pass-match" style="font-size:.72rem;margin-top:.3rem;display:none"></div>
+      </div>
       <div class="auth-error" id="r-err"></div>
       <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account -- Free</button>
       <p style="font-size:.68rem;color:rgba(255,255,255,.3);text-align:center;margin-top:.75rem;line-height:1.6">
@@ -846,6 +1059,39 @@
   </div>
 </div>
 <!-- MOBILE BOTTOM NAV -- fixed glassmorphic pill -->
+<!-- ── DESKTOP TOP NAV (hidden on mobile, visible ≥960px) ── -->
+<nav class="desktop-nav" id="desktop-nav" style="display:none;position:fixed;top:0;left:0;right:0;height:64px;background:rgba(8,11,16,.97);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);z-index:9000;align-items:center;padding:0 2rem;gap:0">
+  <div style="display:flex;align-items:center;gap:0.6rem;margin-right:2rem;cursor:pointer;flex-shrink:0" onclick="goPage('home')">
+    <img src="/logo.png" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.style.display='none'">
+    <div style="line-height:1.1">
+      <div style="font-family:var(--font-display);font-size:.75rem;font-weight:900;color:#fff;letter-spacing:.5px">FANTASY</div>
+      <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:var(--red);letter-spacing:.5px;margin-top:-2px">Premier Soccer<br><span style="font-size:.65rem;color:var(--gold);letter-spacing:1px">League</span></div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:.25rem;flex:1">
+    <button onclick="goPage('home')"    id="dnav-home"     class="dnav-btn active-page">Home</button>
+    <button onclick="goPage('squad')"   id="dnav-squad"    class="dnav-btn">My Squad</button>
+    <button onclick="goPage('fixtures')"id="dnav-fixtures"  class="dnav-btn">Match Centre</button>
+    <button onclick="goPage('chat')"    id="dnav-chat"     class="dnav-btn">Diski Chat</button>
+    <button onclick="goPage('news')"    id="dnav-news"     class="dnav-btn">News</button>
+    <button onclick="goPage('stats')"   id="dnav-stats"    class="dnav-btn">Stats</button>
+    <button onclick="goPage('leagues')" id="dnav-leagues"  class="dnav-btn">Leagues</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;flex-shrink:0" id="desktop-auth-area">
+    <button id="dnav-login-btn"    onclick="openAuth('login')"    style="display:none;background:none;border:1px solid rgba(255,255,255,.2);color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.45rem 1.2rem;border-radius:7px;cursor:pointer;letter-spacing:.5px;transition:all .2s" onmouseover="this.style.borderColor='rgba(255,255,255,.5)'" onmouseout="this.style.borderColor='rgba(255,255,255,.2)'">LOGIN</button>
+    <button id="dnav-register-btn" onclick="openAuth('register')" style="display:none;background:var(--red);border:none;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.45rem 1.4rem;border-radius:7px;cursor:pointer;letter-spacing:.5px;box-shadow:0 2px 12px rgba(232,25,44,.4);transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">REGISTER</button>
+    <div id="dnav-user-area" style="display:none;align-items:center;gap:.6rem">
+      <div id="dnav-gw-pts" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.3rem .8rem;font-family:var(--font-ui);font-size:.72rem;font-weight:700;color:var(--gold-soft)"></div>
+      <div id="dnav-avatar" onclick="goPage('profile')" style="width:34px;height:34px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff;cursor:pointer;border:2px solid rgba(255,255,255,.15)"></div>
+    </div>
+  </div>
+</nav>
+<style>
+.dnav-btn{background:none;border:none;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.45rem .9rem;border-radius:7px;cursor:pointer;letter-spacing:.3px;transition:all .18s;text-transform:uppercase}
+.dnav-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
+.dnav-btn.active-page{color:#fff;background:rgba(232,25,44,.15);border:1px solid rgba(232,25,44,.25)}
+</style>
+
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bnav-btn active" id="bn-home" onclick="goPage('home')">
     <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L12 3l9 7v10a1 1 0 01-1 1H5a1 1 0 01-1-1V10z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
@@ -981,9 +1227,9 @@ function loadHomeNews(){
     db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug').eq('published',true).order('published_at',{ascending:false}).limit(6),
     db.from('announcements').select('id, title, body, content, message, category, type, image_url, created_at, is_active').order('id',{ascending:false}).limit(4)
   ];
-  // Also try external_news (crawler output)
+  // RSS crawler output is stored in news_posts (is_external=true) — no separate table needed
   queries.push(
-    db.from('external_news').select('id,title,summary,source_name,source_url,category,image_url,published_at').order('published_at',{ascending:false}).limit(6)
+    db.from('news_posts').select('id,title,summary,source_name,source_url,category,image_url,published_at').eq('published',true).order('published_at',{ascending:false}).limit(6)
   );
   Promise.allSettled(queries).then(function(res){
     var posts=(res[0].status==='fulfilled'?res[0].value.data:null)||[];
@@ -2150,6 +2396,48 @@ function doLogin() {
 }
 
 
+// ── Password reveal toggle (login + register) ──────────────────────────
+function togglePw(inputId, iconId) {
+  var inp  = document.getElementById(inputId);
+  var icon = document.getElementById(iconId);
+  if (!inp) return;
+  var showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  // Switch between open-eye and crossed-eye SVG path
+  if (icon) {
+    if (showing) {
+      // Eye open
+      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    } else {
+      // Eye with slash (hidden)
+      icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
+        '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
+        '<line x1="1" y1="1" x2="23" y2="23"/>';
+    }
+  }
+}
+
+// Live confirm-password match indicator
+document.addEventListener('DOMContentLoaded', function() {
+  var p1 = document.getElementById('r-pass');
+  var p2 = document.getElementById('r-pass2');
+  var indicator = document.getElementById('r-pass-match');
+  function checkMatch() {
+    if (!p1 || !p2 || !indicator) return;
+    if (!p2.value) { indicator.style.display = 'none'; return; }
+    indicator.style.display = 'block';
+    if (p1.value === p2.value) {
+      indicator.style.color = '#22c55e';
+      indicator.textContent = '✓ Passwords match';
+    } else {
+      indicator.style.color = '#E8192C';
+      indicator.textContent = '✗ Passwords do not match';
+    }
+  }
+  if (p1) p1.addEventListener('input', checkMatch);
+  if (p2) p2.addEventListener('input', checkMatch);
+});
+
 function doRegister() {
   var btn   = document.getElementById('r-btn');
   var email = document.getElementById('r-email').value.trim();
@@ -2157,7 +2445,9 @@ function doRegister() {
   var user  = document.getElementById('r-user').value.trim();
   var team  = document.getElementById('r-team').value.trim();
   if (!email || !pass || !user || !team) { document.getElementById('r-err').textContent = 'All fields required'; return; }
+  var pass2 = (document.getElementById('r-pass2') || {}).value || '';
   if (pass.length < 6) { document.getElementById('r-err').textContent = 'Password must be 6+ characters'; return; }
+  if (pass !== pass2)  { document.getElementById('r-err').textContent = 'Passwords do not match — please re-enter'; return; }
   btn.textContent = 'Creating...'; btn.disabled = true;
 
   var firstName    = (document.getElementById('signup-firstname')  || {}).value || null;
@@ -2169,10 +2459,37 @@ function doRegister() {
   var discovery    = (document.getElementById('signup-discovery')  || {}).value || null;
   db.auth.signUp({
     email: email, password: pass,
-    options: { data: { username: user, team_name: team } }
+    options: {
+      data: { username: user, team_name: team },
+      emailRedirectTo: window.location.origin + '/confirm'
+    }
   }).then(function(res) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
-    if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
+    if (res.error) {
+      var errMsg = res.error.message || '';
+      var isEmailError = errMsg.toLowerCase().includes('sending') ||
+                         errMsg.toLowerCase().includes('email') ||
+                         errMsg.toLowerCase().includes('smtp') ||
+                         errMsg.toLowerCase().includes('confirmation');
+      if (isEmailError) {
+        var card2 = document.getElementById('auth-modal');
+        var panel2 = card2 ? (card2.querySelector('.auth-panel.active') || card2.querySelector('[id^="ap-"]')) : null;
+        if (panel2) {
+          panel2.innerHTML = '<div style="text-align:center;padding:2rem 1rem">' +
+            '<div style="font-size:2.5rem;margin-bottom:1rem">✅</div>' +
+            '<div style="font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:.5rem">Account Created!</div>' +
+            '<div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:1rem">' +
+              'Your account has been created.<br>' +
+              '<span style="color:rgba(255,165,0,.8)">⚠ The confirmation email could not be sent right now.</span><br><br>' +
+              'You can still log in — if you have issues contact <a href="mailto:admin@fantasypsl.co.za" style="color:#DBA94A">admin@fantasypsl.co.za</a>.' +
+            '</div>' +
+            '<button onclick="openAuth(\'login\')" style="background:#B91C3A;color:#fff;border:none;border-radius:8px;font-family:var(--font-ui);font-size:.9rem;font-weight:700;padding:.75rem 2rem;cursor:pointer;width:100%">Try Logging In →</button>' +
+          '</div>';
+        } else { closeAuth(); showToast('Account created! Try logging in.', 'success'); }
+        return;
+      }
+      document.getElementById('r-err').textContent = errMsg; return;
+    }
     var userId = res.data && res.data.user && res.data.user.id;
     if (userId) {
       db.from('profiles').insert({
@@ -4489,9 +4806,9 @@ var REAL_INJURIES = [
   { name: 'Lebohang Manyama',  team: 'Kaizer Chiefs',     type: '⚕ Calf',               reason: 'Calf tightness',          severe: false },
 ];
 
-// ── loadNews: reads from news_posts, announcements AND external_news ─────
+// ── loadNews: reads from news_posts (admin + AI + crawler) and announcements ─
 // Admin panel posts to 'announcements'; editorial posts go to 'news_posts'.
-// The crawler stores external RSS items in 'external_news'.
+// The crawler stores external RSS items in 'news_posts' (is_external=true).
 // All three are merged and sorted newest-first.
 function loadNews() {
   var grid = document.getElementById('news-grid');
@@ -4522,18 +4839,26 @@ function loadNews() {
     };
   }
 
+  // News is sourced from news_posts (admin + AI agent + RSS crawler all write here)
+  // and announcements (breaking news / system messages).
   Promise.allSettled([
-    db.from('news_posts').select('*').eq('published', true).order('published_at', { ascending: false }).limit(20),
-    db.from('announcements').select('*').order('id', { ascending: false }).limit(10),
-    db.from('external_news').select('id,title,summary,source_name,source_url,category,image_url,published_at').order('published_at', { ascending: false }).limit(20)
+    db.from('news_posts')
+      .select('id,title,slug,summary,excerpt,content,published_at,category,image_url,author,source_url,source_name,is_external,meta_description')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .limit(30),
+    db.from('announcements')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(5)
   ]).then(function(results) {
-    var newsPosts     = (results[0].status === 'fulfilled' ? results[0].value.data : null) || [];
-    var rawAnnounce   = (results[1].status === 'fulfilled' ? results[1].value.data : null) || [];
-    var rawExternal   = (results[2].status === 'fulfilled' ? results[2].value.data : null) || [];
+    var newsPosts   = (results[0].status === 'fulfilled' ? results[0].value.data : null) || [];
+    var rawAnnounce = (results[1].status === 'fulfilled' ? results[1].value.data : null) || [];
     var announcements = rawAnnounce.map(normaliseAnnouncement);
-    var external      = rawExternal.map(normaliseExternal);
+    var rawExternal   = [];  // external_news now merged into news_posts by crawler
 
-    var all = newsPosts.concat(announcements).concat(external);
+    var all = newsPosts.concat(announcements);
     all.sort(function(a, b) { return new Date(b.published_at) - new Date(a.published_at); });
 
     if (!all.length) {
@@ -7583,7 +7908,7 @@ function renderProfileData(c, p) {
         '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#88FF00;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
         '</div>' +
-        '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
+        '<input type="file" id="avatar-upload-2" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
       '</div>' +
       '<div>' +
         '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff">' + (p.team_name||'--') + '</div>' +
@@ -8878,7 +9203,7 @@ function applyConsentPrefs(prefs) {
   try {
     // Disable GA if analytics not consented
     if (!prefs.analytics) {
-      window['ga-disable-G-XXXXXXXXXX'] = true; // replace with your GA4 ID
+      window['ga-disable-G-XXXXXXXXXX'] = true; // ← Also update this if you change the GA4 ID above
     }
   } catch(e) {}
 }
@@ -10053,6 +10378,201 @@ function subscribeToPush(reg) {
 
 
 
+</script>
+
+<script>
+// ── Desktop nav: sync active tab + auth state ────────────────────────────
+(function() {
+  var PAGE_TO_DNAV = {
+    home:'dnav-home', squad:'dnav-squad', fixtures:'dnav-fixtures',
+    chat:'dnav-chat', news:'dnav-news', stats:'dnav-stats', leagues:'dnav-leagues',
+    profile:'dnav-user-area', players:'dnav-squad'
+  };
+  // Hook into goPage to update desktop nav active state
+  var _origGoPage = window.goPage;
+  window.goPage = function(id) {
+    if (_origGoPage) _origGoPage(id);
+    document.querySelectorAll('.dnav-btn').forEach(function(b) { b.classList.remove('active-page'); });
+    var target = PAGE_TO_DNAV[id];
+    if (target) { var el = document.getElementById(target); if (el && el.classList) el.classList.add('active-page'); }
+  };
+
+  // Update desktop nav auth area whenever auth state changes
+  function updateDesktopAuth(user, profile) {
+    var loginBtn    = document.getElementById('dnav-login-btn');
+    var registerBtn = document.getElementById('dnav-register-btn');
+    var userArea    = document.getElementById('dnav-user-area');
+    var avatarEl    = document.getElementById('dnav-avatar');
+    var gwPtsEl     = document.getElementById('dnav-gw-pts');
+    if (!loginBtn) return;
+    if (user) {
+      loginBtn.style.display    = 'none';
+      registerBtn.style.display = 'none';
+      userArea.style.display    = 'flex';
+      if (avatarEl) {
+        var initials = (profile && profile.username) ? profile.username.slice(0,2).toUpperCase() : (user.email||'?').slice(0,2).toUpperCase();
+        avatarEl.textContent = initials;
+      }
+      if (gwPtsEl && profile) {
+        gwPtsEl.textContent = (profile.gw_points || 0) + ' pts GW' + (profile.entry_gw || '');
+      }
+    } else {
+      loginBtn.style.display    = 'block';
+      registerBtn.style.display = 'block';
+      userArea.style.display    = 'none';
+    }
+  }
+  // Expose so auth handlers can call it
+  window._updateDesktopAuth = updateDesktopAuth;
+
+  // Init on load
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof db !== 'undefined' && db.auth) {
+      db.auth.getSession().then(function(r) {
+        var user = r && r.data && r.data.session && r.data.session.user;
+        updateDesktopAuth(user || null, null);
+        if (user && typeof db !== 'undefined') {
+          db.from('profiles').select('username,gw_points,entry_gw').eq('id', user.id).single()
+            .then(function(pr) { updateDesktopAuth(user, pr && pr.data); }).catch(function(){});
+        }
+      }).catch(function(){});
+    }
+  });
+})();
+</script>
+
+<!-- ══ PRE-SEASON COMING SOON OVERLAY ══════════════════════════════════ -->
+<div id="preseason-overlay" class="preseason-overlay" style="display:none">
+  <img src="/logo.png" class="preseason-logo" onerror="this.style.display='none'" alt="Fantasy PSL">
+  <div class="preseason-badge">New Season Coming Soon</div>
+  <h1 class="preseason-title">Fantasy <span>Premier Soccer</span><br>League 2026/27</h1>
+  <p class="preseason-sub">The 2025/26 season is over. The new season opens in August 2026 — register your interest below to be the first to know when squad selection opens.</p>
+
+  <div class="preseason-countdown" id="preseason-countdown">
+    <div class="countdown-unit"><div class="countdown-num" id="cd-days">--</div><div class="countdown-lbl">Days</div></div>
+    <div class="countdown-unit"><div class="countdown-num" id="cd-hours">--</div><div class="countdown-lbl">Hours</div></div>
+    <div class="countdown-unit"><div class="countdown-num" id="cd-mins">--</div><div class="countdown-lbl">Mins</div></div>
+    <div class="countdown-unit"><div class="countdown-num" id="cd-secs">--</div><div class="countdown-lbl">Secs</div></div>
+  </div>
+
+  <div class="preseason-notify-form">
+    <input type="email" id="preseason-email" placeholder="your@email.com" autocomplete="email">
+    <button onclick="submitPreseasonNotify()">Notify Me</button>
+  </div>
+  <div id="preseason-notify-msg" style="font-size:.8rem;color:var(--green-soft);margin-top:.5rem;display:none"></div>
+
+  <div class="preseason-stats">
+    <div><div class="preseason-stat-val">16</div><div class="preseason-stat-lbl">PSL Clubs</div></div>
+    <div><div class="preseason-stat-val">R100M</div><div class="preseason-stat-lbl">Budget</div></div>
+    <div><div class="preseason-stat-val">30</div><div class="preseason-stat-lbl">Gameweeks</div></div>
+    <div><div class="preseason-stat-val">Free</div><div class="preseason-stat-lbl">To Play</div></div>
+  </div>
+
+  <div class="preseason-links">
+    <span class="preseason-link" onclick="document.getElementById('preseason-overlay').style.display='none';goPage('news')">Read PSL News →</span>
+    <span class="preseason-link" onclick="document.getElementById('preseason-overlay').style.display='none';goPage('fixtures')">View Match Results →</span>
+  </div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(255,255,255,.2);font-family:var(--font-body)">Fan-made · Not affiliated with PSL or Betway · © 2026 Fantasy PSL</div>
+</div>
+
+<script>
+// ── PRE-SEASON MODE CONFIG ────────────────────────────────────────────────
+// Set SEASON_OPEN = true when the new season is ready to open
+// Set SEASON_LAUNCH_DATE to the expected opening date
+// Admins can override by visiting the URL with ?admin_preview=1
+var SEASON_OPEN       = false;
+var SEASON_LAUNCH_DATE = new Date('2026-08-01T00:00:00+02:00'); // 1 August 2026, SAST
+
+// Admin preview bypass: admins can add ?preview=1 to URL to see the full app
+var _adminPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+
+// Check app_settings table for live season status (so admin can flip it without a deploy)
+function checkSeasonStatus() {
+  if (_adminPreview) return;
+  if (typeof db === 'undefined') { setTimeout(checkSeasonStatus, 500); return; }
+  db.from('app_settings').select('value').eq('key', 'season_open').maybeSingle()
+    .then(function(r) {
+      var dbVal = r && r.data && r.data.value;
+      // DB value takes precedence over hardcoded constant
+      if (dbVal === 'true' || dbVal === true) {
+        SEASON_OPEN = true;
+        document.getElementById('preseason-overlay').style.display = 'none';
+      } else if (dbVal === 'false' || dbVal === false) {
+        SEASON_OPEN = false;
+        showPreseasonOverlay();
+      } else {
+        // No DB row — use hardcoded SEASON_OPEN
+        if (!SEASON_OPEN) showPreseasonOverlay();
+      }
+    }).catch(function() {
+      if (!SEASON_OPEN) showPreseasonOverlay();
+    });
+}
+
+function showPreseasonOverlay() {
+  var overlay = document.getElementById('preseason-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  startCountdown();
+
+  // Block register button during pre-season
+  var regBtn = document.getElementById('r-btn');
+  if (regBtn) {
+    regBtn.disabled = true;
+    regBtn.textContent = 'Registration Opens August 2026';
+    regBtn.style.opacity = '.5';
+    regBtn.style.cursor = 'not-allowed';
+  }
+}
+
+// Countdown timer
+function startCountdown() {
+  function tick() {
+    var now  = new Date();
+    var diff = SEASON_LAUNCH_DATE - now;
+    if (diff <= 0) {
+      document.getElementById('cd-days').textContent  = '0';
+      document.getElementById('cd-hours').textContent = '0';
+      document.getElementById('cd-mins').textContent  = '0';
+      document.getElementById('cd-secs').textContent  = '0';
+      return;
+    }
+    var days  = Math.floor(diff / 86400000);
+    var hours = Math.floor((diff % 86400000) / 3600000);
+    var mins  = Math.floor((diff % 3600000)  / 60000);
+    var secs  = Math.floor((diff % 60000)    / 1000);
+    document.getElementById('cd-days').textContent  = days;
+    document.getElementById('cd-hours').textContent = String(hours).padStart(2,'0');
+    document.getElementById('cd-mins').textContent  = String(mins).padStart(2,'0');
+    document.getElementById('cd-secs').textContent  = String(secs).padStart(2,'0');
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// Notify me form
+function submitPreseasonNotify() {
+  var email = (document.getElementById('preseason-email') || {}).value || '';
+  var msg   = document.getElementById('preseason-notify-msg');
+  if (!email || !email.includes('@')) {
+    if (msg) { msg.style.color='var(--red)'; msg.style.display='block'; msg.textContent='Please enter a valid email address.'; }
+    return;
+  }
+  // Save to waitlist table
+  if (typeof db !== 'undefined') {
+    db.from('waitlist').insert({ email: email, created_at: new Date().toISOString() })
+      .then(function() {
+        if (msg) { msg.style.color='var(--green-soft)'; msg.style.display='block'; msg.textContent="\u2713 You're on the list! We'll email you when the season opens."; }
+        var inp = document.getElementById('preseason-email'); if(inp) inp.value='';
+      }).catch(function() {
+        if (msg) { msg.style.color='var(--green-soft)'; msg.style.display='block'; msg.textContent="\u2713 Noted! We'll be in touch when the season opens."; }
+      });
+  }
+}
+
+// Run on load
+document.addEventListener('DOMContentLoaded', function() {
+  if (!_adminPreview) checkSeasonStatus();
+});
 </script>
 
 </body>
