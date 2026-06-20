@@ -118,8 +118,63 @@ module.exports = async (req, res) => {
     } catch (e) { results.agent = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
   }
 
+  // ── JOB ALL: single daily run — everything in sequence ─────────────────
+  // Used on Vercel Hobby (only 1 cron per day allowed)
+  else if (job === 'all') {
+    log.push('=== FULL DAILY RUN ===');
+
+    log.push('Step 1: apifootball-sync phase=1 (fixtures)');
+    try {
+      const r1 = await callInternal('/api/apifootball-sync?phase=1');
+      results.fixtures = { ok: r1.ok, fixtures: r1.data?.fixtures_processed };
+      log.push('  → ' + (r1.ok ? `✅ ${r1.data?.fixtures_processed || 0} fixtures` : `❌ HTTP ${r1.status}`));
+    } catch (e) { results.fixtures = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 2: apifootball-sync phase=2 (match stats)');
+    try {
+      const r2 = await callInternal('/api/apifootball-sync?phase=2');
+      results.stats = { ok: r2.ok, players: r2.data?.players_updated };
+      log.push('  → ' + (r2.ok ? `✅ ${r2.data?.players_updated || 0} player stats` : `❌ HTTP ${r2.status}`));
+    } catch (e) { results.stats = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 3: apifootball-sync phase=3 (totals)');
+    try {
+      const r3 = await callInternal('/api/apifootball-sync?phase=3');
+      results.totals = { ok: r3.ok };
+      log.push('  → ' + (r3.ok ? '✅ totals recalculated' : `❌ HTTP ${r3.status}`));
+    } catch (e) { results.totals = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 4: apifootball-sync phase=4 (injuries)');
+    try {
+      const r4 = await callInternal('/api/apifootball-sync?phase=4');
+      results.injuries = { ok: r4.ok };
+      log.push('  → ' + (r4.ok ? '✅ injuries updated' : `❌ HTTP ${r4.status}`));
+    } catch (e) { results.injuries = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 5: points-cron (score squads)');
+    try {
+      const r5 = await callInternal('/api/points-cron?cron=1');
+      results.points = { ok: r5.ok, updated: r5.data?.profiles_updated };
+      log.push('  → ' + (r5.ok ? `✅ ${r5.data?.profiles_updated || 0} profiles scored` : `❌ HTTP ${r5.status}`));
+    } catch (e) { results.points = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 6: news-crawler (RSS feeds)');
+    try {
+      const r6 = await callInternal('/api/news-crawler?action=fetch');
+      results.crawler = { ok: r6.ok, published: r6.data?.published };
+      log.push('  → ' + (r6.ok ? `✅ ${r6.data?.published || 0} articles` : `❌ HTTP ${r6.status}`));
+    } catch (e) { results.crawler = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+
+    log.push('Step 7: news-agent (AI articles)');
+    try {
+      const r7 = await callInternal('/api/news-agent?action=generate-batch');
+      results.agent = { ok: r7.ok, published: r7.data?.published };
+      log.push('  → ' + (r7.ok ? `✅ ${r7.data?.published || 0} AI articles` : `❌ HTTP ${r7.status}`));
+    } catch (e) { results.agent = { ok: false, error: e.message }; log.push('  → ❌ ' + e.message); }
+  }
+
   else {
-    return res.status(400).json({ error: 'Unknown job: ' + job + '. Use ?job=daily or ?job=content' });
+    return res.status(400).json({ error: 'Unknown job: ' + job + '. Use ?job=daily, ?job=content, or ?job=all' });
   }
 
   const allOk = Object.values(results).every(r => r.ok);
