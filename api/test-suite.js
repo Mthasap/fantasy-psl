@@ -208,7 +208,7 @@ async function runScoringTests() {
   // Import scoring module directly (unit test)
   let scoring;
   try {
-    scoring = require('./football_scoring.js');
+    scoring = require('./_football_scoring.js');
   } catch(e) {
     skip('All scoring unit tests', 'Cannot require football_scoring.js: ' + e.message);
     return;
