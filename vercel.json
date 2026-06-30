@@ -226,5 +226,40 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/admin-api.js": {
+      "maxDuration": 30
+    },
+    "api/apifootball-sync.js": {
+      "maxDuration": 30
+    },
+    "api/cron-orchestrator.js": {
+      "maxDuration": 55
+    },
+    "api/football.js": {
+      "maxDuration": 10
+    },
+    "api/news-agent.js": {
+      "maxDuration": 30
+    },
+    "api/news-crawler.js": {
+      "maxDuration": 30
+    },
+    "api/points-cron.js": {
+      "maxDuration": 30
+    },
+    "api/save-squad.js": {
+      "maxDuration": 10
+    },
+    "api/season-reset.js": {
+      "maxDuration": 30
+    },
+    "api/sitemap.js": {
+      "maxDuration": 10
+    },
+    "api/sync.js": {
+      "maxDuration": 10
+    }
+  }
 }
