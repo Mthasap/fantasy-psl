@@ -458,19 +458,22 @@
     .desktop-nav { display: flex !important; }
 
     /* Body gets extra top padding for the fixed desktop nav */
-    body { padding-top: 64px; }
+    body { padding-top: 64px; background: var(--bg); }
 
-    /* Page containers — full width with generous padding */
+    /* Page containers — full width desktop */
     .page-wrap, .page-content,
     #page-home, #page-squad, #page-players,
     #page-stats, #page-leagues, #page-news, #page-profile {
-      max-width: 860px;
-      padding: 1.5rem 24px 48px;
+      max-width: 1100px;
+      width: 100%;
+      padding: 1.5rem 32px 60px;
+      margin: 0 auto;
     }
 
-    /* App wrapper centres everything */
+    /* App wrapper fills full screen width */
     #app {
-      max-width: 1200px;
+      width: 100%;
+      max-width: 100%;
       margin: 0 auto;
     }
 
@@ -793,6 +796,36 @@
   }
   .lt-header { color: rgba(255,255,255,.75) !important; }
 
+
+  /* ══ AD SLOTS ════════════════════════════════════════════════════════ */
+  .ad-slot {
+    width: 100%;
+    background: rgba(255,255,255,.03);
+    border: 1px dashed rgba(255,255,255,.08);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.15);
+    font-family: var(--font-ui);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    overflow: hidden;
+    margin: .75rem 0;
+  }
+  .ad-slot-banner   { min-height: 60px;  }   /* mobile banner 320×50 */
+  .ad-slot-rect     { min-height: 250px; max-width: 300px; margin: .75rem auto; } /* 300×250 */
+  .ad-slot-leader   { min-height: 90px;  }   /* leaderboard 728×90 — desktop only */
+
+  @media (min-width: 960px) {
+    .ad-slot-leader { display: flex; }
+    .ad-slot-banner { display: none; }   /* hide mobile banner on desktop */
+  }
+  @media (max-width: 959px) {
+    .ad-slot-leader { display: none; }  /* hide leaderboard on mobile */
+  }
 </style>
 
   <!-- ==============================================================
@@ -10481,7 +10514,7 @@ function subscribeToPush(reg) {
 // Set SEASON_LAUNCH_DATE to the expected opening date
 // Admins can override by visiting the URL with ?admin_preview=1
 var SEASON_OPEN       = false;
-var SEASON_LAUNCH_DATE = new Date('2026-08-01T00:00:00+02:00'); // 1 August 2026, SAST
+var SEASON_LAUNCH_DATE = new Date('2026-07-18T08:00:00+02:00'); // 18 July 2026, 08:00 SAST — 2 weeks before season
 
 // Admin preview bypass: admins can add ?preview=1 to URL to see the full app
 var _adminPreview = new URLSearchParams(window.location.search).get('preview') === '1';
