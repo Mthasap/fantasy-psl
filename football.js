@@ -19,7 +19,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const { createClient }              = require('@supabase/supabase-js');
-const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./_season-helper');
+const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./season-helper');
 
 const TOKEN  = process.env.APIFOOTBALL_KEY     || '';
 const SB_URL = process.env.SUPABASE_URL        || '';

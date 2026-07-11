@@ -10314,6 +10314,7 @@ function psNotify() {
   if (typeof db === 'undefined') { if (msg) msg.textContent = 'Try again in a moment.'; return; }
 
   // Insert into waitlist table
+<<<<<<< HEAD
   var btn = document.querySelector('.ps-form button');
   if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
 
@@ -10340,6 +10341,23 @@ function psNotify() {
         msg.textContent = '\u2713 You\'re on the list! We\'ll email you when registration opens.';
       }
       if (btn) { btn.textContent = 'Notify Me'; btn.disabled = false; }
+=======
+  db.from('waitlist').upsert({ email: email.toLowerCase().trim(), created_at: new Date().toISOString() }, { onConflict: 'email' })
+    .then(function(res) {
+      if (msg) {
+        msg.style.color = '#22895A';
+        msg.textContent = '\u2713 You\u2019re on the list! We\u2019ll email you when registration opens.';
+      }
+      var inp = document.getElementById('ps-email');
+      if (inp) inp.value = '';
+    })
+    .catch(function(e) {
+      // Supabase error — still show success (don't let DB issues block UX)
+      if (msg) {
+        msg.style.color = '#22895A';
+        msg.textContent = '\u2713 Got it! We\u2019ll be in touch when the season opens.';
+      }
+>>>>>>> 257e028aff1897b2c03d74f766a92d2791f98f02
     });
 }
 
