@@ -114,8 +114,8 @@
       "dest": "/.well-known/apple-app-site-association"
     },
     {
-      "src": "/api/cron-orchestrator",
-      "dest": "/api/cron-orchestrator.js"
+      "src": "/api/master-agent",
+      "dest": "/api/master-agent.js"
     },
     {
       "src": "/api/broadcast-email",
@@ -131,7 +131,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron-orchestrator?job=all",
+      "path": "/api/master-agent",
       "schedule": "0 2 * * *"
     }
   ],
@@ -219,18 +219,6 @@
         {
           "key": "Permissions-Policy",
           "value": "geolocation=(), microphone=(), camera=()"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data:; connect-src 'self' https:;"
         }
       ]
     }
