@@ -609,138 +609,161 @@
   .lt-header { color: rgba(255,255,255,.75) !important; }
 
 
-/* ═══════════════════════════════════════════════════
-   DESKTOP LAYOUT ≥960px — full width, proper nav
-═══════════════════════════════════════════════════ */
-@media (min-width: 960px) {
-  .bottom-nav { display: none !important; }
-  .desktop-nav { display: flex !important; }
-  body { padding-top: 62px; }
-  .page-wrap, .page-content,
-  #page-home, #page-squad, #page-players,
-  #page-stats, #page-leagues, #page-news, #page-profile {
-    max-width: 1100px;
-    width: 100%;
-    padding: 1.5rem 32px 60px;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-  #app { width: 100%; max-width: 100%; }
-  #home-news-scroll {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    overflow-x: visible !important;
-    gap: 1rem;
-  }
-  #home-news-scroll > div { flex: unset !important; min-width: unset !important; }
-  .auth-modal-inner { max-width: 440px; margin: auto; }
+/* ═══════════════════════════════════════════════════════
+   DISKI CHAT — ENHANCED STYLES
+═══════════════════════════════════════════════════════ */
+.diski-cat {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 20px;
+  color: rgba(255,255,255,.5);
+  font-family: var(--font-ui);
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .3rem .8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .18s;
+  letter-spacing: .3px;
 }
-@media (min-width: 1280px) {
-  .page-wrap, .page-content,
-  #page-home, #page-squad, #page-players,
-  #page-stats, #page-leagues, #page-news, #page-profile {
-    max-width: 1240px;
-  }
-  #home-news-scroll { grid-template-columns: repeat(4, 1fr) !important; }
-}
+.diski-cat:hover { background: rgba(185,28,58,.12); color: #fff; border-color: rgba(185,28,58,.3); }
+.diski-cat.active { background: rgba(185,28,58,.15); color: #fff; border-color: rgba(185,28,58,.4); }
 
-/* ═══════════════════════════════════════════════════
-   PASSWORD REVEAL BUTTON
-═══════════════════════════════════════════════════ */
-.pw-wrap { position: relative; }
-.pw-wrap input { width: 100%; padding-right: 2.6rem !important; }
-.pw-toggle {
-  position: absolute; right: .6rem; top: 50%;
-  transform: translateY(-50%);
-  background: none; border: none; cursor: pointer;
-  padding: .2rem; display: flex; align-items: center;
-  opacity: .45; transition: opacity .2s;
+/* Post cards */
+.diski-post {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  margin-bottom: .65rem;
+  transition: border-color .18s;
 }
-.pw-toggle:hover { opacity: 1; }
-.pw-toggle svg { width: 17px; height: 17px; stroke: #fff; fill: none;
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.diski-post:hover { border-color: rgba(255,255,255,.13); }
 
-/* ═══════════════════════════════════════════════════
-   PRE-SEASON OVERLAY
-═══════════════════════════════════════════════════ */
-#preseason-overlay {
-  position: fixed; inset: 0;
-  background: #080B10;
-  z-index: 99999;
-  display: none;
-  flex-direction: column;
+.diski-post-header {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  text-align: center;
-  overflow-y: auto;
+  gap: .6rem;
+  margin-bottom: .55rem;
 }
-.ps-logo { width: 80px; height: 80px; object-fit: contain; border-radius: 14px;
-  margin-bottom: 1rem; filter: drop-shadow(0 0 20px rgba(185,28,58,.5)); }
-.ps-badge {
-  display: inline-block;
-  background: rgba(185,28,58,.12); border: 1px solid rgba(185,28,58,.25);
-  color: #B91C3A; font-size: .65rem; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; padding: .28rem .9rem; border-radius: 20px;
-  margin-bottom: 1.2rem;
-}
-.ps-title {
-  font-family: 'Montserrat Alternates', sans-serif;
-  font-size: clamp(1.6rem, 6vw, 2.8rem);
-  font-weight: 900; color: #fff; line-height: 1.1; margin-bottom: .6rem;
-}
-.ps-title span { color: #B91C3A; }
-.ps-sub { font-size: .92rem; color: rgba(255,255,255,.5); max-width: 400px;
-  line-height: 1.7; margin-bottom: 1.6rem; }
-.ps-countdown { display: flex; gap: 1rem; justify-content: center;
-  margin-bottom: 1.8rem; flex-wrap: wrap; }
-.ps-unit { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px; padding: .8rem 1rem; min-width: 62px; }
-.ps-num { font-family: 'Montserrat Alternates', sans-serif;
-  font-size: 1.8rem; font-weight: 900; color: #DBA94A; line-height: 1; }
-.ps-lbl { font-size: .55rem; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: .2rem; }
-.ps-form { display: flex; gap: .5rem; width: 100%; max-width: 360px; margin: 0 auto 1rem; }
-.ps-form input {
-  flex: 1; background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.15); border-radius: 8px;
-  padding: .7rem 1rem; color: #fff; font-size: .9rem; outline: none;
-}
-.ps-form input:focus { border-color: rgba(185,28,58,.5); }
-.ps-form button {
-  background: #B91C3A; border: none; color: #fff;
-  font-weight: 700; font-size: .85rem; padding: .7rem 1.2rem;
-  border-radius: 8px; cursor: pointer; white-space: nowrap;
-  box-shadow: 0 2px 12px rgba(185,28,58,.35);
-}
-.ps-stats { display: flex; gap: 1.4rem; justify-content: center; flex-wrap: wrap; margin-top: 1.4rem; }
-.ps-stat-val { font-family: 'Montserrat Alternates', sans-serif;
-  font-size: 1.3rem; font-weight: 900; color: #DBA94A; }
-.ps-stat-lbl { font-size: .55rem; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: .2rem; }
-.ps-links { display: flex; gap: .75rem; justify-content: center;
-  margin-top: 1.2rem; flex-wrap: wrap; }
-.ps-link { font-size: .75rem; font-weight: 700; color: rgba(255,255,255,.4);
-  text-decoration: underline; cursor: pointer; text-transform: uppercase;
-  letter-spacing: .5px; background: none; border: none; }
-
-/* ═══════════════════════════════════════════════════
-   AD SLOTS
-═══════════════════════════════════════════════════ */
-.ad-slot {
-  width: 100%; background: rgba(255,255,255,.02);
-  border: 1px dashed rgba(255,255,255,.07); border-radius: 8px;
+.diski-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #B91C3A;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,.1); font-size: .65rem; font-weight: 700;
-  letter-spacing: 1px; text-transform: uppercase; overflow: hidden; margin: .75rem 0;
+  font-family: var(--font-display);
+  font-size: .9rem; font-weight: 900; color: #fff;
+  flex-shrink: 0; overflow: hidden;
 }
-.ad-banner { min-height: 60px; }
-.ad-rect   { min-height: 250px; max-width: 300px; margin: .75rem auto; }
-.ad-leader { min-height: 90px; display: none; }
-@media (min-width: 960px) {
-  .ad-leader { display: flex; }
-  .ad-banner { display: none; }
+.diski-username {
+  font-family: var(--font-ui);
+  font-size: .82rem; font-weight: 700; color: #fff;
 }
+.diski-team {
+  font-family: var(--font-ui);
+  font-size: .68rem; color: rgba(255,255,255,.35);
+  margin-top: 1px;
+}
+.diski-time {
+  font-family: var(--font-ui);
+  font-size: .65rem; color: rgba(255,255,255,.25);
+  margin-left: auto;
+}
+.diski-cat-badge {
+  font-family: var(--font-ui);
+  font-size: .6rem; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: .15rem .5rem;
+  border-radius: 10px;
+  background: rgba(185,28,58,.12);
+  border: 1px solid rgba(185,28,58,.2);
+  color: rgba(255,255,255,.5);
+}
+.diski-content {
+  font-family: var(--font-body);
+  font-size: .9rem; line-height: 1.65;
+  color: rgba(255,255,255,.85);
+  margin-bottom: .75rem;
+  word-break: break-word;
+}
+.diski-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+.diski-action-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.35);
+  font-family: var(--font-ui);
+  font-size: .72rem; font-weight: 700;
+  padding: .3rem .6rem;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: .3rem;
+  transition: all .15s;
+}
+.diski-action-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+.diski-action-btn.liked { color: #E8192C; }
+.diski-action-btn.disliked { color: #6B7280; }
+
+/* Verified badge */
+.diski-verified {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px;
+  background: #B91C3A; border-radius: 50%;
+  font-size: 8px; color: #fff; margin-left: 3px;
+}
+
+
+/* ═══ SEASON COUNTDOWN ON HOMEPAGE ══════════════════════════════ */
+#season-countdown-banner {
+  background: linear-gradient(135deg,rgba(185,28,58,.14) 0%,rgba(25,28,37,.95) 100%);
+  border: 1px solid rgba(185,28,58,.2);
+  border-radius: 16px;
+  padding: 1.2rem 1.2rem 1.1rem;
+  margin: .8rem 0;
+}
+.scd-title {
+  font-family: var(--font-ui);
+  font-size: .65rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: #B91C3A;
+  margin-bottom: .6rem;
+  display: flex; align-items: center; gap: .4rem;
+}
+.scd-units {
+  display: flex; gap: .6rem; margin-bottom: .9rem; flex-wrap: wrap;
+}
+.scd-unit {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: .55rem .8rem;
+  text-align: center; min-width: 58px;
+}
+.scd-num {
+  font-family: var(--font-display);
+  font-size: 1.55rem; font-weight: 900;
+  color: #DBA94A; line-height: 1;
+}
+.scd-lbl {
+  font-family: var(--font-ui);
+  font-size: .55rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(255,255,255,.3);
+  margin-top: .2rem;
+}
+.scd-info {
+  background: rgba(219,169,74,.06);
+  border: 1px solid rgba(219,169,74,.15);
+  border-radius: 9px; padding: .7rem .9rem;
+}
+.scd-info p {
+  font-family: var(--font-body);
+  font-size: .8rem; color: rgba(255,255,255,.55);
+  margin: 0; line-height: 1.6;
+}
+.scd-info strong { color: rgba(255,255,255,.8); }
 
 </style>
 
@@ -752,39 +775,6 @@
   <!-- AdSense loaded at top of head — no duplicate needed -->
 </head>
 <body style="background:#0C0F14;color:#ffffff;">
-
-<!-- DESKTOP NAV -->
-<nav id="desktop-nav" class="desktop-nav" style="display:none;position:fixed;top:0;left:0;right:0;height:62px;background:rgba(8,11,16,.97);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(16px);z-index:9000;align-items:center;padding:0 2rem;gap:0">
-  <div style="display:flex;align-items:center;gap:.6rem;margin-right:2rem;cursor:pointer;flex-shrink:0" onclick="goPage('home')">
-    <img src="/logo.png" style="width:34px;height:34px;object-fit:contain;border-radius:6px" onerror="this.style.display='none'" alt="Fantasy PSL">
-    <div style="line-height:1.1">
-      <div style="font-size:.65rem;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase">Fantasy</div>
-      <div style="font-family:'Montserrat Alternates',sans-serif;font-size:.9rem;font-weight:900;color:#B91C3A;letter-spacing:.5px">Premier Soccer League</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:.15rem;flex:1">
-    <button class="dnav-btn" onclick="goPage('home')"     id="dnav-home">Home</button>
-    <button class="dnav-btn" onclick="goPage('squad')"    id="dnav-squad">My Squad</button>
-    <button class="dnav-btn" onclick="goPage('fixtures')" id="dnav-fix">Match Centre</button>
-    <button class="dnav-btn" onclick="goPage('news')"     id="dnav-news">News</button>
-    <button class="dnav-btn" onclick="goPage('stats')"    id="dnav-stats">Stats</button>
-    <button class="dnav-btn" onclick="goPage('leagues')"  id="dnav-leagues">Leagues</button>
-  </div>
-  <div id="dnav-auth" style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
-    <button id="dnav-login"    style="display:none;background:none;border:1px solid rgba(255,255,255,.2);color:#fff;font-size:.78rem;font-weight:700;padding:.4rem 1.1rem;border-radius:7px;cursor:pointer" onclick="openAuth('login')">Login</button>
-    <button id="dnav-register" style="display:none;background:#B91C3A;border:none;color:#fff;font-size:.78rem;font-weight:700;padding:.4rem 1.2rem;border-radius:7px;cursor:pointer;box-shadow:0 2px 10px rgba(185,28,58,.4)" onclick="openAuth('register')">Register Free</button>
-    <div id="dnav-user" style="display:none;align-items:center;gap:.5rem">
-      <div id="dnav-pts" style="background:rgba(255,255,255,.07);border-radius:7px;padding:.3rem .7rem;font-size:.72rem;font-weight:700;color:#DBA94A"></div>
-      <div id="dnav-av" onclick="goPage('profile')" style="width:34px;height:34px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;cursor:pointer;font-size:.85rem;border:2px solid rgba(255,255,255,.15)"></div>
-    </div>
-  </div>
-</nav>
-<style>
-.dnav-btn{background:none;border:none;color:rgba(255,255,255,.55);font-size:.8rem;font-weight:700;padding:.45rem .85rem;border-radius:7px;cursor:pointer;text-transform:uppercase;letter-spacing:.3px;transition:all .18s}
-.dnav-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
-.dnav-btn.active{color:#fff;background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.25)}
-</style>
-
 <!-- SPLASH SCREEN -->
 <div id="splash-screen" style="position:fixed;inset:0;background:#0C0F14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashFade 2.6s ease forwards">
   <img src="/logo.png" alt="Fantasy PSL" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(185,28,58,.5))" onerror="this.style.display:'none'">
@@ -855,7 +845,7 @@
         <span style="font-family:var(--font-ui);font-size:.68rem;color:#88FF00;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Password</label><div class="pw-wrap"><input id="l-pass" type="password" autocomplete="current-password" placeholder="Enter password"><button type="button" class="pw-toggle" onclick="togglePw('l-pass',this)" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
         <div style="display:flex;align-items:center;gap:.5rem">
           <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#E8192C;cursor:pointer" checked>
@@ -920,11 +910,7 @@
         </select>
       </div>
       <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
-        <div class="pw-wrap"><input id="r-pass" type="password" autocomplete="new-password" placeholder="Min 6 characters"><button type="button" class="pw-toggle" onclick="togglePw('r-pass',this)" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-      <div class="auth-field"><label>Confirm Password <span style="color:#D4274F">*</span></label>
-        <div class="pw-wrap"><input id="r-pass2" type="password" autocomplete="new-password" placeholder="Re-enter your password"><button type="button" class="pw-toggle" onclick="togglePw('r-pass2',this)" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-        <div id="r-pass-match" style="font-size:.72rem;margin-top:.3rem;min-height:1rem"></div>
-      </div></div>
+        <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
       <div class="auth-error" id="r-err"></div>
       <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account -- Free</button>
       <p style="font-size:.68rem;color:rgba(255,255,255,.3);text-align:center;margin-top:.75rem;line-height:1.6">
@@ -1087,7 +1073,26 @@
 </script>
 
 <!-- ═══ HOME: Latest News Strip (EPL-style horizontal scroll) ════════════ -->
-<div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
+
+    <!-- ═══ SEASON COUNTDOWN BANNER ═════════════════════════════════ -->
+    <div id="season-countdown-banner" style="display:none">
+      <div class="scd-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Season Countdown
+      </div>
+      <div class="scd-units">
+        <div class="scd-unit"><div class="scd-num" id="scd-days">--</div><div class="scd-lbl">Days</div></div>
+        <div class="scd-unit"><div class="scd-num" id="scd-hrs">--</div><div class="scd-lbl">Hours</div></div>
+        <div class="scd-unit"><div class="scd-num" id="scd-min">--</div><div class="scd-lbl">Mins</div></div>
+        <div class="scd-unit"><div class="scd-num" id="scd-sec">--</div><div class="scd-lbl">Secs</div></div>
+      </div>
+      <div class="scd-info">
+        <p>The <strong>2026/27 Betway Premiership</strong> season kicks off on <strong>2 August 2026</strong>.</p>
+        <p style="margin-top:.4rem">Squad selection, transfers &amp; private leagues open <strong>18 July 2026</strong> — 2 weeks before the first game.</p>
+      </div>
+    </div>
+
+    <div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem .45rem">
     <div style="display:flex;align-items:center;gap:.5rem">
       <div style="width:3px;height:16px;background:#B91C3A;border-radius:2px;flex-shrink:0"></div>
@@ -1666,53 +1671,106 @@ else setTimeout(loadHomeNews,500);
 <!-- == DISKI CHAT == -->
 <div id="page-chat" class="page">
   <div class="page-section" style="max-width:680px;padding-bottom:100px">
-    <!-- Community header bar -->
-    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:.75rem">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#8B1A2E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+
+    <!-- ── DISKI CHAT HEADER ─────────────────────────────────────── -->
+    <div style="background:linear-gradient(135deg,rgba(185,28,58,.18) 0%,rgba(12,15,20,.98) 100%);border:1px solid rgba(185,28,58,.2);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:.9rem">
+          <!-- Logo placeholder — replace img src with your Diski Chat logo when ready -->
+          <div id="diski-logo-wrap" style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#B91C3A,#7B1020);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(185,28,58,.35)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" style="width:22px;height:22px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:900;color:#fff;line-height:1;letter-spacing:-.3px">Diski Chat</div>
+            <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px">SA Football Community</div>
+          </div>
         </div>
-        <div>
-          <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;line-height:1.1">Diski Chat</div>
-          <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:1px">Fantasy PSL Community</div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <div style="display:flex;align-items:center;gap:.35rem;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.25);border-radius:20px;padding:.3rem .75rem">
+            <div style="width:7px;height:7px;border-radius:50%;background:#22895A;animation:pulse 2s infinite"></div>
+            <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#22895A" id="chat-online-count">Live</span>
+          </div>
+          <div id="chat-post-count" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3)"></div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.5rem">
-        <div style="display:flex;align-items:center;gap:.3rem;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.25);border-radius:20px;padding:.28rem .7rem">
-          <div style="width:7px;height:7px;border-radius:50%;background:#22895A;animation:pulse 2s infinite"></div>
-          <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#22895A" id="chat-online-count">Live</span>
-        </div>
-        <div id="chat-post-count" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3)"></div>
+
+      <!-- Category filter pills -->
+      <div style="display:flex;gap:.4rem;margin-top:.9rem;overflow-x:auto;padding-bottom:.1rem;scrollbar-width:none">
+        <button class="diski-cat active" data-cat="all"     onclick="setChatCat(this)">🔥 All</button>
+        <button class="diski-cat"        data-cat="banter"  onclick="setChatCat(this)">😂 Banter</button>
+        <button class="diski-cat"        data-cat="match"   onclick="setChatCat(this)">⚽ Match Talk</button>
+        <button class="diski-cat"        data-cat="fantasy" onclick="setChatCat(this)">🏆 Fantasy Tips</button>
+        <button class="diski-cat"        data-cat="news"    onclick="setChatCat(this)">📰 Transfer News</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+
+    <!-- ── TAB BAR ───────────────────────────────────────────────── -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem">
       <div style="display:flex;gap:.4rem">
         <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">🔥 Latest</button>
-        <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">⭐ Top</button>
+        <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">⭐ Top Today</button>
       </div>
       <div id="chat-rules-link" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.5px;cursor:pointer" onclick="showChatRules()">Community Rules ›</div>
     </div>
-    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;margin-bottom:1.2rem">
+
+    <!-- ── COMPOSE BOX (logged in) ───────────────────────────────── -->
+    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1rem 1.1rem;margin-bottom:1.1rem">
       <div style="display:flex;gap:.75rem;align-items:flex-start">
-        <div id="chat-avatar" style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">?</div>
-        <div style="flex:1">
-          <textarea id="chat-input" placeholder="What's on your mind?" maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.55;resize:none;min-height:72px;max-height:160px" oninput="chatInputChange(this)"></textarea>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
-            <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
-            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer">Post</button>
+        <div id="chat-avatar" style="width:40px;height:40px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden">?</div>
+        <div style="flex:1;min-width:0">
+          <!-- Category selector -->
+          <select id="chat-cat-select" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.72rem;font-weight:700;padding:.3rem .6rem;margin-bottom:.6rem;outline:none;cursor:pointer">
+            <option value="">📌 Select category (optional)</option>
+            <option value="banter">😂 Banter</option>
+            <option value="match">⚽ Match Talk</option>
+            <option value="fantasy">🏆 Fantasy Tips</option>
+            <option value="news">📰 Transfer News</option>
+          </select>
+          <textarea id="chat-input" placeholder="What's on your mind? Tag your club with #Sundowns #Chiefs #Pirates..." maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.92rem;line-height:1.6;resize:none;min-height:80px;max-height:180px" oninput="chatInputChange(this)"></textarea>
+          <!-- Quick emoji bar -->
+          <div style="display:flex;gap:.3rem;margin:.4rem 0;flex-wrap:wrap">
+            <button onclick="addEmoji('⚽')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">⚽</button>
+            <button onclick="addEmoji('🔥')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🔥</button>
+            <button onclick="addEmoji('💪')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">💪</button>
+            <button onclick="addEmoji('🏆')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🏆</button>
+            <button onclick="addEmoji('😂')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">😂</button>
+            <button onclick="addEmoji('😭')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">😭</button>
+            <button onclick="addEmoji('🎯')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🎯</button>
+            <button onclick="addEmoji('👑')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">👑</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.4rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
+              <div id="chat-char-bar" style="width:48px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
+                <div id="chat-char-fill" style="height:100%;width:0%;background:#22895A;border-radius:2px;transition:width .1s,background .1s"></div>
+              </div>
+            </div>
+            <button onclick="submitPost()" id="chat-submit-btn" style="background:linear-gradient(135deg,#B91C3A,#8B1020);border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.3rem;cursor:pointer;box-shadow:0 2px 10px rgba(185,28,58,.35);transition:opacity .18s">Post ⚽</button>
           </div>
         </div>
       </div>
     </div>
-    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1.2rem 1rem;margin-bottom:1.2rem;text-align:center">
-      <div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem">Join the conversation</div>
-      <div style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.8rem">Create a free account to post and react</div>
-      <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.2rem;cursor:pointer">Register Free</button>
+
+    <!-- ── LOGIN PROMPT (logged out) ─────────────────────────────── -->
+    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.5rem 1.2rem;margin-bottom:1.1rem;text-align:center">
+      <div style="font-size:2rem;margin-bottom:.6rem">⚽</div>
+      <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff;margin-bottom:.35rem">Join the Conversation</div>
+      <div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:1rem;line-height:1.6">Debate tactics, celebrate wins, trash talk rivals.<br>South Africa's most passionate football community.</div>
+      <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+        <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.55rem 1.3rem;cursor:pointer;box-shadow:0 2px 10px rgba(185,28,58,.3)">Register Free</button>
+        <button onclick="openAuth('login')" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.55rem 1.3rem;cursor:pointer">Log In</button>
+      </div>
     </div>
 
-    <div id="chat-feed"><div class="fpsl-loader"><div class="fpsl-loader-ball"><svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#ddd" stroke-width="1"/><path d="M22 2 L27 15 L13 11 Z" fill="#111"/><path d="M22 42 L17 29 L31 33 Z" fill="#111"/><path d="M2 22 L15 17 L11 31 Z" fill="#111"/><path d="M42 22 L29 27 L33 13 Z" fill="#111"/><circle cx="22" cy="22" r="4.5" fill="#111"/></svg></div><div class="fpsl-loader-shadow"></div><div class="fpsl-loader-dots"><span></span><span></span><span></span></div><div class="fpsl-loader-label">Loading Diski Chat</div></div></div>
-    <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
-      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more</button>
+    <!-- ── FEED ──────────────────────────────────────────────────── -->
+    <div id="chat-feed">
+      <div style="text-align:center;padding:2.5rem 1rem">
+        <div style="font-size:2rem;margin-bottom:.5rem">⚽</div>
+        <div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px">LOADING DISKI CHAT...</div>
+      </div>
+    </div>
+    <div id="chat-load-more" style="display:none;text-align:center;margin-top:.8rem;margin-bottom:.5rem">
+      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;color:rgba(255,255,255,.55);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 2rem;cursor:pointer;transition:all .18s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">Load More Posts</button>
     </div>
   </div>
 </div>
@@ -2340,20 +2398,10 @@ function doRegister() {
   var discovery    = (document.getElementById('signup-discovery')  || {}).value || null;
   db.auth.signUp({
     email: email, password: pass,
-    options: { data: { username: user, team_name: team }, emailRedirectTo: window.location.origin + '/confirm' }
+    options: { data: { username: user, team_name: team } }
   }).then(function(res) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
-    if (res.error) {
-      var em = res.error.message || '';
-      var isEmailErr = em.toLowerCase().includes('sending') || em.toLowerCase().includes('email') || em.toLowerCase().includes('smtp');
-      if (isEmailErr) {
-        document.getElementById('r-err').style.color = '#22895A';
-        document.getElementById('r-err').textContent = 'Account created! Check your inbox or try logging in.';
-      } else {
-        document.getElementById('r-err').textContent = em;
-      }
-      return;
-    }
+    if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
     var userId = res.data && res.data.user && res.data.user.id;
     if (userId) {
       db.from('profiles').insert({
@@ -10237,239 +10285,297 @@ function subscribeToPush(reg) {
 </script>
 
 
-<!-- ═══ PRE-SEASON OVERLAY ═══════════════════════════════════════════ -->
-<div id="preseason-overlay">
-  <img src="/logo.png" class="ps-logo" onerror="this.style.display='none'" alt="Fantasy PSL">
-  <div class="ps-badge">New Season Coming Soon</div>
-  <h1 class="ps-title">Fantasy <span>Premier Soccer</span><br>League 2026/27</h1>
-  <p class="ps-sub">The 2025/26 season has ended. Registration for the new season opens on 18 July 2026. Enter your email to be notified the moment it opens.</p>
-  <div class="ps-countdown">
-    <div class="ps-unit"><div class="ps-num" id="ps-days">--</div><div class="ps-lbl">Days</div></div>
-    <div class="ps-unit"><div class="ps-num" id="ps-hrs">--</div><div class="ps-lbl">Hours</div></div>
-    <div class="ps-unit"><div class="ps-num" id="ps-min">--</div><div class="ps-lbl">Mins</div></div>
-    <div class="ps-unit"><div class="ps-num" id="ps-sec">--</div><div class="ps-lbl">Secs</div></div>
-  </div>
-  <div class="ps-form">
-    <input type="email" id="ps-email" placeholder="your@email.com" autocomplete="email">
-    <button onclick="psNotify()">Notify Me</button>
-  </div>
-  <div id="ps-msg" style="font-size:.8rem;min-height:1.2rem;color:#22895A"></div>
-  <div class="ps-stats">
-    <div><div class="ps-stat-val">16</div><div class="ps-stat-lbl">PSL Clubs</div></div>
-    <div><div class="ps-stat-val">R100M</div><div class="ps-stat-lbl">Budget</div></div>
-    <div><div class="ps-stat-val">30</div><div class="ps-stat-lbl">Gameweeks</div></div>
-    <div><div class="ps-stat-val">Free</div><div class="ps-stat-lbl">To Play</div></div>
-  </div>
-  <div class="ps-links">
-    <button class="ps-link" onclick="closePsOverlay();goPage('news')">Read PSL News &rarr;</button>
-    <button class="ps-link" onclick="closePsOverlay();goPage('fixtures')">View Match Results &rarr;</button>
-  </div>
-  <div style="margin-top:1.4rem;font-size:.65rem;color:rgba(255,255,255,.18)">Fan-made &middot; Not affiliated with PSL or Betway &middot; &copy; 2026 Fantasy PSL</div>
-</div>
-
 <script>
-// ── PRE-SEASON CONFIG ────────────────────────────────────────────────────
-// Set SEASON_OPEN=true OR set app_settings.season_open='true' in Supabase
-// to disable this overlay and open registration
-var SEASON_OPEN        = false;
-var SEASON_LAUNCH_DATE = new Date('2026-07-18T08:00:00+02:00'); // 18 Jul 2026 08:00 SAST
-
-// Admin bypass: add ?preview=1 to URL to see full app during pre-season
-var _psPreview = new URLSearchParams(window.location.search).get('preview') === '1';
-
-function closePsOverlay() {
-  var o = document.getElementById('preseason-overlay');
-  if (o) o.style.display = 'none';
-}
-
-function showPsOverlay() {
-  var o = document.getElementById('preseason-overlay');
-  if (o) o.style.display = 'flex';
-  psTick();
-  setInterval(psTick, 1000);
-}
-
-function psTick() {
-  var diff = SEASON_LAUNCH_DATE - Date.now();
-  if (diff <= 0) return;
-  var d = Math.floor(diff / 86400000);
-  var h = Math.floor((diff % 86400000) / 3600000);
-  var m = Math.floor((diff % 3600000) / 60000);
-  var s = Math.floor((diff % 60000) / 1000);
-  var e = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
-  e('ps-days', d);
-  e('ps-hrs',  String(h).padStart(2,'0'));
-  e('ps-min',  String(m).padStart(2,'0'));
-  e('ps-sec',  String(s).padStart(2,'0'));
-}
-
-// Notify Me — saves email to Supabase waitlist table
-function psNotify() {
-  var email = (document.getElementById('ps-email') || {}).value || '';
-  var msg   = document.getElementById('ps-msg');
-  if (!email || !email.includes('@') || !email.includes('.')) {
-    if (msg) { msg.style.color='#B91C3A'; msg.textContent = 'Please enter a valid email address.'; }
-    return;
-  }
-  if (typeof db === 'undefined') { if (msg) msg.textContent = 'Try again in a moment.'; return; }
-
-  // Insert into waitlist table
-<<<<<<< HEAD
-  var btn = document.querySelector('.ps-form button');
-  if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
-
-  db.from('waitlist').upsert({ email: email.toLowerCase().trim(), created_at: new Date().toISOString() }, { onConflict: 'email' })
-    .then(function(r) {
-      // Send confirmation email via our API
-      return fetch('/api/broadcast-email?action=waitlist-confirm&email=' + encodeURIComponent(email.toLowerCase().trim()), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-    })
-    .then(function() {
-      if (msg) {
-        msg.style.color = '#22895A';
-        msg.textContent = '\u2713 You\'re on the list! Check your inbox for a confirmation email.';
-      }
-      var inp = document.getElementById('ps-email');
-      if (inp) inp.value = '';
-      if (btn) { btn.textContent = 'Notify Me'; btn.disabled = false; }
-    })
-    .catch(function() {
-      if (msg) {
-        msg.style.color = '#22895A';
-        msg.textContent = '\u2713 You\'re on the list! We\'ll email you when registration opens.';
-      }
-      if (btn) { btn.textContent = 'Notify Me'; btn.disabled = false; }
-=======
-  db.from('waitlist').upsert({ email: email.toLowerCase().trim(), created_at: new Date().toISOString() }, { onConflict: 'email' })
-    .then(function(res) {
-      if (msg) {
-        msg.style.color = '#22895A';
-        msg.textContent = '\u2713 You\u2019re on the list! We\u2019ll email you when registration opens.';
-      }
-      var inp = document.getElementById('ps-email');
-      if (inp) inp.value = '';
-    })
-    .catch(function(e) {
-      // Supabase error — still show success (don't let DB issues block UX)
-      if (msg) {
-        msg.style.color = '#22895A';
-        msg.textContent = '\u2713 Got it! We\u2019ll be in touch when the season opens.';
-      }
->>>>>>> 257e028aff1897b2c03d74f766a92d2791f98f02
-    });
-}
-
-// Check DB for live season status, then show overlay if needed
-function checkSeasonGate() {
-  if (_psPreview || SEASON_OPEN) return;
-  if (typeof db === 'undefined') { setTimeout(checkSeasonGate, 600); return; }
-  db.from('app_settings').select('value').eq('key', 'season_open').maybeSingle()
-    .then(function(r) {
-      var val = r && r.data && r.data.value;
-      if (val === 'true' || val === true) {
-        SEASON_OPEN = true;
-      } else {
-        showPsOverlay();
-      }
-    })
-    .catch(function() {
-      if (!SEASON_OPEN) showPsOverlay();
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(checkSeasonGate, 300);
-});
-</script>
-
-<!-- ═══ DESKTOP NAV JS ═══════════════════════════════════════════════ -->
-<script>
+// ══════════════════════════════════════════════════════════════════
+// SEASON COUNTDOWN — homepage banner
+// ══════════════════════════════════════════════════════════════════
 (function() {
-  // Toggle password show/hide
-  window.togglePw = function(id, btn) {
-    var inp = document.getElementById(id);
-    if (!inp) return;
-    var show = inp.type === 'text';
-    inp.type = show ? 'password' : 'text';
-    var svg = btn && btn.querySelector('svg');
-    if (svg) {
-      svg.innerHTML = show
-        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    }
-  };
+  // Season dates
+  var SQUAD_OPEN_DATE   = new Date('2026-07-18T08:00:00+02:00'); // 18 Jul — squads open
+  var SEASON_START_DATE = new Date('2026-08-02T15:00:00+02:00'); // 2 Aug — first match
 
-  // Confirm password live match
-  document.addEventListener('DOMContentLoaded', function() {
-    var p1 = document.getElementById('r-pass');
-    var p2 = document.getElementById('r-pass2');
-    var ind = document.getElementById('r-pass-match');
-    function chk() {
-      if (!p2 || !ind) return;
-      if (!p2.value) { ind.textContent = ''; return; }
-      if (p1 && p1.value === p2.value) { ind.style.color='#22895A'; ind.textContent='\u2713 Passwords match'; }
-      else { ind.style.color='#B91C3A'; ind.textContent='\u2717 Passwords do not match'; }
-    }
-    if (p1) p1.addEventListener('input', chk);
-    if (p2) p2.addEventListener('input', chk);
-  });
+  function updateCountdown() {
+    var banner = document.getElementById('season-countdown-banner');
+    if (!banner) return;
 
-  // Desktop nav: update active state when page changes
-  var _orig = window.goPage;
-  window.goPage = function(id) {
-    if (_orig) _orig(id);
-    document.querySelectorAll('.dnav-btn').forEach(function(b) { b.classList.remove('active'); });
-    var map = { home:'dnav-home', squad:'dnav-squad', fixtures:'dnav-fix', news:'dnav-news', stats:'dnav-stats', leagues:'dnav-leagues' };
-    var target = document.getElementById(map[id]);
-    if (target) target.classList.add('active');
-  };
+    var now  = Date.now();
+    var diff = SQUAD_OPEN_DATE - now;
 
-  // Desktop nav: sync auth state
-  function syncDesktopAuth(user, profile) {
-    var login    = document.getElementById('dnav-login');
-    var register = document.getElementById('dnav-register');
-    var userArea = document.getElementById('dnav-user');
-    var av       = document.getElementById('dnav-av');
-    var pts      = document.getElementById('dnav-pts');
-    if (!login) return;
-    if (user) {
-      login.style.display    = 'none';
-      register.style.display = 'none';
-      userArea.style.display = 'flex';
-      if (av) av.textContent = ((profile && profile.username) || (user.email || '??')).slice(0,2).toUpperCase();
-      if (pts && profile) pts.textContent = (profile.gw_points || 0) + ' pts';
-    } else {
-      login.style.display    = 'block';
-      register.style.display = 'block';
-      userArea.style.display = 'none';
+    // Hide countdown once squads are open (SEASON_OPEN = true)
+    if (typeof SEASON_OPEN !== 'undefined' && SEASON_OPEN) {
+      banner.style.display = 'none';
+      return;
     }
+
+    if (diff <= 0) {
+      // Squads already open — show season start countdown
+      diff = SEASON_START_DATE - now;
+      if (diff <= 0) { banner.style.display = 'none'; return; }
+      banner.querySelector('.scd-title').innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Season Starts In';
+    }
+
+    banner.style.display = 'block';
+
+    var d = Math.floor(diff / 86400000);
+    var h = Math.floor((diff % 86400000) / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+
+    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('scd-days', d);
+    set('scd-hrs',  String(h).padStart(2,'0'));
+    set('scd-min',  String(m).padStart(2,'0'));
+    set('scd-sec',  String(s).padStart(2,'0'));
   }
-  window._syncDesktopAuth = syncDesktopAuth;
 
   document.addEventListener('DOMContentLoaded', function() {
-    // Show desktop nav on large screens
-    function checkDesktop() {
-      var nav = document.getElementById('desktop-nav');
-      if (nav) nav.style.display = window.innerWidth >= 960 ? 'flex' : 'none';
-    }
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-
-    // Sync auth state if already logged in
-    if (typeof db !== 'undefined') {
-      db.auth.getSession().then(function(r) {
-        var user = r && r.data && r.data.session && r.data.session.user;
-        syncDesktopAuth(user || null, null);
-        if (user) {
-          db.from('profiles').select('username,gw_points').eq('id', user.id).single()
-            .then(function(pr) { syncDesktopAuth(user, pr && pr.data); }).catch(function(){});
-        }
-      }).catch(function(){});
-    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
   });
 })();
+
+// ══════════════════════════════════════════════════════════════════
+// DISKI CHAT ENHANCEMENTS
+// ══════════════════════════════════════════════════════════════════
+
+// Emoji quick-insert
+function addEmoji(emoji) {
+  var inp = document.getElementById('chat-input');
+  if (!inp) return;
+  var pos = inp.selectionStart || inp.value.length;
+  inp.value = inp.value.slice(0, pos) + emoji + inp.value.slice(pos);
+  inp.focus();
+  inp.selectionStart = inp.selectionEnd = pos + emoji.length;
+  chatInputChange(inp);
+}
+
+// Character count bar
+function chatInputChange(el) {
+  var max  = 280;
+  var len  = el ? el.value.length : 0;
+  var rem  = max - len;
+  var pct  = (len / max) * 100;
+
+  var countEl = document.getElementById('chat-charcount');
+  var fillEl  = document.getElementById('chat-char-fill');
+  if (countEl) {
+    countEl.textContent = rem;
+    countEl.style.color = rem < 20 ? '#E8192C' : rem < 50 ? '#DBA94A' : 'rgba(255,255,255,.3)';
+  }
+  if (fillEl) {
+    fillEl.style.width = Math.min(pct, 100) + '%';
+    fillEl.style.background = pct > 90 ? '#E8192C' : pct > 70 ? '#DBA94A' : '#22895A';
+  }
+}
+
+// Category filter for chat
+var _chatCat = 'all';
+function setChatCat(btn) {
+  document.querySelectorAll('.diski-cat').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  _chatCat = btn.getAttribute('data-cat') || 'all';
+  fetchPosts(true);
+}
+
+// Time-ago helper
+function timeAgo(dateStr) {
+  var diff = Date.now() - new Date(dateStr).getTime();
+  var s = Math.floor(diff / 1000);
+  if (s < 60)  return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  if (s < 604800) return Math.floor(s/86400) + 'd ago';
+  return new Date(dateStr).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+}
+
+// Category badge helper
+function catBadge(cat) {
+  var labels = { banter:'😂 Banter', match:'⚽ Match Talk', fantasy:'🏆 Fantasy', news:'📰 Transfer' };
+  return cat && labels[cat]
+    ? '<span class="diski-cat-badge">' + labels[cat] + '</span>'
+    : '';
+}
+
+// Override renderFeed to use new card design
+var _origRenderFeed = window.renderFeed;
+window.renderFeed = function() {
+  var feed = document.getElementById('chat-feed');
+  if (!feed) return;
+
+  // Use CHAT global if available
+  var posts = (typeof CHAT !== 'undefined' && CHAT.posts) ? CHAT.posts : [];
+
+  // Filter by category
+  if (_chatCat && _chatCat !== 'all') {
+    posts = posts.filter(function(p) { return p.category === _chatCat; });
+  }
+
+  if (!posts.length) {
+    feed.innerHTML = '<div style="text-align:center;padding:3rem 1rem">'
+      + '<div style="font-size:2.5rem;margin-bottom:.8rem">⚽</div>'
+      + '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.28);letter-spacing:1px">'
+      + (_chatCat !== 'all' ? 'NO POSTS IN THIS CATEGORY YET' : 'NO POSTS YET — BE THE FIRST!')
+      + '</div></div>';
+    return;
+  }
+
+  var myReactions = (typeof CHAT !== 'undefined' && CHAT.myReactions) ? CHAT.myReactions : {};
+  var myReposts   = (typeof CHAT !== 'undefined' && CHAT.myReposts)   ? CHAT.myReposts   : {};
+  var currentUser = (typeof ST !== 'undefined' && ST.user) ? ST.user : null;
+
+  feed.innerHTML = posts.map(function(p) { return buildPostHtml(p); }).join('');
+};
+
+// ══════════════════════════════════════════════════════════════════
+// submitPost override to include category
+// ══════════════════════════════════════════════════════════════════
+var _origSubmitPost = window.submitPost;
+window.submitPost = function() {
+  if (typeof ST === 'undefined' || !ST.user) { openAuth('login'); return; }
+  var inp  = document.getElementById('chat-input');
+  var text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  if (text.length > 280) { alert('Post too long — max 280 characters'); return; }
+
+  var cat  = (document.getElementById('chat-cat-select') || {}).value || null;
+  var btn  = document.getElementById('chat-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Posting...'; }
+
+  var m = (ST.user.user_metadata || {});
+  var cachedProfile = (typeof CACHE !== 'undefined' && CACHE._profile) ? CACHE._profile : null;
+
+  db.from('diski_posts').insert({
+    user_id:    ST.user.id,
+    username:   m.username || ST.user.email.split('@')[0],
+    team_name:  m.team_name || null,
+    content:    text,
+    category:   cat || null,
+    likes:      0,
+    dislikes:   0,
+    reposts:    0,
+    avatar_url: cachedProfile && cachedProfile.avatar_url || null,
+  }).select().single().then(function(res) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Post ⚽'; }
+    if (res.error) { alert('Post failed: ' + res.error.message); return; }
+    if (inp) inp.value = '';
+    chatInputChange(inp);
+    if (typeof CHAT !== 'undefined') {
+      CHAT.posts.unshift(res.data);
+      renderFeed();
+    }
+    // Update post count
+    var countEl = document.getElementById('chat-post-count');
+    if (countEl) {
+      var cur = parseInt(countEl.textContent) || 0;
+      countEl.textContent = (cur + 1) + ' posts';
+    }
+  }).catch(function(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Post ⚽'; }
+    alert('Error: ' + e.message);
+  });
+};
+</script>
+
+
+<script>
+// buildPostHtml — builds a single Diski Chat post card
+// Separated to avoid nested quote issues in map() callback
+function buildPostHtml(p) {
+  var myReactions = (typeof CHAT !== 'undefined' && CHAT.myReactions) ? CHAT.myReactions : {};
+  var myReposts   = (typeof CHAT !== 'undefined' && CHAT.myReposts)   ? CHAT.myReposts   : {};
+  var currentUser = (typeof ST !== 'undefined' && ST.user) ? ST.user : null;
+  var isOwn       = currentUser && currentUser.id === p.user_id;
+  var liked       = myReactions[p.id] === 'like';
+  var disliked    = myReactions[p.id] === 'dislike';
+  var reposted    = myReposts && myReposts[p.id];
+  var initials    = (p.username || p.team_name || '?').slice(0,2).toUpperCase();
+
+  var el = document.createElement('div');
+  el.className = 'diski-post';
+  el.id = 'dpost-' + p.id;
+
+  // Build avatar
+  var avEl = document.createElement('div');
+  avEl.className = 'diski-avatar';
+  if (p.avatar_url) {
+    var img = document.createElement('img');
+    img.src = p.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    img.onerror = function() { this.style.display='none'; avEl.textContent=initials; };
+    avEl.appendChild(img);
+  } else {
+    avEl.textContent = initials;
+  }
+
+  // Category badge
+  var catLabels = { banter:'😂 Banter', match:'⚽ Match Talk', fantasy:'🏆 Fantasy', news:'📰 Transfer' };
+  var catHtml = p.category && catLabels[p.category]
+    ? '<span class="diski-cat-badge">' + catLabels[p.category] + '</span>' : '';
+
+  // Hashtag highlighting
+  var bodyText = (p.content || '').replace(/#(\w+)/g, '<span style="color:#B91C3A;font-weight:700">#$1</span>');
+
+  el.innerHTML =
+    '<div class="diski-post-header">' +
+      '<div class="diski-avatar" id="dav-' + p.id + '"></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">' +
+          '<span class="diski-username">' + (p.username || 'Fan') + '</span>' +
+          (p.is_admin ? '<span class="diski-verified" title="Official">&#10003;</span>' : '') +
+          catHtml +
+        '</div>' +
+        '<div class="diski-team">' + (p.team_name || 'Fantasy PSL') + '</div>' +
+      '</div>' +
+      '<span class="diski-time">' + timeAgo(p.created_at) + '</span>' +
+    '</div>' +
+    '<div class="diski-content">' + bodyText + '</div>' +
+    '<div class="diski-actions" id="dact-' + p.id + '">' +
+    '</div>' +
+    (p.reply_count > 0 ?
+      '<div id="reply-section-' + p.id + '" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.05)">' +
+        '<div id="replies-' + p.id + '"></div>' +
+      '</div>'
+    : '');
+
+  // Mount avatar properly (avEl built above)
+  var avSlot = el.querySelector('#dav-' + p.id);
+  if (avSlot) { avSlot.innerHTML = ''; if (p.avatar_url) { var img2=document.createElement('img');img2.src=p.avatar_url;img2.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%';img2.onerror=function(){img2.style.display='none';avSlot.textContent=initials;};avSlot.appendChild(img2); } else { avSlot.textContent=initials; } }
+
+  // Build action buttons properly
+  var acts = el.querySelector('#dact-' + p.id);
+  if (acts) {
+    var buttons = [
+      { label: '👍 ' + (p.likes||0),       cls: liked     ? 'liked'    : '', fn: "reactToPost('" + p.id + "','like')",    id: 'lc-'+p.id },
+      { label: '👎 ' + (p.dislikes||0),    cls: disliked  ? 'disliked' : '', fn: "reactToPost('" + p.id + "','dislike')", id: 'dc-'+p.id },
+      { label: '🔄 ' + (p.reposts||0),     cls: reposted  ? 'liked'    : '', fn: "repostPost('" + p.id + "')" },
+      { label: '💬 ' + (p.reply_count||0), cls: '',                          fn: "replyToPost('" + p.id + "')" },
+    ];
+    buttons.forEach(function(b) {
+      var btn = document.createElement('button');
+      btn.className = 'diski-action-btn' + (b.cls ? ' '+b.cls : '');
+      btn.innerHTML = b.label;
+      btn.setAttribute('onclick', b.fn);
+      acts.appendChild(btn);
+    });
+    if (isOwn) {
+      var delBtn = document.createElement('button');
+      delBtn.className = 'diski-action-btn';
+      delBtn.style.cssText = 'margin-left:auto;color:rgba(255,255,255,.2)';
+      delBtn.innerHTML = '🗑';
+      delBtn.setAttribute('onclick', "deletePost('" + p.id + "')");
+      acts.appendChild(delBtn);
+    }
+    var repBtn = document.createElement('button');
+    repBtn.className = 'diski-action-btn';
+    repBtn.style.cssText = (isOwn ? '' : 'margin-left:auto;') + 'color:rgba(255,255,255,.15)';
+    repBtn.innerHTML = '⚑';
+    repBtn.setAttribute('onclick', "reportPost('" + p.id + "')");
+    acts.appendChild(repBtn);
+  }
+
+  return el.outerHTML;
+}
 </script>
 
 </body>
