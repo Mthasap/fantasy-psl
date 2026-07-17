@@ -476,5 +476,59 @@ module.exports = async (req, res) => {
     }
   }
 
-  return res.status(400).json({ error: `Unknown action: ${action}` });
+  // ── EMAIL TEST ACTIONS ───────────────────────────────────────────────
+  // Merged here to avoid adding a new function (Vercel Hobby limit = 12)
+
+  if (action === 'test-connection') {
+    if (!RESEND_KEY) return res.json({ success:false, error:'RESEND_API_KEY not set in Vercel env vars', fix:'Vercel → Project → Settings → Environment Variables → Add RESEND_API_KEY' });
+    try {
+      const r = await fetch('https://api.resend.com/domains', {
+        headers: { Authorization: `Bearer ${RESEND_KEY}` }, signal: AbortSignal.timeout(10_000)
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${JSON.stringify(data)}`);
+      const domains = (data.data || []).map(d => ({ name: d.name, status: d.status, verified: d.status === 'verified' }));
+      const fpslDomain = domains.find(d => d.name && d.name.includes('fantasypsl'));
+      return res.json({ success: true, resend_connected: true, domains, fantasypsl_domain: fpslDomain || null, domain_verified: fpslDomain?.verified || false, ready_to_send: fpslDomain?.verified || false });
+    } catch(e) { return res.json({ success: false, error: e.message }); }
+  }
+
+  if (action === 'test-email') {
+    const testTo   = req.query.email || (req.body && req.body.email) || '';
+    const testType = req.query.type  || 'all';
+    if (!testTo || !testTo.includes('@')) return res.status(400).json({ error: 'email param required', example: '/api/broadcast-email?action=test-email&email=you@example.com&type=all&admin_key=KEY' });
+
+    const SITE = process.env.SITE_URL || 'https://www.fantasypsl.co.za';
+    function wrap(title, body, color) {
+      return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;background:#0C0F14;font-family:Arial,sans-serif"><table width="100%" style="padding:40px 20px"><tr><td align="center"><table width="100%" style="max-width:560px;background:#121620;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.07)"><tr><td style="background:linear-gradient(135deg,${color},${color}cc);padding:32px;text-align:center"><img src="${SITE}/logo.png" width="56" height="56" style="border-radius:10px;margin-bottom:12px;display:block;margin:0 auto 12px" alt="Fantasy PSL"><h1 style="margin:0;color:#fff;font-size:22px;font-weight:900">Fantasy PSL</h1></td></tr><tr><td style="padding:36px">${body}</td></tr><tr><td style="background:#0C0F14;padding:20px;text-align:center;border-top:1px solid rgba(255,255,255,.06)"><p style="margin:0;color:rgba(255,255,255,.25);font-size:11px">&copy; 2026 Fantasy PSL &middot; <a href="${SITE}" style="color:#DBA94A;text-decoration:none">fantasypsl.co.za</a></p></td></tr></table></td></tr></table></body></html>`;
+    }
+
+    const templates = {
+      registration: { subject:'✅ [TEST] Confirm your Fantasy PSL account', html: wrap('Confirm account', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the registration confirmation email</strong>. In production Supabase sends this automatically when a user registers. The real email contains a confirmation link directing to /confirm.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'/confirm" style="display:inline-block;background:#22895A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Confirm Email Address &rarr;</a></td></tr></table>', '#22895A') },
+      reset:        { subject:'🔑 [TEST] Reset your Fantasy PSL password',  html: wrap('Reset password',  '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the password reset email</strong>. In production this is triggered when a user clicks Forgot Password. The real email contains a secure reset link to /confirm?type=recovery that expires in 1 hour.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'/confirm" style="display:inline-block;background:#DBA94A;color:#111;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Reset Password &rarr;</a></td></tr></table>', '#DBA94A') },
+      waitlist:     { subject:'[TEST] You\'re on the Fantasy PSL Early Access List! \uD83C\uDF89', html: wrap('On the list!', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the waitlist confirmation email</strong>. In production this is sent the moment someone enters their email on the pre-season countdown page and clicks Notify Me. It confirms they are on early access and that registration opens 18 July 2026.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Visit Fantasy PSL &rarr;</a></td></tr></table>', '#B91C3A') },
+      welcome:      { subject:'⚽ [TEST] Welcome to Fantasy PSL!', html: wrap('Welcome!', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the welcome email</strong>. In production this is sent after a user saves their squad for the first time.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">View My Squad &rarr;</a></td></tr></table>', '#B91C3A') },
+    };
+
+    const toRun  = testType === 'all' ? Object.keys(templates) : [testType];
+    const results = {};
+    const testLog = [];
+    for (const t of toRun) {
+      if (!templates[t]) { results[t] = { ok:false, error:`Unknown type: ${t}` }; continue; }
+      try {
+        testLog.push(`Sending ${t} to ${testTo}...`);
+        const sent = await sendEmail(testTo, templates[t].subject, templates[t].html);
+        results[t] = { ok:true, subject: templates[t].subject };
+        testLog.push(`  ✅ Sent`);
+      } catch(e) {
+        results[t] = { ok:false, error:e.message };
+        testLog.push(`  ❌ ${e.message}`);
+      }
+      if (toRun.length > 1) await new Promise(r => setTimeout(r, 400));
+    }
+    const allOk = Object.values(results).every(r => r.ok);
+    return res.json({ success: allOk, tested: toRun.length, results, log: testLog, next_steps: allOk ? 'All sent! Check your inbox and spam folder.' : 'Some failed — check error messages.' });
+  }
+
+    return res.status(400).json({ error: `Unknown action: ${action}` });
 };
