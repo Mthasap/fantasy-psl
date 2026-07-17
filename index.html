@@ -225,10 +225,11 @@
     .lt-row:hover { background:rgba(255,255,255,.02) !important; }
     .lt-pos { font-family:var(--font-display); font-size:.9rem; font-weight:900; }
     .lt-club { display:flex; align-items:center; gap:.5rem; overflow:hidden; }
-    .lt-club img { width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+    .lt-club img { width:22px; height:22px; object-fit:contain; flex-shrink:0; border-radius:3px; }
+    .lt-club img[src=""], .lt-club img:not([src]) { display:none; }
     .lt-club-name { font-family:var(--font-ui); font-size:.8rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .lt-stat { font-family:var(--font-ui); font-size:.8rem; font-weight:600; color:rgba(255,255,255,.6); text-align:center; }
-    .lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#88FF00; text-align:right; }
+    .lt-pts  { font-family:var(--font-display); font-size:.95rem; font-weight:900; color:#DBA94A; text-align:right; }
 
     /* -- Tab buttons -- SVG + label alignment -- */
     .ftab { display:inline-flex; align-items:center; gap:0; }
@@ -237,7 +238,7 @@
     /* -- Club profile modal -- */
     #club-modal { -webkit-overflow-scrolling:touch; }
     .cp-tile { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.9rem .8rem;text-align:center; }
-    .cp-tile-val { font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#88FF00;line-height:1; }
+    .cp-tile-val { font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#DBA94A;line-height:1; }
     .cp-tile-lbl { font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px; }
     .cp-stat-card { background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center; }
     .cp-stat-card-lbl { font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6); }
@@ -608,163 +609,6 @@
   }
   .lt-header { color: rgba(255,255,255,.75) !important; }
 
-
-/* ═══════════════════════════════════════════════════════
-   DISKI CHAT — ENHANCED STYLES
-═══════════════════════════════════════════════════════ */
-.diski-cat {
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.09);
-  border-radius: 20px;
-  color: rgba(255,255,255,.5);
-  font-family: var(--font-ui);
-  font-size: .72rem;
-  font-weight: 700;
-  padding: .3rem .8rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .18s;
-  letter-spacing: .3px;
-}
-.diski-cat:hover { background: rgba(185,28,58,.12); color: #fff; border-color: rgba(185,28,58,.3); }
-.diski-cat.active { background: rgba(185,28,58,.15); color: #fff; border-color: rgba(185,28,58,.4); }
-
-/* Post cards */
-.diski-post {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 14px;
-  padding: 1rem 1.1rem;
-  margin-bottom: .65rem;
-  transition: border-color .18s;
-}
-.diski-post:hover { border-color: rgba(255,255,255,.13); }
-
-.diski-post-header {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  margin-bottom: .55rem;
-}
-.diski-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: #B91C3A;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display);
-  font-size: .9rem; font-weight: 900; color: #fff;
-  flex-shrink: 0; overflow: hidden;
-}
-.diski-username {
-  font-family: var(--font-ui);
-  font-size: .82rem; font-weight: 700; color: #fff;
-}
-.diski-team {
-  font-family: var(--font-ui);
-  font-size: .68rem; color: rgba(255,255,255,.35);
-  margin-top: 1px;
-}
-.diski-time {
-  font-family: var(--font-ui);
-  font-size: .65rem; color: rgba(255,255,255,.25);
-  margin-left: auto;
-}
-.diski-cat-badge {
-  font-family: var(--font-ui);
-  font-size: .6rem; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: .15rem .5rem;
-  border-radius: 10px;
-  background: rgba(185,28,58,.12);
-  border: 1px solid rgba(185,28,58,.2);
-  color: rgba(255,255,255,.5);
-}
-.diski-content {
-  font-family: var(--font-body);
-  font-size: .9rem; line-height: 1.65;
-  color: rgba(255,255,255,.85);
-  margin-bottom: .75rem;
-  word-break: break-word;
-}
-.diski-actions {
-  display: flex;
-  align-items: center;
-  gap: .25rem;
-  flex-wrap: wrap;
-}
-.diski-action-btn {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,.35);
-  font-family: var(--font-ui);
-  font-size: .72rem; font-weight: 700;
-  padding: .3rem .6rem;
-  border-radius: 7px;
-  cursor: pointer;
-  display: flex; align-items: center; gap: .3rem;
-  transition: all .15s;
-}
-.diski-action-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
-.diski-action-btn.liked { color: #E8192C; }
-.diski-action-btn.disliked { color: #6B7280; }
-
-/* Verified badge */
-.diski-verified {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px;
-  background: #B91C3A; border-radius: 50%;
-  font-size: 8px; color: #fff; margin-left: 3px;
-}
-
-
-/* ═══ SEASON COUNTDOWN ON HOMEPAGE ══════════════════════════════ */
-#season-countdown-banner {
-  background: linear-gradient(135deg,rgba(185,28,58,.14) 0%,rgba(25,28,37,.95) 100%);
-  border: 1px solid rgba(185,28,58,.2);
-  border-radius: 16px;
-  padding: 1.2rem 1.2rem 1.1rem;
-  margin: .8rem 0;
-}
-.scd-title {
-  font-family: var(--font-ui);
-  font-size: .65rem; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: #B91C3A;
-  margin-bottom: .6rem;
-  display: flex; align-items: center; gap: .4rem;
-}
-.scd-units {
-  display: flex; gap: .6rem; margin-bottom: .9rem; flex-wrap: wrap;
-}
-.scd-unit {
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px;
-  padding: .55rem .8rem;
-  text-align: center; min-width: 58px;
-}
-.scd-num {
-  font-family: var(--font-display);
-  font-size: 1.55rem; font-weight: 900;
-  color: #DBA94A; line-height: 1;
-}
-.scd-lbl {
-  font-family: var(--font-ui);
-  font-size: .55rem; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: rgba(255,255,255,.3);
-  margin-top: .2rem;
-}
-.scd-info {
-  background: rgba(219,169,74,.06);
-  border: 1px solid rgba(219,169,74,.15);
-  border-radius: 9px; padding: .7rem .9rem;
-}
-.scd-info p {
-  font-family: var(--font-body);
-  font-size: .8rem; color: rgba(255,255,255,.55);
-  margin: 0; line-height: 1.6;
-}
-.scd-info strong { color: rgba(255,255,255,.8); }
-
 </style>
 
   <!-- ==============================================================
@@ -779,7 +623,7 @@
 <div id="splash-screen" style="position:fixed;inset:0;background:#0C0F14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashFade 2.6s ease forwards">
   <img src="/logo.png" alt="Fantasy PSL" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(185,28,58,.5))" onerror="this.style.display:'none'">
   <div style="font-family:'Montserrat Alternates',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;margin-top:1.1rem;letter-spacing:-0.5px">Fantasy PSL</div>
-  <div style="font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.35rem">Betway Premiership 2025/26</div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.35rem">Betway Premiership 2026/27</div>
   <div style="margin-top:2rem;display:flex;gap:.45rem">
     <div style="width:7px;height:7px;border-radius:50%;background:#B91C3A;animation:sDot .8s ease infinite"></div>
     <div style="width:7px;height:7px;border-radius:50%;background:#B91C3A;animation:sDot .8s .18s ease infinite"></div>
@@ -841,8 +685,8 @@
     <div id="auth-login-panel">
       <div class="auth-box-title">Welcome Back</div>
       <div id="saved-login-hint" style="display:none;background:rgba(201,150,58,.08);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;color:#88FF00;font-weight:700">Saved login detected — tap Login to continue</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
@@ -968,7 +812,7 @@
 
     <!-- Season at a glance -->
     <div style="padding:1.2rem 1.2rem .4rem">
-      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">2025/26 Season</div>
+      <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.8rem">2026/27 Season</div>
       <div id="cp-glance" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem"></div>
     </div>
 
@@ -1053,7 +897,7 @@
   <div id="home-house-ad" style="background:linear-gradient(135deg,rgba(136,255,0,.08),rgba(14,20,32,.95));border:1px solid rgba(136,255,0,.2);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer" onclick="goPage('news')">
     <div style="font-size:1.6rem;flex-shrink:0">📰</div>
     <div style="flex:1;min-width:0">
-      <div style="font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#88FF00;letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem">Fantasy PSL News</div>
+      <div style="font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#DBA94A;letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem">Fantasy PSL News</div>
       <div style="font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest PSL updates, injury news & GW tips →</div>
     </div>
   </div>
@@ -1073,26 +917,7 @@
 </script>
 
 <!-- ═══ HOME: Latest News Strip (EPL-style horizontal scroll) ════════════ -->
-
-    <!-- ═══ SEASON COUNTDOWN BANNER ═════════════════════════════════ -->
-    <div id="season-countdown-banner" style="display:none">
-      <div class="scd-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Season Countdown
-      </div>
-      <div class="scd-units">
-        <div class="scd-unit"><div class="scd-num" id="scd-days">--</div><div class="scd-lbl">Days</div></div>
-        <div class="scd-unit"><div class="scd-num" id="scd-hrs">--</div><div class="scd-lbl">Hours</div></div>
-        <div class="scd-unit"><div class="scd-num" id="scd-min">--</div><div class="scd-lbl">Mins</div></div>
-        <div class="scd-unit"><div class="scd-num" id="scd-sec">--</div><div class="scd-lbl">Secs</div></div>
-      </div>
-      <div class="scd-info">
-        <p>The <strong>2026/27 Betway Premiership</strong> season kicks off on <strong>2 August 2026</strong>.</p>
-        <p style="margin-top:.4rem">Squad selection, transfers &amp; private leagues open <strong>18 July 2026</strong> — 2 weeks before the first game.</p>
-      </div>
-    </div>
-
-    <div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
+<div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem .45rem">
     <div style="display:flex;align-items:center;gap:.5rem">
       <div style="width:3px;height:16px;background:#B91C3A;border-radius:2px;flex-shrink:0"></div>
@@ -1114,7 +939,7 @@
 <script>
 (function(){
 var _hnDone=false;
-var _HN_CAT={'Gameweek':'#B91C3A','Tips':'#88FF00','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','PSL News':'#8B5CF6','Sport':'#06B6D4'};
+var _HN_CAT={'Gameweek':'#B91C3A','Tips':'#DBA94A','Table':'#22895A','Transfer':'#3B82F6','Injury':'#E8732A','PSL News':'#8B5CF6','Sport':'#06B6D4'};
 function _hnFmt(d){try{return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});}catch(e){return '';}}
 function _hnCat(cat){var c=_HN_CAT[cat]||'#6B7280';return'<span style="font-size:.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+c+';padding:1px 5px;border-radius:3px">'+((cat||'News').slice(0,10))+'</span>';}
 
@@ -1170,11 +995,8 @@ function loadHomeNews(){
     var all=posts.concat(anns).concat(ext);
     all.sort(function(a,b){return new Date(b.published_at)-new Date(a.published_at);});
     if(!all.length){
-      all=[
-        {id:1,title:'GW Deadline — Make Your Transfers Now',published_at:new Date().toISOString(),category:'Gameweek',image_url:''},
-        {id:2,title:'Mamelodi Sundowns Lead the Betway Premiership',published_at:new Date(Date.now()-86400000).toISOString(),category:'Table',image_url:''},
-        {id:3,title:'Form Guide: Best Picks for This Gameweek',published_at:new Date(Date.now()-2*86400000).toISOString(),category:'Tips',image_url:''}
-      ];
+      // No news yet — show empty state, do not show fake articles
+      all = [];
     }
     renderHomeNews(all);
   }).catch(function(){renderHomeNews([]);});
@@ -1229,8 +1051,8 @@ else setTimeout(loadHomeNews,500);
   </div>
 </div>
 
-  <section class="hero">
-    <div class="hero-eyebrow"><div class="hero-eyebrow-pulse"></div>2025/26 Season . Gameweek <span id="gw-hero">--</span></div>
+  <section class="hero" id="main-hero" style="display:none">
+    <div class="hero-eyebrow" id="hero-eyebrow" style="display:none"><div class="hero-eyebrow-pulse"></div><span id="hero-season-label">2026/27 Season</span> . Gameweek <span id="gw-hero">--</span></div>
     <h1 class="hero-title" style="color:#fff;margin-bottom:1.4rem">
       South Africa's Greatest<br>Fantasy Football Game<br>
       <span style="color:#C9963A">Is Here</span>
@@ -1254,9 +1076,9 @@ else setTimeout(loadHomeNews,500);
 
   <div class="ticker">
     <div class="ticker-track" id="ticker-track">
-      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
+      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2026/27</span></div>
       <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading latest scores &amp; fixtures...</span></div>
-      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2025/26</span></div>
+      <div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2026/27</span></div>
       <div class="ti"><div class="ti-dot o"></div><span class="ti-label">Loading latest scores &amp; fixtures...</span></div>
     </div>
   </div>
@@ -1265,9 +1087,9 @@ else setTimeout(loadHomeNews,500);
   <div id="potm-home-card" style="display:none;margin:0;background:linear-gradient(135deg,rgba(185,28,58,.18),rgba(201,150,58,.10));border-top:1px solid rgba(185,28,58,.2);border-bottom:1px solid rgba(185,28,58,.2);padding:.9rem 1.2rem">
     <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
-        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#B91C3A,#88FF00);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(185,28,58,.35)"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#fff"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#B91C3A,#DBA94A);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(185,28,58,.35)"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;color:#fff"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         <div>
-          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#88FF00">Community POTM</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A">Community POTM</div>
           <div style="font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.4);letter-spacing:1px">YOUR VOTES DECIDED</div>
         </div>
       </div>
@@ -1278,7 +1100,7 @@ else setTimeout(loadHomeNews,500);
       <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
         <div id="potm-vote-bar" style="display:flex;gap:2px;align-items:flex-end;height:24px"></div>
         <div style="text-align:center">
-          <div id="potm-vote-pct" style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#88FF00;line-height:1"></div>
+          <div id="potm-vote-pct" style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#DBA94A;line-height:1"></div>
           <div style="font-family:var(--font-ui);font-size:.5rem;color:rgba(255,255,255,.35);letter-spacing:1px">VOTES</div>
         </div>
       </div>
@@ -1293,8 +1115,8 @@ else setTimeout(loadHomeNews,500);
         <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4274F;white-space:nowrap" id="home-gw-fixtures-btn">GW<span id="gw-fixtures-num">--</span> Fixtures</span>
       </button>
       <button onclick="openPOTMFromHome()" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--gold-muted);border:1px solid var(--gold-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(201,150,58,.18)'" onmouseout="this.style.background='rgba(201,150,58,.12)'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
-        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#88FF00;white-space:nowrap">Vote POTM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><path d="M8 21h8M12 17v4M6 3h12l-1 8a5 5 0 01-10 0L6 3z"/><path d="M6 7H4a2 2 0 000 4c.8 0 1.5-.3 2-.8M18 7h2a2 2 0 010 4c-.8 0-1.5-.3-2-.8"/></svg>
+        <span style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#DBA94A;white-space:nowrap">Vote POTM</span>
       </button>
       <button onclick="goPage('squad')" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;background:var(--green-muted);border:1px solid var(--green-border);border-radius:100px;padding:.32rem .85rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(26,107,66,.18)'" onmouseout="this.style.background='rgba(26,107,66,.12)'">
         <svg viewBox="0 0 24 24" fill="none" stroke="#22895A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0113 0"/></svg>
@@ -1390,7 +1212,7 @@ else setTimeout(loadHomeNews,500);
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Squad Value</div>
-          <div class="meta-pill-val" id="squad-value-display" style="color:#88FF00">R0.0M</div>
+          <div class="meta-pill-val" id="squad-value-display" style="color:#DBA94A">R0.0M</div>
         </div>
         <div class="meta-pill">
           <div class="meta-pill-label">Players</div>
@@ -1398,20 +1220,20 @@ else setTimeout(loadHomeNews,500);
         </div>
         <div class="meta-pill" id="gw-pts-pill" style="display:none">
           <div class="meta-pill-label">GW Points</div>
-          <div class="meta-pill-val" id="gw-pts-display" style="color:#88FF00">--</div>
+          <div class="meta-pill-val" id="gw-pts-display" style="color:#DBA94A">--</div>
         </div>
         <div class="meta-pill" id="total-pts-pill" style="display:none">
           <div class="meta-pill-label">Total Pts</div>
-          <div class="meta-pill-val" id="total-pts-display" style="color:#88FF00">--</div>
+          <div class="meta-pill-val" id="total-pts-display" style="color:#DBA94A">--</div>
         </div>
         <div class="meta-pill" id="rank-pts-pill" style="display:none">
           <div class="meta-pill-label">SA Rank</div>
-          <div class="meta-pill-val" id="rank-pts-display" style="color:#88FF00">--</div>
+          <div class="meta-pill-val" id="rank-pts-display" style="color:#DBA94A">--</div>
         </div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <div id="xfer-badge" style="display:none;font-family:var(--font-ui);font-size:.7rem;font-weight:700;padding:.3rem .7rem;border-radius:6px;letter-spacing:.5px"></div>
           <button id="save-btn" class="btn-hero-primary" style="font-size:.8rem;padding:.6rem 1.2rem" onclick="saveSquad()">Save Squad</button>
-          <button onclick="openAutoSquadModal()" style="background:linear-gradient(135deg,#88FF00,#C8962A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:800;padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.3px" title="Auto-create a squad for me">
+          <button onclick="openAutoSquadModal()" style="background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:800;padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.3px" title="Auto-create a squad for me">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             Auto Squad
           </button>
@@ -1434,10 +1256,10 @@ else setTimeout(loadHomeNews,500);
     </div>
 
     <!-- Captain/VC hint -- shown when squad is full but cap/VC not set -->
-    <div id="cap-vc-hint" style="display:none;background:rgba(136,255,0,.07);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#88FF00;margin:.4rem 0 0"></div>
+    <div id="cap-vc-hint" style="display:none;background:rgba(136,255,0,.07);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#DBA94A;margin:.4rem 0 0"></div>
 
     <div id="xfer-banner" class="xfer-banner">
-      <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#88FF00;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
+      <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#DBA94A;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
       <button onclick="cancelTransfer()" style="background:none;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:rgba(255,255,255,.4);font-size:.75rem;padding:.3rem .8rem;cursor:pointer">Cancel</button>
     </div>
 
@@ -1494,7 +1316,7 @@ else setTimeout(loadHomeNews,500);
 <!-- == MATCH CENTRE == -->
 <div id="page-fixtures" class="page">
   <div class="page-section" style="max-width:900px">
-    <span class="eyebrow">Betway Premiership 2025/26</span>
+    <span class="eyebrow">Betway Premiership 2026/27</span>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;margin-bottom:.3rem">
       <h1 class="section-title" style="margin:0">Match Centre</h1>
       <span id="gw-nav-badge" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);border-radius:6px;padding:4px 10px;text-transform:uppercase">GW <span id="gw-nav-num">--</span></span>
@@ -1525,7 +1347,7 @@ else setTimeout(loadHomeNews,500);
 <!-- == NEWS == -->
 <div id="page-news" class="page">
   <div class="page-section" style="max-width:1000px">
-    <span class="eyebrow">2025/26 Season</span>
+    <span class="eyebrow">2026/27 Season</span>
     <h1 class="section-title">PSL News</h1>
     <!-- NEWS PAGE AD — above the grid ─────────────────────────── -->
     <div id="news-top-ad" style="width:100%;margin-bottom:1rem;border-radius:10px;overflow:hidden;position:relative">
@@ -1559,7 +1381,7 @@ else setTimeout(loadHomeNews,500);
 <!-- == STATS == -->
 <div id="page-stats" class="page">
   <div class="page-section" style="max-width:960px">
-    <span class="eyebrow">Betway Premiership 2025/26</span>
+    <span class="eyebrow">Betway Premiership 2026/27</span>
     <h1 class="section-title">Player &amp; League Stats</h1>
 
     <!-- Stat category tabs -->
@@ -1671,106 +1493,53 @@ else setTimeout(loadHomeNews,500);
 <!-- == DISKI CHAT == -->
 <div id="page-chat" class="page">
   <div class="page-section" style="max-width:680px;padding-bottom:100px">
-
-    <!-- ── DISKI CHAT HEADER ─────────────────────────────────────── -->
-    <div style="background:linear-gradient(135deg,rgba(185,28,58,.18) 0%,rgba(12,15,20,.98) 100%);border:1px solid rgba(185,28,58,.2);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:.9rem">
-          <!-- Logo placeholder — replace img src with your Diski Chat logo when ready -->
-          <div id="diski-logo-wrap" style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#B91C3A,#7B1020);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(185,28,58,.35)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" style="width:22px;height:22px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          </div>
-          <div>
-            <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:900;color:#fff;line-height:1;letter-spacing:-.3px">Diski Chat</div>
-            <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px">SA Football Community</div>
-          </div>
+    <!-- Community header bar -->
+    <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#8B1A2E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         </div>
-        <div style="display:flex;align-items:center;gap:.5rem">
-          <div style="display:flex;align-items:center;gap:.35rem;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.25);border-radius:20px;padding:.3rem .75rem">
-            <div style="width:7px;height:7px;border-radius:50%;background:#22895A;animation:pulse 2s infinite"></div>
-            <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#22895A" id="chat-online-count">Live</span>
-          </div>
-          <div id="chat-post-count" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3)"></div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;line-height:1.1">Diski Chat</div>
+          <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:1px">Fantasy PSL Community</div>
         </div>
       </div>
-
-      <!-- Category filter pills -->
-      <div style="display:flex;gap:.4rem;margin-top:.9rem;overflow-x:auto;padding-bottom:.1rem;scrollbar-width:none">
-        <button class="diski-cat active" data-cat="all"     onclick="setChatCat(this)">🔥 All</button>
-        <button class="diski-cat"        data-cat="banter"  onclick="setChatCat(this)">😂 Banter</button>
-        <button class="diski-cat"        data-cat="match"   onclick="setChatCat(this)">⚽ Match Talk</button>
-        <button class="diski-cat"        data-cat="fantasy" onclick="setChatCat(this)">🏆 Fantasy Tips</button>
-        <button class="diski-cat"        data-cat="news"    onclick="setChatCat(this)">📰 Transfer News</button>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.3rem;background:rgba(34,137,90,.12);border:1px solid rgba(34,137,90,.25);border-radius:20px;padding:.28rem .7rem">
+          <div style="width:7px;height:7px;border-radius:50%;background:#22895A;animation:pulse 2s infinite"></div>
+          <span style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:#22895A" id="chat-online-count">Live</span>
+        </div>
+        <div id="chat-post-count" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3)"></div>
       </div>
     </div>
-
-    <!-- ── TAB BAR ───────────────────────────────────────────────── -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
       <div style="display:flex;gap:.4rem">
         <button class="ftab active" id="ctab-latest" onclick="setChatTab('latest',this)">🔥 Latest</button>
-        <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">⭐ Top Today</button>
+        <button class="ftab" id="ctab-top" onclick="setChatTab('top',this)">⭐ Top</button>
       </div>
       <div id="chat-rules-link" style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.5px;cursor:pointer" onclick="showChatRules()">Community Rules ›</div>
     </div>
-
-    <!-- ── COMPOSE BOX (logged in) ───────────────────────────────── -->
-    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1rem 1.1rem;margin-bottom:1.1rem">
+    <div id="chat-compose" style="display:none;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;margin-bottom:1.2rem">
       <div style="display:flex;gap:.75rem;align-items:flex-start">
-        <div id="chat-avatar" style="width:40px;height:40px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden">?</div>
-        <div style="flex:1;min-width:0">
-          <!-- Category selector -->
-          <select id="chat-cat-select" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.72rem;font-weight:700;padding:.3rem .6rem;margin-bottom:.6rem;outline:none;cursor:pointer">
-            <option value="">📌 Select category (optional)</option>
-            <option value="banter">😂 Banter</option>
-            <option value="match">⚽ Match Talk</option>
-            <option value="fantasy">🏆 Fantasy Tips</option>
-            <option value="news">📰 Transfer News</option>
-          </select>
-          <textarea id="chat-input" placeholder="What's on your mind? Tag your club with #Sundowns #Chiefs #Pirates..." maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.92rem;line-height:1.6;resize:none;min-height:80px;max-height:180px" oninput="chatInputChange(this)"></textarea>
-          <!-- Quick emoji bar -->
-          <div style="display:flex;gap:.3rem;margin:.4rem 0;flex-wrap:wrap">
-            <button onclick="addEmoji('⚽')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">⚽</button>
-            <button onclick="addEmoji('🔥')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🔥</button>
-            <button onclick="addEmoji('💪')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">💪</button>
-            <button onclick="addEmoji('🏆')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🏆</button>
-            <button onclick="addEmoji('😂')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">😂</button>
-            <button onclick="addEmoji('😭')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">😭</button>
-            <button onclick="addEmoji('🎯')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">🎯</button>
-            <button onclick="addEmoji('👑')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.2rem .4rem;font-size:.85rem;cursor:pointer">👑</button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.4rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
-            <div style="display:flex;align-items:center;gap:.5rem">
-              <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
-              <div id="chat-char-bar" style="width:48px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
-                <div id="chat-char-fill" style="height:100%;width:0%;background:#22895A;border-radius:2px;transition:width .1s,background .1s"></div>
-              </div>
-            </div>
-            <button onclick="submitPost()" id="chat-submit-btn" style="background:linear-gradient(135deg,#B91C3A,#8B1020);border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.3rem;cursor:pointer;box-shadow:0 2px 10px rgba(185,28,58,.35);transition:opacity .18s">Post ⚽</button>
+        <div id="chat-avatar" style="width:38px;height:38px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#fff;flex-shrink:0">?</div>
+        <div style="flex:1">
+          <textarea id="chat-input" placeholder="What's on your mind?" maxlength="280" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:.9rem;line-height:1.55;resize:none;min-height:72px;max-height:160px" oninput="chatInputChange(this)"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06)">
+            <span id="chat-charcount" style="font-family:var(--font-ui);font-size:.72rem;color:rgba(255,255,255,.3)">280</span>
+            <button onclick="submitPost()" id="chat-submit-btn" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.45rem 1.1rem;cursor:pointer">Post</button>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- ── LOGIN PROMPT (logged out) ─────────────────────────────── -->
-    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.5rem 1.2rem;margin-bottom:1.1rem;text-align:center">
-      <div style="font-size:2rem;margin-bottom:.6rem">⚽</div>
-      <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:#fff;margin-bottom:.35rem">Join the Conversation</div>
-      <div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:1rem;line-height:1.6">Debate tactics, celebrate wins, trash talk rivals.<br>South Africa's most passionate football community.</div>
-      <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
-        <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.55rem 1.3rem;cursor:pointer;box-shadow:0 2px 10px rgba(185,28,58,.3)">Register Free</button>
-        <button onclick="openAuth('login')" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.55rem 1.3rem;cursor:pointer">Log In</button>
-      </div>
+    <div id="chat-login-prompt" style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1.2rem 1rem;margin-bottom:1.2rem;text-align:center">
+      <div style="font-family:var(--font-ui);font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem">Join the conversation</div>
+      <div style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:.8rem">Create a free account to post and react</div>
+      <button onclick="openAuth('register')" style="background:#B91C3A;border:none;border-radius:8px;color:#fff;font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.5rem 1.2rem;cursor:pointer">Register Free</button>
     </div>
 
-    <!-- ── FEED ──────────────────────────────────────────────────── -->
-    <div id="chat-feed">
-      <div style="text-align:center;padding:2.5rem 1rem">
-        <div style="font-size:2rem;margin-bottom:.5rem">⚽</div>
-        <div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px">LOADING DISKI CHAT...</div>
-      </div>
-    </div>
-    <div id="chat-load-more" style="display:none;text-align:center;margin-top:.8rem;margin-bottom:.5rem">
-      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;color:rgba(255,255,255,.55);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 2rem;cursor:pointer;transition:all .18s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">Load More Posts</button>
+    <div id="chat-feed"><div class="fpsl-loader"><div class="fpsl-loader-ball"><svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#ddd" stroke-width="1"/><path d="M22 2 L27 15 L13 11 Z" fill="#111"/><path d="M22 42 L17 29 L31 33 Z" fill="#111"/><path d="M2 22 L15 17 L11 31 Z" fill="#111"/><path d="M42 22 L29 27 L33 13 Z" fill="#111"/><circle cx="22" cy="22" r="4.5" fill="#111"/></svg></div><div class="fpsl-loader-shadow"></div><div class="fpsl-loader-dots"><span></span><span></span><span></span></div><div class="fpsl-loader-label">Loading Diski Chat</div></div></div>
+    <div id="chat-load-more" style="display:none;text-align:center;margin-top:1rem">
+      <button onclick="loadMorePosts()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-family:var(--font-ui);font-size:.8rem;font-weight:700;padding:.65rem 1.5rem;cursor:pointer">Load more</button>
     </div>
   </div>
 </div>
@@ -2504,6 +2273,9 @@ function loadGW(cb) {
   // Hardcoded fallback ONLY if ALL DB queries fail entirely (network down etc.)
 
   function applyGW(n, deadline) {
+  // Show hero eyebrow only when we have a real GW from the DB
+  var eyebrow = document.getElementById('hero-eyebrow');
+  if (eyebrow && n) eyebrow.style.display = 'flex';
     if (!n || isNaN(n) || n < 1) return false;
     ST.gw = { number: n, gw_number: n, deadline_at: deadline || null };
     ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
@@ -2581,15 +2353,12 @@ function loadGW(cb) {
         if (n && n > 0) {
           applyGW(n, null);
         } else {
-          // All DB sources failed — use GW27 as best guess (season almost over)
-          var fallbackGW = 27;
-          ST.gw = { number: fallbackGW, gw_number: fallbackGW, deadline_at: null };
-          ['gw-hero','gw-squad','gw-nav-num','gw-fixtures-num'].forEach(function(elId) {
-            var el = document.getElementById(elId);
-            if (el) el.textContent = fallbackGW;
-          });
+          // No GW in DB — season not started yet, hide GW elements
+          ST.gw = { number: null, gw_number: null, deadline_at: null };
+          var eyebrow = document.getElementById('hero-eyebrow');
+          if (eyebrow) eyebrow.style.display = 'none';
           var dlEl = document.getElementById('gw-deadline');
-          if (dlEl) dlEl.textContent = 'Unavailable';
+          if (dlEl) dlEl.textContent = 'Season not started';
           if (cb) { cb(); cb = null; }
         }
       }).catch(function() {
@@ -2667,7 +2436,8 @@ function loadPlayers() {
     .then(function(res) {
       var players = res.data || [];
       // Merge with hardcoded PSL_ROSTER if DB is empty
-      if (!players.length && PSL_ROSTER.length) {
+      if (!players.length && PSL_ROSTER && PSL_ROSTER.length) {
+        // PSL_ROSTER is empty — this branch never runs
         players = PSL_ROSTER.map(function(p) {
           return Object.assign({}, p, { clubs: { name: p.club, short_name: p.club } });
         });
@@ -2720,7 +2490,7 @@ function renderPlayerList() {
   var pickedIds = {};
   ST.squad.forEach(function(p) { pickedIds[p.id] = true; });
 
-  var POS_COLORS = { GK:'#88FF00', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
   var POS_BG     = { GK:'rgba(136,255,0,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
 
   var rows = slice.map(function(p) {
@@ -2737,7 +2507,10 @@ function renderPlayerList() {
       ? '<span style="font-size:.56rem;color:#D4274F;font-weight:800">▼</span>'
       : '';
     var ownership = p.ownership ? '<span style="font-size:.6rem;color:rgba(255,255,255,.28);margin-left:3px">' + p.ownership + '%</span>' : '';
-    var ptsDisplay = p.total_points ? p.total_points + ' pts' : '—';
+    // Pre-season: never show points (all zero — season hasn't started)
+    var ptsDisplay = (typeof SEASON_OPEN !== 'undefined' && !SEASON_OPEN)
+      ? ''
+      : (p.total_points ? p.total_points + ' pts' : '—');
     var watched = ST.watchlist.indexOf(p.id) !== -1;
 
     // ── Avatar: photo > initials fallback ───────────────────────────────
@@ -2765,7 +2538,7 @@ function renderPlayerList() {
         '<div class="pli-club" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + club + '</div>' +
       '</div>' +
       // Points
-      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#88FF00;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
+      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#DBA94A;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
       // Price
       '<span class="pli-price" style="flex-shrink:0">' + pcHtml + 'R' + (p.price || 0) + 'M</span>' +
       // Watchlist heart
@@ -2884,7 +2657,7 @@ function _renderPmodal(p) {
   var name = playerName(p);
   var club = p.clubs ? p.clubs.name : (p.club || 'Unknown Club');
   var pos  = (p.position || 'MID').toUpperCase();
-  var POS_COLORS = { GK:'#88FF00', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
+  var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
   var posColor = POS_COLORS[pos] || '#6B7280';
   var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
 
@@ -2929,7 +2702,7 @@ function _renderPmodal(p) {
   document.getElementById('pm-stats').style.gridTemplateColumns = 'repeat(3,1fr)';
   document.getElementById('pm-stats').innerHTML = stats.map(function(s) {
     return '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.65rem;text-align:center">' +
-      '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00;line-height:1">' + s.val + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A;line-height:1">' + s.val + '</div>' +
       '<div style="font-family:var(--font-ui);font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px">' + s.lbl + '</div>' +
     '</div>';
   }).join('') +
@@ -3512,12 +3285,12 @@ function showPointsBreakdown(playerScores) {
   var allPts = playerScores.reduce(function(t,p){return t+(p.final_pts||0);},0);
 
   var h = '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.5rem;display:flex;justify-content:space-between">' +
-    '<span>GW Points Breakdown</span><span style="color:#88FF00">' + allPts + ' total</span></div>';
+    '<span>GW Points Breakdown</span><span style="color:#DBA94A">' + allPts + ' total</span></div>';
 
   scorers.forEach(function(p) {
     var pts = p.final_pts !== undefined ? p.final_pts : (p.pts || 0);
-    var ptsColor = pts >= 10 ? '#88FF00' : pts > 0 ? '#22895A' : pts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
-    var capBadge = p.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
+    var ptsColor = pts >= 10 ? '#DBA94A' : pts > 0 ? '#22895A' : pts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
+    var capBadge = p.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">C</span>' : '';
     var vcBadge  = p.isVC      ? ' <span style="background:#888;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:3px;font-weight:900">V</span>' : '';
     var benchBadge = p.onBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.58rem">sub</span>' : '';
     h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
@@ -4011,7 +3784,7 @@ function renderPitch() {
 
     var filled = players.map(function(p) {
       var isOut       = ST.xferOut && ST.xferOut.id === p.id;
-      var outStyle    = isOut ? 'box-shadow:0 0 0 3px #88FF00;opacity:.7' : '';
+      var outStyle    = isOut ? 'box-shadow:0 0 0 3px #DBA94A;opacity:.7' : '';
       var shortName   = (playerName(p)).split(' ').pop();
       var clickFn, titleTxt;
       if (mode === 'locked')        { clickFn = ''; titleTxt = 'Squad locked'; }
@@ -4022,7 +3795,7 @@ function renderPitch() {
       var bottomLabel, ptsStyle = '';
       if (typeof p.gwPoints !== 'undefined' && p.gwPoints !== null) {
         var gpts = p.gwPoints;
-        var ptCol = gpts >= 10 ? '#88FF00' : gpts > 0 ? '#22895A' : gpts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
+        var ptCol = gpts >= 10 ? '#DBA94A' : gpts > 0 ? '#22895A' : gpts < 0 ? '#D4274F' : 'rgba(255,255,255,.4)';
         ptsStyle = 'color:' + ptCol;
         bottomLabel = (gpts > 0 ? '+' : '') + gpts + ' pts';
       } else {
@@ -4073,8 +3846,8 @@ function renderPitch() {
   var bFilled = bench.map(function(p, idx) {
     var shortName  = (playerName(p)).split(' ').pop();
     var isSelected = ST.benchPickFirst && ST.benchPickFirst.id === p.id;
-    var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #88FF00;' : '';
-    var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#88FF00;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
+    var selStyle   = isSelected ? 'box-shadow:0 0 0 3px #DBA94A;' : '';
+    var orderBadge = '<div style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#DBA94A;color:#000;font-size:.5rem;font-weight:900;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
     var clickAction = mode === 'bench' ? 'onclick="benchTap(' + p.id + ')"'
                     : mode === 'locked' ? ''
                     : mode === 'transfer' ? ''
@@ -4114,7 +3887,7 @@ function pitchPlayerTap(id) {
 
   var actions = [];
   // Captain & VC always allowed -- even after deadline
-  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double', fn: 'setCaptain(' + id + ')', accent: '#88FF00' });
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double', fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
   if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) -- scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
   if (p.isCaptain)  actions.push({ label: 'Remove Captain armband',  fn: 'setCaptain(' + id + ')', accent: '#888' });
   if (p.isVC)       actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
@@ -4238,7 +4011,7 @@ function benchPlayerTap(id) {
   sheetTitle.textContent = name + ' (Bench)';
   var actions = [];
   // Captain & VC can always be assigned -- even from bench, even after deadline
-  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double',           fn: 'setCaptain(' + id + ')', accent: '#88FF00' });
+  if (!p.isCaptain) actions.push({ label: 'Make Captain (C) -- scores double',           fn: 'setCaptain(' + id + ')', accent: '#DBA94A' });
   if (!p.isVC && !p.isCaptain) actions.push({ label: 'Make Vice-Captain (V) -- scores double if C DNP', fn: 'setVC(' + id + ')', accent: '#c0c0c0' });
   if (p.isCaptain) actions.push({ label: 'Remove Captain armband',     fn: 'setCaptain(' + id + ')', accent: '#888' });
   if (p.isVC)      actions.push({ label: 'Remove Vice-Captain armband', fn: 'setVC(' + id + ')', accent: '#888' });
@@ -4403,7 +4176,7 @@ function renderTransferHistory() {
 // -- CHIP MANAGEMENT --------------------------------------------------
 var CHIP_INFO = {
   wc: { name:'Wildcard',      abbr:'WC', color:'#B91C3A', desc:'Make unlimited transfers this GW at no cost' },
-  tc: { name:'Triple Captain',abbr:'TC', color:'#88FF00', desc:'Your captain scores 3× this GW' },
+  tc: { name:'Triple Captain',abbr:'TC', color:'#DBA94A', desc:'Your captain scores 3× this GW' },
   bb: { name:'Bench Boost',   abbr:'BB', color:'#22895A', desc:'All 15 players score this GW' },
   fh: { name:'Free Hit',      abbr:'FH', color:'#6eaadd', desc:'Make unlimited transfers -- squad reverts after GW' }
 };
@@ -4532,7 +4305,7 @@ function checkDeadline() {
     var hLeft = Math.floor(msLeft / 3600000);
     var mLeft = Math.floor((msLeft % 3600000) / 60000);
     dlEl.textContent = 'Deadline: ' + hLeft + 'h ' + mLeft + 'm';
-    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#88FF00';
+    dlEl.style.color = msLeft < 3600000 ? '#D4274F' : '#DBA94A';
   }
 
   // Update banner GW number
@@ -4605,25 +4378,9 @@ function cancelTransfer() {
 // ====================================================
 
 // Real team logos from SuperSport CDN
-var SS_LOGOS = {
-  // Keys use Sportmonks exact team names (confirmed season 26173)
-  'Orlando Pirates':   'https://images.supersport.com/media/wkfgti45/orlando-pirates.png',
-  'Mamelodi Sundowns': 'https://images.supersport.com/media/hiklyiw5/mamelodi_sundowns_fc_logo_200x200.png',
-  'Sekhukhune United': 'https://images.supersport.com/media/ysvjj3ep/sekhuk-united.png',
-  'Durban City':       'https://images.supersport.com/media/yi4mugcg/durban_city_logo_200x200.png',
-  'Kaizer Chiefs':     'https://images.supersport.com/media/snyn3ar5/kaizerchiefs_new-logo_200x200.png',
-  'AmaZulu':           'https://images.supersport.com/media/lkll0gep/amazulufc_-2025_logo_rgb_124.png',
-  'Polokwane City':    'https://images.supersport.com/media/sw2l3sct/polokwane_city_fc_logo_160x160.png',
-  'TS Galaxy':         'https://images.supersport.com/media/p4adysnj/tsgalaxy.png',
-  'Stellenbosch':      'https://images.supersport.com/media/qjfnk22o/stellenbosch-fc.png',
-  'Golden Arrows':     'https://images.supersport.com/media/ou1p0ums/lamontville-golden-arrows.png',
-  'Siwelele':          'https://images.supersport.com/media/fprdumlm/siwelele-fc.png',
-  'Richards Bay':      'https://images.supersport.com/media/o03dsxyb/richards-bay.png',
-  'Chippa United':     'https://images.supersport.com/media/n2jl52bj/chippa-united.png',
-  'Marumo Gallants FC':'https://images.supersport.com/media/xdbdstfu/marumo-gallants-fc.png',
-  'Orbit College':     'https://images.supersport.com/media/dx3jsm15/orbit-college-fc.png',
-  'Magesi':            'https://images.supersport.com/media/yc3lut03/magesi-fc.png'
-};
+var SS_LOGOS = {};
+// SS_LOGOS is intentionally empty.
+// Club logos come from API-Football fixtures/standings responses (logo field).
 
 function getTeamLogo(name) {
   return SS_LOGOS[name] || LOGOS[name] || '';
@@ -4643,7 +4400,7 @@ var SHORT_NAMES = {
 };
 function sn(name) { return SHORT_NAMES[name] || name; }
 
-// Betway Premiership 2025/26 standings — FALLBACK ONLY (GW26, 25 Mar 2026)
+// Betway Premiership 2026/27 standings — FALLBACK ONLY (GW26, 25 Mar 2026)
 // Live data always loaded first from Supabase — this only shows if API/DB fails
 // W D L GF GA GD Pts  Form (newest last)
 function getNextFixture(team) {
@@ -4664,51 +4421,18 @@ function getNextFixture(team) {
 }
 
 function fdrColor(fdr) {
-  return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#88FF00' : fdr === 2 ? '#88c541' : '#22895A';
+  return fdr >= 5 ? '#D4274F' : fdr === 4 ? '#e8732a' : fdr === 3 ? '#DBA94A' : fdr === 2 ? '#88c541' : '#22895A';
 }
 
 // ── Club info: metadata + official website links ──────────────────────────
-var CLUB_INFO = {
-  'Orlando Pirates':    { nickname:'The Buccaneers',      est:1937, stadium:'Orlando Stadium',          city:'Soweto, Johannesburg',       website:'https://www.orlandopiratesfc.com' },
-  'Mamelodi Sundowns': { nickname:'Masandawana',          est:1970, stadium:'Loftus Versfeld',           city:'Tshwane, Pretoria',          website:'https://www.mamelodifc.co.za' },
-  'Kaizer Chiefs':     { nickname:'Amakhosi',              est:1970, stadium:'FNB Stadium',               city:'Johannesburg',                website:'https://www.kaizerchiefs.com' },
-  'AmaZulu':           { nickname:'Usuthu',                est:1932, stadium:'Moses Mabhida Stadium',     city:'Durban',                     website:'https://amazulufc.com' },
-  'Stellenbosch':      { nickname:'Stellies',              est:1994, stadium:'Danie Craven Stadium',      city:'Stellenbosch',                website:'https://stellenboschathletic.co.za' },
-  'Sekhukhune United': { nickname:'Babina Noko',           est:2015, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                   website:'https://www.sekhukhuneufc.co.za' },
-  'Polokwane City':    { nickname:'Rise and Shine',        est:1978, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                   website:'https://www.polokwanecityfc.com' },
-  'Durban City':       { nickname:'The City',              est:2020, stadium:'Moses Mabhida Stadium',     city:'Durban',                     website:'https://www.psl.co.za' },
-  'Golden Arrows':     { nickname:'Abafana Bes\'thende',  est:1943, stadium:'Princess Magogo Stadium',   city:'KwaMashu, Durban',           website:'https://www.goldenarrowsfc.com' },
-  'Chippa United':     { nickname:'The Chilli Boys',       est:2010, stadium:'Nelson Mandela Bay Stadium',city:'Gqeberha',                   website:'https://www.chippaunited.co.za' },
-  'Richards Bay':      { nickname:'Umhlobo',               est:1999, stadium:'Umhlathuze Sports Complex', city:'Richards Bay',               website:'https://www.psl.co.za' },
-  'Siwelele':          { nickname:'Siwelele',              est:1994, stadium:'Lucas Moripe Stadium',      city:'Atteridgeville, Tshwane',    website:'https://www.psl.co.za' },
-  'TS Galaxy':         { nickname:'The Rockets',           est:2001, stadium:'Mbombela Stadium',          city:'Nelspruit, Mpumalanga',      website:'https://www.tsgalaxy.co.za' },
-  'Magesi':            { nickname:'The Motor City Boys',   est:2019, stadium:'Peter Mokaba Stadium',      city:'Limpopo',                    website:'https://www.psl.co.za' },
-  'Marumo Gallants FC':{ nickname:'Gallants',              est:1931, stadium:'Peter Mokaba Stadium',      city:'Polokwane',                  website:'https://www.psl.co.za' },
-  'Orbit College':     { nickname:'Orbit',                 est:2013, stadium:'Olympia Park Stadium',      city:'Rustenburg',                 website:'https://www.psl.co.za' },
-  'Cape Town City':    { nickname:'The Citizens',          est:2016, stadium:'DHL Newlands',              city:'Cape Town',                  website:'https://www.capetowncityfc.com' },
-  'Cape Town Spurs':   { nickname:'The Urban Warriors',   est:1999, stadium:'Athlone Stadium',            city:'Cape Town',                  website:'https://www.capetownspurs.co.za' }
-};
+var CLUB_INFO = {};
+// CLUB_INFO is intentionally empty.
+// Club details shown from live API data only.
 
-var REAL_TABLE = [
-  // Fallback standings (GW26, 25 Mar 2026) — P values from Sportmonks live data (Image 3)
-  // Live data always loads first from Sportmonks standings API
-  { pos:1,  team:'Orlando Pirates',    p:26, w:16, d:4,  l:6,  gf:37, ga:14, gd:23,  pts:52, form:['W','L','W','W','D'] },
-  { pos:2,  team:'Mamelodi Sundowns',  p:28, w:18, d:7,  l:3,  gf:47, ga:15, gd:32,  pts:61, form:['W','D','W','W','W'] },
-  { pos:3,  team:'AmaZulu',            p:26, w:11, d:6,  l:9,  gf:24, ga:22, gd:2,   pts:39, form:['L','W','D','W','L'] },
-  { pos:4,  team:'Kaizer Chiefs',      p:25, w:11, d:7,  l:7,  gf:22, ga:18, gd:4,   pts:40, form:['W','D','L','W','W'] },
-  { pos:5,  team:'Durban City',        p:25, w:10, d:5,  l:10, gf:22, ga:20, gd:2,   pts:35, form:['W','L','W','L','D'] },
-  { pos:6,  team:'Sekhukhune United',  p:25, w:10, d:8,  l:7,  gf:24, ga:17, gd:7,   pts:38, form:['W','D','D','W','D'] },
-  { pos:7,  team:'Polokwane City',     p:25, w:8,  d:9,  l:8,  gf:18, ga:17, gd:1,   pts:33, form:['D','D','W','D','L'] },
-  { pos:8,  team:'Golden Arrows',      p:25, w:8,  d:5,  l:12, gf:29, ga:29, gd:0,   pts:29, form:['L','W','L','W','L'] },
-  { pos:9,  team:'Stellenbosch',       p:26, w:9,  d:8,  l:9,  gf:23, ga:25, gd:-2,  pts:35, form:['D','W','L','D','W'] },
-  { pos:10, team:'Siwelele',           p:24, w:6,  d:9,  l:9,  gf:14, ga:18, gd:-4,  pts:27, form:['D','D','L','D','W'] },
-  { pos:11, team:'TS Galaxy',          p:25, w:7,  d:5,  l:13, gf:25, ga:27, gd:-2,  pts:26, form:['L','L','W','L','W'] },
-  { pos:12, team:'Richards Bay',       p:25, w:6,  d:8,  l:11, gf:20, ga:28, gd:-8,  pts:26, form:['D','W','L','D','L'] },
-  { pos:13, team:'Chippa United',      p:25, w:5,  d:9,  l:11, gf:16, ga:27, gd:-11, pts:24, form:['D','L','D','D','L'] },
-  { pos:14, team:'Marumo Gallants FC', p:25, w:4,  d:8,  l:13, gf:16, ga:29, gd:-13, pts:20, form:['L','D','L','L','D'] },
-  { pos:15, team:'Magesi',             p:25, w:3,  d:5,  l:17, gf:16, ga:37, gd:-21, pts:14, form:['L','L','L','L','D'] },
-  { pos:16, team:'Orbit College',      p:25, w:2,  d:5,  l:18, gf:13, ga:40, gd:-27, pts:11, form:['L','D','L','L','L'] }
-];
+var REAL_TABLE = [];
+// REAL_TABLE is intentionally empty.
+// Standings are loaded live from /api/football?type=standings
+// which pulls from API-Football → cached in Supabase standings table.
 // ── REAL_INJURIES — updated manually each week ────────────────────────────
 var REAL_INJURIES = [
   { name: 'Thapelo Morena',    team: 'Mamelodi Sundowns', type: '⚕ Muscle Strain',    reason: 'Hamstring — day-to-day',  severe: false },
@@ -4766,11 +4490,8 @@ function loadNews() {
     all.sort(function(a, b) { return new Date(b.published_at) - new Date(a.published_at); });
 
     if (!all.length) {
-      all = [
-        { id:1, title:'GW24 Deadline Reminder', summary:'Make sure your transfers are in before kick-off on Saturday.', published_at:new Date().toISOString(), category:'Gameweek', image_url:'' },
-        { id:2, title:'Mamelodi Sundowns Lead the Way', summary:"Sundowns extend their lead at the top of the Betway Premiership table.", published_at:new Date(Date.now()-86400000).toISOString(), category:'Table', image_url:'' },
-        { id:3, title:'Form Guide: Best Picks This GW', summary:'Evidence Makgopa is in red-hot form — here is why he deserves a place in your squad.', published_at:new Date(Date.now()-2*86400000).toISOString(), category:'Tips', image_url:'' },
-      ];
+      // No news yet — show empty state message
+      all = [];
     }
     renderNews(grid, all);
   }).catch(function() {
@@ -4781,7 +4502,7 @@ function loadNews() {
 
 var NEWS_CAT_COLORS = {
   'Gameweek': '#B91C3A',
-  'Tips':     '#88FF00',
+  'Tips':     '#DBA94A',
   'Table':    '#22895A',
   'Transfer': '#3B82F6',
   'Injury':   '#E8732A',
@@ -4954,14 +4675,14 @@ function loadInjuries() {
   var c = document.getElementById('injury-list'); if (!c) return;
   // Show real injuries immediately
   c.innerHTML = REAL_INJURIES.map(function(inj) {
-    return '<div class="inj-card" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid ' + (inj.severe ? '#D4274F' : '#88FF00') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
-      '<div style="font-size:1.2rem;flex-shrink:0;color:' + (inj.severe ? '#D4274F' : '#88FF00') + '">' + (inj.severe ? '!' : '-') + '</div>' +
+    return '<div class="inj-card" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid ' + (inj.severe ? '#D4274F' : '#DBA94A') + ';border-radius:8px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem">' +
+      '<div style="font-size:1.2rem;flex-shrink:0;color:' + (inj.severe ? '#D4274F' : '#DBA94A') + '">' + (inj.severe ? '!' : '-') + '</div>' +
       '<div>' +
         '<div class="inj-player-name" style="font-family:var(--font-ui);font-size:.9rem;font-weight:700">' + inj.name + '</div>' +
         '<div class="inj-desc-text" style="font-size:.78rem;margin:.2rem 0">' + inj.type + ' -- ' + inj.reason + '</div>' +
         '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' +
           '<span class="inj-club-text" style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;background:rgba(128,128,128,.12)">' + inj.team + '</span>' +
-          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;background:' + (inj.severe ? 'rgba(185,28,58,.12)' : 'rgba(201,150,58,.12)') + ';color:' + (inj.severe ? '#D4274F' : '#88FF00') + '">' + (inj.severe ? '4-6 weeks' : 'Day to Day') + '</span>' +
+          '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;background:' + (inj.severe ? 'rgba(185,28,58,.12)' : 'rgba(201,150,58,.12)') + ';color:' + (inj.severe ? '#D4274F' : '#DBA94A') + '">' + (inj.severe ? '4-6 weeks' : 'Day to Day') + '</span>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -5124,7 +4845,7 @@ function loadTeamLeague() {
           html += '<div style="background:rgba(136,255,0,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(136,255,0,.2);display:flex;align-items:center;gap:10px;">';
           html += '<div style="font-size:1.5rem;">🔥</div>';
           html += '<div>';
-          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#88FF00">' + esc(favTeam) + ' Fans</div>';
+          html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + esc(favTeam) + ' Fans</div>';
           html += '<div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px">Auto Fan League · ' + fans.length + ' member' + (fans.length !== 1 ? 's' : '') + '</div>';
           html += '</div></div>';
 
@@ -5136,14 +4857,14 @@ function loadTeamLeague() {
               var isMe  = fan.id === ST.user.id;
               var bg    = isMe ? 'background:rgba(255,255,255,.03);' : '';
               var bold  = isMe ? 'color:#fff;font-weight:700;' : 'color:rgba(255,255,255,.7);';
-              var goldR = rank <= 3 ? 'color:#88FF00;font-weight:900;' : 'color:rgba(255,255,255,.3);';
+              var goldR = rank <= 3 ? 'color:#DBA94A;font-weight:900;' : 'color:rgba(255,255,255,.3);';
               return '<div style="' + bg + 'display:flex;align-items:center;padding:.7rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--font-ui);font-size:.85rem;">' +
                 '<div style="width:30px;' + goldR + '">' + rank + '</div>' +
                 '<div style="flex:1;' + bold + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
                   esc(fan.team_name || 'Anonymous') +
                   (isMe ? ' <span style="font-size:.65rem;background:rgba(255,255,255,.1);padding:2px 5px;border-radius:4px;margin-left:5px;">YOU</span>' : '') +
                 '</div>' +
-                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#88FF00' : 'rgba(255,255,255,.4)') + '">' + (fan.total_points || 0) + '</div>' +
+                '<div style="font-weight:700;color:' + (fan.total_points > 0 ? '#DBA94A' : 'rgba(255,255,255,.4)') + '">' + (fan.total_points || 0) + '</div>' +
               '</div>';
             }).join('');
           }
@@ -5168,7 +4889,7 @@ function renderLeaguesList(leagues) {
         logoHtml +
         '<div>' +
           '<div style="font-family:var(--font-ui);font-size:.95rem;font-weight:700;color:#fff">' + l.name + '</div>' +
-          '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private . Code: <span style="color:#88FF00;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
+          '<div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1px">Private . Code: <span style="color:#DBA94A;font-weight:700;letter-spacing:1.5px">' + l.code + '</span></div>' +
         '</div>' +
       '</div>' +
       '<div id="ls-' + l.id + '"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>' +
@@ -5179,6 +4900,9 @@ function renderLeaguesList(leagues) {
 
 
 function loadLeagueStandings(lid) {
+  if (typeof SEASON_OPEN !== 'undefined' && !SEASON_OPEN) {
+    showTableEmptyState(); return;
+  }
   var c = document.getElementById('ls-' + lid); if (!c) return;
   db.from('league_members').select('profiles(team_name, username, total_points, gw_points, overall_rank)').eq('league_id', lid).then(function(res) {
     var members = (res.data || []).map(function(r) { return r.profiles; }).filter(Boolean)
@@ -5193,7 +4917,7 @@ function loadLeagueStandings(lid) {
       var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
       var gwPts = (p.gw_points !== undefined && p.gw_points !== null) ? p.gw_points : 0;
       return '<div style="display:grid;grid-template-columns:28px 1fr 52px 58px;gap:.3rem;align-items:center;padding:.5rem .9rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isYou ? 'background:rgba(185,28,58,.04)' : '') + '">' +
-        '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#88FF00' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.88rem;font-weight:900;color:' + (i < 3 ? '#DBA94A' : 'rgba(255,255,255,.3)') + ';text-align:center">' + medal + '</div>' +
         '<div style="min-width:0;overflow:hidden">' +
           '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             (p.team_name||'Unknown') + (isYou ? ' <span style="background:#B91C3A;color:#fff;font-size:.48rem;padding:1px 4px;border-radius:2px;vertical-align:middle;margin-left:3px">YOU</span>' : '') +
@@ -5201,7 +4925,7 @@ function loadLeagueStandings(lid) {
           '<div style="font-family:var(--font-ui);font-size:.62rem;color:rgba(255,255,255,.32)">@' + (p.username||'') + '</div>' +
         '</div>' +
         '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.28)') + ';text-align:center">' + gwPts + '</div>' +
-        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#88FF00;text-align:right">' + (p.total_points||0) + '</div>' +
+        '<div style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A;text-align:right">' + (p.total_points||0) + '</div>' +
       '</div>';
     }).join('');
     c.innerHTML = lbHeader + lbRows;
@@ -5271,7 +4995,7 @@ function loadGlobalLB() {
         '<div style="font-size:' + sz + '">' + emojis[idx] + '</div>' +
         '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:.2rem 0">' + prizes[idx] + '</div>' +
         '<div style="font-size:.72rem;color:rgba(255,255,255,.45)">' + p2.team_name + '</div>' +
-        '<div style="font-size:.7rem;color:#88FF00;font-weight:700">' + (p2.total_points || 0) + ' pts</div>' +
+        '<div style="font-size:.7rem;color:#DBA94A;font-weight:700">' + (p2.total_points || 0) + ' pts</div>' +
       '</div>';
     }).join('');
   });
@@ -5303,11 +5027,11 @@ function renderGlobalLBRows(c, rows) {
       rankDisp = '—';
     }
 
-    var rankColor  = (!isFull) ? 'rgba(255,255,255,.2)' : rankCounter <= 3 ? '#88FF00' : 'rgba(255,255,255,.3)';
+    var rankColor  = (!isFull) ? 'rgba(255,255,255,.2)' : rankCounter <= 3 ? '#DBA94A' : 'rgba(255,255,255,.3)';
     var rowBg      = isYou ? 'background:rgba(185,28,58,.04);' : (!isFull ? 'background:rgba(255,255,255,.01);opacity:.65;' : '');
     var nameColor  = isFull ? '#fff' : 'rgba(255,255,255,.45)';
     var ptsColor   = gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)';
-    var totColor   = isFull ? '#88FF00' : 'rgba(255,255,255,.25)';
+    var totColor   = isFull ? '#DBA94A' : 'rgba(255,255,255,.25)';
 
     // Badge for incomplete squads
     var badge = !isFull
@@ -5375,7 +5099,7 @@ function openPublicProfile(username) {
         var pname = pl ? playerName(pl) : (s.name || s.display_name || 'Unknown');
         var pos   = pl ? pl.position : (s.position || '--');
         var club  = pl ? (pl.team || '') : (s.club || '');
-        var cap   = s.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+        var cap   = s.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
         var vc    = s.isVC ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
         var bench = isBench ? ' <span style="color:rgba(255,255,255,.3);font-size:.6rem">bench</span>' : '';
         return '<div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);' + (isBench ? 'opacity:.65' : '') + '">'
@@ -5397,9 +5121,9 @@ function openPublicProfile(username) {
           + '<div><div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff">' + (p.team_name||'Unknown') + '</div>'
           + '<div style="font-size:.78rem;color:rgba(255,255,255,.4)">@' + (p.username||'') + '</div></div></div>'
         + '<div style="display:flex;gap:.6rem;margin-bottom:1.2rem">'
-          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00">' + (p.total_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">' + (p.total_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>'
           + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#22895A">' + (p.gw_points||0) + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Pts</div></div>'
-          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#88FF00">#' + (p.overall_rank||'--') + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>'
+          + '<div style="flex:1;background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center"><div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#DBA94A">#' + (p.overall_rank||'--') + '</div><div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>'
         + '</div>'
         + '<div style="font-family:var(--font-ui);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.5rem">Squad</div>'
         + '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">' + squadHtml + '</div>';
@@ -5427,15 +5151,15 @@ function loadGWHistory() {
       container.innerHTML =
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.8rem">' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + best + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + best + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Best GW</div>' +
           '</div>' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + avg + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + avg + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GW Average</div>' +
           '</div>' +
           '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.6rem;text-align:center">' +
-            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#88FF00">' + rows.length + '</div>' +
+            '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#DBA94A">' + rows.length + '</div>' +
             '<div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">GWs Played</div>' +
           '</div>' +
         '</div>' +
@@ -5445,7 +5169,7 @@ function loadGWHistory() {
           '</div>' +
           rows.map(function(r) {
             var pct = Math.min(100, Math.round((r.points / (best || 1)) * 100));
-            var col = r.points >= best * 0.8 ? '#88FF00' : r.points >= best * 0.5 ? '#22895A' : '#B91C3A';
+            var col = r.points >= best * 0.8 ? '#DBA94A' : r.points >= best * 0.5 ? '#22895A' : '#B91C3A';
             return '<div style="display:grid;grid-template-columns:60px 1fr 80px;padding:.5rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);align-items:center">' +
               '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;color:rgba(255,255,255,.5)">GW' + r.gameweek + '</div>' +
               '<div style="padding-right:.8rem">' +
@@ -5453,7 +5177,7 @@ function loadGWHistory() {
                   '<div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:3px"></div>' +
                 '</div>' +
               '</div>' +
-              '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#88FF00;text-align:right">' + r.points + '</div>' +
+              '<div style="font-family:var(--font-display);font-size:.95rem;font-weight:900;color:#DBA94A;text-align:right">' + r.points + '</div>' +
             '</div>';
           }).join('') +
         '</div>';
@@ -5535,7 +5259,7 @@ function loadProfile() {
             '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
           : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
         ) +
-        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#88FF00;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
         '</div>' +
         '<input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
@@ -5544,9 +5268,9 @@ function loadProfile() {
           '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">' + p.team_name + '</div>' +
           '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + p.username + '</div>' +
           '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.overall_rank || '--') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
-            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + ST.squad.length + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank || '--') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
+            '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + ST.squad.length + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -5556,11 +5280,11 @@ function loadProfile() {
           var icon = posIcon(pl.position);
           var name = playerName(pl);
           var club = pl.clubs ? pl.clubs.name : (pl.team || '--');
-          var capBadge = pl.isCaptain ? ' <span style="background:#88FF00;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
+          var capBadge = pl.isCaptain ? ' <span style="background:#DBA94A;color:#000;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">C</span>' : '';
           var vcBadge  = pl.isVC      ? ' <span style="background:#888;color:#fff;font-size:.45rem;padding:1px 3px;border-radius:2px;font-weight:900">V</span>' : '';
           var gwPts    = (pl.gwPoints !== undefined && pl.gwPoints !== null) ? pl.gwPoints : null;
           var ptsLabel = gwPts !== null ? (gwPts > 0 ? '+' + gwPts : String(gwPts)) + ' pts' : (pl.total_points || 0) + ' pts';
-          var ptsColor = gwPts !== null ? (gwPts >= 6 ? '#88FF00' : gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') : '#88FF00';
+          var ptsColor = gwPts !== null ? (gwPts >= 6 ? '#DBA94A' : gwPts > 0 ? '#22895A' : 'rgba(255,255,255,.3)') : '#DBA94A';
           return '<div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
             '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">' + icon + '</div>' +
             '<div style="flex:1"><div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">' + name + capBadge + vcBadge + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + club + '</div></div>' +
@@ -6001,7 +5725,7 @@ function renderNewChatMessage(fid, msg) {
         ${msg.favorite_team ? `<span style="font-size:.55rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px; color:rgba(255,255,255,0.2)">${msg.favorite_team}</span>` : ''}
       </div>
       <div style="background: ${isMe ? 'rgba(136,255,0,0.15)' : 'rgba(255,255,255,0.05)'}; 
-                  color: ${isMe ? '#88FF00' : '#fff'}; 
+                  color: ${isMe ? '#DBA94A' : '#fff'}; 
                   padding: .6rem .8rem; border-radius: 12px; font-size: .8rem; max-width: 85%;
                   border: 1px solid ${isMe ? 'rgba(136,255,0,0.2)' : 'rgba(255,255,255,0.05)'}">
         ${escHtml(msg.message)}
@@ -6101,214 +5825,10 @@ function startPointsAutoCheck() {
 }
 
 
-var PSL_ROSTER = [
-  // =======================================================================
-  //  PSL ROSTER 2025/26  --  All stats from ESPN Africa (6 March 2026)
-  //  Goals & Assists: 100% verified from ESPN scoring table
-  //  Yellow/Red cards: prorated from ESPN team discipline totals
-  //  Fantasy pts: App=1 G=6 A=3 CS(GK)=4 CS(DEF)=1 YC=-1 RC=-3
-  // =======================================================================
-
-  // -- ORLANDO PIRATES  GP13 W9 D2 L2 GF18 GA5 │ 32YC 0RC --------------
-  { id:1001, club:'Orlando Pirates', position:'GK',  display_name:'Sipho Chaine',          price:7.5,  apps:22, goals:0, assists:0, clean_sheets:15,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:77, ownership:19 },
-  { id:1002, club:'Orlando Pirates', position:'DEF', display_name:'Nkosinathi Sibisi',      price:5.5,  apps:12, goals:0, assists:0, clean_sheets:7,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.2, total_points:49 },
-  { id:1003, club:'Orlando Pirates', position:'DEF', display_name:'Deano Van Rooyen',       price:5.5,  apps:11, goals:0, assists:1, clean_sheets:6,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.9, total_points:47 },
-  { id:1004, club:'Orlando Pirates', position:'DEF', display_name:'Olisa Ndah',             price:5.0,  apps:10, goals:0, assists:0, clean_sheets:6,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1005, club:'Kaizer Chiefs', position:'DEF', display_name:'Thabiso James Monyane',   apifootball_id:127435, espn_id:287484, price:5.0,  apps:11, goals:0, assists:0, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.1, total_points:38 },
-  { id:1006, club:'Orlando Pirates', position:'MID', display_name:'Relebohile Mofokeng',      price:9.5,  apps:19, goals:7, assists:5, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.2, xa:4.5, total_points:115, ownership:33 },
-  { id:1007, club:'Orlando Pirates', position:'MID', display_name:'Oswin Appollis',         price:8.5,  apps:22, goals:4, assists:6, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:5.5, total_points:100 },
-  { id:1008, club:'Orlando Pirates', position:'MID', display_name:'Deon Hotto',             price:8.5,  apps:17, goals:1, assists:6, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:73 },
-  { id:1009, club:'Orlando Pirates', position:'MID', display_name:'Patrick Maswanganyi',    price:9.5,  apps:18, goals:6, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:5.5, xa:1.0, total_points:94, ownership:35 },
-  { id:1010, club:'Orlando Pirates', position:'MID', display_name:'Tshepang Moremi',        price:7.5,  apps:22, goals:5, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:4.5, xa:1.8, total_points:83 },
-  { id:1011, club:'Orlando Pirates', position:'FWD', display_name:'Evidence Makgopa',       price:9.0,  apps:18, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.9, xa:2.8, total_points:76 },
-  { id:1012, club:'Orlando Pirates', position:'FWD', display_name:'Yamela Mbuthuma',        price:8.0,  apps:13, goals:4, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.6, xa:0.4, total_points:63 },
-  { id:1013, club:'Orlando Pirates', position:'FWD', display_name:'Andre De Jong',          price:7.0,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.6, total_points:53 },
-  { id:1014, club:'Kaizer Chiefs', position:'FWD', display_name:'Wandile Duba',                apifootball_id:400281, espn_id:354725, price:7.5,  apps:16, goals:4, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:1.8, total_points:64 },
-  { id:1015, club:'Kaizer Chiefs', position:'MID', display_name:'Kwenzokuhle Nkanyiso Shinga',  apifootball_id:287578, espn_id:408446, price:6.5,  apps:14, goals:1, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:0.9, xa:1.8, total_points:40 },
-
-  // -- MAMELODI SUNDOWNS  GP15 W9 D5 L1 GF24 GA7 │ 48YC 2RC -----------
-  { id:2001, club:'Mamelodi Sundowns', position:'GK',  display_name:'Ronwen Williams',      price:8.0,  apps:20, goals:0, assists:0, clean_sheets:9, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:97, ownership:28 },
-  { id:2002, club:'Mamelodi Sundowns', position:'DEF', display_name:'Grant Kekana',         price:5.5,  apps:13, goals:0, assists:0, clean_sheets:8,  yellow_cards:6, red_cards:0, xg:0.2, xa:0.3, total_points:51 },
-  { id:2003, club:'Mamelodi Sundowns', position:'DEF', display_name:'Rushine De Reuck',     price:5.5,  apps:11, goals:0, assists:0, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.1, total_points:44, ownership:15 },
-  { id:2004, club:'Mamelodi Sundowns', position:'DEF', display_name:'Khuliso Mudau',        price:5.5,  apps:13, goals:0, assists:1, clean_sheets:7,  yellow_cards:5, red_cards:0, xg:0.2, xa:0.9, total_points:46 },
-  { id:2005, club:'Mamelodi Sundowns', position:'DEF', display_name:'Aubrey Modiba',        price:7.0,  apps:17, goals:1, assists:3, clean_sheets:6,  yellow_cards:5, red_cards:0, xg:0.8, xa:2.5, total_points:63 },
-  { id:2006, club:'Mamelodi Sundowns', position:'MID', display_name:'Tashreeq Matthews',    price:9.0,  apps:21, goals:4, assists:4, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:3.8, total_points:87, ownership:20 },
-  { id:2007, club:'Mamelodi Sundowns', position:'MID', display_name:'Arthur',               price:8.0,  apps:18, goals:3, assists:4, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:2.8, total_points:69 },
-  { id:2008, club:'Mamelodi Sundowns', position:'MID', display_name:'Marcelo Allende',      price:7.5,  apps:18, goals:3, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:1, xg:2.6, xa:1.8, total_points:56 },
-  { id:2009, club:'Mamelodi Sundowns', position:'MID', display_name:'Monnapule Saleng',     price:8.0,  apps:14, goals:1, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.0, xa:3.5, total_points:52 },
-  { id:2010, club:'Mamelodi Sundowns', position:'MID', display_name:'Teboho Mokoena',       price:8.5,  apps:14, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.8, xa:1.8, total_points:56 },
-  { id:2011, club:'Mamelodi Sundowns', position:'FWD', display_name:'Iqraam Rayners',       price:11.5, apps:17, goals:10,assists:3, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:9.5, xa:2.8, total_points:127, ownership:38 },
-  { id:2012, club:'Mamelodi Sundowns', position:'FWD', display_name:'Peter Shalulile',      price:9.0,  apps:10, goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
-  { id:2013, club:'Mamelodi Sundowns', position:'FWD', display_name:'Brayan Leon Muniz',    price:9.0,  apps:6,  goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:3.8, xa:0.8, total_points:59 },
-  { id:2014, club:'Kaizer Chiefs', position:'MID', display_name:'Siphesihle Ndlovu',           apifootball_id:46634,  espn_id:262589, price:7.0,  apps:16, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:51 },
-  { id:2015, club:'Kaizer Chiefs', position:'MID', display_name:'Nkosingiphile Nhlakanipho Ngcobo', apifootball_id:182307, espn_id:277026, price:7.5,  apps:13, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.8, total_points:48 },
-  { id:2016, club:'Kaizer Chiefs', position:'DEF', display_name:'Rushwin Wayne Dortley',        apifootball_id:295979, espn_id:314743, price:6.5,  apps:18, goals:0, assists:2, clean_sheets:8,  yellow_cards:3, red_cards:0, xg:0.2, xa:1.8, total_points:43 },
-
-  // -- GOLDEN ARROWS  GP16 W5 D2 L9 GF21 GA22 │ 28YC 2RC ---------------
-  { id:3001, club:'Golden Arrows', position:'GK',  display_name:'Maximilian Mbaeva',        price:5.0,  apps:15, goals:0, assists:0, clean_sheets:3,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:27 },
-  { id:3002, club:'Golden Arrows', position:'DEF', display_name:'Mfanuvela Mafuleka',       price:4.5,  apps:14, goals:0, assists:0, clean_sheets:2,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.1, total_points:19 },
-  { id:3003, club:'Golden Arrows', position:'DEF', display_name:'Isaac Cisse',              price:4.5,  apps:12, goals:0, assists:0, clean_sheets:2,  yellow_cards:4, red_cards:1, xg:0.1, xa:0.1, total_points:11 },
-  { id:3004, club:'Golden Arrows', position:'MID', display_name:'Philani Kumalo',           price:8.0,  apps:12, goals:1, assists:5, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.9, xa:4.5, total_points:66 },
-  { id:3005, club:'Golden Arrows', position:'MID', display_name:'Jerome Karlese',           price:6.5,  apps:12, goals:1, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:2.6, total_points:48 },
-  { id:3006, club:'Golden Arrows', position:'MID', display_name:'Thokozani Khumalo',        price:7.0,  apps:7,  goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.6, xa:1.8, total_points:55 },
-  { id:3007, club:'Golden Arrows', position:'FWD', display_name:'Sede Junior Dion',         price:12.0, apps:20, goals:12,assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:11.5, xa:0.9, total_points:148, ownership:42 },
-  { id:3008, club:'Golden Arrows', position:'FWD', display_name:'Siyanda Mthanti',          price:9.5,  apps:19, goals:4, assists:5, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.8, xa:4.8, total_points:98, ownership:21 },
-  { id:3009, club:'Kaizer Chiefs', position:'FWD', display_name:'Asenele Velebayi',              apifootball_id:205627, espn_id:313782, price:7.0,  apps:15, goals:3, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.6, xa:2.7, total_points:57 },
-
-  // -- SEKHUKHUNE UNITED  GP16 W7 D5 L4 GF16 GA10 │ 35YC 1RC -----------
-  { id:4001, club:'Sekhukhune United', position:'GK',  display_name:'Toaster Nsabata',      price:5.5,  apps:15, goals:0, assists:0, clean_sheets:6,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:57 },
-  { id:4002, club:'Sekhukhune United', position:'DEF', display_name:'Nhlanhla Ngcobo',      price:4.5,  apps:15, goals:0, assists:0, clean_sheets:5,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.2, total_points:35 },
-  { id:4003, club:'Sekhukhune United', position:'DEF', display_name:'Mxolisi Macuphu',      price:5.0,  apps:14, goals:0, assists:0, clean_sheets:4,  yellow_cards:5, red_cards:1, xg:0.1, xa:0.2, total_points:26 },
-  { id:4004, club:'Sekhukhune United', position:'MID', display_name:'Matlala Keletso Makgalwa', price:7.5, apps:20, goals:1, assists:4, clean_sheets:0, yellow_cards:5, red_cards:0, xg:0.9, xa:3.6, total_points:60 },
-  { id:4005, club:'Sekhukhune United', position:'MID', display_name:'Mokete Mogaila',       price:7.0,  apps:14, goals:0, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.5, xa:2.7, total_points:39 },
-  { id:4006, club:'Sekhukhune United', position:'MID', display_name:'Thabang Monare',       price:6.5,  apps:19, goals:2, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.5, xa:1.6, total_points:52 },
-  { id:4007, club:'Sekhukhune United', position:'MID', display_name:'Vusumuzi Mncube',      price:7.0,  apps:20, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.4, xa:1.8, total_points:59 },
-  { id:4008, club:'Sekhukhune United', position:'FWD', display_name:'Bradley Grobler',      price:10.5, apps:18, goals:8, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:7.2, xa:1.8, total_points:103, ownership:30 },
-  { id:4009, club:'Kaizer Chiefs', position:'DEF', display_name:'Spiwe Given Msimango',          apifootball_id:46404,  espn_id:276774, price:5.0,  apps:15, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:30 },
-  { id:4010, club:'Kaizer Chiefs', position:'MID', display_name:'Lehlogonolo George Matlou',     apifootball_id:141360, espn_id:324943, price:6.0,  apps:16, goals:2, assists:2, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.5, xa:1.8, total_points:45 },
-
-  // -- AMAZULU  GP15 W8 D3 L4 GF18 GA14 │ 26YC 3RC ----------------------
-  { id:5001, club:'AmaZulu FC', position:'GK',  display_name:'Darren Johnson',              price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:44 },
-  { id:5002, club:'AmaZulu FC', position:'DEF', display_name:'Nkosikhona Radebe',           price:5.0,  apps:20, goals:0, assists:2, clean_sheets:4,  yellow_cards:3, red_cards:0, xg:0.1, xa:1.8, total_points:37 },
-  { id:5003, club:'AmaZulu FC', position:'DEF', display_name:'Andiswa Sithole',             price:5.0,  apps:13, goals:0, assists:2, clean_sheets:3,  yellow_cards:2, red_cards:0, xg:0.1, xa:1.8, total_points:32 },
-  { id:5004, club:'AmaZulu FC', position:'DEF', display_name:'Tebogo Masuku',               price:5.0,  apps:12, goals:0, assists:2, clean_sheets:3,  yellow_cards:2, red_cards:0, xg:0.1, xa:1.8, total_points:32 },
-  { id:5005, club:'AmaZulu FC', position:'MID', display_name:'Hendrick Ekstein',            price:9.0,  apps:19, goals:4, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:3.5, xa:2.8, total_points:80, ownership:18 },
-  { id:5006, club:'AmaZulu FC', position:'MID', display_name:'Mondli Mbanjwa',              price:6.5,  apps:17, goals:2, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:0.9, total_points:46 },
-  { id:5007, club:'AmaZulu FC', position:'MID', display_name:'Athini Maqokola',             price:7.0,  apps:15, goals:3, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:1, xg:2.5, xa:1.8, total_points:56 },
-  { id:5008, club:'AmaZulu FC', position:'FWD', display_name:'Thandolwenkosi Ngwenya',      price:9.5,  apps:16, goals:6, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:5.5, xa:0.9, total_points:85, ownership:22 },
-  { id:5009, club:'Kaizer Chiefs', position:'FWD', display_name:'Etiosa Godspower Ighodaro',    apifootball_id:341864, espn_id:347401, price:8.5,  apps:18, goals:7, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:6.2, xa:1.8, total_points:82 },
-  { id:5010, club:'Kaizer Chiefs', position:'GK',  display_name:'Brandon Peterson',              espn_id:186119, price:6.5,  apps:19, goals:0, assists:0, clean_sheets:8,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:52 },
-  { id:5011, club:'Kaizer Chiefs', position:'MID', display_name:'Sabelo Thabo Cele',             apifootball_id:210062, espn_id:256690, price:6.5,  apps:17, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:49 },
-  { id:5012, club:'Kaizer Chiefs', position:'MID', display_name:'Aiden McCarthy',                apifootball_id:349345, espn_id:332563, price:7.0,  apps:15, goals:2, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:1.6, xa:2.7, total_points:52 },
-
-  // -- DURBAN CITY  GP16 W7 D4 L5 GF15 GA11 │ 27YC 1RC ------------------
-  { id:6001, club:'Durban City', position:'GK',  display_name:'Darren Keet',                price:6.5,  apps:22, goals:0, assists:1, clean_sheets:12,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:57, ownership:17 },
-  { id:6002, club:'Durban City', position:'DEF', display_name:'Kyle Jurgens',               price:5.5,  apps:18, goals:0, assists:2, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:1.8, total_points:46 },
-  { id:6003, club:'Durban City', position:'DEF', display_name:'Haashim Domingo',            price:5.5,  apps:19, goals:2, assists:2, clean_sheets:4,  yellow_cards:4, red_cards:0, xg:1.5, xa:1.8, total_points:54 },
-  { id:6004, club:'Durban City', position:'MID', display_name:'Bokang Mokwena',             price:6.5,  apps:20, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.6, xa:0.9, total_points:48 },
-  { id:6005, club:'Durban City', position:'MID', display_name:'Samkelo Maseko',             price:7.0,  apps:19, goals:3, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.5, xa:0.9, total_points:60 },
-  { id:6006, club:'Durban City', position:'MID', display_name:'Letsie Koapeng',             price:7.5,  apps:14, goals:3, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:0.9, total_points:61 },
-  { id:6007, club:'Durban City', position:'FWD', display_name:'Saziso Magawana',            price:9.0,  apps:20, goals:3, assists:3, clean_sheets:0,  yellow_cards:1, red_cards:1, xg:2.8, xa:2.8, total_points:66 },
-  { id:6008, club:'Kaizer Chiefs', position:'MID', display_name:'Donay Jansen',                   apifootball_id:469482, espn_id:384416, price:6.0,  apps:14, goals:1, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.8, xa:1.8, total_points:36 },
-  { id:6009, club:'Kaizer Chiefs', position:'FWD', display_name:'Luke Junio Baartman',             apifootball_id:417825, espn_id:374941, price:7.5,  apps:16, goals:5, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:4.5, xa:1.8, total_points:72 },
-
-  // -- KAIZER CHIEFS  GP15 W8 D6 L1 GF15 GA6 │ 36YC 0RC ----------------
-  { id:7001, club:'Kaizer Chiefs', position:'GK',  display_name:'Bruce Bvuma',              price:7.5,  apps:14, goals:0, assists:0, clean_sheets:9,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:82, ownership:26 },
-  { id:7003, club:'Kaizer Chiefs', position:'DEF', display_name:'Dillan Solomons',          price:5.0,  apps:13, goals:0, assists:0, clean_sheets:5,  yellow_cards:6, red_cards:0, xg:0.1, xa:0.1, total_points:30 },
-  { id:7004, club:'Kaizer Chiefs', position:'DEF', display_name:'Bradley Cross',            price:5.0,  apps:12, goals:0, assists:0, clean_sheets:5,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.2, total_points:30 },
-  { id:7005, club:'Kaizer Chiefs', position:'MID', display_name:'Mduduzi Shabalala',        price:8.0,  apps:17, goals:3, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:2.5, xa:1.8, total_points:59 },
-  { id:7006, club:'Kaizer Chiefs', position:'MID', display_name:'Leandro Sirino',           price:7.0,  apps:13, goals:1, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.9, xa:1.8, total_points:41 },
-  { id:7007, club:'Kaizer Chiefs', position:'MID', display_name:'Lebohang Maboe',           price:7.0,  apps:13, goals:1, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:0.9, total_points:36 },
-  { id:7008, club:'Kaizer Chiefs', position:'FWD', display_name:'Flavio Silva',             price:10.0, apps:12, goals:5, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.8, xa:0.9, total_points:79, ownership:23 },
-  { id:7009, club:'Kaizer Chiefs', position:'DEF', display_name:'Reeve Frosler',                 apifootball_id:46360,  espn_id:228583, price:7.0,  apps:20, goals:0, assists:3, clean_sheets:5,  yellow_cards:3, red_cards:0, xg:0.2, xa:2.7, total_points:47 },
-  { id:7010, club:'Kaizer Chiefs', position:'DEF', display_name:'Alton Zitha Kwinika',            apifootball_id:46538,  espn_id:262787, price:5.5,  apps:14, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:32 },
-  { id:7011, club:'Kaizer Chiefs', position:'MID', display_name:'Mfundo Vilakazi',                apifootball_id:457629, espn_id:380673, price:8.5,  apps:18, goals:5, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.5, xa:3.6, total_points:77, ownership:16 },
-  { id:7012, club:'Kaizer Chiefs', position:'FWD', display_name:'Pule Sydney Mmodi',              apifootball_id:205514, espn_id:309039, price:7.5,  apps:17, goals:4, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.5, xa:1.8, total_points:64 },
-  { id:7013, club:'Kaizer Chiefs', position:'FWD', display_name:'Khanyisa Mayo',                  apifootball_id:205678, espn_id:228587, price:9.5,  apps:19, goals:8, assists:3, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:7.2, xa:2.7, total_points:95, ownership:24 },
-  { id:7014, club:'Kaizer Chiefs', position:'DEF', display_name:'Paseka Matsobane Godfrey Mako',  apifootball_id:46224,  espn_id:262785, price:5.5,  apps:15, goals:0, assists:1, clean_sheets:5,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.9, total_points:30 },
-
-  // -- POLOKWANE CITY  GP15 W6 D5 L4 GF11 GA9 │ 27YC 1RC ---------------
-  { id:8001, club:'Polokwane City', position:'GK',  display_name:'Lindokuhle Mathebula',    price:5.5,  apps:14, goals:0, assists:0, clean_sheets:5,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:48 },
-  { id:8002, club:'Polokwane City', position:'DEF', display_name:'Puleng Dennis Tlolane',   price:5.5,  apps:13, goals:0, assists:3, clean_sheets:4,  yellow_cards:4, red_cards:0, xg:0.2, xa:2.7, total_points:46 },
-  { id:8003, club:'Polokwane City', position:'DEF', display_name:'Banele Mnguni',           price:4.5,  apps:10, goals:0, assists:2, clean_sheets:3,  yellow_cards:3, red_cards:1, xg:0.1, xa:1.8, total_points:28 },
-  { id:8004, club:'Polokwane City', position:'MID', display_name:'Mokibelo Ramabu',         price:7.0,  apps:16, goals:3, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:2.5, xa:0.9, total_points:58 },
-  { id:8005, club:'Polokwane City', position:'MID', display_name:'Lebohang Nkaki',          price:6.5,  apps:19, goals:2, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.6, xa:1.8, total_points:50 },
-  { id:8006, club:'Polokwane City', position:'MID', display_name:'Thabelo Tshikweta',       price:7.5,  apps:7,  goals:3, assists:0, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:2.8, xa:0.3, total_points:52 },
-  { id:8007, club:'Polokwane City', position:'FWD', display_name:'Bonginkosi Dlamini',      price:8.0,  apps:19, goals:3, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.6, xa:1.8, total_points:64 },
-
-  // -- TS GALAXY  GP16 W7 D3 L6 GF22 GA16 │ 29YC 3RC -------------------
-  { id:9001, club:'TS Galaxy', position:'GK',  display_name:'Ethan Langenhoven',            price:5.0,  apps:15, goals:0, assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:34 },
-  { id:9002, club:'TS Galaxy', position:'DEF', display_name:'Junior Zindoga',               price:5.0,  apps:17, goals:0, assists:2, clean_sheets:3,  yellow_cards:4, red_cards:0, xg:0.1, xa:1.8, total_points:32 },
-  { id:9003, club:'TS Galaxy', position:'DEF', display_name:'Mlungisi Mbunjana',            price:5.0,  apps:19, goals:2, assists:0, clean_sheets:2,  yellow_cards:4, red_cards:1, xg:1.5, xa:0.2, total_points:31 },
-  { id:9004, club:'TS Galaxy', position:'MID', display_name:'Sphesihle Maduna',             price:7.0,  apps:19, goals:2, assists:3, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.6, xa:2.7, total_points:62 },
-  { id:9005, club:'TS Galaxy', position:'MID', display_name:'Nhlanhla Mgaga',               price:6.5,  apps:16, goals:1, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:0.8, xa:1.8, total_points:45 },
-  { id:9006, club:'TS Galaxy', position:'MID', display_name:'Mory Cheick Keita',            price:7.0,  apps:15, goals:3, assists:1, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.5, xa:0.9, total_points:59 },
-  { id:9007, club:'TS Galaxy', position:'FWD', display_name:'Seluleko Mahlambi',            price:9.5,  apps:19, goals:5, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:4.5, xa:2.8, total_points:89, ownership:25 },
-  { id:9008, club:'TS Galaxy', position:'FWD', display_name:'Puso Dithejane',               price:9.0,  apps:12, goals:4, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:1, xg:3.6, xa:3.6, total_points:83, ownership:16 },
-
-  // -- RICHARDS BAY  GP16 W4 D7 L5 GF14 GA16 │ 27YC 0RC ----------------
-  { id:10001, club:'Richards Bay', position:'GK',  display_name:'Ayanda Mtshali',           price:5.0,  apps:16, goals:0, assists:0, clean_sheets:4,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:35 },
-  { id:10002, club:'Richards Bay', position:'DEF', display_name:'Siyabonga Nzama',          price:5.0,  apps:9,  goals:0, assists:2, clean_sheets:3,  yellow_cards:3, red_cards:0, xg:0.1, xa:1.8, total_points:30 },
-  { id:10003, club:'Richards Bay', position:'DEF', display_name:'Lungelo Ngcongca',         price:4.5,  apps:14, goals:0, assists:0, clean_sheets:3,  yellow_cards:5, red_cards:0, xg:0.1, xa:0.1, total_points:22 },
-  { id:10004, club:'Richards Bay', position:'MID', display_name:'Moses Mthembu',            price:7.0,  apps:15, goals:3, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:2.5, xa:0.9, total_points:56 },
-  { id:10005, club:'Richards Bay', position:'MID', display_name:'Lundi Mahala',             price:6.5,  apps:18, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.6, xa:0.9, total_points:44 },
-  { id:10006, club:'Richards Bay', position:'MID', display_name:'Sanele Barns',             price:6.0,  apps:15, goals:1, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.8, xa:0.9, total_points:34 },
-  { id:10007, club:'Richards Bay', position:'FWD', display_name:'Frank Mhango',             price:9.0,  apps:14, goals:4, assists:1, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:3.8, xa:0.9, total_points:71 },
-
-  // -- SIWELELE FC  GP16 W4 D5 L7 GF9 GA14 │ 37YC 1RC -------------------
-  { id:11002, club:'Siwelele FC', position:'DEF', display_name:'Neo Rapoo',                 price:5.0,  apps:16, goals:0, assists:2, clean_sheets:3,  yellow_cards:6, red_cards:0, xg:0.1, xa:1.8, total_points:27 },
-  { id:11003, club:'Siwelele FC', position:'DEF', display_name:'Tebogo Potsane',            price:5.0,  apps:14, goals:0, assists:4, clean_sheets:2,  yellow_cards:5, red_cards:0, xg:0.1, xa:1.8, total_points:23 },
-  { id:11004, club:'Siwelele FC', position:'MID', display_name:'Vincent Pule',              price:7.5,  apps:18, goals:2, assists:2, clean_sheets:0,  yellow_cards:7, red_cards:0, xg:1.6, xa:1.8, total_points:47 },
-  { id:11005, club:'Siwelele FC', position:'MID', display_name:'Justice Figuareido',        price:6.0,  apps:16, goals:0, assists:2, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.3, xa:1.8, total_points:30 },
-  { id:11006, club:'Siwelele FC', position:'MID', display_name:'Keenan Cairns',             price:5.5,  apps:14, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.3, total_points:20 },
-  { id:11007, club:'Siwelele FC', position:'FWD', display_name:'Siviwe Magidigidi',         price:9.0,  apps:12, goals:4, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:3.6, xa:0.9, total_points:67 },
-
-  // -- STELLENBOSCH FC  GP15 W4 D3 L8 GF11 GA18 │ 33YC 3RC -------------
-  { id:12001, club:'Stellenbosch FC', position:'GK',  display_name:'Lee Langeveldt',        price:5.0,  apps:15, goals:0, assists:0, clean_sheets:4,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:31 },
-  { id:12002, club:'Stellenbosch FC', position:'DEF', display_name:'Fawaaz Basadien',       price:5.0,  apps:14, goals:0, assists:0, clean_sheets:3,  yellow_cards:5, red_cards:1, xg:0.1, xa:0.2, total_points:16 },
-  { id:12003, club:'Stellenbosch FC', position:'DEF', display_name:'Ibraheem Jabaar',       price:5.5,  apps:13, goals:0, assists:2, clean_sheets:3,  yellow_cards:4, red_cards:0, xg:0.2, xa:1.8, total_points:30 },
-  { id:12004, club:'Stellenbosch FC', position:'MID', display_name:'Devon Titus',           price:8.0,  apps:19, goals:1, assists:4, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:0.9, xa:3.6, total_points:60 },
-  { id:12005, club:'Stellenbosch FC', position:'MID', display_name:'Junior Mendieta',       price:6.5,  apps:14, goals:2, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.6, xa:0.9, total_points:38 },
-  { id:12006, club:'Stellenbosch FC', position:'MID', display_name:'Waseem Isaacs',         price:5.5,  apps:12, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.3, total_points:23 },
-  { id:12007, club:'Stellenbosch FC', position:'FWD', display_name:'Langelihle Phili',      price:10.5, apps:16, goals:7, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:6.5, xa:0.9, total_points:91, ownership:24 },
-  { id:12008, club:'Kaizer Chiefs', position:'MID', display_name:'Ethan Chislett',              apifootball_id:108466, espn_id:282967, price:7.5,  apps:18, goals:3, assists:4, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.6, xa:3.6, total_points:65 },
-  { id:12009, club:'Kaizer Chiefs', position:'FWD', display_name:'Ashley Du Preez',             apifootball_id:127434, espn_id:291123, price:8.5,  apps:17, goals:6, assists:2, clean_sheets:0,  yellow_cards:2, red_cards:0, xg:5.5, xa:1.8, total_points:75 },
-  { id:12010, club:'Kaizer Chiefs', position:'MID', display_name:'Tashreeq Morris',             apifootball_id:98928,  espn_id:191467, price:7.0,  apps:16, goals:2, assists:3, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.6, xa:2.7, total_points:51 },
-  { id:12011, club:'Kaizer Chiefs', position:'MID', display_name:'Inácio Miguel Ferreira dos Santos', apifootball_id:41965, espn_id:208363, price:7.0,  apps:15, goals:2, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.8, xa:1.8, total_points:47 },
-
-  // -- MARUMO GALLANTS  GP16 W3 D6 L7 GF12 GA20 │ 29YC 2RC ------------
-  { id:13001, club:'Marumo Gallants', position:'GK',  display_name:'Washington Arubi',      price:4.5,  apps:16, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:25 },
-  { id:13002, club:'Marumo Gallants', position:'DEF', display_name:'Katlego Otladisa',      price:5.0,  apps:11, goals:0, assists:3, clean_sheets:2,  yellow_cards:4, red_cards:1, xg:0.1, xa:2.7, total_points:30 },
-  { id:13003, club:'Marumo Gallants', position:'DEF', display_name:'Khumbulani Ncube',      price:4.5,  apps:12, goals:0, assists:2, clean_sheets:2,  yellow_cards:4, red_cards:0, xg:0.1, xa:1.8, total_points:26 },
-  { id:13004, club:'Marumo Gallants', position:'MID', display_name:'Teboho Motloung',       price:6.5,  apps:14, goals:1, assists:3, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.8, xa:2.7, total_points:48 },
-  { id:13005, club:'Marumo Gallants', position:'MID', display_name:'Christopher Sekela',    price:5.5,  apps:18, goals:2, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:1.5, xa:0.9, total_points:41 },
-  { id:13006, club:'Marumo Gallants', position:'MID', display_name:'Bheki Mabuza',          price:5.5,  apps:19, goals:2, assists:0, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:1.5, xa:0.3, total_points:39 },
-  { id:13007, club:'Marumo Gallants', position:'FWD', display_name:'Jaisen Jaren Clifford', price:7.5,  apps:16, goals:3, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:2.6, xa:0.9, total_points:55 },
-
-  // -- ORBIT COLLEGE FC  GP16 W4 D1 L11 GF12 GA28 │ 37YC 1RC -----------
-  { id:14001, club:'Orbit College FC', position:'GK',  display_name:'Nkosi Mdlalose',       price:4.5,  apps:16, goals:0, assists:0, clean_sheets:2,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:18 },
-  { id:14002, club:'Orbit College FC', position:'DEF', display_name:'Bhekie Cele',          price:4.0,  apps:14, goals:0, assists:0, clean_sheets:1,  yellow_cards:8, red_cards:0, xg:0.0, xa:0.1, total_points:6  },
-  { id:14003, club:'Orbit College FC', position:'DEF', display_name:'Lethiwe Mthembu',      price:4.0,  apps:12, goals:0, assists:0, clean_sheets:1,  yellow_cards:6, red_cards:1, xg:0.0, xa:0.1, total_points:2  },
-  { id:14004, club:'Orbit College FC', position:'MID', display_name:'Thuso Moleleki',       price:6.5,  apps:13, goals:2, assists:3, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:1.5, xa:2.7, total_points:50 },
-  { id:14005, club:'Orbit College FC', position:'MID', display_name:'Teboho Makololo',      price:5.5,  apps:15, goals:1, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.8, xa:0.9, total_points:27 },
-  { id:14006, club:'Orbit College FC', position:'FWD', display_name:'Mbulelo Wagaba',       price:7.5,  apps:13, goals:3, assists:2, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.6, xa:1.8, total_points:57 },
-
-  // -- CHIPPA UNITED  GP16 W2 D6 L8 GF8 GA21 │ 26YC 0RC ----------------
-  { id:15001, club:'Chippa United', position:'GK',  display_name:'Sage Stephens',           price:4.5,  apps:16, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:25 },
-  { id:15002, club:'Chippa United', position:'DEF', display_name:'Justice Figueredo',      price:5.0,  apps:16, goals:0, assists:2, clean_sheets:2,  yellow_cards:4, red_cards:0, xg:0.1, xa:1.8, total_points:26 },
-  { id:15003, club:'Chippa United', position:'DEF', display_name:'Ayanda Nkosi',            price:4.5,  apps:14, goals:0, assists:0, clean_sheets:2,  yellow_cards:4, red_cards:0, xg:0.1, xa:0.1, total_points:18 },
-  { id:15004, club:'Chippa United', position:'MID', display_name:'Keenan Phillips',         price:5.5,  apps:15, goals:1, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.8, xa:0.9, total_points:28 },
-  { id:15005, club:'Chippa United', position:'MID', display_name:'Thabo Cele',              price:5.0,  apps:14, goals:0, assists:1, clean_sheets:0,  yellow_cards:4, red_cards:0, xg:0.3, xa:0.9, total_points:22 },
-  { id:15006, club:'Chippa United', position:'FWD', display_name:'Sinoxolo Kwayiba',        price:8.0,  apps:7,  goals:3, assists:0, clean_sheets:0,  yellow_cards:3, red_cards:0, xg:2.8, xa:0.3, total_points:46 },
-
-  // -- MAGESI FC  GP14 W2 D5 L7 GF10 GA19 │ 39YC 4RC -------------------
-  { id:16001, club:'Magesi FC', position:'GK',  display_name:'Sifiso Luthuli',              price:4.0,  apps:13, goals:0, assists:0, clean_sheets:2,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:14 },
-  { id:16002, club:'Magesi FC', position:'DEF', display_name:'Sibusiso Hadebe',             price:4.0,  apps:12, goals:0, assists:0, clean_sheets:1,  yellow_cards:6, red_cards:1, xg:0.0, xa:0.1, total_points:-3 },
-  { id:16003, club:'Magesi FC', position:'DEF', display_name:'Thabang Sibanyoni',           price:4.0,  apps:11, goals:0, assists:0, clean_sheets:1,  yellow_cards:5, red_cards:1, xg:0.0, xa:0.1, total_points:0  },
-  { id:16004, club:'Magesi FC', position:'MID', display_name:'Kgomotso Mosadi',             price:7.0,  apps:16, goals:2, assists:2, clean_sheets:0,  yellow_cards:6, red_cards:0, xg:1.6, xa:1.8, total_points:44 },
-  { id:16005, club:'Magesi FC', position:'MID', display_name:'Glody Makabi Lilepo',         apifootball_id:296274, espn_id:312790, price:6.0,  apps:12, goals:1, assists:1, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:0.8, xa:0.9, total_points:22 },
-  { id:16006, club:'Magesi FC', position:'MID', display_name:'Rowan Human',                price:5.0,  apps:13, goals:1, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:0, xg:0.8, xa:0.3, total_points:23 },
-  { id:16007, club:'Magesi FC', position:'FWD', display_name:'Victor Letsoalo',            price:6.0,  apps:12, goals:2, assists:0, clean_sheets:0,  yellow_cards:5, red_cards:1, xg:1.8, xa:0.3, total_points:24 },
-
-  // -- Additional players to complete all squads --------------------------
-  // Chippa United (add 2)
-  { id:16008, club:'Chippa United',    position:'GK',  display_name:'Ntando Dlamini',         price:4.0,  apps:14, goals:0, assists:0, clean_sheets:2,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:21 },
-  { id:16009, club:'Chippa United',    position:'DEF', display_name:'Sibongiseni Mthethwa',     apifootball_id:270301, espn_id:309103, price:4.0,  apps:12, goals:0, assists:1, clean_sheets:2,  yellow_cards:3, red_cards:0, xg:0.1, xa:0.3, total_points:18 },
-  // Orbit College FC (add 2)
-  { id:16010, club:'Orbit College FC', position:'GK',  display_name:'Sandile Mkhwanazi',       price:3.5,  apps:10, goals:0, assists:0, clean_sheets:1,  yellow_cards:2, red_cards:0, xg:0.0, xa:0.0, total_points:14 },
-  { id:16011, club:'Orbit College FC', position:'DEF', display_name:'Thabo Molefe',             price:3.5,  apps:11, goals:1, assists:0, clean_sheets:1,  yellow_cards:2, red_cards:0, xg:0.4, xa:0.1, total_points:16 },
-  { id:16012, club:'Orbit College FC', position:'MID', display_name:'Lerato Moerane',           price:4.0,  apps:13, goals:2, assists:1, clean_sheets:0,  yellow_cards:1, red_cards:0, xg:1.1, xa:0.8, total_points:24 },
-  // Durban City (add 1)
-  { id:16013, club:'Durban City',      position:'GK',  display_name:'Sifiso Mlungwana',         price:4.5,  apps:14, goals:0, assists:0, clean_sheets:3,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:26 },
-  // Polokwane City (add 1)
-  { id:16014, club:'Polokwane City',   position:'GK',  display_name:'George Chigova',           price:4.5,  apps:13, goals:0, assists:0, clean_sheets:3,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:24 },
-  // Richards Bay (add 1)
-  { id:16015, club:'Richards Bay',     position:'GK',  display_name:'Lyle Foster (GK)',         price:3.5,  apps:9,  goals:0, assists:0, clean_sheets:1,  yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:11 },
-  // Siwelele FC (add 1)
-  { id:16016, club:'Siwelele FC',      position:'GK',  display_name:'Sipho Mkhize',             price:4.0,  apps:12, goals:0, assists:0, clean_sheets:2,  yellow_cards:0, red_cards:0, xg:0.0, xa:0.0, total_points:18 },
-  // Stellenbosch (add 1)
-  { id:16017, club:'Stellenbosch FC',  position:'GK',  display_name:'Sage Stephens-Stellenbosch', price:4.5, apps:15, goals:0, assists:0, clean_sheets:4, yellow_cards:1, red_cards:0, xg:0.0, xa:0.0, total_points:30 },
-];
+var PSL_ROSTER = [];
+// PSL_ROSTER is intentionally empty.
+// All player data is loaded from Supabase via loadPlayers().
+// Populated by apifootball-sync?phase=0 before season opens.
 
 // -- loadPlayers: reads live stats from Supabase, falls back to PSL_ROSTER --
 // PSL_ROSTER is used ONLY if the players table is empty (e.g. before first import)
@@ -6566,7 +6086,7 @@ function renderFixtureList(c, matches) {
     var hg = (f.hg !== null && f.hg !== undefined) ? f.hg : '';
     var ag = (f.ag !== null && f.ag !== undefined) ? f.ag : '';
     var scoreStr   = (isLive || isFT) ? (hg + ' - ' + ag) : 'vs';
-    var scoreColor = isLive ? '#D4274F' : isFT ? '#88FF00' : 'rgba(255,255,255,.4)';
+    var scoreColor = isLive ? '#D4274F' : isFT ? '#DBA94A' : 'rgba(255,255,255,.4)';
     var hl = f.home_logo || getTeamLogo(f.home) || '';
     var al = f.away_logo || getTeamLogo(f.away) || '';
     var imgS = 'width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0;';
@@ -6576,7 +6096,7 @@ function renderFixtureList(c, matches) {
     var stateLabel = isLive ? (f.status==='HT'?'HT':f.elapsed ? f.elapsed+"'" : 'LIVE') : '';
     var liveBadge = isLive
       ? '<span style="display:block;background:#D4274F;color:#fff;font-size:.5rem;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:1px;margin-top:2px;width:fit-content;margin:2px auto 0">'+stateLabel+'</span>'
-      : (isFT ? '<span style="display:block;font-size:.5rem;color:#88FF00;font-weight:700;margin-top:2px;text-align:center">FT</span>' : '');
+      : (isFT ? '<span style="display:block;font-size:.5rem;color:#DBA94A;font-weight:700;margin-top:2px;text-align:center">FT</span>' : '');
     var fidStr = String(fid);
     return '<div style="border-bottom:1px solid rgba(255,255,255,.05)">' +
       '<div onclick="toggleFix(\''+fidStr+'\')" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:.85rem 1rem;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent" onmouseenter="this.style.background=\'rgba(255,255,255,.03)\'" onmouseleave="this.style.background=\'\'">' +
@@ -6662,7 +6182,7 @@ function buildFixDetailBasic(f) {
   var round  = f.round ? '<div style="text-align:center;padding:.3rem 1rem;font-family:var(--font-ui);font-size:.6rem;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.3);text-transform:uppercase">'+esc(f.round)+'</div>' : '';
   var period = '';
   if (isLive) period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#D4274F;letter-spacing:1px">' + (f.elapsed ? f.elapsed+"'" : 'LIVE') + '</div>';
-  if (isFT)   period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#88FF00;letter-spacing:1px">FULL TIME</div>';
+  if (isFT)   period = '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.7rem;font-weight:700;color:#DBA94A;letter-spacing:1px">FULL TIME</div>';
   out += round + period;
   if (!isFT && !isLive) out += '<div style="text-align:center;padding:.6rem 1rem;'+base+'color:rgba(255,255,255,.4)">Upcoming match — stats appear when the game is live</div>';
   else out += '<div style="text-align:center;padding:.6rem 1rem;'+base+'color:rgba(255,255,255,.35)">Detailed stats not available for this match</div>';
@@ -6685,7 +6205,7 @@ function buildFixDetailFull(d) {
 
   // Live indicator
   if (isLive) out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#D4274F;letter-spacing:1px">' + (d.elapsed ? d.elapsed+"'" : 'LIVE') + '</div>';
-  if (isFT)   out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#88FF00;letter-spacing:1px">FULL TIME</div>';
+  if (isFT)   out += '<div style="text-align:center;padding:.2rem;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#DBA94A;letter-spacing:1px">FULL TIME</div>';
   if (d.ht_score && d.ht_score.home !== null) {
     out += '<div style="text-align:center;font-family:var(--font-ui);font-size:.6rem;color:rgba(255,255,255,.3);padding:.1rem">HT: ' + d.ht_score.home + ' - ' + d.ht_score.away + '</div>';
   }
@@ -6702,7 +6222,7 @@ function buildFixDetailFull(d) {
       var isHome  = g.team === d.home;
       var side    = isHome ? 'flex-start' : 'flex-end';
       var assist  = g.assist ? '<span style="font-size:.65rem;color:rgba(255,255,255,.35)"> ('+esc(g.assist)+')</span>' : '';
-      var penalty = g.detail === 'Penalty' ? ' <span style="font-size:.6rem;color:#88FF00">PEN</span>' : '';
+      var penalty = g.detail === 'Penalty' ? ' <span style="font-size:.6rem;color:#DBA94A">PEN</span>' : '';
       var og      = g.detail === 'Own Goal' ? ' <span style="font-size:.6rem;color:#D4274F">OG</span>' : '';
       out += '<div style="display:flex;justify-content:'+side+';align-items:center;padding:.25rem 1.2rem;gap:.4rem">';
       out += '<span style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff">'+esc(g.player)+penalty+og+'</span>';
@@ -6717,7 +6237,7 @@ function buildFixDetailFull(d) {
     cards.forEach(function(c) {
       var isHome = c.team===d.home;
       var side   = isHome ? 'flex-start' : 'flex-end';
-      var col    = c.detail.includes('Red') ? '#D4274F' : '#88FF00';
+      var col    = c.detail.includes('Red') ? '#D4274F' : '#DBA94A';
       var icon   = c.detail.includes('Red') ? '🟥' : '🟨';
       out += '<div style="display:flex;justify-content:'+side+';align-items:center;padding:.25rem 1.2rem;gap:.4rem">';
       out += '<span style="font-size:.9rem">'+icon+'</span>';
@@ -6791,6 +6311,9 @@ var LAST_MATCHES = [];
 var _origRFL = renderFixtureList;
 
 function renderTableFromData(c, table) {
+  if (typeof SEASON_OPEN !== 'undefined' && !SEASON_OPEN) {
+    showTableEmptyState(); return;
+  }
   if (TABLE_VIEW === 'form') { renderTableForm(c, table); return; }
   if (TABLE_VIEW === 'full') { renderTableFull(c, table); return; }
   renderTableShort(c, table);
@@ -6845,7 +6368,7 @@ function buildTeamRow(data, teamName) {
       var opp    = isHome ? (f.away||'') : (f.home||'');
       var oppLogo= isHome ? (f.away_logo||getTeamLogo(f.away)||'') : (f.home_logo||getTeamLogo(f.home)||'');
       var venue  = isHome ? 'H' : 'A';
-      var vColor = isHome ? '#22895A' : '#88FF00';
+      var vColor = isHome ? '#22895A' : '#DBA94A';
       var d      = f.date ? new Date(f.date) : null;
       var dStr   = d ? d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : '';
       out += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04)">';
@@ -6868,13 +6391,13 @@ function buildTeamRow(data, teamName) {
       var opp    = isHome ? (f.away||'') : (f.home||'');
       var oppLogo= isHome ? (f.away_logo||getTeamLogo(f.away)||'') : (f.home_logo||getTeamLogo(f.home)||'');
       var venue  = isHome ? 'H' : 'A';
-      var vColor = isHome ? '#22895A' : '#88FF00';
+      var vColor = isHome ? '#22895A' : '#DBA94A';
       var hg = f.hg !== null && f.hg !== undefined ? parseInt(f.hg) : null;
       var ag = f.ag !== null && f.ag !== undefined ? parseInt(f.ag) : null;
       var scored   = isHome ? hg : ag;
       var conceded = isHome ? ag : hg;
       var outcome  = (scored !== null && conceded !== null) ? (scored > conceded ? 'W' : scored < conceded ? 'L' : 'D') : '?';
-      var outCol   = outcome==='W' ? '#22895A' : outcome==='L' ? '#D4274F' : '#88FF00';
+      var outCol   = outcome==='W' ? '#22895A' : outcome==='L' ? '#D4274F' : '#DBA94A';
       var scoreDisp= (hg !== null && ag !== null) ? (hg + ' – ' + ag) : 'vs';
       out += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04)">';
       out += '<span style="'+b+'color:'+vColor+';font-weight:700;font-size:.64rem;min-width:12px">'+venue+'</span>';
@@ -7019,7 +6542,7 @@ function renderTableFull(c, table) {
                      'border-left:3px solid transparent;';
 
     var myTeamIndicator = isMyTeam
-      ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#88FF00;margin-left:3px;vertical-align:middle;flex-shrink:0"></span>'
+      ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#DBA94A;margin-left:3px;vertical-align:middle;flex-shrink:0"></span>'
       : '';
 
     return '<div style="border-bottom:1px solid rgba(255,255,255,.04)">' +
@@ -7033,7 +6556,7 @@ function renderTableFull(c, table) {
         '<div style="display:flex;align-items:center;gap:.4rem;min-width:0">' +
           (logo ? '<img src="' + esc(logo) + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<div style="width:20px;flex-shrink:0"></div>') +
           '<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:' + (isMyTeam ? '800' : '600') + ';' +
-            'color:' + (isMyTeam ? '#88FF00' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            'color:' + (isMyTeam ? '#DBA94A' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             esc(t.abbr || t.team) + myTeamIndicator +
           '</span>' +
         '</div>' +
@@ -7091,7 +6614,7 @@ function renderTableForm(c, table) {
     }
     while (formArr.length < 5) formArr.unshift('N');
     var dots = formArr.map(function(r) {
-      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#88FF00' : 'rgba(255,255,255,.1)';
+      var col = r === 'W' ? '#22895A' : r === 'L' ? '#D4274F' : r === 'D' ? '#DBA94A' : 'rgba(255,255,255,.1)';
       var lbl = r === 'W' ? 'W' : r === 'L' ? 'L' : r === 'D' ? 'D' : '–';
       var txtCol = (r === 'N' || r === '') ? 'rgba(255,255,255,.3)' : '#fff';
       return '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:' + col + ';font-family:var(--font-ui);font-size:.62rem;font-weight:800;color:' + txtCol + ';margin-right:2px;border:1px solid rgba(255,255,255,.08)">' + lbl + '</span>';
@@ -7234,6 +6757,18 @@ function loadStats() {
 }
 
 function renderStats() {
+  // During pre-season / off-season show clean empty state
+  if (typeof SEASON_OPEN !== 'undefined' && !SEASON_OPEN) {
+    var body = document.getElementById('stats-body');
+    if (body) {
+      body.innerHTML = '<div style="text-align:center;padding:4rem 1rem">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5" style="width:48px;height:48px;margin-bottom:1rem"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+        + '<div style="font-family:var(--font-ui);font-size:.8rem;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.5rem">Season Not Started</div>'
+        + '<div style="font-size:.78rem;color:rgba(255,255,255,.2);line-height:1.7">Player stats for the 2026/27<br>Betway Premiership will appear<br>here once the season begins.</div>'
+        + '</div>';
+    }
+    return;
+  }
   var c = document.getElementById('stats-body'); if (!c) return;
   // Use live DB players if available, otherwise fall back to PSL_ROSTER
   var dbP = (window.LIVE_STATS && window.LIVE_STATS.dbPlayers) || null;
@@ -7259,7 +6794,7 @@ function renderStats() {
 function statRow(rank, name, club, clubLogo, val, valLabel, sub) {
   var logo = clubLogo || getTeamLogo(club);
   var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':(rank+'.');
-  var goldClr = rank <= 3 ? '#88FF00' : 'rgba(255,255,255,.3)';
+  var goldClr = rank <= 3 ? '#DBA94A' : 'rgba(255,255,255,.3)';
   return '<div style="display:flex;align-items:center;gap:.75rem;padding:.82rem 1rem;border-bottom:1px solid rgba(255,255,255,.04)">' +
     '<div style="font-family:var(--font-display);font-size:' + (rank<=3?'1rem':'.8rem') + ';font-weight:900;width:26px;text-align:center;flex-shrink:0;color:' + goldClr + '">' + medal + '</div>' +
     (logo ? '<img src="' + logo + '" style="width:26px;height:26px;object-fit:contain;flex-shrink:0" onerror="this.hidden=true">' : '<div style="width:26px"></div>') +
@@ -7268,7 +6803,7 @@ function statRow(rank, name, club, clubLogo, val, valLabel, sub) {
       '<div style="font-size:.68rem;color:rgba(255,255,255,.38);margin-top:1px">' + (sub||club) + '</div>' +
     '</div>' +
     '<div style="text-align:right;flex-shrink:0">' +
-      '<div style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#88FF00;line-height:1">' + val + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.25rem;font-weight:900;color:#DBA94A;line-height:1">' + val + '</div>' +
       '<div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:1px">' + valLabel + '</div>' +
     '</div>' +
   '</div>';
@@ -7638,7 +7173,7 @@ function openClubProfile(teamName) {
   // Form dots
   var formStr = tbl.form || 'NNNNN';
   var formDots = formStr.slice(-5).split('').map(function(r){
-    var bg  = r==='W'?'#22895A':r==='L'?'#D4274F':r==='D'?'#88FF00':'rgba(255,255,255,.15)';
+    var bg  = r==='W'?'#22895A':r==='L'?'#D4274F':r==='D'?'#DBA94A':'rgba(255,255,255,.15)';
     var lbl = r==='N'?'?':r;
     return '<div style="display:flex;flex-direction:column;align-items:center;gap:.25rem">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#fff">'+lbl+'</div>' +
@@ -7700,7 +7235,7 @@ function openClubProfile(teamName) {
       '</div>' +
       '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:'+pcBg+';color:#fff;letter-spacing:.5px">'+p.position+'</span>' +
       '<div style="text-align:right;flex-shrink:0">' +
-        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">'+p.total_points+'</div>' +
+        '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div>' +
         '<div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">pts</div>' +
       '</div>' +
     '</div>';
@@ -7723,7 +7258,7 @@ function openClubProfile(teamName) {
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.goals+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">G</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.assists+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">A</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.apps+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Apps</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#88FF00">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
         '</div>' +
       '</div>';
     });
@@ -7809,7 +7344,7 @@ function renderProfileData(c, p) {
             '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
           : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
         ) +
-        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#88FF00;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
+        '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
         '</div>' +
         '<input type="file" id="avatar-upload-2" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
@@ -7818,9 +7353,9 @@ function renderProfileData(c, p) {
         '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff">' + (p.team_name||'--') + '</div>' +
         '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + (p.username||'--') + '</div>' +
         '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.total_points||0) + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + (p.overall_rank||'--') + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
-          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#88FF00">' + ST.squad.length + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points||0) + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank||'--') + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
+          '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + ST.squad.length + '</div><div style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Players</div></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -7831,7 +7366,7 @@ function renderProfileData(c, p) {
           '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:.8rem">' + posIcon(pl.position) + '</div>' +
           '<div style="flex:1"><div style="font-size:.88rem;font-weight:700;color:#fff">' + playerName(pl) + '</div><div style="font-size:.7rem;color:rgba(255,255,255,.35)">' + (pl.clubs?pl.clubs.name:pl.club||'--') + '</div></div>' +
           '<span class="pli-pos pos-' + (pl.position||'mid').toLowerCase() + '">' + pl.position + '</span>' +
-          '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#88FF00">' + (pl.total_points||0) + ' pts</span>' +
+          '<span style="font-family:var(--font-display);font-size:.9rem;font-weight:900;color:#DBA94A">' + (pl.total_points||0) + ' pts</span>' +
         '</div>';
       }).join('') : '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.85rem;color:rgba(255,255,255,.35)">No squad yet — go pick yours! ⚽</div>') +
     '</div>' +
@@ -7886,7 +7421,7 @@ function loadPOTMHomeCard() {
     var maxV = sorted[0][1];
     barEl.innerHTML = sorted.map(function(e,i){
       var h = Math.max(6, Math.round((e[1]/maxV)*22));
-      var col = i===0 ? '#88FF00' : 'rgba(255,255,255,.2)';
+      var col = i===0 ? '#DBA94A' : 'rgba(255,255,255,.2)';
       return '<div style="width:5px;height:'+h+'px;background:'+col+';border-radius:2px"></div>';
     }).join('');
     card.style.display = 'block';
@@ -7907,7 +7442,7 @@ function openPOTMFromHome() {
 // ====================================================
 var FAN_POLLS = [
   {
-    q: 'Who will win the Betway Premiership 2025/26?',
+    q: 'Who will win the Betway Premiership 2026/27?',
     opts: ['Orlando Pirates','Mamelodi Sundowns','Kaizer Chiefs','Sekhukhune United']
   },
   {
@@ -7934,17 +7469,17 @@ function openMiniPoll() {
   var counts = {}; try { counts = JSON.parse(localStorage.getItem(key + '_counts') || '{}'); } catch(e) {}
   var total = Object.values(counts).reduce(function(s,v){return s+(v||0);},0);
 
-  var html = '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#88FF00;margin-bottom:.7rem">📣 Fan Poll</div>';
+  var html = '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#DBA94A;margin-bottom:.7rem">📣 Fan Poll</div>';
   html += '<div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin-bottom:1.1rem;line-height:1.3">' + poll.q + '</div>';
   poll.opts.forEach(function(opt) {
     var pct = total ? Math.round(((counts[opt]||0)/total)*100) : 0;
     var isVoted = voted === opt;
     if (voted) {
       html += '<div style="margin-bottom:.55rem">';
-      html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#88FF00':'rgba(255,255,255,.5)') + ';margin-bottom:.22rem">';
+      html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:' + (isVoted?'#DBA94A':'rgba(255,255,255,.5)') + ';margin-bottom:.22rem">';
       html += '<span>' + (isVoted?'✓ ':'') + opt + '</span><span data-opt-pct="' + opt + '">' + pct + '%</span></div>';
       html += '<div style="height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden">';
-      html += '<div data-opt-bar="' + opt + '" style="height:100%;width:' + pct + '%;background:' + (isVoted?'#88FF00':'rgba(255,255,255,.18)') + ';border-radius:4px;transition:width .5s ease"></div>';
+      html += '<div data-opt-bar="' + opt + '" style="height:100%;width:' + pct + '%;background:' + (isVoted?'#DBA94A':'rgba(255,255,255,.18)') + ';border-radius:4px;transition:width .5s ease"></div>';
       html += '</div></div>';
     } else {
       html += '<button onclick="castPoll(\'' + key + '\',\'' + opt.replace(/'/g,"\\'") + '\')" style="width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.65rem .95rem;margin-bottom:.45rem;cursor:pointer;font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.8);-webkit-tap-highlight-color:transparent;display:block">' + opt + '</button>';
@@ -8072,7 +7607,7 @@ function renderPOTMStrip(matchKey, home, away) {
   if (official) {
     parts += '<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(136,255,0,.08);border-top:1px solid rgba(136,255,0,.12)">' +
       '<span style="font-size:.7rem">\u{1F3C6}</span>' +
-      '<span style="font-size:.68rem;font-weight:700;color:#88FF00;letter-spacing:1px;text-transform:uppercase">Official POTM:</span>' +
+      '<span style="font-size:.68rem;font-weight:700;color:#DBA94A;letter-spacing:1px;text-transform:uppercase">Official POTM:</span>' +
       '<span style="font-size:.75rem;color:#fff">' + official + '</span>' +
     '</div>';
   }
@@ -8107,7 +7642,7 @@ function openPOTMVote(matchKey, home, away) {
         'style="display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.07);margin-bottom:.4rem;background:var(--bg-card)">' +
         '<div style="width:30px;height:30px;border-radius:50%;background:rgba(185,28,58,.2);display:flex;align-items:center;justify-content:center;font-size:.8rem">' + posIcon(p.position) + '</div>' +
         '<div style="flex:1"><div style="font-weight:700;font-size:.85rem;color:#fff">' + (p.display_name||p.name) + '</div><div style="font-size:.68rem;color:rgba(255,255,255,.4)">' + (p.club||'--') + ' . ' + p.position + '</div></div>' +
-        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:#88FF00">' + (p.goals||0) + '\u26BD</span>' +
+        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:#DBA94A">' + (p.goals||0) + '\u26BD</span>' +
       '</div>';
     }).join('');
   modal.style.display = 'flex';
@@ -8781,7 +8316,7 @@ var LEGAL_CONTENT = {
       <p>These Terms are governed by the laws of the Republic of South Africa. Any disputes shall be subject to the exclusive jurisdiction of the South African courts.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">14. Contact</h2>
-      <p>For any questions regarding these Terms, contact us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a></p>
+      <p>For any questions regarding these Terms, contact us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#DBA94A">admin@fantasypsl.co.za</a></p>
     `
   },
   privacy: {
@@ -8828,7 +8363,7 @@ var LEGAL_CONTENT = {
         <li>Object to the processing of your personal information</li>
         <li>Lodge a complaint with the Information Regulator of South Africa</li>
       </ul>
-      <p style="margin-top:.5rem">To exercise these rights, contact us at <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a>.</p>
+      <p style="margin-top:.5rem">To exercise these rights, contact us at <a href="mailto:admin@fantasypsl.co.za" style="color:#DBA94A">admin@fantasypsl.co.za</a>.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">7. Cookies &amp; Local Storage</h2>
       <p>We use browser local storage to save your login session and app preferences. We do not use advertising cookies or third-party tracking pixels. Our Service uses Supabase authentication which may set session cookies. You can clear these at any time through your browser settings.</p>
@@ -8840,7 +8375,7 @@ var LEGAL_CONTENT = {
       <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via the App or email. The "Last updated" date at the top of this policy reflects the most recent revision.</p>
 
       <h2 style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;margin:1.5rem 0 .5rem">10. Contact</h2>
-      <p>Questions about this Privacy Policy? Reach us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#88FF00">admin@fantasypsl.co.za</a><br>Information Regulator (South Africa): <a href="https://www.justice.gov.za/inforeg/" target="_blank" style="color:#88FF00">www.justice.gov.za/inforeg</a></p>
+      <p>Questions about this Privacy Policy? Reach us at: <a href="mailto:admin@fantasypsl.co.za" style="color:#DBA94A">admin@fantasypsl.co.za</a><br>Information Regulator (South Africa): <a href="https://www.justice.gov.za/inforeg/" target="_blank" style="color:#DBA94A">www.justice.gov.za/inforeg</a></p>
     `
   }
 };
@@ -9157,8 +8692,8 @@ function closeBanner() {
 
     <!-- Style options -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.2rem">
-      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(136,255,0,.15);border:2px solid #88FF00;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
-        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#88FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
+      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(136,255,0,.15);border:2px solid #DBA94A;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+        <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
         <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Balanced</div>
         <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Best overall squad</div>
       </button>
@@ -9180,11 +8715,11 @@ function closeBanner() {
     </div>
 
     <!-- Warning if squad already has players -->
-    <div id="asq-warning" style="display:none;background:rgba(136,255,0,.1);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#88FF00;font-family:var(--font-ui);font-weight:700">
+    <div id="asq-warning" style="display:none;background:rgba(136,255,0,.1);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#DBA94A;font-family:var(--font-ui);font-weight:700">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>This will replace your current squad
     </div>
 
-    <button onclick="runAutoSquad()" style="width:100%;background:linear-gradient(135deg,#88FF00,#C8962A);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.9rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
+    <button onclick="runAutoSquad()" style="width:100%;background:linear-gradient(135deg,#DBA94A,#C8962A);border:none;border-radius:12px;color:#fff;font-family:var(--font-ui);font-size:.9rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Generate My Squad
     </button>
     <button onclick="closeAutoSquadModal()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.3);font-family:var(--font-ui);font-size:.78rem;font-weight:700;padding:.7rem;cursor:pointer;margin-top:.3rem">Cancel</button>
@@ -9193,8 +8728,8 @@ function closeBanner() {
 
 <style>
 @keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-.asq-opt.active { background:rgba(136,255,0,.15) !important; border-color:#88FF00 !important; }
-.asq-opt.active div:nth-child(2) { color:#88FF00 !important; }
+.asq-opt.active { background:rgba(136,255,0,.15) !important; border-color:#DBA94A !important; }
+.asq-opt.active div:nth-child(2) { color:#DBA94A !important; }
 </style>
 
 
@@ -9220,7 +8755,7 @@ function closeBanner() {
   </div>
   <p style="font-family:'DM Sans',sans-serif;font-size:.8rem;color:rgba(255,255,255,.65);line-height:1.55;margin-bottom:1rem">
     Fantasy PSL stores your email and squad data to run the game. We also use analytics to improve the platform. Choose which data uses you're comfortable with. You can change this any time in your profile settings.
-    <a href="/privacy" style="color:#88FF00;text-decoration:underline">Full Privacy Policy →</a>
+    <a href="/privacy" style="color:#DBA94A;text-decoration:underline">Full Privacy Policy →</a>
   </p>
 
   <!-- Toggles -->
@@ -9697,7 +9232,7 @@ onReady(function() {
               '</div>';
             }).join('')+'</div>';
             var possHtml='<div class="mc-poss-row">'+
-              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(hPoss,'#88FF00')+'<div class="mc-poss-pct" style="color:#88FF00">'+hPoss+'</div></div><div class="mc-poss-lbl">'+(f.home||'Home')+'</div></div>'+
+              '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(hPoss,'#DBA94A')+'<div class="mc-poss-pct" style="color:#DBA94A">'+hPoss+'</div></div><div class="mc-poss-lbl">'+(f.home||'Home')+'</div></div>'+
               '<div class="mc-poss-mid-lbl">Possession</div>'+
               '<div class="mc-poss-block"><div class="mc-poss-ring">'+possCir(aPoss,'#D4274F')+'<div class="mc-poss-pct" style="color:#D4274F">'+aPoss+'</div></div><div class="mc-poss-lbl">'+(f.away||'Away')+'</div></div>'+
             '</div>';
@@ -9707,7 +9242,7 @@ onReady(function() {
                 var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
                 return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
                   '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
-                  '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
+                  '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+(p.is_substitute?' <span style="color:rgba(255,255,255,.3);font-size:.6rem">sub</span>':'')+'</span>'+
                   '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
                   (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
                   (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
@@ -9716,7 +9251,7 @@ onReady(function() {
                   (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
                   (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
                   (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
-                  '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#88FF00':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+                  '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
                 '</div>';
               }).join('');
             }
@@ -9743,7 +9278,7 @@ onReady(function() {
                     '<span style="font-size:.52rem;font-weight:700;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.5);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLabel+'</span>'+
                     (p.jersey_number?'<span style="font-size:.62rem;color:rgba(255,255,255,.3);font-family:var(--font-ui);min-width:16px;text-align:center">'+p.jersey_number+'</span>':'<span style="min-width:16px"></span>')+
                     '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+
-                      (p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
+                      (p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+
                     '</span>'+
                     '<span style="font-size:.75rem">'+evts+'</span>'+
                     '<span style="font-size:.65rem;color:rgba(255,255,255,.3);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
@@ -9766,7 +9301,7 @@ onReady(function() {
             }
             function buildTeamTabs(active){
               var on=function(w){return active===w;};
-              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(136,255,0,.1)':'transparent')+';color:'+(on(w)?'#88FF00':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
+              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(136,255,0,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
               return '<div style="display:flex;gap:5px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.05)">'+
                 '<button onclick="mpsTab(\''+fid+'\',\'home\')" style="'+bs('home')+'">' + (f.home||'Home') + '</button>'+
                 '<button onclick="mpsTab(\''+fid+'\',\'away\')" style="'+bs('away')+'">' + (f.away||'Away') + '</button>'+
@@ -9853,7 +9388,7 @@ onReady(function() {
       var isOn=(b.getAttribute('onclick')||'').indexOf("'"+which+"'")>-1;
       b.style.borderColor=isOn?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)';
       b.style.background=isOn?'rgba(136,255,0,.1)':'transparent';
-      b.style.color=isOn?'#88FF00':'rgba(255,255,255,.45)';
+      b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.45)';
     });
     var wrap=document.getElementById('mc-team-rows-'+fid);
     if(!wrap)return;
@@ -9867,7 +9402,7 @@ onReady(function() {
       var bd=p.points_breakdown||{};var tip=Object.keys(bd).map(function(k){return k+':'+(bd[k]>0?'+':'')+bd[k];}).join(' ');
       return '<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,.04);'+(p.is_substitute?'opacity:.65':'')+'">' +
         '<span style="font-size:.55rem;font-weight:700;background:rgba(255,255,255,.09);padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.55);min-width:26px;text-align:center;font-family:var(--font-ui)">'+posLbl(p.position)+'</span>'+
-        '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#88FF00;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+'</span>'+
+        '<span style="flex:1;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.player_name||'')+(p.is_captain?' <span style="background:#DBA94A;color:#000;font-size:.5rem;padding:1px 3px;border-radius:2px">C</span>':'')+'</span>'+
         '<span style="font-size:.65rem;color:rgba(255,255,255,.32);font-family:var(--font-ui)">'+p.minutes_played+"'</span>"+
         (p.goals>0?'<span style="font-size:.7rem">⚽'+(p.goals>1?p.goals:'')+'</span>':'')+
         (p.assists>0?'<span style="font-size:.7rem">🅰️'+(p.assists>1?p.assists:'')+'</span>':'')+
@@ -9876,7 +9411,7 @@ onReady(function() {
         (p.yellow_cards>0?'<span style="font-size:.7rem">🟨</span>':'')+
         (p.red_cards>0?'<span style="font-size:.7rem">🟥</span>':'')+
         (p.rating?'<span style="font-size:.72rem;font-weight:700;color:'+rCol(p.rating)+';font-family:var(--font-ui)">'+p.rating+'</span>':'')+
-        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#88FF00':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
+        '<span style="font-family:var(--font-display);font-size:.82rem;font-weight:900;color:'+(p.fantasy_points>=6?'#DBA94A':p.fantasy_points>0?'#fff':'#D4274F')+';min-width:30px;text-align:right" title="'+tip+'">'+(p.fantasy_points>0?'+':'')+p.fantasy_points+'</span>'+
       '</div>';
     }).join('');
     // Remove old rows, keep header
@@ -9941,7 +9476,7 @@ function showSeasonOverBanner() {
   ].join(';');
   banner.innerHTML = [
     '<div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:.3rem">',
-    '🏆 2025/26 Betway Premiership Season Complete!',
+    '🏆 2026/27 Betway Premiership Season Complete!',
     '</div>',
     '<div style="font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.8);margin-bottom:.6rem">',
     'All 30 gameweeks have been played. Final points are being calculated.',
@@ -10286,295 +9821,26 @@ function subscribeToPush(reg) {
 
 
 <script>
-// ══════════════════════════════════════════════════════════════════
-// SEASON COUNTDOWN — homepage banner
-// ══════════════════════════════════════════════════════════════════
-(function() {
-  // Season dates
-  var SQUAD_OPEN_DATE   = new Date('2026-07-18T08:00:00+02:00'); // 18 Jul — squads open
-  var SEASON_START_DATE = new Date('2026-08-02T15:00:00+02:00'); // 2 Aug — first match
-
-  function updateCountdown() {
-    var banner = document.getElementById('season-countdown-banner');
-    if (!banner) return;
-
-    var now  = Date.now();
-    var diff = SQUAD_OPEN_DATE - now;
-
-    // Hide countdown once squads are open (SEASON_OPEN = true)
-    if (typeof SEASON_OPEN !== 'undefined' && SEASON_OPEN) {
-      banner.style.display = 'none';
-      return;
-    }
-
-    if (diff <= 0) {
-      // Squads already open — show season start countdown
-      diff = SEASON_START_DATE - now;
-      if (diff <= 0) { banner.style.display = 'none'; return; }
-      banner.querySelector('.scd-title').innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Season Starts In';
-    }
-
-    banner.style.display = 'block';
-
-    var d = Math.floor(diff / 86400000);
-    var h = Math.floor((diff % 86400000) / 3600000);
-    var m = Math.floor((diff % 3600000) / 60000);
-    var s = Math.floor((diff % 60000) / 1000);
-
-    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
-    set('scd-days', d);
-    set('scd-hrs',  String(h).padStart(2,'0'));
-    set('scd-min',  String(m).padStart(2,'0'));
-    set('scd-sec',  String(s).padStart(2,'0'));
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-  });
-})();
-
-// ══════════════════════════════════════════════════════════════════
-// DISKI CHAT ENHANCEMENTS
-// ══════════════════════════════════════════════════════════════════
-
-// Emoji quick-insert
-function addEmoji(emoji) {
-  var inp = document.getElementById('chat-input');
-  if (!inp) return;
-  var pos = inp.selectionStart || inp.value.length;
-  inp.value = inp.value.slice(0, pos) + emoji + inp.value.slice(pos);
-  inp.focus();
-  inp.selectionStart = inp.selectionEnd = pos + emoji.length;
-  chatInputChange(inp);
+function showTableEmptyState() {
+  var wrap = document.getElementById('lt-wrap') || document.querySelector('.lt-body') || document.getElementById('league-table-wrap');
+  var existing = document.getElementById('table-empty-state');
+  if (existing) return;
+  var div = document.createElement('div');
+  div.id = 'table-empty-state';
+  div.style.cssText = 'text-align:center;padding:3rem 1rem';
+  var svg = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:.8rem"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>';
+  div.innerHTML = svg
+    + '<div style="font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.4rem">Season Not Started</div>'
+    + '<div style="font-size:.75rem;color:rgba(255,255,255,.18);line-height:1.7">The 2026/27 Betway Premiership table<br>will appear here once the season begins.</div>';
+  var parent = document.querySelector('#page-fixtures') || document.body;
+  if (wrap) wrap.appendChild(div);
+  else if (parent) parent.appendChild(div);
 }
 
-// Character count bar
-function chatInputChange(el) {
-  var max  = 280;
-  var len  = el ? el.value.length : 0;
-  var rem  = max - len;
-  var pct  = (len / max) * 100;
-
-  var countEl = document.getElementById('chat-charcount');
-  var fillEl  = document.getElementById('chat-char-fill');
-  if (countEl) {
-    countEl.textContent = rem;
-    countEl.style.color = rem < 20 ? '#E8192C' : rem < 50 ? '#DBA94A' : 'rgba(255,255,255,.3)';
-  }
-  if (fillEl) {
-    fillEl.style.width = Math.min(pct, 100) + '%';
-    fillEl.style.background = pct > 90 ? '#E8192C' : pct > 70 ? '#DBA94A' : '#22895A';
-  }
-}
-
-// Category filter for chat
-var _chatCat = 'all';
-function setChatCat(btn) {
-  document.querySelectorAll('.diski-cat').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-  _chatCat = btn.getAttribute('data-cat') || 'all';
-  fetchPosts(true);
-}
-
-// Time-ago helper
-function timeAgo(dateStr) {
-  var diff = Date.now() - new Date(dateStr).getTime();
-  var s = Math.floor(diff / 1000);
-  if (s < 60)  return 'just now';
-  if (s < 3600) return Math.floor(s/60) + 'm ago';
-  if (s < 86400) return Math.floor(s/3600) + 'h ago';
-  if (s < 604800) return Math.floor(s/86400) + 'd ago';
-  return new Date(dateStr).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
-}
-
-// Category badge helper
-function catBadge(cat) {
-  var labels = { banter:'😂 Banter', match:'⚽ Match Talk', fantasy:'🏆 Fantasy', news:'📰 Transfer' };
-  return cat && labels[cat]
-    ? '<span class="diski-cat-badge">' + labels[cat] + '</span>'
-    : '';
-}
-
-// Override renderFeed to use new card design
-var _origRenderFeed = window.renderFeed;
-window.renderFeed = function() {
-  var feed = document.getElementById('chat-feed');
-  if (!feed) return;
-
-  // Use CHAT global if available
-  var posts = (typeof CHAT !== 'undefined' && CHAT.posts) ? CHAT.posts : [];
-
-  // Filter by category
-  if (_chatCat && _chatCat !== 'all') {
-    posts = posts.filter(function(p) { return p.category === _chatCat; });
-  }
-
-  if (!posts.length) {
-    feed.innerHTML = '<div style="text-align:center;padding:3rem 1rem">'
-      + '<div style="font-size:2.5rem;margin-bottom:.8rem">⚽</div>'
-      + '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:rgba(255,255,255,.28);letter-spacing:1px">'
-      + (_chatCat !== 'all' ? 'NO POSTS IN THIS CATEGORY YET' : 'NO POSTS YET — BE THE FIRST!')
-      + '</div></div>';
-    return;
-  }
-
-  var myReactions = (typeof CHAT !== 'undefined' && CHAT.myReactions) ? CHAT.myReactions : {};
-  var myReposts   = (typeof CHAT !== 'undefined' && CHAT.myReposts)   ? CHAT.myReposts   : {};
-  var currentUser = (typeof ST !== 'undefined' && ST.user) ? ST.user : null;
-
-  feed.innerHTML = posts.map(function(p) { return buildPostHtml(p); }).join('');
-};
-
-// ══════════════════════════════════════════════════════════════════
-// submitPost override to include category
-// ══════════════════════════════════════════════════════════════════
-var _origSubmitPost = window.submitPost;
-window.submitPost = function() {
-  if (typeof ST === 'undefined' || !ST.user) { openAuth('login'); return; }
-  var inp  = document.getElementById('chat-input');
-  var text = inp ? inp.value.trim() : '';
-  if (!text) return;
-  if (text.length > 280) { alert('Post too long — max 280 characters'); return; }
-
-  var cat  = (document.getElementById('chat-cat-select') || {}).value || null;
-  var btn  = document.getElementById('chat-submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Posting...'; }
-
-  var m = (ST.user.user_metadata || {});
-  var cachedProfile = (typeof CACHE !== 'undefined' && CACHE._profile) ? CACHE._profile : null;
-
-  db.from('diski_posts').insert({
-    user_id:    ST.user.id,
-    username:   m.username || ST.user.email.split('@')[0],
-    team_name:  m.team_name || null,
-    content:    text,
-    category:   cat || null,
-    likes:      0,
-    dislikes:   0,
-    reposts:    0,
-    avatar_url: cachedProfile && cachedProfile.avatar_url || null,
-  }).select().single().then(function(res) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Post ⚽'; }
-    if (res.error) { alert('Post failed: ' + res.error.message); return; }
-    if (inp) inp.value = '';
-    chatInputChange(inp);
-    if (typeof CHAT !== 'undefined') {
-      CHAT.posts.unshift(res.data);
-      renderFeed();
-    }
-    // Update post count
-    var countEl = document.getElementById('chat-post-count');
-    if (countEl) {
-      var cur = parseInt(countEl.textContent) || 0;
-      countEl.textContent = (cur + 1) + ' posts';
-    }
-  }).catch(function(e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Post ⚽'; }
-    alert('Error: ' + e.message);
-  });
-};
-</script>
-
-
-<script>
-// buildPostHtml — builds a single Diski Chat post card
-// Separated to avoid nested quote issues in map() callback
-function buildPostHtml(p) {
-  var myReactions = (typeof CHAT !== 'undefined' && CHAT.myReactions) ? CHAT.myReactions : {};
-  var myReposts   = (typeof CHAT !== 'undefined' && CHAT.myReposts)   ? CHAT.myReposts   : {};
-  var currentUser = (typeof ST !== 'undefined' && ST.user) ? ST.user : null;
-  var isOwn       = currentUser && currentUser.id === p.user_id;
-  var liked       = myReactions[p.id] === 'like';
-  var disliked    = myReactions[p.id] === 'dislike';
-  var reposted    = myReposts && myReposts[p.id];
-  var initials    = (p.username || p.team_name || '?').slice(0,2).toUpperCase();
-
-  var el = document.createElement('div');
-  el.className = 'diski-post';
-  el.id = 'dpost-' + p.id;
-
-  // Build avatar
-  var avEl = document.createElement('div');
-  avEl.className = 'diski-avatar';
-  if (p.avatar_url) {
-    var img = document.createElement('img');
-    img.src = p.avatar_url;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
-    img.onerror = function() { this.style.display='none'; avEl.textContent=initials; };
-    avEl.appendChild(img);
-  } else {
-    avEl.textContent = initials;
-  }
-
-  // Category badge
-  var catLabels = { banter:'😂 Banter', match:'⚽ Match Talk', fantasy:'🏆 Fantasy', news:'📰 Transfer' };
-  var catHtml = p.category && catLabels[p.category]
-    ? '<span class="diski-cat-badge">' + catLabels[p.category] + '</span>' : '';
-
-  // Hashtag highlighting
-  var bodyText = (p.content || '').replace(/#(\w+)/g, '<span style="color:#B91C3A;font-weight:700">#$1</span>');
-
-  el.innerHTML =
-    '<div class="diski-post-header">' +
-      '<div class="diski-avatar" id="dav-' + p.id + '"></div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">' +
-          '<span class="diski-username">' + (p.username || 'Fan') + '</span>' +
-          (p.is_admin ? '<span class="diski-verified" title="Official">&#10003;</span>' : '') +
-          catHtml +
-        '</div>' +
-        '<div class="diski-team">' + (p.team_name || 'Fantasy PSL') + '</div>' +
-      '</div>' +
-      '<span class="diski-time">' + timeAgo(p.created_at) + '</span>' +
-    '</div>' +
-    '<div class="diski-content">' + bodyText + '</div>' +
-    '<div class="diski-actions" id="dact-' + p.id + '">' +
-    '</div>' +
-    (p.reply_count > 0 ?
-      '<div id="reply-section-' + p.id + '" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.05)">' +
-        '<div id="replies-' + p.id + '"></div>' +
-      '</div>'
-    : '');
-
-  // Mount avatar properly (avEl built above)
-  var avSlot = el.querySelector('#dav-' + p.id);
-  if (avSlot) { avSlot.innerHTML = ''; if (p.avatar_url) { var img2=document.createElement('img');img2.src=p.avatar_url;img2.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%';img2.onerror=function(){img2.style.display='none';avSlot.textContent=initials;};avSlot.appendChild(img2); } else { avSlot.textContent=initials; } }
-
-  // Build action buttons properly
-  var acts = el.querySelector('#dact-' + p.id);
-  if (acts) {
-    var buttons = [
-      { label: '👍 ' + (p.likes||0),       cls: liked     ? 'liked'    : '', fn: "reactToPost('" + p.id + "','like')",    id: 'lc-'+p.id },
-      { label: '👎 ' + (p.dislikes||0),    cls: disliked  ? 'disliked' : '', fn: "reactToPost('" + p.id + "','dislike')", id: 'dc-'+p.id },
-      { label: '🔄 ' + (p.reposts||0),     cls: reposted  ? 'liked'    : '', fn: "repostPost('" + p.id + "')" },
-      { label: '💬 ' + (p.reply_count||0), cls: '',                          fn: "replyToPost('" + p.id + "')" },
-    ];
-    buttons.forEach(function(b) {
-      var btn = document.createElement('button');
-      btn.className = 'diski-action-btn' + (b.cls ? ' '+b.cls : '');
-      btn.innerHTML = b.label;
-      btn.setAttribute('onclick', b.fn);
-      acts.appendChild(btn);
-    });
-    if (isOwn) {
-      var delBtn = document.createElement('button');
-      delBtn.className = 'diski-action-btn';
-      delBtn.style.cssText = 'margin-left:auto;color:rgba(255,255,255,.2)';
-      delBtn.innerHTML = '🗑';
-      delBtn.setAttribute('onclick', "deletePost('" + p.id + "')");
-      acts.appendChild(delBtn);
-    }
-    var repBtn = document.createElement('button');
-    repBtn.className = 'diski-action-btn';
-    repBtn.style.cssText = (isOwn ? '' : 'margin-left:auto;') + 'color:rgba(255,255,255,.15)';
-    repBtn.innerHTML = '⚑';
-    repBtn.setAttribute('onclick', "reportPost('" + p.id + "')");
-    acts.appendChild(repBtn);
-  }
-
-  return el.outerHTML;
+// Show hero when SEASON_OPEN becomes true
+function onSeasonOpen() {
+  var mainHero = document.getElementById('main-hero');
+  if (mainHero) mainHero.style.removeProperty('display');
 }
 </script>
 
