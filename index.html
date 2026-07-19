@@ -35,16 +35,16 @@
 
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
   <meta property="og:type"        content="website">
-  <meta property="og:site_name"   content="Fantasy PSL">
+  <meta property="og:site_name"   content="Fantasy Pro Soccer League">
   <meta property="og:url"         content="https://www.fantasypsl.co.za/">
-  <meta property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta property="og:title"       content="Fantasy Pro Soccer League — South Africa's Fantasy Football">
   <meta property="og:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
   <meta property="og:image"       content="https://www.fantasypsl.co.za/icon-512.png">
   <meta property="og:locale"      content="en_ZA">
 
   <!-- Twitter/X card -->
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta name="twitter:title"       content="Fantasy Pro Soccer League — South Africa's Fantasy Football">
   <meta name="twitter:description" content="Pick 15 PSL players, earn fantasy points from real Betway Premiership matches. Free to play.">
   <meta name="twitter:image"       content="https://www.fantasypsl.co.za/icon-512.png">
 
@@ -53,7 +53,7 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Fantasy PSL",
+    "name": "Fantasy Pro Soccer League",
     "url": "https://www.fantasypsl.co.za",
     "description": "South Africa's fantasy football game for the Betway Premiership",
     "applicationCategory": "SportsApplication",
@@ -67,7 +67,7 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" }
   }
   </script>
-  <meta id="og-title"       property="og:title"       content="Fantasy PSL — South Africa's Fantasy Football">
+  <meta id="og-title"       property="og:title"       content="Fantasy Pro Soccer League — South Africa's Fantasy Football">
   <meta id="og-description" property="og:description" content="Pick 15 PSL players, earn fantasy points from real matches.">
   <meta id="og-url"         property="og:url"         content="https://www.fantasypsl.co.za/">
   <meta id="og-image"       property="og:image"       content="https://www.fantasypsl.co.za/icon-512.png">
@@ -102,7 +102,7 @@
 
   <!-- Prevent Google from using an old cached favicon — use canonical -->
   <link rel="canonical" href="https://www.fantasypsl.co.za/">
-  <title>Fantasy PSL -- South Africa's No.1 Fantasy Football</title>
+  <title>Fantasy Pro Soccer League — South Africa's No.1 Fantasy Football</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="stylesheet" href="fantasy-psl.css">
@@ -917,6 +917,39 @@
 </script>
 
 <!-- ═══ HOME: Latest News Strip (EPL-style horizontal scroll) ════════════ -->
+
+    <!-- ═══ SEASON COUNTDOWN BANNER ═════════════════════════════════ -->
+    <div id="season-countdown-banner" style="display:none;background:linear-gradient(135deg,rgba(185,28,58,.14) 0%,rgba(25,28,37,.95) 100%);border:1px solid rgba(185,28,58,.2);border-radius:16px;padding:1.2rem 1.2rem 1.1rem;margin:.8rem 1rem">
+      <div style="font-family:var(--font-ui);font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#B91C3A;margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Season Countdown
+      </div>
+      <div style="display:flex;gap:.6rem;margin-bottom:.9rem;flex-wrap:wrap">
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem .8rem;text-align:center;min-width:58px">
+          <div style="font-family:var(--font-display);font-size:1.55rem;font-weight:900;color:#DBA94A;line-height:1" id="scd-days">--</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.2rem">Days</div>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem .8rem;text-align:center;min-width:58px">
+          <div style="font-family:var(--font-display);font-size:1.55rem;font-weight:900;color:#DBA94A;line-height:1" id="scd-hrs">--</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.2rem">Hours</div>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem .8rem;text-align:center;min-width:58px">
+          <div style="font-family:var(--font-display);font-size:1.55rem;font-weight:900;color:#DBA94A;line-height:1" id="scd-min">--</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.2rem">Mins</div>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem .8rem;text-align:center;min-width:58px">
+          <div style="font-family:var(--font-display);font-size:1.55rem;font-weight:900;color:#DBA94A;line-height:1" id="scd-sec">--</div>
+          <div style="font-family:var(--font-ui);font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.2rem">Secs</div>
+        </div>
+      </div>
+      <div style="background:rgba(219,169,74,.06);border:1px solid rgba(219,169,74,.15);border-radius:9px;padding:.7rem .9rem">
+        <p style="font-family:var(--font-body);font-size:.8rem;color:rgba(255,255,255,.55);margin:0;line-height:1.6">
+          The <strong style="color:rgba(255,255,255,.8)">2026/27 Betway Premiership</strong> season kicks off on <strong style="color:rgba(255,255,255,.8)">2 August 2026</strong>.
+          Squad selection &amp; private leagues open <strong style="color:rgba(255,255,255,.8)">27 July 2026</strong> — 2 weeks before the first game.
+        </p>
+      </div>
+    </div>
+
 <div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem .45rem">
     <div style="display:flex;align-items:center;gap:.5rem">
@@ -979,13 +1012,9 @@ function loadHomeNews(){
   if(_hnDone)return;_hnDone=true;
   function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
   var queries=[
-    db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug').eq('published',true).order('published_at',{ascending:false}).limit(6),
-    db.from('announcements').select('id, title, body, content, message, category, type, image_url, created_at, is_active').order('id',{ascending:false}).limit(4)
+    db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug,source_url,source_name').eq('published',true).order('published_at',{ascending:false}).limit(9),
+    db.from('announcements').select('id, title, body, content, message, category, type, image_url, created_at, is_active').eq('is_active',true).order('id',{ascending:false}).limit(3)
   ];
-  // Also try external_news (crawler output)
-  queries.push(
-    db.from('external_news').select('id,title,summary,source_name,source_url,category,image_url,published_at').order('published_at',{ascending:false}).limit(6)
-  );
   Promise.allSettled(queries).then(function(res){
     var posts=(res[0].status==='fulfilled'?res[0].value.data:null)||[];
     var anns=((res[1].status==='fulfilled'?res[1].value.data:null)||[]).map(normAnn);
@@ -1192,7 +1221,7 @@ else setTimeout(loadHomeNews,500);
 
   <section class="legal-section">
     <div class="legal-inner">
-      <div class="legal-disc"><strong>Disclaimer:</strong> Fan-made platform. Not affiliated with the PSL or Betway. "Betway Premiership" used descriptively only. <strong>Free-to-play. No gambling.</strong> © 2025 Fantasy Premier Soccer League.</div>
+      <div class="legal-disc"><strong>Disclaimer:</strong> Fan-made platform. Not affiliated with the PSL or Betway. "Betway Premiership" used descriptively only. <strong>Free-to-play. No gambling.</strong> © 2026 Fantasy Pro Soccer League. All rights reserved.</div>
     </div>
   </section>
 </div>
@@ -1555,12 +1584,12 @@ else setTimeout(loadHomeNews,500);
       <li><a href="tel:+27784026007">+27 78 402 6007</a></li>
     </ul>
     <div class="foot-copy">
-      © 2026 <strong>Fantasy PSL</strong> &nbsp;·&nbsp;
+      © 2026 <strong>Fantasy Pro Soccer League</strong> &nbsp;·&nbsp;
       Developed by <strong style="color:rgba(255,255,255,.7)">Headway Projects (PTY) LTD</strong>
       &nbsp;·&nbsp; admin@fantasypsl.co.za &nbsp;·&nbsp; +27 78 402 6007
     </div>
     <div class="foot-disclaimer">
-      <strong>DISCLAIMER:</strong> Fantasy PSL is an independent fan-made application and is
+      <strong>DISCLAIMER:</strong> Fantasy Pro Soccer League is an independent fan-made application and is
       <strong>not affiliated with, endorsed by, or officially connected</strong> to the Premier Soccer
       League (PSL), Betway, or any PSL club. Player data, statistics, fixtures and results are sourced
       from publicly available third-party sources. All club names, logos
@@ -4442,7 +4471,7 @@ var REAL_INJURIES = [
   { name: 'Lebohang Manyama',  team: 'Kaizer Chiefs',     type: '⚕ Calf',               reason: 'Calf tightness',          severe: false },
 ];
 
-// ── loadNews: reads from news_posts, announcements AND external_news ─────
+// ── loadNews: reads from news_posts and announcements ─────────────────────
 // Admin panel posts to 'announcements'; editorial posts go to 'news_posts'.
 // The crawler stores external RSS items in 'external_news'.
 // All three are merged and sorted newest-first.
@@ -4476,13 +4505,12 @@ function loadNews() {
   }
 
   Promise.allSettled([
-    db.from('news_posts').select('*').eq('published', true).order('published_at', { ascending: false }).limit(20),
-    db.from('announcements').select('*').order('id', { ascending: false }).limit(10),
-    db.from('external_news').select('id,title,summary,source_name,source_url,category,image_url,published_at').order('published_at', { ascending: false }).limit(20)
+    db.from('news_posts').select('*').eq('published', true).order('published_at', { ascending: false }).limit(30),
+    db.from('announcements').select('*').eq('is_active', true).order('id', { ascending: false }).limit(5)
   ]).then(function(results) {
     var newsPosts     = (results[0].status === 'fulfilled' ? results[0].value.data : null) || [];
     var rawAnnounce   = (results[1].status === 'fulfilled' ? results[1].value.data : null) || [];
-    var rawExternal   = (results[2].status === 'fulfilled' ? results[2].value.data : null) || [];
+    var rawExternal   = [];  // external_news merged into news_posts (is_external=true)
     var announcements = rawAnnounce.map(normaliseAnnouncement);
     var external      = rawExternal.map(normaliseExternal);
 
@@ -9842,6 +9870,31 @@ function onSeasonOpen() {
   var mainHero = document.getElementById('main-hero');
   if (mainHero) mainHero.style.removeProperty('display');
 }
+</script>
+
+
+<script>
+// ── Season countdown ────────────────────────────────────────────────
+(function() {
+  var SQUAD_OPEN = new Date('2026-07-27T08:00:00+02:00');
+  var SEASON_START = new Date('2026-08-02T15:00:00+02:00');
+  function tick() {
+    var banner = document.getElementById('season-countdown-banner');
+    if (!banner) return;
+    if (typeof SEASON_OPEN !== 'undefined' && SEASON_OPEN) { banner.style.display='none'; return; }
+    var diff = SQUAD_OPEN - Date.now();
+    if (diff <= 0) diff = SEASON_START - Date.now();
+    if (diff <= 0) { banner.style.display='none'; return; }
+    banner.style.display = 'block';
+    var d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000),
+        m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+    var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    set('scd-days',d); set('scd-hrs',String(h).padStart(2,'0'));
+    set('scd-min',String(m).padStart(2,'0')); set('scd-sec',String(s).padStart(2,'0'));
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
 </script>
 
 </body>
