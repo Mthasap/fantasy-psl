@@ -230,5 +230,25 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/news-crawler.js": {
+      "maxDuration": 60
+    },
+    "api/master-agent.js": {
+      "maxDuration": 60
+    },
+    "api/apifootball-sync.js": {
+      "maxDuration": 60
+    },
+    "api/broadcast-email.js": {
+      "maxDuration": 30
+    },
+    "api/points-cron.js": {
+      "maxDuration": 60
+    },
+    "api/admin-api.js": {
+      "maxDuration": 30
+    }
+  }
 }
