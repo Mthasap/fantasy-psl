@@ -117,7 +117,7 @@ function buildFarewellEmail(username) {
         </table>
 
         <p style="margin:0 0 28px;color:rgba(255,255,255,0.75);font-size:15px;line-height:1.8">
-          Registration for the new season opens on <strong style="color:#fff">18 July 2026</strong>. You will be among the <strong style="color:#DBA94A">first to know</strong> the moment the platform goes live.
+          Registration for the new season opens on <strong style="color:#fff">27 July 2026</strong>. You will be among the <strong style="color:#DBA94A">first to know</strong> the moment the platform goes live.
         </p>
 
         <!-- CTA Button -->
@@ -190,7 +190,7 @@ function buildWaitlistEmail(email) {
           <tr><td style="padding:24px">
             <p style="margin:0 0 14px;color:#22895A;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">What Happens Next</p>
             ${[
-              ['📅', 'Registration opens', '18 July 2026 — you\'ll get an email the moment it does'],
+              ['📅', 'Registration opens', '27 July 2026 — you\'ll get an email the moment it does'],
               ['⚽', 'Pick your squad', 'Choose 15 PSL players within a R100M budget'],
               ['🏆', 'Compete & win', 'Earn points from real Betway Premiership match performance'],
               ['🎯', 'Early advantage', 'Early registrations get first pick of the best players'],
@@ -506,7 +506,7 @@ module.exports = async (req, res) => {
     const templates = {
       registration: { subject:'✅ [TEST] Confirm your Fantasy PSL account', html: wrap('Confirm account', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the registration confirmation email</strong>. In production Supabase sends this automatically when a user registers. The real email contains a confirmation link directing to /confirm.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'/confirm" style="display:inline-block;background:#22895A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Confirm Email Address &rarr;</a></td></tr></table>', '#22895A') },
       reset:        { subject:'🔑 [TEST] Reset your Fantasy PSL password',  html: wrap('Reset password',  '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the password reset email</strong>. In production this is triggered when a user clicks Forgot Password. The real email contains a secure reset link to /confirm?type=recovery that expires in 1 hour.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'/confirm" style="display:inline-block;background:#DBA94A;color:#111;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Reset Password &rarr;</a></td></tr></table>', '#DBA94A') },
-      waitlist:     { subject:'[TEST] You\'re on the Fantasy PSL Early Access List! \uD83C\uDF89', html: wrap('On the list!', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the waitlist confirmation email</strong>. In production this is sent the moment someone enters their email on the pre-season countdown page and clicks Notify Me. It confirms they are on early access and that registration opens 18 July 2026.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Visit Fantasy PSL &rarr;</a></td></tr></table>', '#B91C3A') },
+      waitlist:     { subject:'[TEST] You\'re on the Fantasy PSL Early Access List! \uD83C\uDF89', html: wrap('On the list!', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the waitlist confirmation email</strong>. In production this is sent the moment someone enters their email on the pre-season countdown page and clicks Notify Me. It confirms they are on early access and that registration opens 27 July 2026.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Visit Fantasy PSL &rarr;</a></td></tr></table>', '#B91C3A') },
       welcome:      { subject:'⚽ [TEST] Welcome to Fantasy PSL!', html: wrap('Welcome!', '<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8">This is a <strong style="color:#fff">test of the welcome email</strong>. In production this is sent after a user saves their squad for the first time.</p><table width="100%" style="margin-top:20px"><tr><td align="center"><a href="'+SITE+'" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">View My Squad &rarr;</a></td></tr></table>', '#B91C3A') },
     };
 
