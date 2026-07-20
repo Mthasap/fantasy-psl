@@ -805,8 +805,16 @@
       </div>
       <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
         <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
+      <!-- Newsletter opt-in -->
+      <div style="display:flex;align-items:flex-start;gap:.6rem;margin:.4rem 0 .2rem;padding:.7rem .9rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px">
+        <input type="checkbox" id="r-newsletter" checked style="margin-top:3px;accent-color:#B91C3A;width:15px;height:15px;flex-shrink:0;cursor:pointer">
+        <label for="r-newsletter" style="font-family:var(--font-ui);font-size:.75rem;color:rgba(255,255,255,.55);line-height:1.5;cursor:pointer">
+          <strong style="color:rgba(255,255,255,.75)">Send me PSL news &amp; fantasy tips</strong><br>
+          Weekly match previews, injury alerts and transfer news. Unsubscribe anytime.
+        </label>
+      </div>
       <div class="auth-error" id="r-err"></div>
-      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account -- Free</button>
+      <button class="auth-submit" id="r-btn" onclick="doRegister()">Create Account — Free</button>
       <p style="font-size:.68rem;color:rgba(255,255,255,.3);text-align:center;margin-top:.75rem;line-height:1.6">
         By creating an account you agree to our
         <a href="/terms" target="_blank" rel="noopener" style="color:rgba(255,255,255,.5)">Terms of Service</a>
@@ -2243,9 +2251,14 @@ function doRegister() {
   var country      = (document.getElementById('signup-country')    || {}).value || 'South Africa';
   var suppTeam     = (document.getElementById('signup-team')       || {}).value || null;
   var discovery    = (document.getElementById('signup-discovery')  || {}).value || null;
+  var newsletter = document.getElementById('r-newsletter') ? document.getElementById('r-newsletter').checked : true;
+
   db.auth.signUp({
     email: email, password: pass,
-    options: { data: { username: user, team_name: team } }
+    options: {
+      data: { username: user, team_name: team },
+      emailRedirectTo: window.location.origin + '/confirm'
+    }
   }).then(function(res) {
     btn.textContent = 'Create Account -- Free'; btn.disabled = false;
     if (res.error) { document.getElementById('r-err').textContent = res.error.message; return; }
@@ -2262,6 +2275,7 @@ function doRegister() {
         country: country,
         supported_team: suppTeam,
         discovery_source: discovery,
+        email_newsletter: newsletter,
       }).then(function() {
         if (suppTeam) autoJoinTeamLeague(userId, suppTeam);
       });
@@ -5326,6 +5340,24 @@ function getAvatarHtml(username, avatarUrl, size) {
   return '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:' + halfSize + 'px;font-weight:700;color:#fff">' + initials + '</div>';
 }
 
+function saveNewsletterPref(val) {
+  if (!ST.user) return;
+  var slider = document.getElementById('newsletter-slider');
+  if (slider) slider.style.background = val ? '#22895A' : 'rgba(255,255,255,.12)';
+  db.from('profiles').update({ email_newsletter: val }).eq('id', ST.user.id)
+    .then(function() { showToast(val ? '✅ Subscribed to news emails' : 'Unsubscribed from news emails', val ? 'success' : 'info'); })
+    .catch(function(e) { showToast('Could not save preference: ' + e.message, 'error'); });
+}
+
+function loadNewsletterPref(profile) {
+  var toggle = document.getElementById('newsletter-toggle');
+  var slider = document.getElementById('newsletter-slider');
+  if (!toggle || !slider) return;
+  var val = profile && profile.email_newsletter !== false; // default true
+  toggle.checked = val;
+  slider.style.background = val ? '#22895A' : 'rgba(255,255,255,.12)';
+}
+
 function loadProfile() {
   var c = document.getElementById('profile-wrap'); if (!c) return;
   if (!ST.user) { c.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.3)">Please log in to view your profile</div>'; return; }
@@ -5339,6 +5371,7 @@ function loadProfile() {
   if (rateLimited()) return;
   c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
   db.from('profiles').select('*').eq('id', ST.user.id).single().then(function(res) {
+    if (res.data) loadNewsletterPref(res.data);
     var p = res.data;
     CACHE._profile = p;
     loadGWHistory();
