@@ -9,7 +9,8 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    // Replace G-XXXXXXXXXX with your real GA4 Measurement ID from analytics.google.com
+    // ACTION REQUIRED: Replace G-XXXXXXXXXX with your GA4 ID from analytics.google.com/
+    // Then go to GA4 → Reports → Real-time to see live visitors
     gtag('config', 'G-XXXXXXXXXX', {
       // Anonymize IPs for POPIA compliance
       anonymize_ip: true,
@@ -31,7 +32,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fantasy PSL">
   <meta name="description" content="South Africa's #1 fantasy football game for the Betway Premiership. Pick your squad, earn points, compete with friends.">
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml">
   <link rel="canonical" href="https://www.fantasypsl.co.za/">
+  <!-- SEO: Keywords -->
+  <meta name="keywords" content="Fantasy PSL, Fantasy Pro Soccer League, Betway Premiership fantasy, South Africa fantasy football, PSL fantasy game, fantasy soccer South Africa, Kaizer Chiefs fantasy, Orlando Pirates fantasy, Mamelodi Sundowns fantasy">
+  <!-- SEO: Robots -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow">
+  <!-- SEO: Language -->
+  <meta name="language" content="English">
+  <meta name="geo.region" content="ZA">
+  <meta name="geo.country" content="South Africa">
+  <!-- SEO: Author -->
+  <meta name="author" content="Fantasy Pro Soccer League">
+  <!-- SEO: News article support -->
+  <meta property="og:locale" content="en_ZA">
+  <meta property="og:type" content="website">
+  <!-- PWA theme -->
+  <meta name="theme-color" content="#0C0F14">
 
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
   <meta property="og:type"        content="website">
@@ -67,6 +85,38 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ZAR" }
   }
   </script>
+
+  <!-- Google News / Article structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SportsOrganization",
+    "name": "Fantasy Pro Soccer League",
+    "url": "https://www.fantasypsl.co.za",
+    "logo": "https://www.fantasypsl.co.za/logo.png",
+    "sameAs": [
+      "https://www.facebook.com/fantasypsl",
+      "https://twitter.com/fantasypsl",
+      "https://www.instagram.com/fantasypsl"
+    ],
+    "sport": "Soccer",
+    "description": "South Africa's No.1 Fantasy Football game for the Betway Premiership"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Fantasy Pro Soccer League",
+    "url": "https://www.fantasypsl.co.za",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://www.fantasypsl.co.za/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
   <meta id="og-title"       property="og:title"       content="Fantasy Pro Soccer League — South Africa's Fantasy Football">
   <meta id="og-description" property="og:description" content="Pick 15 PSL players, earn fantasy points from real matches.">
   <meta id="og-url"         property="og:url"         content="https://www.fantasypsl.co.za/">
@@ -652,7 +702,7 @@
     <img id="nav-logo-img" src="/logo.png" alt="Fantasy PSL" style="height:38px;filter:drop-shadow(0 0 10px rgba(185,28,58,.35))" onerror="this.style.display='none'">
     <div class="nav-wordmark">
       <span class="nav-word-top">Fantasy</span>
-      <span class="nav-word-mid">Premier Soccer</span>
+      <span class="nav-word-mid">Pro Soccer</span>
       <span class="nav-word-bot">League</span>
     </div>
   </a>
@@ -4743,7 +4793,7 @@ function createLeague() {
   var digits  = Math.floor(1000 + Math.random() * 9000);
   var code    = letters + '-' + digits;
 
-  var row = { name: name, code: code, created_by: ST.user.id, is_public: false };
+  var row = { name: name, code: code, created_by: ST.user.id, is_public: false, max_members: 50 };
   if (ST.leagueLogo) row.logo_url = ST.leagueLogo;
 
   db.from('leagues').insert(row).select().single().then(function(res) {
@@ -4767,19 +4817,35 @@ function joinLeague() {
   if (!ST.user) { openAuth('login'); return; }
   var codeEl = document.getElementById('join-code-input');
   var code   = (codeEl ? codeEl.value : '').trim().toUpperCase();
-  if (!code) { showToast('Enter an invite code', 'warning'); return; }
+  if (!code || code.length < 4) { showToast('Enter a valid invite code', 'warning'); return; }
 
-  db.from('leagues').select('id, name').eq('code', code).single().then(function(res) {
-    if (res.error || !res.data) { showToast('League not found -- check the code', 'error'); return; }
-    db.from('league_members').insert({ league_id: res.data.id, user_id: ST.user.id }).then(function(join) {
-      if (join.error) {
-        showToast(join.error.code === '23505' ? 'Already in this league' : 'Could not join', 'error'); return;
-      }
-      if (codeEl) codeEl.value = '';
-      showToast('Joined "' + res.data.name + '" ', 'success');
-      loadLeagues();
-    });
-  });
+  // Find league by EXACT code only — join-by-name is disabled intentionally
+  db.from('leagues').select('id, name, max_members').eq('code', code).maybeSingle()
+    .then(function(res) {
+      if (res.error || !res.data) { showToast('Invalid code — double-check and try again', 'error'); return; }
+      var league = res.data;
+
+      // Enforce member cap
+      db.from('league_members').select('id', { count: 'exact', head: true }).eq('league_id', league.id)
+        .then(function(countRes) {
+          var members = countRes.count || 0;
+          if (league.max_members && members >= league.max_members) {
+            showToast('This league is full (' + members + '/' + league.max_members + ' members)', 'error');
+            return;
+          }
+          db.from('league_members').insert({ league_id: league.id, user_id: ST.user.id })
+            .then(function(join) {
+              if (join.error) {
+                if (join.error.code === '23505') showToast('You are already in ' + league.name, 'warning');
+                else showToast('Could not join — ' + join.error.message, 'error');
+                return;
+              }
+              if (codeEl) codeEl.value = '';
+              showToast('Joined "' + league.name + '"! 🎉', 'success');
+              loadLeagues();
+            });
+        });
+    }).catch(function() { showToast('Error — please try again', 'error'); });
 }
 
 function loadLeagues() {
