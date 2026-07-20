@@ -1009,7 +1009,6 @@ window._hnTap=function(i){
 };
 
 function loadHomeNews(){
-  if(_hnDone)return;_hnDone=true;
   function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
   var queries=[
     db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug,source_url,source_name').eq('published',true).order('published_at',{ascending:false}).limit(9),
@@ -1018,10 +1017,10 @@ function loadHomeNews(){
   Promise.allSettled(queries).then(function(res){
     var posts=(res[0].status==='fulfilled'?res[0].value.data:null)||[];
     var anns=((res[1].status==='fulfilled'?res[1].value.data:null)||[]).map(normAnn);
-    var ext=(res[2].status==='fulfilled'?res[2].value.data:null)||[];
+    var ext=[];
     // Mark external items so we open source_url
-    ext=ext.map(function(e){return Object.assign({},e,{img:e.image_url});});
-    var all=posts.concat(anns).concat(ext);
+    
+    var all=posts.concat(anns);
     all.sort(function(a,b){return new Date(b.published_at)-new Date(a.published_at);});
     if(!all.length){
       // No news yet — show empty state, do not show fake articles
