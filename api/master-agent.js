@@ -75,6 +75,72 @@ async function apiFetch(endpoint) {
   return data;
 }
 
+
+// ── ESPN Africa data availability checker ────────────────────────────────
+// Checks if ESPN Africa provides PSL data we can use legally
+// ESPN data is publicly available for personal/non-commercial use
+// We use it only to VERIFY/SUPPLEMENT API-Football data, never replace it commercially
+async function checkEspnDataAvailability(log) {
+  log.push('\n[ESPN Africa Data Check]');
+  const ESPN_URL = 'https://site.web.api.espn.com/apis/v2/sports/soccer/rsa.1/standings';
+  const results = { espn: {}, verdict: '' };
+
+  try {
+    const r = await fetch(ESPN_URL, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FantasyPSL/2.0)',
+        'Accept': 'application/json',
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (r.ok) {
+      const data = await r.json();
+      const groups = data?.children?.[0]?.standings?.entries || [];
+      results.espn = {
+        available:   true,
+        teams:       groups.length,
+        source:      'ESPN Africa Public API',
+        url:         ESPN_URL,
+        legal_note:  'Publicly available read-only data. For personal/editorial use only. Not for commercial redistribution.',
+        can_use:     groups.length > 0,
+        data_types:  ['standings', 'fixtures', 'scores', 'team-stats'],
+      };
+
+      if (groups.length > 0) {
+        log.push(`  ✅ ESPN Africa: ${groups.length} teams found — data is available`);
+        log.push('  ℹ Legal: Public read-only API. Usable for supplemental verification only.');
+        log.push('  ℹ Recommendation: Use API-Football as PRIMARY source (licensed).');
+        log.push('               Use ESPN as VERIFICATION/BACKUP only (free, public).');
+        results.verdict = 'ESPN data available as backup. Keep API-Football as primary licensed source.';
+      }
+    } else {
+      results.espn = { available: false, status: r.status };
+      log.push(`  ⚠ ESPN Africa: HTTP ${r.status} — data not accessible right now`);
+    }
+
+    // Also check ESPN fixtures endpoint
+    const fixtureR = await fetch(
+      'https://site.web.api.espn.com/apis/site/v2/sports/soccer/rsa.1/scoreboard',
+      { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8_000) }
+    );
+    if (fixtureR.ok) {
+      const fData = await fixtureR.json();
+      const events = fData?.events || [];
+      results.espn.fixtures_available = true;
+      results.espn.recent_fixtures = events.length;
+      log.push(`  ✅ ESPN Fixtures: ${events.length} events accessible`);
+    }
+
+  } catch (e) {
+    results.espn = { available: false, error: e.message };
+    log.push(`  ❌ ESPN check failed: ${e.message}`);
+  }
+
+  log.push('\n  VERDICT: ' + (results.verdict || 'ESPN data check complete'));
+  return results;
+}
+
 // ── Send email via Resend ─────────────────────────────────────────────────
 async function sendEmail(to, subject, html) {
   if (!RESEND_KEY) return false;
@@ -210,7 +276,16 @@ module.exports = async (req, res) => {
       const { data: lastRun } = await db
         .from('agent_log').select('*')
         .order('started_at', { ascending: false }).limit(1).maybeSingle();
-      return res.json({ success: true, phase, last_run: lastRun });
+
+      // Check ESPN if requested
+      let espnCheck = null;
+      if (req.query.check_espn === '1') {
+        const espnLog = [];
+        espnCheck = await checkEspnDataAvailability(espnLog);
+      }
+
+      return res.json({ success: true, phase, last_run: lastRun, espn: espnCheck,
+        tip: espnCheck ? null : 'Add ?check_espn=1 to check ESPN Africa data availability' });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
@@ -232,6 +307,17 @@ module.exports = async (req, res) => {
 
     // ── STEP 1: Season gate management ───────────────────────────────────
     log.push('\n[Season Gate]');
+
+    // Auto-open on 27 July 2026 regardless of fixture sync status
+    var july27 = new Date('2026-07-27T08:00:00+02:00');
+    if (!phase.manualOpen && Date.now() >= july27.getTime()) {
+      log.push('  ✅ AUTO-OPENING: Past 27 July 2026 — opening registration now');
+      await db.from('app_settings').upsert(
+        { key: 'season_open', value: 'true', updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+      phase.manualOpen = true;
+    }
 
     if (phase.phase === 'registration-open' && !phase.manualOpen) {
       // Auto-open registration 14 days before season
