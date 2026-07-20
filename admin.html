@@ -918,7 +918,7 @@
           </div>
           <div class="card-body">
             <label>Search Player</label>
-            <input type="text" id="player-search-modal" placeholder="e.g. Makgopa, Mofokeng…" oninput="searchPlayers()">
+            <input type="text" id="player-search" placeholder="e.g. Makgopa, Mofokeng…" oninput="searchPlayers()">
             <div id="player-results" class="search-dropdown"></div>
             <div id="player-edit-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--green)" id="editing-player-name"></div>
@@ -2733,7 +2733,7 @@
       // Fallback: direct Supabase query
       if (!users.length) {
         const data = await sb('GET', 'profiles', null,
-          'select=id,team_name,username,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=100'
+          'select=id,team_name,username,email,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=100'
         );
         users = data || [];
       }
@@ -2771,7 +2771,7 @@
         '<td><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:' + rankColor + '">' + (i+1) + '</span></td>' +
         '<td style="font-weight:500">' + (u.team_name||'—') + '</td>' +
         '<td style="color:var(--muted)">@' + (u.username||'—') + '</td>' +
-        '<td style="text-align:center">' + emailConf + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis">' + (u.email || '—') + (emailConf !== '<span style="color:var(--muted);font-size:11px">—</span>' ? ' ' + emailConf : '') + '</td>' +
         '<td style="text-align:center;font-family:var(--mono);color:var(--blue)">' + (u.gw_points||0) + '</td>' +
         '<td style="text-align:center;font-family:var(--mono);font-weight:700;color:var(--green)">' + (u.total_points||0) + '</td>' +
         '<td style="text-align:center">' + squadTag + '</td>' +
