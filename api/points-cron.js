@@ -22,7 +22,7 @@ const { createClient } = require('@supabase/supabase-js');
 const SB_URL     = process.env.SUPABASE_URL          || '';
 const SB_KEY     = process.env.SUPABASE_SERVICE_KEY  || '';
 const ADMIN      = process.env.ADMIN_SECRET;
-const PSL_SEASON = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2025;
+const PSL_SEASON = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2026;
 
 // ── Main handler ──────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
