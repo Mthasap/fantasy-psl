@@ -666,6 +666,10 @@
 .pw-toggle{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:.25rem;display:flex;opacity:.45;transition:opacity .2s;z-index:2}
 .pw-toggle:hover{opacity:1}
 .pw-toggle svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Hard guard: placeholder ad slots can never reserve blank space anywhere.
+   Rule stops matching automatically once real slot IDs are pasted in. */
+ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!important;min-height:0!important}
 </style>
 
   <!-- ==============================================================
@@ -950,16 +954,22 @@
 <div id="page-home" class="page active">
 
 <!-- ═══ HOME: AdSense Banner + House Ad Fallback ══════════════════════════ -->
-<div id="home-ad-wrap" style="margin:.6rem auto;max-width:520px;width:calc(100% - 1.5rem);position:relative;min-height:60px">
+<div id="home-ad-wrap" style="margin:.6rem auto 0;max-width:520px;width:calc(100% - 1.5rem);position:relative">
+  <!-- AdSense slot DISABLED until account is approved and a real slot ID exists.
+       This slot with data-full-width-responsive was reserving a huge empty height
+       (the blank-space bug). To re-enable after AdSense approval:
+       1. Replace REPLACE_HOME_SLOT_ID with your real slot ID from AdSense
+       2. Uncomment the <ins> block and the push() script below
   <ins class="adsbygoogle"
        style="display:block;min-height:50px"
        data-ad-client="ca-pub-6398135174637589"
        data-ad-slot="REPLACE_HOME_SLOT_ID"
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
+  -->
   <!-- House ad — shown when AdSense slot is unfilled -->
-  <div id="home-house-ad" style="background:linear-gradient(135deg,rgba(136,255,0,.08),rgba(14,20,32,.95));border:1px solid rgba(136,255,0,.2);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer" onclick="goPage('news')">
+  <div id="home-house-ad" style="background:linear-gradient(135deg,rgba(219,169,74,.08),rgba(14,20,32,.95));border:1px solid rgba(219,169,74,.25);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer" onclick="goPage('news')">
     <div style="font-size:1.6rem;flex-shrink:0">📰</div>
     <div style="flex:1;min-width:0">
       <div style="font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#DBA94A;letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem">Fantasy PSL News</div>
@@ -1349,7 +1359,7 @@ else setTimeout(loadHomeNews,500);
     </div>
 
     <!-- Captain/VC hint -- shown when squad is full but cap/VC not set -->
-    <div id="cap-vc-hint" style="display:none;background:rgba(136,255,0,.07);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#DBA94A;margin:.4rem 0 0"></div>
+    <div id="cap-vc-hint" style="display:none;background:rgba(219,169,74,.07);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-ui);font-size:.78rem;font-weight:700;color:#DBA94A;margin:.4rem 0 0"></div>
 
     <div id="xfer-banner" class="xfer-banner">
       <span style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#DBA94A;flex:1" id="xfer-msg">Click a player on the pitch to transfer OUT</span>
@@ -1450,7 +1460,7 @@ else setTimeout(loadHomeNews,500);
            data-ad-slot="REPLACE_NEWS_SLOT_ID"
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
       <!-- House-ad fallback -->
       <div id="news-house-ad" style="background:linear-gradient(135deg,rgba(34,137,90,.15),rgba(14,20,32,.9));border:1px solid rgba(34,137,90,.2);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem">
         <div style="font-size:1.4rem;flex-shrink:0">📱</div>
@@ -1497,7 +1507,7 @@ else setTimeout(loadHomeNews,500);
            data-ad-slot="REPLACE_STATS_SLOT_ID"
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
       <div id="stats-house-ad" style="background:linear-gradient(135deg,rgba(185,28,58,.12),rgba(14,20,32,.95));border:1px solid rgba(185,28,58,.18);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
         <div style="font-size:1.4rem;flex-shrink:0">🏅</div>
         <div style="flex:1">
@@ -1532,7 +1542,7 @@ else setTimeout(loadHomeNews,500);
            data-ad-slot="REPLACE_LEADERBOARD_SLOT_ID"
            data-ad-format="auto"
            data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
     </div>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
@@ -2588,7 +2598,7 @@ function renderPlayerList() {
   ST.squad.forEach(function(p) { pickedIds[p.id] = true; });
 
   var POS_COLORS = { GK:'#DBA94A', DEF:'#22895A', MID:'#3B82F6', FWD:'#B91C3A' };
-  var POS_BG     = { GK:'rgba(136,255,0,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
+  var POS_BG     = { GK:'rgba(219,169,74,.15)', DEF:'rgba(34,137,90,.15)', MID:'rgba(59,130,246,.15)', FWD:'rgba(185,28,58,.15)' };
 
   var rows = slice.map(function(p) {
     var inSquad   = !!pickedIds[p.id];
@@ -4616,11 +4626,11 @@ function renderNews(grid, posts) {
   function fmtDate(d){if(!d)return'';return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});}
   function catPill(cat){var color=NEWS_CAT_COLORS[cat]||NEWS_CAT_COLORS['default'];return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+color+';padding:2px 8px;border-radius:3px">'+(cat||'News')+'</span>';}
   var featured=posts[0];
-  var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(136,255,0,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
+  var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
   var featHtml='<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+featImg+'<div style="padding:.9rem 1rem 1.1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div><div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div></div></div>';
   var gridCards=posts.slice(1).map(function(post,i){
     var idx=i+1;
-    var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(136,255,0,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
+    var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
     return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+cardImg+'<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem"><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div><div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div></div></div>';
   }).join('');
   grid.style.display='block';grid.style.gridTemplateColumns='';grid.style.gap='';
@@ -4954,7 +4964,7 @@ function loadTeamLeague() {
           var fans = lbRes.data || [];
           
           var html = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;">';
-          html += '<div style="background:rgba(136,255,0,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(136,255,0,.2);display:flex;align-items:center;gap:10px;">';
+          html += '<div style="background:rgba(219,169,74,.1);padding:.85rem 1.2rem;border-bottom:1px solid rgba(219,169,74,.25);display:flex;align-items:center;gap:10px;">';
           html += '<div style="font-size:1.5rem;">🔥</div>';
           html += '<div>';
           html += '<div style="font-family:var(--font-ui);font-size:1rem;font-weight:700;color:#DBA94A">' + esc(favTeam) + ' Fans</div>';
@@ -5859,10 +5869,10 @@ function renderNewChatMessage(fid, msg) {
         </span>
         ${msg.favorite_team ? `<span style="font-size:.55rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px; color:rgba(255,255,255,0.2)">${msg.favorite_team}</span>` : ''}
       </div>
-      <div style="background: ${isMe ? 'rgba(136,255,0,0.15)' : 'rgba(255,255,255,0.05)'}; 
+      <div style="background: ${isMe ? 'rgba(219,169,74,0.15)' : 'rgba(255,255,255,0.05)'}; 
                   color: ${isMe ? '#DBA94A' : '#fff'}; 
                   padding: .6rem .8rem; border-radius: 12px; font-size: .8rem; max-width: 85%;
-                  border: 1px solid ${isMe ? 'rgba(136,255,0,0.2)' : 'rgba(255,255,255,0.05)'}">
+                  border: 1px solid ${isMe ? 'rgba(219,169,74,0.2)' : 'rgba(255,255,255,0.05)'}">
         ${escHtml(msg.message)}
       </div>
     </div>
@@ -6638,7 +6648,7 @@ function renderTableFull(c, table) {
 
     // Highlight user's supported team
     var isMyTeam = userTeam && teamLow === userTeam;
-    if (isMyTeam) rowBg = 'background:rgba(136,255,0,.06);';
+    if (isMyTeam) rowBg = 'background:rgba(219,169,74,.06);';
 
     // Live indicator — team is currently playing
     var isLiveNow = liveTeams.has(teamLow);
@@ -7740,7 +7750,7 @@ function renderPOTMStrip(matchKey, home, away) {
 
   var parts = '';
   if (official) {
-    parts += '<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(136,255,0,.08);border-top:1px solid rgba(136,255,0,.12)">' +
+    parts += '<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(219,169,74,.08);border-top:1px solid rgba(219,169,74,.12)">' +
       '<span style="font-size:.7rem">\u{1F3C6}</span>' +
       '<span style="font-size:.68rem;font-weight:700;color:#DBA94A;letter-spacing:1px;text-transform:uppercase">Official POTM:</span>' +
       '<span style="font-size:.75rem;color:#fff">' + official + '</span>' +
@@ -7858,7 +7868,7 @@ setInterval(refreshLiveData, 60000);
          style="display:inline-block;width:320px;height:50px"
          data-ad-client="ca-pub-6398135174637589"
          data-ad-slot="REPLACE_BANNER_SLOT_ID"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
   </div>
 </div>
 
@@ -8829,7 +8839,7 @@ function closeBanner() {
 
     <!-- Style options -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.2rem">
-      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(136,255,0,.15);border:2px solid #DBA94A;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
+      <button class="asq-opt active" id="asq-balanced" onclick="selectAutoStyle(this,'balanced')" style="background:rgba(219,169,74,.15);border:2px solid #DBA94A;border-radius:12px;padding:.8rem .7rem;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">
         <div style="margin-bottom:.5rem"><svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7l9-4 9 4"/><path d="M5 7l-2 7s2 3 4 3 4-3 4-3L9 7"/><path d="M19 7l-2 7s-2 3-4 3-4-3-4-3l2-7"/></svg></div>
         <div style="font-family:var(--font-ui);font-size:.78rem;font-weight:800;color:#fff">Balanced</div>
         <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Best overall squad</div>
@@ -8852,7 +8862,7 @@ function closeBanner() {
     </div>
 
     <!-- Warning if squad already has players -->
-    <div id="asq-warning" style="display:none;background:rgba(136,255,0,.1);border:1px solid rgba(136,255,0,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#DBA94A;font-family:var(--font-ui);font-weight:700">
+    <div id="asq-warning" style="display:none;background:rgba(219,169,74,.1);border:1px solid rgba(219,169,74,.25);border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.78rem;color:#DBA94A;font-family:var(--font-ui);font-weight:700">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>This will replace your current squad
     </div>
 
@@ -8865,7 +8875,7 @@ function closeBanner() {
 
 <style>
 @keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-.asq-opt.active { background:rgba(136,255,0,.15) !important; border-color:#DBA94A !important; }
+.asq-opt.active { background:rgba(219,169,74,.15) !important; border-color:#DBA94A !important; }
 .asq-opt.active div:nth-child(2) { color:#DBA94A !important; }
 </style>
 
@@ -9438,7 +9448,7 @@ onReady(function() {
             }
             function buildTeamTabs(active){
               var on=function(w){return active===w;};
-              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(136,255,0,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
+              var bs=function(w){return 'flex:1;padding:.38rem;border-radius:6px;border:1px solid '+(on(w)?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)')+';background:'+(on(w)?'rgba(219,169,74,.1)':'transparent')+';color:'+(on(w)?'#DBA94A':'rgba(255,255,255,.45)')+';font-family:var(--font-ui);font-size:.68rem;font-weight:700;cursor:pointer';};
               return '<div style="display:flex;gap:5px;padding:.4rem .8rem;border-bottom:1px solid rgba(255,255,255,.05)">'+
                 '<button onclick="mpsTab(\''+fid+'\',\'home\')" style="'+bs('home')+'">' + (f.home||'Home') + '</button>'+
                 '<button onclick="mpsTab(\''+fid+'\',\'away\')" style="'+bs('away')+'">' + (f.away||'Away') + '</button>'+
@@ -9523,8 +9533,8 @@ onReady(function() {
     var btns=block.querySelectorAll('button');
     btns.forEach(function(b){
       var isOn=(b.getAttribute('onclick')||'').indexOf("'"+which+"'")>-1;
-      b.style.borderColor=isOn?'rgba(136,255,0,.5)':'rgba(255,255,255,.09)';
-      b.style.background=isOn?'rgba(136,255,0,.1)':'transparent';
+      b.style.borderColor=isOn?'rgba(219,169,74,.5)':'rgba(255,255,255,.09)';
+      b.style.background=isOn?'rgba(219,169,74,.1)':'transparent';
       b.style.color=isOn?'#DBA94A':'rgba(255,255,255,.45)';
     });
     var wrap=document.getElementById('mc-team-rows-'+fid);
