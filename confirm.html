@@ -268,10 +268,10 @@
     setTimeout(function () {
       if (confirmed) {
         setState('success', 'Email Confirmed! 🎉',
-          'Welcome to <strong>Fantasy PSL</strong>.<br>You\'re ready to build your squad.',
-          true, 'Build My Squad →', '/');
-        // Auto-redirect after 3 seconds
-        setTimeout(function () { window.location.href = '/'; }, 3000);
+          'Your <strong>Fantasy PSL</strong> account is verified.<br>Taking you to the login page&hellip;',
+          true, 'Log In Now →', '/?login=1');
+        // Auto-redirect straight to login
+        setTimeout(function () { window.location.href = '/?login=1'; }, 2500);
       } else {
         setState('error', 'Confirmation Failed',
           'The confirmation link may have expired.<br>Please register again or request a new confirmation email.',
@@ -285,7 +285,7 @@
   // ── No token present — likely navigated here directly ──────────────────
   setTimeout(function () {
     setState('success', 'Check Your Email',
-      'We sent a confirmation link to your inbox.<br>Click it to activate your <strong>Fantasy PSL</strong> account.',
+      'We sent a confirmation link to your inbox.<br>Click it to activate your <strong>Fantasy PSL</strong> account.<br><br><span style="color:#DBA94A">Can&rsquo;t find it? Check your <strong>Spam / Junk</strong> folder.</span>',
       true, 'Go to Homepage', '/');
   }, 400);
 })();
