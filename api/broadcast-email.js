@@ -68,7 +68,7 @@ function wrap(title, body, headerColor = '#B91C3A', headerIcon = '⚽') {
 <tr><td align="center">
 <table width="100%" style="max-width:560px;background:#121620;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.07)">
   <tr><td style="background:linear-gradient(135deg,${headerColor} 0%,${headerColor}99 100%);padding:32px;text-align:center">
-    <div style="font-size:40px;margin-bottom:10px">${headerIcon}</div>
+    <div style="margin-bottom:10px;display:flex;justify-content:center">${headerIcon}</div>
     <img src="${SITE}/logo.png" width="52" height="52" style="border-radius:10px;margin-bottom:10px;display:block;margin:0 auto 10px" alt="Fantasy PSL">
     <h1 style="margin:0;color:#fff;font-size:20px;font-weight:900;letter-spacing:-.3px">Fantasy Pro Soccer League</h1>
     <p style="margin:5px 0 0;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:2px;text-transform:uppercase">South Africa's Fantasy Football</p>
@@ -117,7 +117,7 @@ const TEMPLATES = {
       <p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center;margin:0">
         If you did not create an account, ignore this email.
       </p>`,
-      '#22895A', '✅'
+      '#22895A', '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
     ),
   }),
 
@@ -141,7 +141,7 @@ const TEMPLATES = {
       <p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center;margin:0">
         If you did not request this, ignore this email — your password will not change.
       </p>`,
-      '#DBA94A', '🔑'
+      '#DBA94A', '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>'
     ),
   }),
 
@@ -155,23 +155,37 @@ const TEMPLATES = {
         When squad selection opens on <strong style="color:#fff">27 July 2026</strong> you will be the first to know.
       </p>
       <div style="background:rgba(34,137,90,.07);border:1px solid rgba(34,137,90,.18);border-radius:12px;padding:20px;margin-bottom:24px">
-        ${[
-          ['📅','Registration opens','27 July 2026 — 2 weeks before the season'],
-          ['⚽','Pick your squad','15 Betway Premiership players within a R100M budget'],
-          ['🏆','Earn points','From every PSL match in the 2026/27 season'],
-          ['🎯','Early advantage','First access to the best available players'],
-        ].map(([icon,title,desc]) =>
-          `<table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:12px"><tr>
-            <td style="font-size:20px;padding-right:12px;vertical-align:top;padding-top:2px;width:28px">${icon}</td>
-            <td><div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">${title}</div>
-            <div style="color:rgba(255,255,255,.5);font-size:12px">${desc}</div></td>
-          </tr></table>`).join('')}
+        <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Registration opens</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">27 July 2026 — 2 weeks before the first PSL game</div>
+              </td>
+            </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Pick your squad</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">15 Betway Premiership players within a R100M budget</div>
+              </td>
+            </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M4 3h16v7a8 8 0 0 1-8 8 8 8 0 0 1-8-8z"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Earn points</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">From every PSL match in the 2026/27 season</div>
+              </td>
+            </tr></table>
       </div>
       ${btn('Visit Fantasy PSL →', SITE)}
       <p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center;margin:0">
         Share with friends: <a href="${SITE}" style="color:#DBA94A">${SITE.replace('https://', '')}</a>
       </p>`,
-      '#22895A', '🎉'
+      '#22895A', '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>'
     ),
   }),
 
@@ -185,20 +199,42 @@ const TEMPLATES = {
         Your squad is saved and you are ready for the 2026/27 Betway Premiership season.
       </p>
       <div style="background:rgba(185,28,58,.08);border:1px solid rgba(185,28,58,.2);border-radius:12px;padding:20px;margin-bottom:24px">
-        ${[
-          ['🧑‍💼','Set your captain','Your captain earns double points every gameweek'],
-          ['🔄','Use your free transfer','You get 1 free transfer per gameweek to improve your squad'],
-          ['🏅','Create or join a league','Compete with friends using a private invite code'],
-          ['📰','Check Diski Chat','Discuss tactics with other PSL managers'],
-        ].map(([icon,tip,desc]) =>
-          `<table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:12px"><tr>
-            <td style="font-size:20px;padding-right:12px;vertical-align:top;padding-top:2px;width:28px">${icon}</td>
-            <td><div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">${tip}</div>
-            <div style="color:rgba(255,255,255,.5);font-size:12px">${desc}</div></td>
-          </tr></table>`).join('')}
+        <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M12 12l2 2-2 2-2-2z"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Set your captain</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">Your captain earns double points every gameweek</div>
+              </td>
+            </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Use your free transfer</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">You get 1 free transfer per gameweek to improve your squad</div>
+              </td>
+            </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Create or join a league</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">Compete with friends using a private invite code</div>
+              </td>
+            </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
+              <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+              </td>
+              <td>
+                <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Check Diski Chat</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">Discuss tactics with other PSL managers</div>
+              </td>
+            </tr></table>
       </div>
       ${btn('Go to My Squad →', SITE)}`,
-      '#B91C3A', '⚽'
+      '#B91C3A', '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>'
     ),
   }),
 
@@ -223,7 +259,7 @@ const TEMPLATES = {
         You are receiving this because you opted in to news emails.<br>
         <a href="${SITE}/?settings=email" style="color:rgba(255,255,255,.3)">Unsubscribe</a>
       </p>`,
-      '#B91C3A', '📰'
+      '#B91C3A', '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><path d="M4 22a2 2 0 0 1-2-2V6"/><path d="M8 6h8"/><path d="M8 10h8"/><path d="M8 14h4"/></svg>'
     ),
   }),
 };
