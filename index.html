@@ -659,6 +659,13 @@
   }
   .lt-header { color: rgba(255,255,255,.75) !important; }
 
+
+/* Password reveal */
+.pw-wrap{position:relative}
+.pw-wrap input{width:100%;padding-right:2.6rem!important;box-sizing:border-box}
+.pw-toggle{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:.25rem;display:flex;opacity:.45;transition:opacity .2s;z-index:2}
+.pw-toggle:hover{opacity:1}
+.pw-toggle svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
 
   <!-- ==============================================================
@@ -739,7 +746,7 @@
         <span style="font-family:var(--font-ui);font-size:.68rem;color:#DBA94A;font-weight:700">Saved login detected — tap Login to continue</span>
       </div>
       <div class="auth-field"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="********"></div>
+      <div class="auth-field"><label>Password</label><div class="pw-wrap"><input id="l-pass" type="password" autocomplete="current-password" placeholder="Enter password"><button type="button" class="pw-toggle" onclick="togglePw('l-pass',this)" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
         <div style="display:flex;align-items:center;gap:.5rem">
           <input type="checkbox" id="l-remember" style="width:14px;height:14px;accent-color:#E8192C;cursor:pointer" checked>
@@ -804,7 +811,7 @@
         </select>
       </div>
       <div class="auth-field"><label>Password <span style="color:#D4274F">*</span></label>
-        <input id="r-pass" type="password" autocomplete="new-password" placeholder="******* (min 6 chars)"></div>
+        <div class="pw-wrap"><input id="r-pass" type="password" autocomplete="new-password" placeholder="Min 6 characters"><button type="button" class="pw-toggle" onclick="togglePw('r-pass',this)" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
       <!-- Newsletter opt-in -->
       <div style="display:flex;align-items:flex-start;gap:.6rem;margin:.4rem 0 .2rem;padding:.7rem .9rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px">
         <input type="checkbox" id="r-newsletter" checked style="margin-top:3px;accent-color:#B91C3A;width:15px;height:15px;flex-shrink:0;cursor:pointer">
@@ -1582,9 +1589,7 @@ else setTimeout(loadHomeNews,500);
     <!-- Community header bar -->
     <div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:.75rem">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#8B1A2E);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </div>
+        <img src="/diski-logo.png" alt="Diski Chat" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;object-fit:cover" onerror="this.outerHTML='<div style=&quot;width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#B91C3A,#8B1A2E);display:flex;align-items:center;justify-content:center&quot;>&#9917;</div>'">
         <div>
           <div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#fff;line-height:1.1">Diski Chat</div>
           <div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:1px">Fantasy PSL Community</div>
@@ -2294,7 +2299,7 @@ function doRegister() {
             '<div style="font-family:var(--font-head);font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:.5rem">Check Your Email</div>' +
             '<div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:1.5rem">' +
               'We sent a confirmation link to <strong style="color:#fff">' + email + '</strong>.<br>' +
-              'Click it to verify your account — then come back and log in.' +
+              'Click it to verify your account — then come back and log in.<br><br><span style="color:#DBA94A">Can&rsquo;t see it? Check your <strong>Spam / Junk</strong> folder.</span>' +
             '</div>' +
             '<button onclick="openAuth(\'login\')" style="background:#B91C3A;color:#fff;border:none;border-radius:8px;font-family:var(--font-ui);font-size:.9rem;font-weight:700;padding:.75rem 2rem;cursor:pointer;width:100%">Back to Login →</button>' +
           '</div>';
@@ -4988,9 +4993,13 @@ function renderLeaguesList(leagues) {
   if (!mw) return;
   if (!leagues.length) { mw.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.85rem;padding:1rem 0">No leagues yet -- create or join one above</div>'; return; }
   mw.innerHTML = leagues.map(function(l) {
-    var logoHtml = l.logo_url
-      ? '<img src="' + l.logo_url + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15);flex-shrink:0">'
-      : '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,150,58,.15);border:1px solid rgba(201,150,58,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0"></div>';
+    var isOwner = ST.user && l.created_by === ST.user.id;
+    var logoInner = l.logo_url
+      ? '<img src="' + l.logo_url + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)">'
+      : '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,150,58,.15);border:1px solid rgba(201,150,58,.2);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:rgba(255,255,255,.4)">' + (isOwner ? '+' : '') + '</div>';
+    var logoHtml = isOwner
+      ? '<label style="cursor:pointer;flex-shrink:0" title="Tap to set league logo">' + logoInner + '<input type="file" accept="image/*" style="display:none" onchange="uploadLeagueLogo(\'' + l.id + '\', this)"></label>'
+      : '<span style="flex-shrink:0">' + logoInner + '</span>';
     return '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-bottom:.8rem">' +
       '<div style="background:var(--bg-surface);padding:.85rem 1.2rem;display:flex;align-items:center;gap:.7rem;border-bottom:1px solid rgba(255,255,255,.06)">' +
         logoHtml +
@@ -7464,7 +7473,7 @@ function renderProfileData(c, p) {
   var initials = (p.team_name || '?').substring(0,2).toUpperCase();
   c.innerHTML =
     '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
-      '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload\').click()" title="Tap to change photo">' +
+      '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload-2\').click()" title="Tap to change photo">' +
         (p.avatar_url
           ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
             '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
@@ -8186,6 +8195,8 @@ function chatInputChange(el){
   el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';
 }
 function submitPost(){
+  var _t=(document.getElementById('chat-input')||{}).value||'';
+  if(_t.trim() && !diskiContentOk(_t)){ showToast('Post blocked \u2014 please keep Diski Chat respectful','error'); return; }
   if(!ST.user){openAuth('login');return;}
   var input=document.getElementById('chat-input'),text=input?input.value:'';
   var chk=filterContent(text.trim());
@@ -9993,6 +10004,93 @@ function onSeasonOpen() {
   tick();
   setInterval(tick, 1000);
 })();
+</script>
+
+
+<script>
+// Password show/hide
+function togglePw(id, btn){
+  var inp=document.getElementById(id); if(!inp) return;
+  var show = inp.type==='text';
+  inp.type = show?'password':'text';
+  var svg = btn&&btn.querySelector('svg');
+  if(svg) svg.innerHTML = show
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+// After email confirmation, confirm.html redirects here with ?login=1
+document.addEventListener('DOMContentLoaded', function(){
+  if (new URLSearchParams(window.location.search).get('login') === '1') {
+    setTimeout(function(){
+      if (typeof openAuth === 'function') openAuth('login');
+      if (typeof showToast === 'function') showToast('Email confirmed! Log in to continue \u2713', 'success');
+    }, 400);
+  }
+});
+
+// ── SQUAD SELECTION GATE — locked until season opens (27 July) ──────
+(function(){
+  function gateSquad(){
+    var pg = document.getElementById('page-squad'); if(!pg) return;
+    var open = (typeof SEASON_OPEN !== 'undefined') && SEASON_OPEN;
+    var g = document.getElementById('squad-gate');
+    if (open){ if(g) g.remove(); return; }
+    if (g) return;
+    g = document.createElement('div');
+    g.id = 'squad-gate';
+    g.style.cssText = 'position:absolute;inset:0;z-index:60;background:rgba(8,11,16,.97);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:5rem 1.5rem 2rem;backdrop-filter:blur(4px)';
+    g.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="1.6" style="width:52px;height:52px;margin-bottom:1.2rem"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+      '<div style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:.6rem">Squad Selection Opens<br><span style="color:#DBA94A">27 July 2026</span></div>' +
+      '<div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.8;max-width:340px;margin-bottom:1.4rem">PSL clubs are still finalising their squads for the new season. Squad selection unlocks automatically on 27 July \u2014 2 weeks before the first game on 2 August.</div>' +
+      '<button onclick="goPage(\'home\')" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.6rem 1.5rem;cursor:pointer">\u2190 Back to Home</button>';
+    pg.style.position = 'relative';
+    pg.appendChild(g);
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    gateSquad();
+    setInterval(gateSquad, 2500); // re-checks so it unlocks live when season opens
+  });
+})();
+
+// ── DISKI CHAT AUTO-MODERATION — blocks inappropriate posts instantly ──
+var DISKI_BLOCKED = ['fuck','fok','shit','kak','poes','naai','msunu','bitch','cunt','nigger','kaffir','k4ffir','faggot','moffie','whore','slut','rape','porn','nudes','msunery','voetsek jou'];
+function diskiContentOk(text){
+  var t = ' ' + (text||'').toLowerCase().replace(/[^a-z\s]/g,' ') + ' ';
+  for (var i=0;i<DISKI_BLOCKED.length;i++){
+    if (t.indexOf(' ' + DISKI_BLOCKED[i]) !== -1) return false;
+  }
+  return true;
+}
+
+// League logo upload (creator only)
+function uploadLeagueLogo(leagueId, input){
+  if (!ST.user || !input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 1.5*1024*1024){ showToast('Image must be under 1.5MB','warning'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      var size = Math.min(img.width, img.height, 160);
+      canvas.width = size; canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img,(img.width-size)/2,(img.height-size)/2,size,size,0,0,size,size);
+      var data = canvas.toDataURL('image/jpeg', .75);
+      db.from('leagues').update({ logo_url: data }).eq('id', leagueId).eq('created_by', ST.user.id)
+        .then(function(r){
+          if (r.error){ showToast('Logo save failed: '+r.error.message,'error'); return; }
+          showToast('League logo updated \u2713','success');
+          CACHE.myLeagues = null;
+          loadLeagues();
+        });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 </script>
 
 </body>
