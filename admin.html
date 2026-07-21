@@ -595,6 +595,7 @@
     <button class="tab-btn" onclick="switchTab('announcements')">Announcements</button>
     <button class="tab-btn" onclick="switchTab('news')">📰 News</button>
     <button class="tab-btn" onclick="switchTab('squad-import')" style="color:#f59e0b">⬇ Squad Import</button>
+    <button class="tab-btn" onclick="switchTab('moderation')" style="color:#f472b6">🛡 Moderation</button>
   </div>
 
   <main>
@@ -1614,7 +1615,93 @@
       </div>
     </div>
 
-  </main>
+  
+  <!-- ═══ MODERATION & FAN DATA TAB ═══════════════════════════════════ -->
+  <div class="tab-page" id="tab-moderation">
+
+    <div class="card">
+      <div class="card-title"><span class="dot dot-red"></span>🚩 Flagged Posts</div>
+      <p style="color:var(--muted);font-size:12px;margin:4px 0 12px">Posts reported by users. Review the reason, then delete the post or dismiss the report. Auto-moderation already blocks profanity before posting.</p>
+      <button class="btn btn-sm" onclick="loadModeration()" style="margin-bottom:12px">↻ Refresh</button>
+      <div id="mod-flagged"><span style="color:var(--muted);font-size:12px">Loading…</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>📊 Supported Team — Fan Data</div>
+      <p style="color:var(--muted);font-size:12px;margin:4px 0 12px">Which PSL club each registered user selected at sign-up. Share these percentages with clubs to show their fan presence on the platform.</p>
+      <div id="mod-fandata"><span style="color:var(--muted);font-size:12px">Loading…</span></div>
+    </div>
+
+  </div>
+
+  <script>
+  async function loadModeration() {
+    // ── Flagged posts ──
+    const wrap = document.getElementById('mod-flagged');
+    const fd   = document.getElementById('mod-fandata');
+    try {
+      const reports = await sbWrite('select', 'diski_reports', null, {}, { select: '*' }) || [];
+      const posts   = await sbWrite('select', 'diski_posts',   null, {}, { select: 'id,username,content,created_at' }) || [];
+      const byId = {};
+      posts.forEach(p => byId[p.id] = p);
+      if (!reports.length) {
+        wrap.innerHTML = '<span style="color:var(--muted);font-size:12px">No flagged posts 🎉</span>';
+      } else {
+        wrap.innerHTML = reports.map(r => {
+          const p = byId[r.post_id] || {};
+          return '<div style="background:#0d1117;border:1px solid #2a2f3a;border-radius:8px;padding:12px;margin-bottom:8px">' +
+            '<div style="font-size:11px;color:#f472b6;font-weight:700;margin-bottom:4px">REASON: ' + (r.reason || 'Not given') + '</div>' +
+            '<div style="font-size:12px;color:#fff;margin-bottom:2px">@' + (p.username || 'deleted') + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">' + (p.content || '<em>post already removed</em>') + '</div>' +
+            '<button class="btn btn-sm" style="background:#7f1d1d" onclick="modDeletePost(\'' + r.post_id + '\',\'' + r.id + '\')">🗑 Delete Post</button> ' +
+            '<button class="btn btn-sm" onclick="modDismiss(\'' + r.id + '\')">✓ Dismiss Report</button>' +
+          '</div>';
+        }).join('');
+      }
+    } catch(e) { wrap.innerHTML = '<span style="color:#f87171;font-size:12px">Error: ' + e.message + '</span>'; }
+
+    // ── Fan data ──
+    try {
+      const profs = await sbWrite('select', 'profiles', null, {}, { select: 'supported_team' }) || [];
+      const counts = {};
+      let total = 0;
+      profs.forEach(p => {
+        const t = (p.supported_team || 'Not selected').trim() || 'Not selected';
+        counts[t] = (counts[t] || 0) + 1; total++;
+      });
+      const rows = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+      fd.innerHTML =
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Total registered users: <strong style="color:#fff">' + total + '</strong></div>' +
+        rows.map(([team, n]) => {
+          const pct = total ? Math.round(n/total*1000)/10 : 0;
+          return '<div style="margin-bottom:8px">' +
+            '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">' +
+              '<span style="color:#fff">' + team + '</span>' +
+              '<span style="color:#DBA94A;font-weight:700">' + n + ' (' + pct + '%)</span>' +
+            '</div>' +
+            '<div style="height:6px;background:#1a1f2a;border-radius:3px;overflow:hidden">' +
+              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#B91C3A,#DBA94A);border-radius:3px"></div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+    } catch(e) { fd.innerHTML = '<span style="color:#f87171;font-size:12px">Error: ' + e.message + '</span>'; }
+  }
+
+  async function modDeletePost(postId, reportId) {
+    if (!confirm('Delete this post permanently?')) return;
+    try {
+      await sbWrite('delete', 'diski_posts',   null, { id: postId });
+      await sbWrite('delete', 'diski_reports', null, { id: reportId });
+      loadModeration();
+    } catch(e) { alert('Delete failed: ' + e.message); }
+  }
+  async function modDismiss(reportId) {
+    try { await sbWrite('delete', 'diski_reports', null, { id: reportId }); loadModeration(); }
+    catch(e) { alert('Dismiss failed: ' + e.message); }
+  }
+  </script>
+
+</main>
 </div>
 
 <script>
@@ -1757,6 +1844,7 @@
     event.target.classList.add('active');
     // Lazy-load tab data
     if (name === 'users') loadTopUsers();
+    if (name === 'moderation') loadModeration();
     if (name === 'announcements') loadAnnouncements();
     if (name === 'gameweek') loadCurrentGW();
     if (name === 'fixtures') { loadCurrentFixtures(); }
