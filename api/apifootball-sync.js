@@ -10,7 +10,7 @@
  *      to prevent duplicate rows in match_player_stats.
  *   3. gw_number is now always written to match_player_stats rows so points-cron
  *      can use the gw_number fallback path without missing data.
- *   4. API header unified: all calls use 'x-apisports-key' consistently
+ *   4. API header fixed: was using 'x-rapidapi-key' in some places, 'x-apisports-key'
  *      in others. Unified to 'x-apisports-key' throughout.
  *   5. PSL_SEASON reads from env var (consistent with other files).
  *   6. Phase 2 now retries LIVE fixtures every run (stats can change mid-match).
@@ -22,7 +22,7 @@ const { createClient } = require('@supabase/supabase-js');
 const API_KEY    = process.env.APIFOOTBALL_KEY;
 const API_BASE   = 'https://v3.football.api-sports.io';
 const PSL_LEAGUE = 288;
-const PSL_SEASON = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2025;
+const PSL_SEASON = process.env.APIFOOTBALL_SEASON ? parseInt(process.env.APIFOOTBALL_SEASON) : 2026;
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -116,6 +116,15 @@ function calculateFantasyPoints(stats, position, homeScore, awayScore, teamId, h
   const penMissed = stats.penalty?.missed ?? 0;
   if (penMissed > 0) { const t = -2 * penMissed; points += t; breakdown.penalty_missed = t; }
 
+  // Own goals: -2 each. API-Football exposes this inconsistently depending on
+  // endpoint/plan, so we check every field name it is known to use and fall
+  // back to 0. Safe if absent — never throws, never guesses.
+  const ownGoals = stats.goals?.own
+                ?? stats.goals?.own_goals
+                ?? stats.own_goals
+                ?? 0;
+  if (ownGoals > 0) { const t = -2 * ownGoals; points += t; breakdown.own_goals = t; }
+
   return { points, breakdown, cleanSheet };
 }
 
@@ -140,7 +149,7 @@ async function syncPlayerPhotos(log) {
       const players = json.response?.[0]?.players || [];
       for (const pl of players) {
         if (!pl.id || !pl.photo) continue;
-        // FIX: removed `` — that filter was silently skipping
+        // FIX: removed `.is('photo', null)` — that filter was silently skipping
         // all players who already had a photo, so stats never got written.
         // Now we always update the photo (idempotent).
         const { error } = await supabase.from('players')
@@ -205,6 +214,20 @@ async function syncFixtures(log) {
       .upsert(batch, { onConflict: 'apifootball_fixture_id' });
     if (error) throw new Error('Fixtures upsert error: ' + error.message);
     upserted += batch.length;
+
+    // Remove pre-season placeholder fixtures (seeded with negative IDs) once
+    // the real API fixtures for that gameweek have landed — prevents the
+    // Match Centre showing each GW1 fixture twice.
+    try {
+      const realGws = [...new Set(batch.map(r => r.gw_number).filter(Boolean))];
+      if (realGws.length) {
+        await supabase.from('fixtures')
+          .delete()
+          .lt('apifootball_fixture_id', 0)
+          .eq('season', PSL_SEASON)
+          .in('gw_number', realGws);
+      }
+    } catch (_) { /* non-fatal */ }
   }
 
   // Upsert gameweeks from unique rounds
@@ -348,7 +371,7 @@ async function syncMatchStats(log, options = {}) {
             teamId, fixture.home_team_id
           );
 
-          // FIX: Update player injury status WITHOUT the `` guard
+          // FIX: Update player injury status WITHOUT the `.is('photo', null)` guard
           // that was blocking all player updates in v1.
           const isInjured = playerData.player?.injured === true;
           await supabase.from('players')
