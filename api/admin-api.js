@@ -199,6 +199,23 @@ module.exports = async (req, res) => {
   }
 
 
+  // ── SPECIAL ACTIONS (must run BEFORE the CRUD 'table required' check) ──
+    // ── SQUAD IMPORT (migrated from squad-import.js) ──────────────────────
+    if (action === 'squad-import') {
+      return await handleSquadImport(db, q, res);
+    }
+
+    // ── LINK PLAYER IDS (migrated from link-player-ids.js) ────────────────
+    if (action === 'link-player-ids') {
+      return await handleLinkPlayerIds(db, q, res);
+    }
+
+    // ── PLAYER CRAWLER (migrated from player-crawler.js) ──────────────────
+    if (action === 'player-crawler') {
+      return await handlePlayerCrawler(db, q, res);
+    }
+
+
   // ── CRUD OPERATIONS ─────────────────────────────────────────────────────
   // Actions: insert | update | update_not | delete | upsert | select
   // Used by admin panel for articles, gameweeks, fixtures, players, etc.
@@ -286,21 +303,6 @@ module.exports = async (req, res) => {
       const { data: ups, error: e } = await db.from(table).upsert(data, opts).select();
       if (e) throw new Error(e.message);
       return res.json({ success: true, data: ups });
-    }
-
-    // ── SQUAD IMPORT (migrated from squad-import.js) ──────────────────────
-    if (action === 'squad-import') {
-      return await handleSquadImport(db, q, res);
-    }
-
-    // ── LINK PLAYER IDS (migrated from link-player-ids.js) ────────────────
-    if (action === 'link-player-ids') {
-      return await handleLinkPlayerIds(db, q, res);
-    }
-
-    // ── PLAYER CRAWLER (migrated from player-crawler.js) ──────────────────
-    if (action === 'player-crawler') {
-      return await handlePlayerCrawler(db, q, res);
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
