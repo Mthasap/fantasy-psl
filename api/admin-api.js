@@ -28,7 +28,11 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-// ── Self-contained rate limiter (no external deps needed) ─────────────────
+const SB_URL = process.env.SUPABASE_URL          || '';
+const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
+const ADMIN  = process.env.ADMIN_SECRET;
+
+// ── Simple in-memory rate limiter (per IP, resets on cold start) ──────────
 const _rl = new Map();
 function rateLimit(ip, max, windowMs) {
   const now = Date.now();
@@ -38,10 +42,6 @@ function rateLimit(ip, max, windowMs) {
   _rl.set(ip, rec);
   return rec.count > max;
 }
-
-const SB_URL = process.env.SUPABASE_URL          || '';
-const SB_KEY = process.env.SUPABASE_SERVICE_KEY   || '';
-const ADMIN  = process.env.ADMIN_SECRET;
 
 // ── Input sanitiser — strip control chars, limit length ──────────────────
 function san(v, maxLen = 500) {
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── Rate limit: 60 req/min per IP ───────────────────────────────────────
+  // ── Rate limit: 60 req/min per IP for admin endpoint ───────────────────
   const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
   if (rateLimit(clientIp, 60, 60_000)) {
     return res.status(429).json({ error: 'Too many requests — slow down' });
@@ -376,7 +376,7 @@ const SQUAD_IMPORT_TEAM_MAP = {
 async function handleSquadImport(db, q, res) {
   const TOKEN      = process.env.APIFOOTBALL_KEY || '';
   const PSL_LEAGUE = 288;
-  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2025', 10);
+  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2026', 10);
   const filterClub = q.club || null;
   const log        = [];
 
@@ -538,7 +538,7 @@ async function handleLinkPlayerIds(db, q, res) {
 async function handlePlayerCrawler(db, q, res) {
   const TOKEN      = process.env.APIFOOTBALL_KEY || '';
   const PSL_LEAGUE = 288;
-  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2025', 10);
+  const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2026', 10);
   const apply      = q.apply === '1';
   const teamIdFilter = q.team_id ? parseInt(q.team_id, 10) : null;
   const log        = [];
