@@ -308,10 +308,10 @@ module.exports = async (req, res) => {
     // ── STEP 1: Season gate management ───────────────────────────────────
     log.push('\n[Season Gate]');
 
-    // Auto-open on 27 July 2026 regardless of fixture sync status
-    var july27 = new Date('2026-07-27T08:00:00+02:00');
-    if (!phase.manualOpen && Date.now() >= july27.getTime()) {
-      log.push('  ✅ AUTO-OPENING: Past 27 July 2026 — opening registration now');
+    // Auto-open on 29 July 2026 regardless of fixture sync status
+    var july29 = new Date('2026-07-29T08:00:00+02:00');
+    if (!phase.manualOpen && Date.now() >= july29.getTime()) {
+      log.push('  ✅ AUTO-OPENING: Past 29 July 2026 — opening registration now');
       await db.from('app_settings').upsert(
         { key: 'season_open', value: 'true', updated_at: new Date().toISOString() },
         { onConflict: 'key' }
