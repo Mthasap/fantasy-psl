@@ -640,10 +640,14 @@
   <h2>👥 Player Roster Hub</h2>
   <p class="text-muted">Verify active status, teams, and positions.</p>
   
-  <div style="margin: 1rem 0; display: flex; gap: 1rem;">
+  <div style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
     <button class="cta-btn" onclick="loadPlayers()">Fetch All Players</button>
-    <input type="text" id="player-search" placeholder="Search by name..." onkeyup="filterPlayers()" style="padding: 0.5rem; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-input); color: #fff; flex: 1;">
+    <input type="text" id="player-search" placeholder="Search by name..." onkeyup="filterPlayers()" style="padding: 0.5rem; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-input); color: #fff; flex: 1; min-width: 180px;">
+    <label style="display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.85rem; white-space: nowrap;">
+      <input type="checkbox" id="show-deactivated" onchange="loadPlayers()"> Show deactivated (departed/retired)
+    </label>
   </div>
+  <p id="player-count" class="text-muted" style="font-size: 0.85rem; margin: 0 0 0.5rem;"></p>
 
   <div style="overflow-x: auto; max-height: 500px; border: 1px solid var(--border); border-radius: 8px;">
     <table style="width: 100%; text-align: left; border-collapse: collapse;">
@@ -2106,7 +2110,7 @@
     if (resultsEl) resultsEl.style.display = 'none';
 
     try {
-      let url = `/api/admin-api?action=player-crawler&admin_key=?admin_key=${encodeURIComponent(adminKey)}`;
+      let url = `/api/admin-api?action=player-crawler&admin_key=${encodeURIComponent(adminKey)}`;
       if (apply)  url += '&apply=1';
       if (teamId) url += '&team_id=' + encodeURIComponent(teamId);
 
@@ -3914,7 +3918,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
         body: JSON.stringify({ 
           action: 'select', 
           table: 'players',
-          select: 'id, display_name, team, position, is_available, price, api_id' 
+          select: 'id, display_name, team, position, is_available, is_active, price, apifootball_id' 
         })
       });
 
@@ -3922,7 +3926,14 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
       if (json.error) throw new Error(json.error);
       // admin-api returns { success: true, data: [...] }
       const data = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
-      allPlayersCache = data.sort((a, b) => (a.team > b.team ? 1 : -1));
+      // Only show ACTIVE players by default. Departed/retired players are
+      // deactivated (is_active=false) by the crawler and must not appear here
+      // unless the "show deactivated" toggle is on.
+      const showDeactivated = document.getElementById('show-deactivated');
+      const visible = (showDeactivated && showDeactivated.checked)
+        ? data
+        : data.filter(p => p.is_active !== false);
+      allPlayersCache = visible.sort((a, b) => (a.team > b.team ? 1 : -1));
       renderPlayers(allPlayersCache);
 
     } catch (e) {
@@ -3934,16 +3945,25 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     const tbody = document.getElementById('player-table-body');
     tbody.innerHTML = '';
 
+    const countEl = document.getElementById('player-count');
+    if (countEl) countEl.textContent = players.length + ' player(s) shown';
+
     if (players.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center;">No players found.</td></tr>';
       return;
     }
 
     players.forEach(p => {
-      // Determine status badge (Active vs Unavailable/Injured)
-      const statusBadge = p.is_available 
-        ? `<span style="background: var(--green-muted); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Active</span>`
-        : `<span style="background: var(--red-muted); color: var(--red); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Unavailable</span>`;
+      // Status badge reflects roster membership first (is_active), then availability.
+      // Deactivated = departed/retired, no longer in any PSL squad.
+      let statusBadge;
+      if (p.is_active === false) {
+        statusBadge = `<span style="background: rgba(120,120,120,.2); color: #999; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Deactivated</span>`;
+      } else if (p.is_available) {
+        statusBadge = `<span style="background: var(--green-muted); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Active</span>`;
+      } else {
+        statusBadge = `<span style="background: var(--red-muted); color: var(--red); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Unavailable</span>`;
+      }
 
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid var(--border)';
