@@ -122,7 +122,7 @@ module.exports = async (req, res) => {
       // Get profiles with points and squad info
       const { data: profiles, error: profErr } = await db
         .from('profiles')
-        .select('id, username, team_name, email, total_points, gw_points, squad_registered, squad_count, entry_gw, created_at')
+        .select('id, username, team_name, total_points, gw_points, squad_registered, squad_count, entry_gw, created_at')
         .order('total_points', { ascending: false })
         .range((page - 1) * limit, page * limit - 1);
 
@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
           const { data: authUser } = await db.auth.admin.getUserById(p.id);
           return {
             ...p,
-            email:             authUser && authUser.user ? authUser.user.email : (p.email || ''),
+            email:             authUser && authUser.user ? authUser.user.email : '',
             email_confirmed:   authUser && authUser.user ? !!authUser.user.email_confirmed_at : null,
             last_sign_in:      authUser && authUser.user ? authUser.user.last_sign_in_at : null,
             auth_created_at:   authUser && authUser.user ? authUser.user.created_at : null,
@@ -637,8 +637,29 @@ async function handlePlayerCrawler(db, q, res) {
         yellow_cards:0,red_cards:0,saves:0,apps:0,total_points:0,
         created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
     }
-    const activeApiIds=new Set(dedupPlayers.map(p=>p.apifootball_id));
-    const toDeactivate=(existingPlayers||[]).filter(p=>p.apifootball_id&&!activeApiIds.has(p.apifootball_id)&&p.is_active!==false);
+    // ── DEACTIVATION (robust) ────────────────────────────────────────────
+    // A player should stay active ONLY if they appear in a current PSL squad
+    // pulled from API-Football this run. We match by BOTH apifootball_id and
+    // normalised name, so legacy rows with a null apifootball_id (old manual
+    // imports / seeds) are still correctly caught. Anything not seen in this
+    // crawl — including retired players and players who moved to non-PSL clubs
+    // — gets deactivated. Only deactivate when the crawl actually returned a
+    // healthy set of squads, so a partial API failure can't wipe the roster.
+    const activeApiIds   = new Set(dedupPlayers.map(p => p.apifootball_id));
+    const activeNormNames = new Set(dedupPlayers.map(p => p.norm_name));
+    const crawlHealthy   = dedupPlayers.length >= 200 && fetchErrors.length === 0;
+
+    const toDeactivate = crawlHealthy
+      ? (existingPlayers||[]).filter(p => {
+          if (p.is_active === false) return false;              // already off
+          const seenById   = p.apifootball_id && activeApiIds.has(p.apifootball_id);
+          const seenByName = activeNormNames.has(normName(p.display_name));
+          return !seenById && !seenByName;                     // not in any current squad
+        })
+      : [];
+    if (!crawlHealthy) {
+      log.push(`⚠️  Skipping deactivation: crawl not healthy (players=${dedupPlayers.length}, errors=${fetchErrors.length}). Roster left untouched to avoid mass-deactivation from a partial API failure.`);
+    }
 
     let inserted=0,updated=0,deactivated=0,errors=0;
     if (apply) {
@@ -664,7 +685,9 @@ async function handlePlayerCrawler(db, q, res) {
       api_total:dedupPlayers.length, new_count:toInsert.length, update_count:toUpdate.length,
       deactivate_count:toDeactivate.length, inserted, updated, deactivated, errors,
       fetch_errors:fetchErrors, log,
+      crawl_healthy:crawlHealthy,
       new_players_preview:toInsert.slice(0,20).map(p=>({name:p.display_name,team:p.team,pos:p.position})),
+      deactivate_preview:toDeactivate.slice(0,50).map(p=>({name:p.display_name,team:p.team,apifootball_id:p.apifootball_id||null})),
     });
   } catch(err) {
     return res.status(500).json({ error: err.message, log });
