@@ -1737,6 +1737,25 @@ var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 });
 
+// ── SEASON_OPEN flag ──────────────────────────────────────────────────
+// Source of truth is app_settings.season_open in Supabase, flipped to 'true'
+// by the master agent on 29 Jul 08:00 SAST (or manually via admin). The whole
+// UI reads this global. Starts false (locked); refreshed on load and every 60s
+// so the squad gate unlocks live the moment the season opens — no redeploy.
+var SEASON_OPEN = false;
+function refreshSeasonOpen(){
+  return db.from('app_settings').select('value').eq('key','season_open').maybeSingle()
+    .then(function(res){
+      if (res && res.data && typeof res.data.value !== 'undefined') {
+        SEASON_OPEN = (res.data.value === 'true' || res.data.value === true);
+      }
+      return SEASON_OPEN;
+    })
+    .catch(function(){ /* leave as-is on error; stays locked, which is the safe default */ });
+}
+refreshSeasonOpen();
+setInterval(refreshSeasonOpen, 60000);
+
 // -- App state ----------------------------------------
 var ST = {
   user:             null,
@@ -3230,7 +3249,7 @@ function loadUserGWPoints() {
         renderBudget();
         db.from('match_player_stats')
           .select('gw_number')
-          .eq('season', 2025)
+          .eq('season', 2026)
           .not('gw_number', 'is', null)
           .order('gw_number', { ascending: false })
           .limit(1)
@@ -3259,7 +3278,7 @@ function loadGWPointsFromMatchStats(gwNum) {
   db.from('match_player_stats')
     .select('player_name, fantasy_points, minutes_played, position, goals, assists, clean_sheet, yellow_cards, red_cards, saves')
     .eq('gw_number', gwNum)
-    .eq('season', 2025)
+    .eq('season', 2026)
     .then(function(res) {
       var stats = res.data || [];
       if (!stats.length) {
@@ -9387,7 +9406,7 @@ onReady(function() {
         if(!statsEl)return;
         db.from('match_player_stats')
           .select('player_name,position,minutes_played,goals,assists,saves,clean_sheet,yellow_cards,red_cards,rating,fantasy_points,points_breakdown,apifootball_team_id,apifootball_player_id,is_substitute,is_captain,shots_on_target,shots_total,key_passes,passes_total')
-          .eq('apifootball_fixture_id',parseInt(fid)).eq('season',2025)
+          .eq('apifootball_fixture_id',parseInt(fid)).eq('season',2026)
           .order('fantasy_points',{ascending:false})
           .then(function(res){
             var stats=res.data||[];
@@ -9643,7 +9662,7 @@ function checkSeasonOver() {
 
   db.from('gameweeks')
     .select('gw_number, is_finished, is_current')
-    .eq('season', 2025)
+    .eq('season', 2026)
     .eq('gw_number', 30)
     .maybeSingle()
     .then(function(res) {
