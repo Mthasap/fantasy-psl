@@ -227,6 +227,18 @@ module.exports = async (req, res) => {
       active.forEach(p => {
         if (!VALID_2026.includes(p.team)) staleTeams[p.team] = (staleTeams[p.team]||0)+1;
       });
+      // list the actual stale rows (departed clubs) so we can see/fix them
+      const staleRows = active
+        .filter(p => !VALID_2026.includes(p.team))
+        .map(p => ({ id: p.id, name: p.display_name, team: p.team }));
+      // detect name-variant duplicates (same club, different spelling)
+      const CANON = {
+        'Amazulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC',
+        'Marumo Gallants':'Marumo Gallants FC','Marumo Gallants FC':'Marumo Gallants FC',
+      };
+      const variantRows = active
+        .filter(p => CANON[p.team] && CANON[p.team] !== p.team)
+        .map(p => ({ id: p.id, name: p.display_name, team: p.team, should_be: CANON[p.team] }));
       return res.json({
         success: true,
         total_rows: (all||[]).length,
@@ -235,7 +247,59 @@ module.exports = async (req, res) => {
         active_by_team: byTeam,
         stale_team_players: staleTeams,
         stale_count: Object.values(staleTeams).reduce((a,b)=>a+b,0),
+        stale_rows: staleRows,
+        variant_rows: variantRows,
       });
+    }
+
+    // ── PLAYER CLEANUP — deactivate departed clubs + merge name variants ──
+    // Run with &apply=1 to commit. Dry run (no apply) shows what WOULD change.
+    if (action === 'player-cleanup') {
+      const doApply = q.apply === '1';
+      const VALID_2026 = ['Orlando Pirates','Milford FC','Golden Arrows','Chippa United',
+        'Stellenbosch FC','AmaZulu FC','Mamelodi Sundowns','Marumo Gallants FC',
+        'Sekhukhune United','Durban City','Kruger United','Kaizer Chiefs','Richards Bay',
+        'Polokwane City','Siwelele FC','TS Galaxy','Amazulu'];
+      // canonical name map for the split clubs
+      const CANON = {
+        'Amazulu':'AmaZulu FC',        // API lowercase-z variant -> canonical
+        'Marumo Gallants':'Marumo Gallants FC',
+      };
+      const { data: all, error } = await db.from('players')
+        .select('id,display_name,team,is_active').limit(2000);
+      if (error) return res.status(500).json({ error: error.message });
+      const active = (all||[]).filter(p => p.is_active !== false);
+
+      // 1. Players whose club is NOT in the 2026 league → deactivate
+      const toDeactivate = active.filter(p => !VALID_2026.includes(p.team) && !CANON[p.team]);
+      // 2. Players on a variant spelling → rename to canonical
+      const toRename = active.filter(p => CANON[p.team]);
+
+      const result = {
+        dry_run: !doApply,
+        will_deactivate: toDeactivate.map(p => ({id:p.id,name:p.display_name,team:p.team})),
+        will_rename: toRename.map(p => ({id:p.id,name:p.display_name,from:p.team,to:CANON[p.team]})),
+        deactivate_count: toDeactivate.length,
+        rename_count: toRename.length,
+      };
+
+      if (doApply) {
+        let deactivated = 0, renamed = 0;
+        for (const p of toDeactivate) {
+          const { error: e } = await db.from('players')
+            .update({ is_active: false, is_available: false }).eq('id', p.id);
+          if (!e) deactivated++;
+        }
+        for (const p of toRename) {
+          const { error: e } = await db.from('players')
+            .update({ team: CANON[p.team] }).eq('id', p.id);
+          if (!e) renamed++;
+        }
+        result.applied = true;
+        result.deactivated = deactivated;
+        result.renamed = renamed;
+      }
+      return res.json({ success: true, ...result });
     }
 
     // ── PLAYER CRAWLER (migrated from player-crawler.js) ──────────────────
@@ -394,7 +458,7 @@ async function deleteUserById(db, userId, res, source) {
 const SQUAD_IMPORT_TEAM_MAP = {
   'Orlando Pirates':'Orlando Pirates','Mamelodi Sundowns':'Mamelodi Sundowns',
   'Golden Arrows':'Golden Arrows','Sekhukhune United':'Sekhukhune United',
-  'AmaZulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
+  'AmaZulu':'AmaZulu FC','Amazulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
   'Stellenbosch':'Stellenbosch FC','Stellenbosch FC':'Stellenbosch FC',
   'TS Galaxy':'TS Galaxy','Richards Bay':'Richards Bay','Polokwane City':'Polokwane City',
   'Chippa United':'Chippa United','Marumo Gallants':'Marumo Gallants FC',
@@ -599,7 +663,7 @@ async function handlePlayerCrawler(db, q, res) {
   const CRAWL_TEAM_MAP = {
     'Orlando Pirates':'Orlando Pirates','Mamelodi Sundowns':'Mamelodi Sundowns',
     'Golden Arrows':'Golden Arrows','Sekhukhune United':'Sekhukhune United',
-    'AmaZulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
+    'AmaZulu':'AmaZulu FC','Amazulu':'AmaZulu FC','AmaZulu FC':'AmaZulu FC','Kaizer Chiefs':'Kaizer Chiefs',
     'Stellenbosch':'Stellenbosch FC','Stellenbosch FC':'Stellenbosch FC',
     'TS Galaxy':'TS Galaxy','Richards Bay':'Richards Bay','Polokwane City':'Polokwane City',
     'Chippa United':'Chippa United','Marumo Gallants':'Marumo Gallants FC',
