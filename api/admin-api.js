@@ -543,6 +543,11 @@ async function handlePlayerCrawler(db, q, res) {
   const PSL_SEASON = parseInt(process.env.APIFOOTBALL_SEASON || '2026', 10);
   const apply      = q.apply === '1';
   const teamIdFilter = q.team_id ? parseInt(q.team_id, 10) : null;
+  // Chunking: Vercel Hobby kills functions after 10s. Processing all 16 clubs +
+  // 481 inserts in one request times out. So we process CHUNK_SIZE clubs per
+  // call. Pass &chunk=0, then &chunk=1, etc. The response tells you next_chunk.
+  const CHUNK_SIZE = 4;
+  const chunk      = q.chunk !== undefined ? parseInt(q.chunk, 10) : null; // null = all (dry runs only)
   const log        = [];
 
   if (!TOKEN) return res.status(500).json({ error: 'APIFOOTBALL_KEY not set' });
@@ -598,8 +603,24 @@ async function handlePlayerCrawler(db, q, res) {
     let nextRosterId = Math.max(20000,...Array.from(allRosterIds))+1;
 
     const teamsData = await apiFetchLocal(`/teams?league=${PSL_LEAGUE}&season=${PSL_SEASON}`);
-    const teams = teamsData.response||[];
-    log.push(`Teams: ${teams.length}`);
+    let teams = teamsData.response||[];
+    const totalTeams = teams.length;
+    log.push(`Teams available: ${totalTeams}`);
+
+    // If chunking, process only this slice of clubs
+    let chunkInfo = null;
+    if (chunk !== null) {
+      const start = chunk * CHUNK_SIZE;
+      const end   = start + CHUNK_SIZE;
+      teams = teams.slice(start, end);
+      const hasMore = end < totalTeams;
+      chunkInfo = {
+        chunk, chunk_size: CHUNK_SIZE, clubs_this_chunk: teams.length,
+        next_chunk: hasMore ? chunk + 1 : null,
+        is_final_chunk: !hasMore,
+      };
+      log.push(`Chunk ${chunk}: clubs ${start}-${Math.min(end, totalTeams) - 1} of ${totalTeams}`);
+    }
 
     const allApiPlayers=[], fetchErrors=[];
     for (const entry of teams) {
@@ -613,7 +634,7 @@ async function handlePlayerCrawler(db, q, res) {
         log.push(`${teamName}: ${players.length}`);
         for (const p of players) {
           allApiPlayers.push({ apifootball_id:p.id, display_name:p.name||'Unknown',
-            team:teamName, position:normPos(p.position||''), age:p.age||null,
+            team:teamName, position:normPos(p.position||''),
             photo:p.photo||null, norm_name:normName(p.name||'') });
         }
         await new Promise(r=>setTimeout(r,150));
@@ -627,10 +648,10 @@ async function handlePlayerCrawler(db, q, res) {
     for (const ap of dedupPlayers) {
       const ex=byApiId[ap.apifootball_id]||byNormName[ap.norm_name];
       if (ex) toUpdate.push({id:ex.id,display_name:ap.display_name,team:ap.team,position:ap.position,
-        photo:ap.photo||ex.photo||null,age:ap.age||null,apifootball_id:ap.apifootball_id,
+        photo:ap.photo||ex.photo||null,apifootball_id:ap.apifootball_id,
         is_active:true,updated_at:new Date().toISOString()});
       else toInsert.push({display_name:ap.display_name,team:ap.team,position:ap.position,
-        apifootball_id:ap.apifootball_id,photo:ap.photo||null,age:ap.age||null,
+        apifootball_id:ap.apifootball_id,photo:ap.photo||null,
         price:defaultPrice(ap.position),psl_roster_id:nextRosterId++,
         slug:makeSlug(ap.display_name)+'-'+ap.apifootball_id,
         is_available:true,is_active:true,goals:0,assists:0,clean_sheets:0,
@@ -647,7 +668,11 @@ async function handlePlayerCrawler(db, q, res) {
     // healthy set of squads, so a partial API failure can't wipe the roster.
     const activeApiIds   = new Set(dedupPlayers.map(p => p.apifootball_id));
     const activeNormNames = new Set(dedupPlayers.map(p => p.norm_name));
-    const crawlHealthy   = dedupPlayers.length >= 200 && fetchErrors.length === 0;
+    // Deactivation must only run on a COMPLETE view of all squads. A chunked run
+    // only sees CHUNK_SIZE clubs, so it must never deactivate (it would wrongly
+    // kill every player from the clubs it didn't look at). Only a full,
+    // non-chunked crawl with a healthy player count may deactivate.
+    const crawlHealthy   = chunk === null && dedupPlayers.length >= 200 && fetchErrors.length === 0;
 
     const toDeactivate = crawlHealthy
       ? (existingPlayers||[]).filter(p => {
@@ -686,6 +711,7 @@ async function handlePlayerCrawler(db, q, res) {
       deactivate_count:toDeactivate.length, inserted, updated, deactivated, errors,
       fetch_errors:fetchErrors, log,
       crawl_healthy:crawlHealthy,
+      chunk_info:chunkInfo,
       new_players_preview:toInsert.slice(0,20).map(p=>({name:p.display_name,team:p.team,pos:p.position})),
       deactivate_preview:toDeactivate.slice(0,50).map(p=>({name:p.display_name,team:p.team,apifootball_id:p.apifootball_id||null})),
     });
