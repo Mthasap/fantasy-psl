@@ -1013,7 +1013,7 @@
                 <option>Stellenbosch FC</option><option>Siwelele FC</option>
                 <option>TS Galaxy</option><option>Richards Bay</option>
                 <option>Chippa United</option><option>Marumo Gallants FC</option>
-                <option>Magesi FC</option><option>Orbit College</option>
+                <option>Milford FC</option><option>Kruger United</option>
               </select>
               <select id="bulk-pos-filter" onchange="loadBulkStats()" style="flex:1;min-width:100px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px">
                 <option value="">All Positions</option>
@@ -1577,7 +1577,7 @@
               <option>Stellenbosch FC</option><option>Siwelele FC</option>
               <option>TS Galaxy</option><option>Richards Bay</option>
               <option>Chippa United</option><option>Marumo Gallants FC</option>
-              <option>Magesi FC</option><option>Orbit College FC</option>
+              <option>Milford FC</option><option>Kruger United</option>
             </select>
             <button class="btn btn-amber" id="si-fetch-btn" onclick="fetchSquads()" style="padding:8px 20px;font-weight:700;font-size:13px">
               ⬇ Fetch All Squads
@@ -1720,7 +1720,7 @@
     'Mamelodi Sundowns','Orlando Pirates','Kaizer Chiefs','Stellenbosch FC',
     'AmaZulu FC','Chippa United','Golden Arrows','Sekhukhune United',
     'TS Galaxy','Polokwane City','Marumo Gallants','Richards Bay',
-    'Magesi FC','Durban City','Orbit College FC','Siwelele FC'
+    'Milford FC','Durban City','Kruger United','Siwelele FC'
   ].sort();
 
   let STATE = { gw: null, fixtures: [] };
@@ -3270,7 +3270,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
     wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Loading…</div>';
 
     try {
-      let query = 'select=id,display_name,position,team,goals,assists,clean_sheets,yellow_cards,red_cards,apps,total_points&order=display_name.asc&limit=200';
+      let query = 'select=id,display_name,position,team,goals,assists,clean_sheets,yellow_cards,red_cards,apps,total_points&order=display_name.asc&limit=1000&is_active=neq.false';
       if (club) query += '&team=eq.' + encodeURIComponent(club);
       if (pos)  query += '&position=eq.' + encodeURIComponent(pos);
       bulkPlayers = await sb('GET', 'players', null, query);
