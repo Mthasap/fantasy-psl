@@ -210,6 +210,34 @@ module.exports = async (req, res) => {
       return await handleLinkPlayerIds(db, q, res);
     }
 
+    // ── PLAYER AUDIT — instant DB-only count of active players per team ────
+    if (action === 'player-audit') {
+      const VALID_2026 = ['Orlando Pirates','Milford FC','Golden Arrows','Chippa United',
+        'Stellenbosch FC','AmaZulu FC','Mamelodi Sundowns','Marumo Gallants FC','Marumo Gallants',
+        'Sekhukhune United','Durban City','Kruger United','Kaizer Chiefs','Richards Bay',
+        'Polokwane City','Siwelele FC','TS Galaxy','Amazulu'];
+      const { data: all, error } = await db.from('players')
+        .select('id,display_name,team,is_active').limit(2000);
+      if (error) return res.status(500).json({ error: error.message });
+      const active = (all||[]).filter(p => p.is_active !== false);
+      const byTeam = {};
+      active.forEach(p => { byTeam[p.team] = (byTeam[p.team]||0) + 1; });
+      // players whose team is NOT a valid 2026 club = stale/departed
+      const staleTeams = {};
+      active.forEach(p => {
+        if (!VALID_2026.includes(p.team)) staleTeams[p.team] = (staleTeams[p.team]||0)+1;
+      });
+      return res.json({
+        success: true,
+        total_rows: (all||[]).length,
+        active_players: active.length,
+        deactivated_players: (all||[]).length - active.length,
+        active_by_team: byTeam,
+        stale_team_players: staleTeams,
+        stale_count: Object.values(staleTeams).reduce((a,b)=>a+b,0),
+      });
+    }
+
     // ── PLAYER CRAWLER (migrated from player-crawler.js) ──────────────────
     if (action === 'player-crawler') {
       return await handlePlayerCrawler(db, q, res);
