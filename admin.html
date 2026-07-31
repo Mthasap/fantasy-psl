@@ -596,6 +596,7 @@
     <button class="tab-btn" onclick="switchTab('news')">📰 News</button>
     <button class="tab-btn" onclick="switchTab('squad-import')" style="color:#f59e0b">⬇ Squad Import</button>
     <button class="tab-btn" onclick="switchTab('moderation')" style="color:#f472b6">🛡 Moderation</button>
+    <button class="tab-btn" onclick="switchTab('sponsors')" style="color:#DBA94A">💰 Sponsor Ads</button>
   </div>
 
   <main>
@@ -1638,6 +1639,181 @@
 
   </div>
 
+  <!-- ══ SPONSOR ADS TAB ══════════════════════════════════════════════ -->
+  <div class="tab-page" id="tab-sponsors">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#DBA94A"></span>💰 Create / Edit Sponsor Ad</div>
+      <p style="color:var(--muted);font-size:12px;margin:4px 0 14px">Sell your own banner space. Active sponsor ads show <b>before</b> Google ads and your house ad. Leave "End date" blank for no expiry.</p>
+      <input type="hidden" id="sp-id">
+      <div style="display:grid;gap:10px;max-width:560px">
+        <label style="font-size:12px;color:var(--muted)">Internal title (only you see this)
+          <input type="text" id="sp-title" placeholder="e.g. Nike Boots — July campaign" style="width:100%;margin-top:4px">
+        </label>
+        <label style="font-size:12px;color:var(--muted)">Headline (bold line users see)
+          <input type="text" id="sp-headline" placeholder="e.g. 20% off PSL jerseys this week" style="width:100%;margin-top:4px" maxlength="70">
+        </label>
+        <label style="font-size:12px;color:var(--muted)">Subtext (smaller line, optional)
+          <input type="text" id="sp-subtext" placeholder="e.g. Official Betway Premiership kits" style="width:100%;margin-top:4px" maxlength="90">
+        </label>
+        <label style="font-size:12px;color:var(--muted)">Click-through link (where the ad goes)
+          <input type="url" id="sp-link" placeholder="https://sponsor-website.co.za" style="width:100%;margin-top:4px">
+        </label>
+        <label style="font-size:12px;color:var(--muted)">Image / logo URL (optional)
+          <input type="url" id="sp-image" placeholder="https://…/logo.png" style="width:100%;margin-top:4px">
+        </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Button text
+            <input type="text" id="sp-cta" value="Learn More" style="width:100%;margin-top:4px" maxlength="20">
+          </label>
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Accent colour
+            <input type="color" id="sp-color" value="#DBA94A" style="width:100%;margin-top:4px;height:38px">
+          </label>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Placement
+            <select id="sp-placement" style="width:100%;margin-top:4px">
+              <option value="all">Everywhere (home + news)</option>
+              <option value="home">Home page only</option>
+              <option value="news">News page only</option>
+            </select>
+          </label>
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Priority (higher = shows first)
+            <input type="number" id="sp-priority" value="10" style="width:100%;margin-top:4px">
+          </label>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">Start date (optional)
+            <input type="datetime-local" id="sp-starts" style="width:100%;margin-top:4px">
+          </label>
+          <label style="font-size:12px;color:var(--muted);flex:1;min-width:120px">End date (optional)
+            <input type="datetime-local" id="sp-ends" style="width:100%;margin-top:4px">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-blue" onclick="saveSponsorAd()">💾 Save Sponsor Ad</button>
+          <button class="btn btn-sm" onclick="resetSponsorForm()">Clear</button>
+        </div>
+        <div id="sp-status" style="font-size:12px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>📋 Current Sponsor Ads</div>
+      <button class="btn btn-sm" onclick="loadSponsorList()" style="margin-bottom:12px">↻ Refresh</button>
+      <div id="sp-list"><span style="color:var(--muted);font-size:12px">Loading…</span></div>
+    </div>
+  </div>
+
+  <script>
+  // ── Sponsor Ads admin ──────────────────────────────────────────────────
+  async function saveSponsorAd() {
+    const st = document.getElementById('sp-status');
+    const headline = document.getElementById('sp-headline').value.trim();
+    const link     = document.getElementById('sp-link').value.trim();
+    if (!headline || !link) { st.innerHTML = '<span style="color:#f87171">Headline and link are required.</span>'; return; }
+    const id = document.getElementById('sp-id').value;
+    const row = {
+      title:     document.getElementById('sp-title').value.trim() || headline,
+      headline:  headline,
+      subtext:   document.getElementById('sp-subtext').value.trim() || null,
+      image_url: document.getElementById('sp-image').value.trim() || null,
+      link_url:  link,
+      cta_label: document.getElementById('sp-cta').value.trim() || 'Learn More',
+      bg_color:  document.getElementById('sp-color').value || '#DBA94A',
+      placement: document.getElementById('sp-placement').value,
+      priority:  parseInt(document.getElementById('sp-priority').value) || 0,
+      is_active: true,
+    };
+    const starts = document.getElementById('sp-starts').value;
+    const ends   = document.getElementById('sp-ends').value;
+    if (starts) row.starts_at = new Date(starts).toISOString();
+    if (ends)   row.ends_at   = new Date(ends).toISOString();
+    try {
+      if (id) { await sbWrite('update', 'sponsor_ads', row, { id: String(id) }); }
+      else    { await sbWrite('insert', 'sponsor_ads', row); }
+      st.innerHTML = '<span style="color:#34d399">✓ Saved.</span>';
+      resetSponsorForm();
+      loadSponsorList();
+    } catch (e) {
+      st.innerHTML = '<span style="color:#f87171">Error: ' + e.message + '</span>';
+    }
+  }
+
+  function resetSponsorForm() {
+    ['sp-id','sp-title','sp-headline','sp-subtext','sp-link','sp-image','sp-starts','sp-ends'].forEach(function(f){
+      var el = document.getElementById(f); if (el) el.value = '';
+    });
+    document.getElementById('sp-cta').value = 'Learn More';
+    document.getElementById('sp-color').value = '#DBA94A';
+    document.getElementById('sp-placement').value = 'all';
+    document.getElementById('sp-priority').value = '10';
+  }
+
+  async function loadSponsorList() {
+    const wrap = document.getElementById('sp-list');
+    try {
+      const ads = await sbWrite('select', 'sponsor_ads', null, {}, { select: '*' }) || [];
+      if (!ads.length) { wrap.innerHTML = '<span style="color:var(--muted);font-size:12px">No sponsor ads yet. Create one above.</span>'; return; }
+      ads.sort((a,b) => (b.priority||0) - (a.priority||0));
+      wrap.innerHTML = ads.map(function(a){
+        const live = a.is_active &&
+          (!a.starts_at || new Date(a.starts_at) <= new Date()) &&
+          (!a.ends_at   || new Date(a.ends_at)   >= new Date());
+        const status = a.is_active
+          ? (live ? '<span style="color:#34d399">● Live</span>' : '<span style="color:#fbbf24">● Scheduled/Expired</span>')
+          : '<span style="color:#999">○ Paused</span>';
+        return '<div style="background:#0d1117;border:1px solid #2a2f3a;border-radius:8px;padding:12px;margin-bottom:8px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+            '<div style="font-weight:700;color:#fff;font-size:13px">' + (a.title||a.headline) + '</div>' + status +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin:4px 0">' + a.headline +
+            (a.subtext ? ' — ' + a.subtext : '') + '</div>' +
+          '<div style="font-size:11px;color:#666;margin-bottom:8px">' +
+            'Placement: ' + a.placement + ' · Priority: ' + (a.priority||0) +
+            ' · 👁 ' + (a.impressions||0) + ' · 🖱 ' + (a.clicks||0) + '</div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button class="btn btn-sm" onclick="editSponsor(' + a.id + ')">Edit</button>' +
+            '<button class="btn btn-sm" onclick="toggleSponsor(' + a.id + ',' + (a.is_active?'false':'true') + ')">' +
+              (a.is_active?'Pause':'Activate') + '</button>' +
+            '<button class="btn btn-sm" style="color:#f87171" onclick="deleteSponsor(' + a.id + ')">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      window._sponsorCache = ads;
+    } catch (e) {
+      wrap.innerHTML = '<span style="color:#f87171">Error: ' + e.message + '</span>';
+    }
+  }
+
+  function editSponsor(id) {
+    const a = (window._sponsorCache || []).find(function(x){ return x.id === id; });
+    if (!a) return;
+    document.getElementById('sp-id').value = a.id;
+    document.getElementById('sp-title').value = a.title || '';
+    document.getElementById('sp-headline').value = a.headline || '';
+    document.getElementById('sp-subtext').value = a.subtext || '';
+    document.getElementById('sp-link').value = a.link_url || '';
+    document.getElementById('sp-image').value = a.image_url || '';
+    document.getElementById('sp-cta').value = a.cta_label || 'Learn More';
+    document.getElementById('sp-color').value = a.bg_color || '#DBA94A';
+    document.getElementById('sp-placement').value = a.placement || 'all';
+    document.getElementById('sp-priority').value = a.priority || 0;
+    document.getElementById('sp-status').innerHTML = '<span style="color:#60a5fa">Editing "' + (a.title||a.headline) + '" — Save to update.</span>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function toggleSponsor(id, makeActive) {
+    try { await sbWrite('update', 'sponsor_ads', { is_active: makeActive }, { id: String(id) }); loadSponsorList(); }
+    catch (e) { alert('Error: ' + e.message); }
+  }
+
+  async function deleteSponsor(id) {
+    if (!confirm('Delete this sponsor ad permanently?')) return;
+    try { await sbWrite('delete', 'sponsor_ads', null, { id: String(id) }); loadSponsorList(); }
+    catch (e) { alert('Error: ' + e.message); }
+  }
+  </script>
+
   <script>
   async function loadModeration() {
     // ── Flagged posts ──
@@ -1852,6 +2028,7 @@
     if (name === 'announcements') loadAnnouncements();
     if (name === 'gameweek') loadCurrentGW();
     if (name === 'fixtures') { loadCurrentFixtures(); }
+    if (name === 'sponsors') loadSponsorList();
   }
 
   // ══════════════════════════════════════════════════════════════════
