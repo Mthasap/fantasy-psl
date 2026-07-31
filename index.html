@@ -1020,7 +1020,7 @@ ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!importa
       <div style="background:rgba(219,169,74,.06);border:1px solid rgba(219,169,74,.15);border-radius:9px;padding:.7rem .9rem">
         <p style="font-family:var(--font-body);font-size:.8rem;color:rgba(255,255,255,.55);margin:0;line-height:1.6">
           The <strong style="color:rgba(255,255,255,.8)">2026/27 Betway Premiership</strong> season kicks off on <strong style="color:rgba(255,255,255,.8)">2 August 2026</strong>.
-          Squad selection &amp; private leagues open <strong style="color:rgba(255,255,255,.8)">29 July 2026</strong> — days before the first game.
+          Squad selection &amp; private leagues open <strong style="color:rgba(255,255,255,.8)">1 August 2026</strong> — on the eve of the first game.
         </p>
       </div>
     </div>
@@ -6197,7 +6197,7 @@ function buildLiveTicker() {
     // (never leave the endless "Loading..." placeholder)
     if (items.length <= 1) {
       items.push('<div class="ti"><div class="ti-dot o"></div><span class="ti-label">New season kicks off 2 August 2026</span></div>');
-      items.push('<div class="ti"><div class="ti-dot g"></div><span class="ti-label">Squad selection opens 29 July</span></div>');
+      items.push('<div class="ti"><div class="ti-dot g"></div><span class="ti-label">Squad selection opens 1 August</span></div>');
     }
 
     // Duplicate for seamless scroll loop
@@ -10062,7 +10062,7 @@ function onSeasonOpen() {
 <script>
 // ── Season countdown ────────────────────────────────────────────────
 (function() {
-  var SQUAD_OPEN = new Date('2026-07-29T08:00:00+02:00');
+  var SQUAD_OPEN = new Date('2026-08-01T08:00:00+02:00');
   var SEASON_START = new Date('2026-08-02T15:00:00+02:00');
   function tick() {
     var banner = document.getElementById('season-countdown-banner');
@@ -10106,7 +10106,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 
-// ── SQUAD SELECTION GATE — locked until season opens (29 July) ──────
+// ── SQUAD SELECTION GATE — locked until season opens (1 August) ──────
 (function(){
   function gateSquad(){
     var pg = document.getElementById('page-squad'); if(!pg) return;
@@ -10119,8 +10119,8 @@ document.addEventListener('DOMContentLoaded', function(){
     g.style.cssText = 'position:absolute;inset:0;z-index:60;background:rgba(8,11,16,.97);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:5rem 1.5rem 2rem;backdrop-filter:blur(4px)';
     g.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="#DBA94A" stroke-width="1.6" style="width:52px;height:52px;margin-bottom:1.2rem"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-      '<div style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:.6rem">Squad Selection Opens<br><span style="color:#DBA94A">29 July 2026</span></div>' +
-      '<div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.8;max-width:340px;margin-bottom:1.4rem">PSL clubs are still finalising their squads for the new season. Squad selection unlocks automatically on 29 July \u2014 days before the first game on 2 August.</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:.6rem">Squad Selection Opens<br><span style="color:#DBA94A">1 August 2026</span></div>' +
+      '<div style="font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.8;max-width:340px;margin-bottom:1.4rem">PSL clubs are still finalising their squads for the new season. Squad selection unlocks automatically on 1 August \u2014 on the eve of the first game.</div>' +
       '<button onclick="goPage(\'home\')" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;font-family:var(--font-ui);font-size:.82rem;font-weight:700;padding:.6rem 1.5rem;cursor:pointer">\u2190 Back to Home</button>';
     pg.style.position = 'relative';
     pg.appendChild(g);
