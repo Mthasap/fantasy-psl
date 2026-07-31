@@ -152,7 +152,7 @@ const TEMPLATES = {
       'You\'re on the list!',
       `<p style="color:rgba(255,255,255,.8);font-size:15px;line-height:1.8;margin:0 0 16px">
         You are officially on the <strong style="color:#DBA94A">Fantasy PSL Early Access List</strong>.
-        When squad selection opens on <strong style="color:#fff">29 July 2026</strong> you will be the first to know.
+        When squad selection opens on <strong style="color:#fff">1 August 2026</strong> you will be the first to know.
       </p>
       <div style="background:rgba(34,137,90,.07);border:1px solid rgba(34,137,90,.18);border-radius:12px;padding:20px;margin-bottom:24px">
         <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
@@ -161,7 +161,7 @@ const TEMPLATES = {
               </td>
               <td>
                 <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Registration opens</div>
-                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">29 July 2026 — days before the first PSL game</div>
+                <div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">1 August 2026 — on the eve of the first PSL game</div>
               </td>
             </tr></table><table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:14px"><tr>
               <td style="width:32px;vertical-align:top;padding-top:2px;padding-right:12px">
@@ -514,7 +514,7 @@ function buildFarewellHtml(username) {
 </td></tr>
 <tr><td style="padding:32px">
   <h2 style="margin:0 0 16px;color:#fff;font-size:20px;font-weight:900">We're Upgrading — Big Things Are Coming, ${name}! 🚀</h2>
-  <p style="color:rgba(255,255,255,.75);font-size:15px;line-height:1.8;margin:0 0 16px">As part of a major platform upgrade ahead of the 2026/27 Betway Premiership season, we are performing a full reset. All accounts will need to be re-created when registration opens on <strong style="color:#DBA94A">29 July 2026</strong>.</p>
+  <p style="color:rgba(255,255,255,.75);font-size:15px;line-height:1.8;margin:0 0 16px">As part of a major platform upgrade ahead of the 2026/27 Betway Premiership season, we are performing a full reset. All accounts will need to be re-created when registration opens on <strong style="color:#DBA94A">1 August 2026</strong>.</p>
   <p style="color:rgba(255,255,255,.75);font-size:15px;line-height:1.8;margin:0 0 24px">The new season brings real-time player stats, live points, private leagues, and much more.</p>
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <a href="${SITE}" style="display:inline-block;background:#B91C3A;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 32px;border-radius:9px">Visit Fantasy PSL →</a>
