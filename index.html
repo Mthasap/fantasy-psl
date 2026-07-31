@@ -10098,6 +10098,19 @@ function togglePw(id, btn){
 
 // After email confirmation, confirm.html redirects here with ?login=1
 document.addEventListener('DOMContentLoaded', function(){
+  // Deep-link support for social posts: ?page=chat, ?page=news, etc.
+  // Lets you post direct links like fantasypsl.co.za/?page=chat on socials.
+  (function(){
+    try {
+      var p = new URLSearchParams(window.location.search).get('page');
+      var valid = ['home','news','chat','fixtures','stats','squad','leagues','profile'];
+      if (p && valid.indexOf(p) !== -1) {
+        // small delay so the app finishes booting before we switch pages
+        setTimeout(function(){ if (typeof goPage === 'function') goPage(p); }, 400);
+      }
+    } catch(e) {}
+  })();
+
   if (new URLSearchParams(window.location.search).get('login') === '1') {
     setTimeout(function(){
       if (typeof openAuth === 'function') openAuth('login');
