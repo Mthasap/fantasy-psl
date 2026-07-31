@@ -885,9 +885,9 @@
           <div style="background:rgba(41,121,255,.06);border:1px solid rgba(41,121,255,.18);border-radius:8px;padding:12px 16px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.7">
             <strong style="color:#60A5FA">📌 How to find Player ID &amp; Team ID on API-Football:</strong><br>
             1. Go to <a href="https://dashboard.api-football.com" target="_blank" style="color:#60A5FA">dashboard.api-football.com</a> → API → Endpoints → Players<br>
-            2. Search by player name + league (288) + season (2025) — the <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">id</code> in the response is the Player ID<br>
+            2. Search by player name + league (288) + season (2026) — the <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">id</code> in the response is the Player ID<br>
             3. For Team ID: Endpoints → Teams → search by league 288 — the <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">team.id</code> field<br>
-            <strong style="color:#FFB830">PSL League ID = 288 &nbsp;|&nbsp; Season = 2025</strong>
+            <strong style="color:#FFB830">PSL League ID = 288 &nbsp;|&nbsp; Season = 2026</strong>
           </div>
         </div>
       </div>
@@ -923,7 +923,7 @@
           </div>
           <div class="card-body">
             <label>Search Player</label>
-            <input type="text" id="player-search" placeholder="e.g. Makgopa, Mofokeng…" oninput="searchPlayers()">
+            <input type="text" id="edit-player-search" placeholder="e.g. Makgopa, Mofokeng…" oninput="searchPlayers()">
             <div id="player-results" class="search-dropdown"></div>
             <div id="player-edit-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
               <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--green)" id="editing-player-name"></div>
@@ -2147,7 +2147,7 @@
   async function lookupAPIPlayer() {
     const playerId = document.getElementById('af-player-id').value.trim();
     const teamId   = document.getElementById('af-team-id').value.trim();
-    const season   = document.getElementById('af-season').value.trim() || '2025';
+    const season   = document.getElementById('af-season').value.trim() || '2026';
     const status   = document.getElementById('af-lookup-status');
     const preview  = document.getElementById('af-preview-wrap');
 
@@ -2162,7 +2162,17 @@
       const url = `/api/football?type=proxy&endpoint=players%3Fid%3D${playerId}%26season%3D${season}` +
                   (teamId ? `%26team%3D${teamId}` : '');
       const res  = await fetch(url, { headers: { 'x-admin-key': adminKey } });
-      const data = await res.json();
+      const raw  = await res.text();
+      let data;
+      try { data = JSON.parse(raw); }
+      catch (e) {
+        showStatus('af-lookup-status', 'error', '❌ API returned an unexpected response. This usually means API-Football has no data for that ID/season yet, or the season is not accessible. Try season 2026.');
+        return;
+      }
+      if (data.error) {
+        showStatus('af-lookup-status', 'error', '❌ ' + data.error);
+        return;
+      }
 
       const players = data.response || [];
       if (!players.length) {
@@ -2374,7 +2384,7 @@
   function searchPlayers() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
-      const q = document.getElementById('player-search').value.trim();
+      const q = document.getElementById('edit-player-search').value.trim();
       const dd = document.getElementById('player-results');
       if (q.length < 2) { dd.style.display = 'none'; return; }
       try {
