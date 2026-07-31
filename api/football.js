@@ -19,7 +19,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const { createClient }              = require('@supabase/supabase-js');
-const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./_season-helper');
+const { getSeasonYear, apiFetch, PSL_LEAGUE } = require('./season-helper');
 
 const TOKEN  = process.env.APIFOOTBALL_KEY     || '';
 const SB_URL = process.env.SUPABASE_URL        || '';
@@ -63,6 +63,7 @@ module.exports = async (req, res) => {
       case 'predictions':    return res.json(await getPredictions(req.query.fixture_id));
       case 'h2h':            return res.json(await getH2H(req.query.h2h));
       case 'player_search':  return res.json(await searchPlayer(req.query.name));
+      case 'proxy':          return res.json(await proxyPassthrough(req.query.endpoint));
       default:               return res.status(400).json({ error: 'Unknown type: ' + type });
     }
   } catch(err) {
@@ -70,6 +71,26 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: err.message, type });
   }
 };
+
+// ── Admin proxy passthrough ───────────────────────────────────────────────
+// Lets the admin panel look up players/teams directly from API-Football.
+// Whitelisted to safe read-only endpoints. ALWAYS returns JSON (never a
+// plain-text crash), so the admin UI's res.json() can't choke.
+async function proxyPassthrough(endpoint) {
+  if (!endpoint) return { response: [], error: 'No endpoint provided' };
+  var decoded = decodeURIComponent(endpoint);
+  var allowed = ['players', 'teams', 'players/squads'];
+  var base = decoded.split('?')[0].replace(/^\/+/, '');
+  if (allowed.indexOf(base) === -1) {
+    return { response: [], error: 'Endpoint not allowed: ' + base };
+  }
+  try {
+    var json = await apiFetch('/' + decoded.replace(/^\/+/, ''), TOKEN);
+    return json;
+  } catch (err) {
+    return { response: [], error: String(err.message || err).substring(0, 300) };
+  }
+}
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
 function fromCache(key) {
