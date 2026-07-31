@@ -978,16 +978,149 @@ ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!importa
   </div>
 </div>
 <script>
-(function(){
-  function checkHomeAd(){
-    var ins = document.querySelector('#home-ad-wrap ins.adsbygoogle');
-    var house = document.getElementById('home-house-ad');
-    if (!ins || !house) return;
-    if (ins.getAttribute('data-ad-status') === 'filled') house.style.display = 'none';
-    else house.style.display = 'flex';
+// ══════════════════════════════════════════════════════════════════════════
+//  SPONSOR ADS — our own banner ads, shown BEFORE falling back to house ads.
+//  Priority order per slot: (1) active sponsor ad → (2) house ad → (3) Google.
+//  Managed from the admin "Sponsor Ads" tab; stored in Supabase sponsor_ads.
+// ══════════════════════════════════════════════════════════════════════════
+var SPONSOR_ADS_CACHE = null;
+
+function loadSponsorAds() {
+  if (!db) return Promise.resolve([]);
+  // RLS already filters to active + in-schedule rows, so we just fetch.
+  return db.from('sponsor_ads')
+    .select('id,headline,subtext,image_url,link_url,cta_label,bg_color,placement,priority')
+    .order('priority', { ascending: false })
+    .then(function(res){ SPONSOR_ADS_CACHE = res.data || []; return SPONSOR_ADS_CACHE; })
+    .catch(function(){ SPONSOR_ADS_CACHE = []; return []; });
+}
+
+function sponsorFor(placement) {
+  if (!SPONSOR_ADS_CACHE) return null;
+  // match this placement or 'all'; highest priority already first
+  var match = SPONSOR_ADS_CACHE.filter(function(a){
+    return a.placement === placement || a.placement === 'all';
+  });
+  return match.length ? match[0] : null;
+}
+
+function renderSponsorAd(containerId, ad) {
+  var el = document.getElementById(containerId);
+  if (!el || !ad) return false;
+  var bg = ad.bg_color || '#DBA94A';
+  var img = ad.image_url
+    ? '<img src="' + ad.image_url + '" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
+    : '<div style="font-size:1.6rem;flex-shrink:0">📣</div>';
+  el.innerHTML =
+    '<a href="' + ad.link_url + '" target="_blank" rel="noopener sponsored" ' +
+      'onclick="trackSponsorClick(' + ad.id + ')" ' +
+      'style="text-decoration:none;background:linear-gradient(135deg,' + hexA(bg,0.14) + ',rgba(14,20,32,.95));' +
+      'border:1px solid ' + hexA(bg,0.35) + ';border-radius:12px;padding:.85rem 1rem;display:flex;' +
+      'align-items:center;gap:.8rem;cursor:pointer">' +
+      img +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;' +
+          'text-transform:uppercase;color:' + bg + ';margin-bottom:.15rem;opacity:.85">Sponsored</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.85rem;font-weight:800;color:#fff;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (ad.headline||'') + '</div>' +
+        (ad.subtext ? '<div style="font-size:.72rem;color:rgba(255,255,255,.6);white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis">' + ad.subtext + '</div>' : '') +
+      '</div>' +
+      '<div style="flex-shrink:0;background:' + bg + ';color:#0a0a15;font-size:.72rem;font-weight:800;' +
+        'padding:.4rem .7rem;border-radius:8px;white-space:nowrap">' + (ad.cta_label||'Learn More') + '</div>' +
+    '</a>';
+  el.style.display = 'block';
+  trackSponsorImpression(ad.id);
+  return true;
+}
+
+// hex + alpha helper (accepts #RGB or #RRGGBB)
+function hexA(hex, a) {
+  try {
+    hex = (hex||'#DBA94A').replace('#','');
+    if (hex.length === 3) hex = hex.split('').map(function(x){return x+x;}).join('');
+    var r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  } catch(e) { return 'rgba(219,169,74,' + a + ')'; }
+}
+
+// Fire-and-forget counters (best-effort; never block UI)
+function trackSponsorImpression(id) {
+  if (!db || !id) return;
+  try { db.rpc('increment_sponsor', { ad_id: id, field: 'impressions' }); } catch(e){}
+}
+function trackSponsorClick(id) {
+  if (!db || !id) return;
+  try { db.rpc('increment_sponsor', { ad_id: id, field: 'clicks' }); } catch(e){}
+}
+
+// "Advertise with us" house ad — recruits sponsors when a slot is empty.
+// Rendered into the same container as the normal house ad. Set your contact
+// email once here and it's used everywhere.
+var ADVERTISE_EMAIL = 'admin@fantasypsl.co.za';
+function renderAdvertiseAd(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return false;
+  var subject = encodeURIComponent('Advertising on Fantasy PSL');
+  var body = encodeURIComponent('Hi Fantasy PSL team,\n\nI\'d like to advertise on your app. Please send me your rates and options.\n\nBusiness name:\nWebsite:\nBudget:\n\nThanks!');
+  el.innerHTML =
+    '<a href="mailto:' + ADVERTISE_EMAIL + '?subject=' + subject + '&body=' + body + '" ' +
+      'style="text-decoration:none;background:linear-gradient(135deg,rgba(219,169,74,.12),rgba(14,20,32,.95));' +
+      'border:1px dashed rgba(219,169,74,.45);border-radius:12px;padding:.85rem 1rem;display:flex;' +
+      'align-items:center;gap:.8rem;cursor:pointer">' +
+      '<div style="font-size:1.6rem;flex-shrink:0">📢</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;' +
+          'text-transform:uppercase;color:#DBA94A;margin-bottom:.15rem;opacity:.85">Your ad here</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.85rem;font-weight:800;color:#fff;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Advertise with Fantasy PSL</div>' +
+        '<div style="font-size:.72rem;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;' +
+          'text-overflow:ellipsis">Reach Mzansi\'s football fans — tap to enquire →</div>' +
+      '</div>' +
+      '<div style="flex-shrink:0;background:#DBA94A;color:#0a0a15;font-size:.72rem;font-weight:800;' +
+        'padding:.4rem .7rem;border-radius:8px;white-space:nowrap">Get Rates</div>' +
+    '</a>';
+  el.style.display = 'block';
+  return true;
+}
+
+// Decide the fallback (no sponsor booked): alternate between the app\'s own
+// promo and the "advertise with us" pitch, so empty slots recruit sponsors.
+// Uses the day so it\'s stable within a session but rotates over time.
+function showHouseFallback(containerId, originalHTML) {
+  var showAdvertise = (Math.floor(Date.now() / (1000*60*60*24)) % 2) === 0;
+  if (showAdvertise) { renderAdvertiseAd(containerId); }
+  else {
+    var el = document.getElementById(containerId);
+    if (el && originalHTML) { el.innerHTML = originalHTML; el.style.display = 'flex'; }
+    else if (el) { el.style.display = 'flex'; }
   }
-  setTimeout(checkHomeAd, 2000);
-  setTimeout(checkHomeAd, 4000);
+}
+
+// Home ad slot: sponsor ad first, then house/advertise, then Google.
+(function(){
+  var homeOriginal = null;
+  function checkHomeAd(){
+    var house = document.getElementById('home-house-ad');
+    var ins = document.querySelector('#home-ad-wrap ins.adsbygoogle');
+    if (house && homeOriginal === null) homeOriginal = house.innerHTML; // capture news promo once
+    // 1. Sponsor ad wins if one exists
+    var ad = sponsorFor('home');
+    if (ad && house) {
+      if (renderSponsorAd('home-house-ad', ad)) return;
+    }
+    // 2. Google filled? hide house entirely
+    if (ins && ins.getAttribute('data-ad-status') === 'filled') {
+      if (house) house.style.display = 'none';
+      return;
+    }
+    // 3. No sponsor, no Google → alternate news promo / advertise pitch
+    if (house) showHouseFallback('home-house-ad', homeOriginal);
+  }
+  loadSponsorAds().then(function(){
+    setTimeout(checkHomeAd, 1500);
+    setTimeout(checkHomeAd, 3500);
+  });
 })();
 </script>
 
@@ -1471,7 +1604,7 @@ else setTimeout(loadHomeNews,500);
         <span style="font-family:var(--font-ui,sans-serif);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);flex-shrink:0">Sponsored</span>
       </div>
     </div>
-    <script>(function(){function c(){var i=document.querySelector('#news-top-ad ins.adsbygoogle');var h=document.getElementById('news-house-ad');if(!i||!h)return;if(i.getAttribute('data-ad-status')==='filled')h.style.display='none';}setTimeout(c,2500);setTimeout(c,5000);})();</script>
+    <script>(function(){var newsOriginal=null;function c(){var h=document.getElementById('news-house-ad');if(h&&newsOriginal===null)newsOriginal=h.innerHTML;var ad=(typeof sponsorFor==='function')?sponsorFor('news'):null;if(ad&&typeof renderSponsorAd==='function'){if(renderSponsorAd('news-house-ad',ad))return;}var i=document.querySelector('#news-top-ad ins.adsbygoogle');if(i&&i.getAttribute('data-ad-status')==='filled'){if(h)h.style.display='none';return;}if(h&&typeof showHouseFallback==='function')showHouseFallback('news-house-ad',newsOriginal);else if(h)h.style.display='flex';}if(typeof loadSponsorAds==='function'){loadSponsorAds().then(function(){setTimeout(c,1500);setTimeout(c,3500);});}else{setTimeout(c,2500);setTimeout(c,5000);}})();</script>
     <!-- ──────────────────────────────────────────────────────── -->
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
