@@ -6291,8 +6291,21 @@ function buildLiveTicker() {
   var LIVE_STATUSES = ['1H','HT','2H','ET','BT','P','LIVE'];
   var SEASON = (typeof APIFOOTBALL_SEASON !== 'undefined' && APIFOOTBALL_SEASON) ? APIFOOTBALL_SEASON : 2026;
 
-  // Pull three things at once — no hardcoded GW or season year:
-  //   1. Any LIVE matches (highest priority)
+  // First, pull LIVE matches straight from API-Football (client-side). This is
+  // how live scores appear even though Vercel Hobby only allows a daily cron —
+  // the browser fetches live data directly while the user has the app open.
+  fetch('/api/football?type=live&_t=' + Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(liveData){
+      var apiLive = (liveData && liveData.matches) ? liveData.matches.filter(function(m){
+        return m.status && LIVE_STATUSES.indexOf(m.status) !== -1;
+      }) : [];
+      window._apiLiveMatches = apiLive; // used by the DB merge below
+    })
+    .catch(function(){ window._apiLiveMatches = []; })
+    .finally(function(){ buildTickerFromData(); });
+
+  function buildTickerFromData() {
   //   2. Most recent finished results
   //   3. Next upcoming fixtures
   Promise.allSettled([
@@ -6307,7 +6320,23 @@ function buildLiveTicker() {
     var ft   = (results[1].status==='fulfilled' ? results[1].value.data : null) || [];
     var ns   = (results[2].status==='fulfilled' ? results[2].value.data : null) || [];
 
-    var items = [];
+    // Merge in live matches fetched directly from API-Football (client-side),
+    // so live games show even without a frequent server cron. Normalise their
+    // shape to match the DB rows, and de-dupe by team pairing.
+    var apiLive = window._apiLiveMatches || [];
+    if (apiLive.length) {
+      var seenLive = {};
+      live.forEach(function(f){ seenLive[(f.home_team_name||'')+'|'+(f.away_team_name||'')] = true; });
+      apiLive.forEach(function(m){
+        var key = (m.home||'')+'|'+(m.away||'');
+        if (seenLive[key]) return;
+        live.push({
+          home_team_name: m.home, away_team_name: m.away,
+          home_score: m.home_score, away_score: m.away_score,
+          status: m.status, elapsed_minutes: m.elapsed || m.minute || null
+        });
+      });
+    }
 
     // Brand item always leads
     items.push('<div class="ti"><div class="ti-dot r" style="animation:livePulse 1.2s infinite"></div><span class="ti-label">Betway Premiership 2026/27</span></div>');
@@ -6356,6 +6385,7 @@ function buildLiveTicker() {
     track.innerHTML = '<div class="ti"><div class="ti-dot r"></div><span class="ti-label">Betway Premiership 2026/27</span></div>'
       + '<div class="ti"><div class="ti-dot o"></div><span class="ti-label">New season kicks off 2 August 2026</span></div>';
   });
+  } // end buildTickerFromData
 }
 
 function loadFixtures() {
