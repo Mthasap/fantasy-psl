@@ -259,6 +259,39 @@ async function getStandings() {
     standings.forEach(function(s,i){ s.pos = i+1; });
   }
 
+  // ── ENSURE ALL 16 CLUBS APPEAR ────────────────────────────────────────
+  // Early in the season, API-Football's standings only include teams that have
+  // already played. So on opening weekend only ~10 clubs show. Merge in the
+  // full 16-club list so every team appears — those who haven't played yet sit
+  // at the bottom on zero points until their first match.
+  var ALL_CLUBS_2026 = [
+    'Orlando Pirates','Mamelodi Sundowns','Kaizer Chiefs','Stellenbosch FC',
+    'AmaZulu FC','Chippa United','Golden Arrows','Sekhukhune United','TS Galaxy',
+    'Polokwane City','Marumo Gallants FC','Richards Bay','Milford FC','Durban City',
+    'Kruger United','Siwelele FC'
+  ];
+  var haveTeams = {};
+  standings.forEach(function(s){ haveTeams[(s.team||'').toLowerCase()] = true; });
+  ALL_CLUBS_2026.forEach(function(club){
+    // loose match on normalised name
+    var found = standings.some(function(s){
+      var a = (s.team||'').toLowerCase().replace(/\s*fc$/,'').trim();
+      var b = club.toLowerCase().replace(/\s*fc$/,'').trim();
+      return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
+    });
+    if (!found) {
+      standings.push({ pos: 0, team: normTeam(club), logo: null,
+        p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form: [] });
+    }
+  });
+  // re-sort: by points desc, then GD, then alphabetical; re-number positions
+  standings.sort(function(a,b){
+    if ((b.pts||0) !== (a.pts||0)) return (b.pts||0) - (a.pts||0);
+    if ((b.gd||0)  !== (a.gd||0))  return (b.gd||0)  - (a.gd||0);
+    return (a.team||'') < (b.team||'') ? -1 : 1;
+  });
+  standings.forEach(function(s,i){ s.pos = i+1; });
+
   // Persist to Supabase for cron use
   if (SB_URL && SB_KEY && standings.length) {
     try {
