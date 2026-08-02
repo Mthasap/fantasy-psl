@@ -2055,8 +2055,9 @@ function ensurePlayersLoaded(cb) {
   // Must fetch — callback fires only after DB responds
   db.from('players')
     .select('*, clubs(name, short_name)')
+    .neq('is_active', false)
     .order('total_points', { ascending: false })
-    .limit(300)
+    .limit(1000)
     .then(function(res) {
       var players = res.data || [];
       if (!players.length) {
@@ -2703,8 +2704,9 @@ function loadPlayers() {
   // -- Fetch from DB with LIMIT for large squads ------------------------
   db.from('players')
     .select('*, clubs(name, short_name)')
+    .neq('is_active', false)
     .order('total_points', { ascending: false })
-    .limit(300)                // PSL has ~200-300 players, never load all unbounded
+    .limit(1000)                // PSL has ~200-300 players, never load all unbounded
     .then(function(res) {
       var players = res.data || [];
       // Merge with hardcoded PSL_ROSTER if DB is empty
