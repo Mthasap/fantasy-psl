@@ -1877,15 +1877,24 @@ var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 // UI reads this global. Starts false (locked); refreshed on load and every 60s
 // so the squad gate unlocks live the moment the season opens — no redeploy.
 var SEASON_OPEN = false;
+// Date-based safety net: once we're at/past the open moment, the season is
+// OPEN no matter what — so a DB/RLS hiccup can never keep users locked out.
+// Set to the intended open time (1 Aug 2026, 00:00 SAST).
+var SEASON_OPEN_TS = new Date('2026-08-01T00:00:00+02:00').getTime();
+if (Date.now() >= SEASON_OPEN_TS) { SEASON_OPEN = true; }
+
 function refreshSeasonOpen(){
+  // date fallback first — guarantees open once the date passes
+  if (Date.now() >= SEASON_OPEN_TS) { SEASON_OPEN = true; }
   return db.from('app_settings').select('value').eq('key','season_open').maybeSingle()
     .then(function(res){
       if (res && res.data && typeof res.data.value !== 'undefined') {
-        SEASON_OPEN = (res.data.value === 'true' || res.data.value === true);
+        // DB can only ADD to open state, never re-lock once date has passed
+        if (res.data.value === 'true' || res.data.value === true) SEASON_OPEN = true;
       }
       return SEASON_OPEN;
     })
-    .catch(function(){ /* leave as-is on error; stays locked, which is the safe default */ });
+    .catch(function(){ /* keep date-based value; never re-lock on error */ });
 }
 refreshSeasonOpen();
 setInterval(refreshSeasonOpen, 60000);
