@@ -3750,8 +3750,9 @@ function saveSquad() {
   var isFirstRegistration = isFullSquad && !ST.squadRegistered;
   if (isFirstRegistration) {
     ST.squadRegistered = true;
-    // Record which GW the user entered — points ONLY count from this GW forward
-    if (!ST.entryGW) ST.entryGW = (ST.gw && ST.gw.number) ? ST.gw.number : 23;
+    // Record which GW the user entered — points ONLY count from this GW forward.
+    // Fallback is 1 (season start), never a stale mid-season number.
+    if (!ST.entryGW) ST.entryGW = (ST.gw && ST.gw.number) ? ST.gw.number : 1;
     if (!ST.entryGW && ST.gw && ST.gw.number) {
       ST.entryGW = ST.gw.number;
     }
