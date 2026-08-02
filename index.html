@@ -448,7 +448,16 @@
   .stat-table td, .stat-table th { padding: 6px 8px; }
 
   /* Player list */
-  .pli { padding: 8px 10px; }
+  .pli {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    overflow: hidden;
+  }
   .pli-name { font-size: .82rem; }
   .pli-club { font-size: .68rem; }
   .add-btn { min-width: 28px; min-height: 28px; font-size: .9rem; }
@@ -2816,7 +2825,7 @@ function renderPlayerList() {
         '<div class="pli-club" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + club + '</div>' +
       '</div>' +
       // Points
-      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#DBA94A;min-width:42px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
+      '<span style="font-family:var(--font-display);font-size:.76rem;font-weight:900;color:#DBA94A;min-width:24px;text-align:right;flex-shrink:0">' + ptsDisplay + '</span>' +
       // Price
       '<span class="pli-price" style="flex-shrink:0">' + pcHtml + 'R' + (p.price || 0) + 'M</span>' +
       // Watchlist heart
