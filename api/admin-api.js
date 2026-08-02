@@ -321,7 +321,7 @@ module.exports = async (req, res) => {
   const ALLOWED_TABLES = new Set([
     'news_posts','gameweeks','fixtures','players','profiles',
     'announcements','api_cache','standings','match_player_stats',
-    'leagues','league_members','gw_scores'
+    'leagues','league_members','gw_scores','sponsor_ads'
   ]);
 
   if (!table) return res.status(400).json({ error: 'table required' });
