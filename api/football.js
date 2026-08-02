@@ -240,6 +240,25 @@ async function getStandings() {
     };
   });
 
+  // ── PRE-SEASON GUARD ──────────────────────────────────────────────────
+  // API-Football sometimes returns a stale/partial table before the season
+  // has genuinely started (e.g. carrying old results, or a friendly). If the
+  // TOTAL games played across the whole league is very low, the season hasn't
+  // really kicked off yet — show a clean all-zero table so users don't see
+  // confusing fake results on launch day. Real numbers appear once actual
+  // matches finish and the played count climbs.
+  var totalPlayed = standings.reduce(function(sum, s){ return sum + (s.p || 0); }, 0);
+  var SEASON_STARTED = totalPlayed >= 8; // ~ a full opening round across 16 clubs
+  if (!SEASON_STARTED) {
+    standings = standings.map(function(s){
+      return { pos: s.pos, team: s.team, logo: s.logo,
+               p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form: [] };
+    });
+    // sort alphabetically when everyone's on zero (no fake ranking)
+    standings.sort(function(a,b){ return a.team < b.team ? -1 : 1; });
+    standings.forEach(function(s,i){ s.pos = i+1; });
+  }
+
   // Persist to Supabase for cron use
   if (SB_URL && SB_KEY && standings.length) {
     try {
