@@ -1842,6 +1842,10 @@ var LOGOS = {
   'Richards Bay':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f3/Richards_Bay_FC_logo.png&w=80&output=webp&we',
   'Durban City':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/c/cf/Durban_City_FC.png&w=80&output=webp&we',
   'Siwelele FC':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/3/3e/Siwelele_FC_logo.png&w=80&output=webp&we',
+  'Kruger United':       'https://media.api-sports.io/football/teams/23110.png',
+  'Kruger United FC':    'https://media.api-sports.io/football/teams/23110.png',
+  'Milford':             'https://media.api-sports.io/football/teams/23109.png',
+  'Milford FC':          'https://media.api-sports.io/football/teams/23109.png',
   'Marumo Gallants':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
   'Marumo Gallants FC':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
   'Marumo Gallants FC':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
@@ -4051,11 +4055,18 @@ function renderPitch() {
   var rows  = { GK:'p-gk', DEF:'p-def', MID:'p-mid', FWD:'p-fwd' };
   var posLabels = { GK:'GKP', DEF:'DEF', MID:'MID', FWD:'ATT' };
 
+  // Default starting formation slots — must total 11 starters (a valid XI).
+  // 1 GK + 4 DEF + 4 MID + 2 FWD = 11. Users can still flex within min/max
+  // (DEF 3-5, MID 2-5, FWD 1-3) as they add/remove players.
+  var defaultSlots = { GK:1, DEF:4, MID:4, FWD:2 };
+
   Object.keys(rows).forEach(function(pos) {
     var el = document.getElementById(rows[pos]); if (!el) return;
     var players = byPos[pos];
-    // Show as many empty slots as needed up to max, at least min
-    var totalSlots = Math.max(minSlots[pos], players.length);
+    // Show enough slots for a full XI: at least the default formation count,
+    // never fewer than the players already placed, never more than the max.
+    var wanted = Math.max(defaultSlots[pos], players.length);
+    var totalSlots = Math.min(maxSlots[pos], Math.max(minSlots[pos], wanted));
 
     var filled = players.map(function(p) {
       var isOut       = ST.xferOut && ST.xferOut.id === p.id;
@@ -4658,7 +4669,20 @@ var SS_LOGOS = {};
 // Club logos come from API-Football fixtures/standings responses (logo field).
 
 function getTeamLogo(name) {
-  return SS_LOGOS[name] || LOGOS[name] || '';
+  if (!name) return '';
+  // exact match first
+  if (SS_LOGOS[name]) return SS_LOGOS[name];
+  if (LOGOS[name])    return LOGOS[name];
+  // fuzzy: strip "FC", lowercase, and compare against all keys
+  var norm = function(s){ return (s||'').toLowerCase().replace(/\s*fc$/,'').replace(/[^a-z0-9]/g,'').trim(); };
+  var target = norm(name);
+  var maps = [SS_LOGOS, LOGOS];
+  for (var m = 0; m < maps.length; m++) {
+    for (var key in maps[m]) {
+      if (norm(key) === target) return maps[m][key];
+    }
+  }
+  return '';
 }
 
 // Short name map -- prevents wrapping in fixture rows
