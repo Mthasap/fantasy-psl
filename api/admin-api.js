@@ -172,6 +172,59 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── CONFIRM USERS (admin) — bulk auto-verify unconfirmed accounts ────────
+  // Solves the "users never click their verification email and can't log in"
+  // problem. GET /api/admin-api?action=confirm-users&admin_key=...
+  //   &only_unconfirmed=1  (default) → confirms only accounts with no
+  //                                     email_confirmed_at yet
+  //   &user_id=<uuid>      → confirm a single specific user
+  // Uses auth.admin.updateUserById({ email_confirm: true }), which marks the
+  // email confirmed server-side so the user can log in immediately.
+  if (action === 'confirm-users') {
+    try {
+      // Single-user mode
+      if (q.user_id) {
+        const { error } = await db.auth.admin.updateUserById(q.user_id, { email_confirm: true });
+        if (error) throw new Error(error.message);
+        return res.json({ success: true, confirmed: 1, user_id: q.user_id });
+      }
+
+      const onlyUnconfirmed = q.only_unconfirmed !== '0'; // default true
+      let page = 1, confirmed = 0, skipped = 0, failed = 0;
+      const results = [];
+
+      // Paginate through ALL auth users (listUsers is paginated).
+      while (true) {
+        const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
+        if (error) throw new Error(error.message);
+        const users = (data && data.users) || [];
+        if (!users.length) break;
+
+        for (const u of users) {
+          if (onlyUnconfirmed && u.email_confirmed_at) { skipped++; continue; }
+          try {
+            const { error: upErr } = await db.auth.admin.updateUserById(u.id, { email_confirm: true });
+            if (upErr) { failed++; results.push('✗ ' + (u.email || u.id) + ': ' + upErr.message); }
+            else       { confirmed++; results.push('✓ ' + (u.email || u.id)); }
+          } catch (e) { failed++; results.push('✗ ' + (u.email || u.id) + ': ' + e.message); }
+        }
+
+        if (users.length < 200) break; // last page
+        page++;
+        if (page > 50) break; // hard safety cap (10k users)
+      }
+
+      return res.json({
+        success: true,
+        confirmed, skipped, failed,
+        message: `Confirmed ${confirmed} user(s), skipped ${skipped} already-confirmed, ${failed} failed.`,
+        log: results.slice(0, 200),
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // ── BAN USER (admin) — keeps auth account but clears their squad + points ─
   if (action === 'ban-user') {
     const userId = q.user_id;
