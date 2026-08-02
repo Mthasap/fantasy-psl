@@ -2359,7 +2359,12 @@
 
       const p    = players[0];
       const info = p.player  || {};
-      const stat = (p.statistics || [])[0] || {};
+      // A player's statistics array can include national-team entries (e.g.
+      // "South Africa") alongside their PSL club. Prefer the PSL league (288)
+      // entry so we never store the country as the club.
+      const allStats = p.statistics || [];
+      const pslStat  = allStats.find(function(s){ return s.league && s.league.id === 288; });
+      const stat = pslStat || allStats[0] || {};
       const team = stat.team || {};
 
       // Map API-Football position to our system
