@@ -3014,10 +3014,15 @@
         if (d && d.users) users = d.users;
       } catch(_) {}
 
-      // Fallback: direct Supabase query
+      // Fallback: direct Supabase query.
+      // NOTE: `email` lives in auth.users, NOT profiles — selecting it here
+      // caused a 42703 "column profiles.email does not exist" crash that made
+      // the whole panel fail to load. Email only comes from the admin-api path
+      // above (which reads it via auth.admin.getUserById). Only select columns
+      // that actually exist on profiles.
       if (!users.length) {
         const data = await sb('GET', 'profiles', null,
-          'select=id,team_name,username,email,gw_points,total_points,squad_count,overall_rank,created_at&order=total_points.desc&limit=100'
+          'select=id,team_name,username,gw_points,total_points,squad_count,created_at&order=total_points.desc&limit=100'
         );
         users = data || [];
       }
