@@ -2405,7 +2405,21 @@ function doLogin() {
   db.auth.signInWithPassword({ email: email, password: pass }).then(function(res) {
     btn.textContent = 'Login'; btn.disabled = false;
     if (res.error) {
-      if (errEl) errEl.textContent = 'Incorrect email or password';
+      // Supabase returns a DISTINCT error for unconfirmed accounts
+      // ("Email not confirmed"). Previously we collapsed every auth error into
+      // "Incorrect email or password", so users who simply hadn't clicked their
+      // verification link thought their password was wrong and got stuck.
+      var m = (res.error.message || '').toLowerCase();
+      if (m.indexOf('not confirmed') !== -1 || m.indexOf('email not confirmed') !== -1 ||
+          (res.error.code && res.error.code === 'email_not_confirmed')) {
+        if (errEl) {
+          errEl.innerHTML = 'Your email isn\u2019t verified yet. Check your inbox (and Spam) for the link, ' +
+            'or <a href="#" onclick="resendConfirmation(\'' +
+            email.replace(/'/g, "\\'") + '\');return false;" style="color:#DBA94A;text-decoration:underline">resend it</a>.';
+        }
+      } else {
+        if (errEl) errEl.textContent = 'Incorrect email or password';
+      }
       return;
     }
     // Save credentials if remember me checked
@@ -2424,6 +2438,22 @@ function doLogin() {
   }).catch(function(err) {
     btn.textContent = 'Login'; btn.disabled = false;
     if (errEl) errEl.textContent = (err && err.message) || 'Login failed — try again';
+  });
+}
+
+// Resend the signup confirmation email for users who never clicked the link.
+function resendConfirmation(email) {
+  var errEl = document.getElementById('l-err');
+  if (!email) { if (errEl) errEl.textContent = 'Enter your email first.'; return; }
+  db.auth.resend({ type: 'signup', email: email }).then(function(res) {
+    if (res.error) {
+      if (errEl) errEl.textContent = res.error.message || 'Could not resend — try again shortly.';
+    } else {
+      if (errEl) errEl.innerHTML = '<span style="color:#22895A">Verification email re-sent to ' +
+        email + '. Check your inbox and Spam folder.</span>';
+    }
+  }).catch(function(e) {
+    if (errEl) errEl.textContent = (e && e.message) || 'Could not resend — try again shortly.';
   });
 }
 
@@ -4694,6 +4724,28 @@ function getTeamLogo(name) {
   return '';
 }
 
+// -- Guaranteed crest fallback ------------------------------------------
+// When a club has no logo URL (e.g. teams that haven't played yet, or the
+// static fallback table) or the image URL 404s, show a coloured initials
+// badge instead of a blank space. Fixes "logos not showing" on the log table.
+function teamInitials(name) {
+  var n = (name || '').replace(/\bFC\b/gi, '').trim();
+  var parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+  return (n.slice(0, 2) || '?').toUpperCase();
+}
+function teamBadgeColor(name) {
+  var s = (name || ''), h = 0;
+  for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) % 360; }
+  return 'hsl(' + h + ',45%,38%)';
+}
+function teamBadgeHTML(name) {
+  return '<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;' +
+    'align-items:center;justify-content:center;background:' + teamBadgeColor(name) + ';' +
+    'font-family:var(--font-ui);font-size:.5rem;font-weight:800;color:#fff">' +
+    teamInitials(name) + '</div>';
+}
+
 // Short name map -- prevents wrapping in fixture rows
 var SHORT_NAMES = {
   // Keys use Sportmonks exact team names (season 26173)
@@ -6908,6 +6960,7 @@ function renderTableFull(c, table) {
     var pos      = t.pos || (i + 1);
     var teamLow  = (t.team || '').toLowerCase();
     var logo     = t.logo || getTeamLogo(t.team);
+    var safeTeam = (t.team || '').replace(/[^a-zA-Z0-9 .]/g, '');
     var gd       = t.gd !== undefined ? t.gd : ((t.gf || 0) - (t.ga || 0));
     var gdStr    = gd > 0 ? '+' + gd : String(gd);
     var gdClr    = gd > 0 ? '#22895A' : gd < 0 ? '#D4274F' : 'rgba(255,255,255,.45)';
@@ -6973,7 +7026,7 @@ function renderTableFull(c, table) {
           (isLiveNow ? liveDot : '') + pos +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:.4rem;min-width:0">' +
-          (logo ? '<img src="' + esc(logo) + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<div style="width:20px;flex-shrink:0"></div>') +
+          (logo ? '<img src="' + esc(logo) + '" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML=teamBadgeHTML(\'' + safeTeam + '\')">' : teamBadgeHTML(safeTeam)) +
           '<span style="font-family:var(--font-ui);font-size:.75rem;font-weight:' + (isMyTeam ? '800' : '600') + ';' +
             'color:' + (isMyTeam ? '#DBA94A' : '#fff') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
             esc(t.abbr || t.team) + myTeamIndicator +
