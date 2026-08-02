@@ -94,6 +94,34 @@ function btn(text, url, color = '#B91C3A') {
   </td></tr></table>`;
 }
 
+function squadReminderHTML(username) {
+  const name = username || 'there';
+  const body = `
+    <p style="margin:0 0 16px;color:#fff;font-size:16px;font-weight:700">Hi ${name}, the wait is over! ⚽</p>
+    <p style="margin:0 0 16px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.7">
+      Squad selection for the <b style="color:#fff">2026/27 Betway Premiership</b> is officially
+      <b style="color:#22C55E">OPEN</b>. The clubs are locked in, the players are ready, and it's time
+      to build your dream XV.
+    </p>
+    <p style="margin:0 0 8px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.7">
+      Here's what you can do right now:
+    </p>
+    <ul style="margin:0 0 20px;padding-left:20px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.9">
+      <li>Pick your 15 players within your R100M budget</li>
+      <li>Create or join a private league with your mates</li>
+      <li>Talk diski in the community chat</li>
+    </ul>
+    <p style="margin:0 0 4px;color:#DBA94A;font-size:13px;font-weight:700;line-height:1.6">
+      ⏰ First matches kick off today — get your squad in before deadline!
+    </p>
+    <p style="margin:0 0 0;color:rgba(255,255,255,.55);font-size:12px;line-height:1.7">
+      Joining a little late? No stress — our fair-play scoring means you're never left behind.
+    </p>
+    ${btn('⚽ Pick My Squad Now', SITE, '#22C55E')}
+  `;
+  return wrap('Squad Selection is Open', body, '#166534', '⚽');
+}
+
 // ── Email templates ───────────────────────────────────────────────────────
 const TEMPLATES = {
 
@@ -389,6 +417,57 @@ module.exports = async (req, res) => {
   }
 
   // ── NEWS DIGEST — send weekly news to all opted-in users ─────────────────
+  if (action === 'squad-reminder') {
+    log.push('=== SQUAD REMINDER STARTED: ' + new Date().toISOString() + ' ===');
+
+    // Gather ALL registered users (this is a transactional launch reminder,
+    // not marketing, so it goes to everyone — but we still skip anyone with
+    // no email on file).
+    const emailMap = {};
+    try {
+      const { data: profs } = await db.from('profiles')
+        .select('id, username, squad_registered');
+      const regMap = {};
+      for (const p of (profs || [])) regMap[p.id] = p;
+
+      const { data: authUsers } = await db.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of (authUsers?.users || [])) {
+        if (!u.email) continue;
+        const prof = regMap[u.id] || {};
+        // only remind users who have NOT yet registered a squad
+        if (prof.squad_registered) continue;
+        emailMap[u.id] = {
+          email: u.email,
+          username: prof.username || (u.email.split('@')[0]),
+        };
+      }
+    } catch (e) {
+      return res.json({ success:false, error:'Failed to gather users: ' + e.message, log });
+    }
+
+    const recipients = Object.values(emailMap);
+    log.push('Recipients (unregistered users): ' + recipients.length);
+    if (recipients.length === 0) {
+      return res.json({ success:true, sent:0, message:'No unregistered users to remind', log });
+    }
+
+    let sent = 0, failed = 0;
+    for (const r of recipients) {
+      const html = squadReminderHTML(r.username);
+      try {
+        await sendEmail(r.email, '⚽ Squad selection is OPEN — pick your team now!', html);
+        sent++;
+      } catch (e) {
+        failed++;
+        log.push('Failed ' + r.email + ': ' + e.message);
+      }
+      await new Promise(rs => setTimeout(rs, 120)); // gentle rate limit
+    }
+
+    log.push('=== DONE: sent=' + sent + ' failed=' + failed + ' ===');
+    return res.json({ success:true, sent, failed, total:recipients.length, log });
+  }
+
   if (action === 'news-digest') {
     log.push('=== NEWS DIGEST STARTED: ' + new Date().toISOString() + ' ===');
 
