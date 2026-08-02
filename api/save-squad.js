@@ -130,6 +130,25 @@ module.exports = async (req, res) => {
       ? squadRaw
       : JSON.stringify(squadArr);
 
+    // ── 5b. INTEGRITY GUARD ──────────────────────────────────────────────
+    // Root cause of the "registered but empty squad" ghost rows: earlier code
+    // could set squad_registered=true / squad_count=15 while squad_data ended
+    // up null or "[]". That left users flagged as having a team with no picks
+    // stored — so scoring found nothing to score. Never again: if the payload
+    // does not actually contain a full valid squad, refuse to mark registered.
+    const squadJsonIsEmpty =
+      !squadJson || squadJson === 'null' || squadJson === '[]' || squadJson.trim() === '';
+
+    if (isRegistered && squadJsonIsEmpty) {
+      console.error('[save-squad] REFUSED registration for user', user.id,
+        '— squad_data empty despite count', count, '| rawType:', typeof squadRaw);
+      return res.status(400).json({
+        error: 'Squad data did not arrive on the server. Your picks were NOT saved. ' +
+               'Please rebuild your squad and save again.',
+        code:  'EMPTY_SQUAD_DATA',
+      });
+    }
+
     // ── 6. Resolve entry_gw (never leave it null on first registration) ──
     let resolvedEntryGW = payload.entry_gw ? parseInt(payload.entry_gw, 10) : null;
     if (isNaN(resolvedEntryGW)) resolvedEntryGW = null;
