@@ -3904,10 +3904,14 @@ function saveSquad() {
       onSaveDone(null);
     })
     .catch(function(apiErr) {
-      // API call failed — fall back to direct Supabase upsert as last resort
+      // API call failed — fall back to a direct Supabase UPDATE as last resort.
+      // Use .update() (not .upsert()) so we only touch the squad columns and
+      // never trip the profiles.username NOT NULL constraint, which was the
+      // cause of the "device only" fallback failing.
       console.warn('[saveSquad] API save failed:', apiErr.message, '— trying direct DB fallback');
       db.from('profiles')
-        .upsert(upsertPayload, { onConflict: 'id' })
+        .update(updatePayload)
+        .eq('id', ST.user.id)
         .then(function(dbRes) {
           if (dbRes.error) {
             console.error('[saveSquad] Direct DB fallback also failed:', dbRes.error.message);
