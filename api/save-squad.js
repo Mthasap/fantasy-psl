@@ -171,11 +171,11 @@ module.exports = async (req, res) => {
       try {
         const { data: gwRow } = await db
           .from('gameweeks')
-          .select('gw_number, number')
+          .select('gw_number')
           .eq('is_current', true)
           .limit(1)
           .maybeSingle();
-        if (gwRow) resolvedEntryGW = gwRow.gw_number || gwRow.number || null;
+        if (gwRow) resolvedEntryGW = gwRow.gw_number || null;
       } catch (e) { /* continue */ }
 
       // Last-resort fallback
@@ -183,11 +183,11 @@ module.exports = async (req, res) => {
         try {
           const { data: latestGW } = await db
             .from('gameweeks')
-            .select('gw_number, number')
+            .select('gw_number')
             .order('gw_number', { ascending: false })
             .limit(1)
             .maybeSingle();
-          resolvedEntryGW = latestGW ? (latestGW.gw_number || latestGW.number || 1) : 1;
+          resolvedEntryGW = latestGW ? (latestGW.gw_number || 1) : 1;
         } catch (e) { resolvedEntryGW = 1; }
       }
       console.log(`[save-squad] Resolved entry_gw=${resolvedEntryGW} from DB for user=${user.id}`);
