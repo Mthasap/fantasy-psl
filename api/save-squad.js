@@ -224,20 +224,41 @@ module.exports = async (req, res) => {
       delete updateData.squad_registered_at;
     }
 
-    // ── 10. Upsert (service key bypasses RLS) ───────────────────────────
-    const { error: upsertErr } = await db
-      .from('profiles')
-      .upsert(updateData, { onConflict: 'id' });
+    // ── 10. Persist (service key bypasses RLS) ───────────────────────────
+    // CRITICAL FIX: use UPDATE (not upsert) when the profile already exists.
+    // upsert re-validates the ENTIRE row, so omitting NOT NULL columns such as
+    // `username` made Postgres reject the whole write with
+    //   "null value in column \"username\" ... violates not-null constraint"
+    // — which silently dropped squad_data and forced every save into
+    // "device only" mode. A plain UPDATE only touches the columns we pass, so
+    // the username (and any other existing NOT NULL) constraint is never hit.
+    let writeErr = null;
+    if (existingProfile) {
+      const { error } = await db
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id);
+      writeErr = error;
+    } else {
+      // No profile row yet (rare edge case — registration normally creates it).
+      // Insert, but satisfy NOT NULL columns so the row is valid.
+      const insertData = Object.assign({}, updateData);
+      if (!insertData.username) insertData.username = 'user_' + String(user.id).slice(0, 8);
+      const { error } = await db
+        .from('profiles')
+        .upsert(insertData, { onConflict: 'id' });
+      writeErr = error;
+    }
 
-    if (upsertErr) {
+    if (writeErr) {
       // Log the FULL error object so it's visible in Vercel logs
-      console.error('[save-squad] UPSERT ERROR for user', user.id, ':',
-        upsertErr.message, '| code:', upsertErr.code, '| hint:', upsertErr.hint,
-        '| details:', upsertErr.details);
+      console.error('[save-squad] WRITE ERROR for user', user.id, ':',
+        writeErr.message, '| code:', writeErr.code, '| hint:', writeErr.hint,
+        '| details:', writeErr.details);
       return res.status(500).json({
-        error: upsertErr.message,
-        code:  upsertErr.code,
-        hint:  upsertErr.hint
+        error: writeErr.message,
+        code:  writeErr.code,
+        hint:  writeErr.hint
       });
     }
 
