@@ -1229,7 +1229,7 @@ function loadHomeNews(){
   function normAnn(a){return{id:'ann-'+a.id,title:a.title||a.heading||'Announcement',summary:a.body||a.content||a.message||'',published_at:a.published_at||a.created_at||new Date().toISOString(),category:a.category||a.type||'News',image_url:a.image_url||a.image||''};}
   var queries=[
     db.from('news_posts').select('id,title,summary,published_at,category,image_url,slug,source_url,source_name').eq('published',true).order('published_at',{ascending:false}).limit(9),
-    db.from('announcements').select('id, title, body, content, message, category, type, image_url, created_at, is_active').eq('is_active',true).order('id',{ascending:false}).limit(3)
+    db.from('announcements').select('*').eq('is_active',true).order('id',{ascending:false}).limit(3)
   ];
   Promise.allSettled(queries).then(function(res){
     var posts=(res[0].status==='fulfilled'?res[0].value.data:null)||[];
@@ -2620,7 +2620,7 @@ function loadGW(cb) {
     // Highest GW whose start_date is on or before now
     var now = new Date().toISOString();
     db.from('gameweeks')
-      .select('gw_number, number, deadline, deadline_at, start_date')
+      .select('gw_number, deadline, deadline_at, start_date')
       .lte('start_date', now)
       .order('gw_number', { ascending: false })
       .limit(1)
@@ -2688,7 +2688,7 @@ function loadGW(cb) {
 
   // Source 1: is_current = true (the correct, normal path)
   db.from('gameweeks')
-    .select('gw_number, number, deadline, deadline_at, start_date, season')
+    .select('gw_number, deadline, deadline_at, start_date, season')
     .eq('is_current', true)
     .order('gw_number', { ascending: false })
     .limit(1)
@@ -8286,9 +8286,20 @@ function saveReaction(pid, reaction) {
     localStorage.setItem(key, JSON.stringify(stored));
   } catch(e) {}
   // Also save to DB for persistence across devices
-  db.from('diski_reactions').upsert({
-    user_id: ST.user.id, post_id: pid, reaction: reaction
-  }, { onConflict: 'user_id,post_id' }).then(function(){}).catch(function(){});
+  // diski_reactions keys reactions by (target_id, target_type), NOT post_id.
+  // Use delete-then-insert so we don't depend on the exact unique-constraint
+  // name for an onConflict clause. Reactions are non-critical + localStorage
+  // backed, so failures stay silent.
+  db.from('diski_reactions')
+    .delete()
+    .eq('user_id', ST.user.id)
+    .eq('target_id', pid)
+    .eq('target_type', 'post')
+    .then(function(){
+      db.from('diski_reactions').insert({
+        user_id: ST.user.id, target_id: pid, target_type: 'post', reaction: reaction
+      }).then(function(){}).catch(function(){});
+    }).catch(function(){});
 }
 
 function loadReactions() {
@@ -8300,9 +8311,9 @@ function loadReactions() {
     Object.assign(CHAT.myReactions, stored);
   } catch(e) {}
   // Then sync from DB (accurate across devices)
-  db.from('diski_reactions').select('post_id,reaction').eq('user_id', ST.user.id).then(function(res) {
+  db.from('diski_reactions').select('target_id,reaction').eq('user_id', ST.user.id).eq('target_type', 'post').then(function(res) {
     if (res.data) {
-      res.data.forEach(function(r) { CHAT.myReactions[r.post_id] = r.reaction; });
+      res.data.forEach(function(r) { CHAT.myReactions[r.target_id] = r.reaction; });
     }
   }).catch(function(){});
   // Load reposts
