@@ -7417,7 +7417,7 @@ function renderStatGI(c, live) {
       .sort(function(a,b){ return b.gi-a.gi; })
       .slice(0,15)
       .map(function(p,i) {
-        return statRow(i+1, p.name, p.club, p.clubLogo, p.gi, 'G+A', p.goals + ' goals . ' + p.assists + ' assists');
+        return statRow(i+1, p.name, p.club, p.clubLogo, p.gi, 'G+A', (p.goals||0) + ' goals · ' + (p.assists||0) + ' assists');
       }).join('');
   } else {
     rows = PSL_ROSTER.slice()
@@ -7426,7 +7426,7 @@ function renderStatGI(c, live) {
       .sort(function(a,b){ return b.gi-a.gi; })
       .slice(0,15)
       .map(function(p,i) {
-        return statRow(i+1, p.display_name, p.club, null, p.gi, 'G+A', p.goals + ' goals . ' + p.assists + ' assists');
+        return statRow(i+1, p.display_name, p.club, null, p.gi, 'G+A', (p.goals||0) + ' goals · ' + (p.assists||0) + ' assists');
       }).join('');
   }
   c.innerHTML = statSection('Goal Involvements (Goals + Assists)', SVG.bolt, rows);
@@ -7444,7 +7444,7 @@ function renderStatXG(c, live) {
     }).join('');
     var xaList = (live.topAssists||[]).filter(function(p){ return p.xg > 0; }).sort(function(a,b){ return b.xg-a.xg; });
     xaRows = xaList.slice(0,10).map(function(p,i) {
-      return statRow(i+1, p.name, p.club, p.clubLogo, p.xg.toFixed(1), 'xA', 'Actual: ' + p.assists + 'A');
+      return statRow(i+1, p.name, p.club, p.clubLogo, p.xg.toFixed(1), 'xA', 'Actual: ' + (p.assists||0) + 'A');
     }).join('');
   } else {
     xgRows = rosterTopN('xg', 10, function(p){ return p.xg > 0; }).map(function(p,i) {
@@ -7453,7 +7453,7 @@ function renderStatXG(c, live) {
       return statRow(i+1, p.display_name, p.club, null, p.xg.toFixed(1), 'xG', 'Actual: ' + p.goals + 'G (' + diffStr + ')');
     }).join('');
     xaRows = rosterTopN('xa', 10, function(p){ return p.xa > 0; }).map(function(p,i) {
-      return statRow(i+1, p.display_name, p.club, null, p.xa.toFixed(1), 'xA', 'Actual: ' + p.assists + 'A');
+      return statRow(i+1, p.display_name, p.club, null, p.xa.toFixed(1), 'xA', 'Actual: ' + (p.assists||0) + 'A');
     }).join('');
   }
   c.innerHTML = statSection('Expected Goals (xG)', SVG.bars, xgRows) +
@@ -7706,7 +7706,7 @@ function openClubProfile(teamName) {
       '<div style="flex:1">' +
         '<div style="font-family:var(--font-ui);font-size:.88rem;font-weight:700;color:#fff">'+p.display_name+'</div>' +
         '<div style="font-size:.7rem;color:rgba(255,255,255,.4);margin-top:1px">'+
-          p.goals+' goals . '+p.assists+' assists . '+p.apps+' apps' +
+          (p.goals||0)+' goals · '+(p.assists||0)+' assists · '+(p.apps||0)+' apps' +
         '</div>' +
       '</div>' +
       '<span style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:'+pcBg+';color:#fff;letter-spacing:.5px">'+p.position+'</span>' +
@@ -7732,7 +7732,7 @@ function openClubProfile(teamName) {
         '<div style="flex:1;font-family:var(--font-ui);font-size:.85rem;font-weight:700;color:#fff">'+p.display_name+'</div>' +
         '<div style="display:flex;gap:1rem">' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.goals+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">G</div></div>' +
-          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.assists+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">A</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+(p.assists||0)+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">A</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#fff">'+p.apps+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Apps</div></div>' +
           '<div style="text-align:center"><div style="font-family:var(--font-display);font-size:.85rem;font-weight:900;color:#DBA94A">'+p.total_points+'</div><div style="font-size:.5rem;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase">Pts</div></div>' +
         '</div>' +
