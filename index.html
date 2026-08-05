@@ -5369,7 +5369,7 @@ function loadGlobalLB() {
     // Podium -- top 3
     var pw = document.getElementById('podium-wrap'); if (!pw) return;
     var prizes = ['R5,000','R2,500','R1,000'];
-    var emojis = ['','',''];
+    var emojis = ['🥇','🥈','🥉'];
     var order  = [1, 0, 2]; // silver, gold, bronze for visual height effect
     pw.innerHTML = order.map(function(idx) {
       var p2 = rows[idx] || { team_name: '--', total_points: 0 };
@@ -7205,8 +7205,8 @@ function loadStats() {
   //    (populated by apifootball-sync — most accurate source)
   if (db) {
     db.from('players')
-      .select('id,display_name,team,position,goals,assists,clean_sheets,yellow_cards,red_cards,apps,total_points,photo,is_available')
-      .gt('apps', 0)
+      .select('id,display_name,team,position,goals,assists,clean_sheets,yellow_cards,red_cards,apps:appearances,total_points,photo,is_available')
+      .gt('appearances', 0)
       .order('total_points', { ascending: false })
       .limit(500)
       .then(function(res) {
