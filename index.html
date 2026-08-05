@@ -4,14 +4,13 @@
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6398135174637589" crossorigin="anonymous"></script>
   <!-- Google Analytics 4 — free, GDPR-friendly, no cookie banner needed for basic analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YMMS70H24"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    // ACTION REQUIRED: Replace G-XXXXXXXXXX with your GA4 ID from analytics.google.com/
-    // Then go to GA4 → Reports → Real-time to see live visitors
-    gtag('config', 'G-XXXXXXXXXX', {
+    // GA4 measurement ID G-2YMMS70H24 — live. See visitors in GA4 → Reports → Real-time
+    gtag('config', 'G-2YMMS70H24', {
       // Anonymize IPs for POPIA compliance
       anonymize_ip: true,
       // Don't send page views on cookie-blocked loads
@@ -8582,6 +8581,7 @@ function likePost(btn){
   if(!ST.user){showToast('Log in to like posts','warning');return;}
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
+  var _oldL=post.likes||0,_oldD=post.dislikes||0;
   if(CHAT.myReactions[pid]==='like'){
     CHAT.myReactions[pid]=null;
     post.likes=Math.max(0,(post.likes||0)-1);
@@ -8600,7 +8600,10 @@ function likePost(btn){
     saveReaction(pid,'like');
   }
   var span=btn.querySelector('.react-count');if(span)span.textContent=post.likes;
-  db.from('diski_posts').update({likes:post.likes,dislikes:post.dislikes||0}).eq('id',pid);
+  // RLS has no UPDATE policy on diski_posts, so a direct .update() is silently
+  // denied (count reverts to 0). Use the SECURITY DEFINER rpc, which only
+  // touches the counter columns. Pass deltas so concurrent reactions don't clobber.
+  db.rpc('apply_post_reaction',{p_post_id:pid,p_delta_likes:(post.likes||0)-_oldL,p_delta_dislikes:(post.dislikes||0)-_oldD}).then(function(){}).catch(function(){});
 }
 
 function dislikePost(btn){
@@ -8609,6 +8612,7 @@ function dislikePost(btn){
   var alreadyDisliked=CHAT.myReactions[pid]==='dislike';
   var post=CHAT.posts.find(function(p){return p.id===pid;});
   if(!post)return;
+  var _oldL=post.likes||0,_oldD=post.dislikes||0;
   if(alreadyDisliked){
     CHAT.myReactions[pid]=null;
     post.dislikes=Math.max(0,(post.dislikes||0)-1);
@@ -8626,7 +8630,7 @@ function dislikePost(btn){
     saveReaction(pid,'dislike');
   }
   var span=btn.querySelector('.react-count');if(span)span.textContent=post.dislikes;
-  db.from('diski_posts').update({likes:post.likes||0,dislikes:post.dislikes||0}).eq('id',pid);
+  db.rpc('apply_post_reaction',{p_post_id:pid,p_delta_likes:(post.likes||0)-_oldL,p_delta_dislikes:(post.dislikes||0)-_oldD}).then(function(){}).catch(function(){});
 }
 function repostPost(btn){
   var pid=btn?btn.getAttribute('data-pid'):null;if(!pid)return;
@@ -9131,7 +9135,7 @@ function applyConsentPrefs(prefs) {
   try {
     // Disable GA if analytics not consented
     if (!prefs.analytics) {
-      window['ga-disable-G-XXXXXXXXXX'] = true; // replace with your GA4 ID
+      window['ga-disable-G-2YMMS70H24'] = true; // replace with your GA4 ID
     }
   } catch(e) {}
 }
