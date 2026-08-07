@@ -1069,11 +1069,11 @@ var ADVERTISE_EMAIL = 'admin@fantasypsl.co.za';
 function renderAdvertiseAd(containerId) {
   var el = document.getElementById(containerId);
   if (!el) return false;
-  var subject = encodeURIComponent('Advertising on Fantasy PSL');
-  var body = encodeURIComponent('Hi Fantasy PSL team,\n\nI\'d like to advertise on your app. Please send me your rates and options.\n\nBusiness name:\nWebsite:\nBudget:\n\nThanks!');
+  // Opens the in-app advertiser contact form (see openAdvertiseForm below)
+  // instead of a mailto: link, which is unreliable on mobile browsers.
   el.innerHTML =
-    '<a href="mailto:' + ADVERTISE_EMAIL + '?subject=' + subject + '&body=' + body + '" ' +
-      'style="text-decoration:none;background:linear-gradient(135deg,rgba(219,169,74,.12),rgba(14,20,32,.95));' +
+    '<div onclick="openAdvertiseForm()" ' +
+      'style="background:linear-gradient(135deg,rgba(219,169,74,.12),rgba(14,20,32,.95));' +
       'border:1px dashed rgba(219,169,74,.45);border-radius:12px;padding:.85rem 1rem;display:flex;' +
       'align-items:center;gap:.8rem;cursor:pointer">' +
       '<div style="font-size:1.6rem;flex-shrink:0">📢</div>' +
@@ -1081,15 +1081,102 @@ function renderAdvertiseAd(containerId) {
         '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;' +
           'text-transform:uppercase;color:#DBA94A;margin-bottom:.15rem;opacity:.85">Your ad here</div>' +
         '<div style="font-family:var(--font-ui);font-size:.85rem;font-weight:800;color:#fff;' +
-          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Advertise with Fantasy PSL</div>' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">To advertise, contact us</div>' +
         '<div style="font-size:.72rem;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;' +
-          'text-overflow:ellipsis">Reach Mzansi\'s football fans — tap to enquire →</div>' +
+          'text-overflow:ellipsis">Reach Mzansi\'s football fans →</div>' +
       '</div>' +
       '<div style="flex-shrink:0;background:#DBA94A;color:#0a0a15;font-size:.72rem;font-weight:800;' +
-        'padding:.4rem .7rem;border-radius:8px;white-space:nowrap">Get Rates</div>' +
-    '</a>';
+        'padding:.4rem .7rem;border-radius:8px;white-space:nowrap">Click Here</div>' +
+    '</div>';
   el.style.display = 'block';
   return true;
+}
+
+// ── Advertiser contact form ────────────────────────────────────────────────
+// Opened from the "To advertise, contact us → Click Here" house ad.
+// Submissions are saved to the Supabase `advertiser_inquiries` table so they
+// are captured reliably (viewable in Supabase / admin). Run the accompanying
+// SQL to create the table + allow anonymous inserts.
+function openAdvertiseForm() {
+  var existing = document.getElementById('adv-form-overlay');
+  if (existing) { existing.style.display = 'flex'; return; }
+  var ov = document.createElement('div');
+  ov.id = 'adv-form-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1.2rem';
+  ov.innerHTML =
+    '<div style="background:#191C25;border:1px solid rgba(219,169,74,.25);border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:1.5rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.3rem">' +
+        '<div style="font-family:var(--font-ui,sans-serif);font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DBA94A">Advertise with Fantasy PSL</div>' +
+        '<div onclick="closeAdvertiseForm()" style="cursor:pointer;color:rgba(255,255,255,.5);font-size:1.3rem;line-height:1;margin-top:-.2rem">&times;</div>' +
+      '</div>' +
+      '<div style="font-family:var(--font-ui,sans-serif);font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:.3rem">Reach Mzansi\'s football fans</div>' +
+      '<div style="font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:1.1rem;line-height:1.5">Tell us about your business and we\'ll get back to you with rates and options.</div>' +
+      '<div id="adv-form-fields">' +
+        _advInput('adv-business', 'Business name *', 'text', 'e.g. Acme Media') +
+        _advInput('adv-name', 'Your name *', 'text', 'Full name') +
+        _advInput('adv-email', 'Email *', 'email', 'you@company.com') +
+        _advInput('adv-website', 'Website', 'text', 'https://') +
+        _advInput('adv-budget', 'Monthly budget (optional)', 'text', 'e.g. R2 000') +
+        '<label style="display:block;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin:.7rem 0 .3rem">Message</label>' +
+        '<textarea id="adv-message" rows="3" placeholder="What would you like to promote?" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.65rem .8rem;color:#fff;font-size:.9rem;font-family:var(--font-body,sans-serif);outline:none;resize:vertical"></textarea>' +
+      '</div>' +
+      '<div id="adv-form-error" style="display:none;color:#ff6b6b;font-size:.8rem;margin-top:.6rem"></div>' +
+      '<button id="adv-form-submit" onclick="submitAdvertiseInquiry()" style="width:100%;margin-top:1rem;background:#DBA94A;color:#0a0a15;border:none;border-radius:10px;font-family:var(--font-ui,sans-serif);font-size:.95rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px">Send enquiry</button>' +
+      '<div style="text-align:center;font-size:.7rem;color:rgba(255,255,255,.3);margin-top:.7rem">Or email <a href="mailto:' + ADVERTISE_EMAIL + '" style="color:#DBA94A">' + ADVERTISE_EMAIL + '</a></div>' +
+    '</div>';
+  ov.addEventListener('click', function(e){ if (e.target === ov) closeAdvertiseForm(); });
+  document.body.appendChild(ov);
+}
+function _advInput(id, label, type, ph) {
+  return '<label style="display:block;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin:.7rem 0 .3rem">' + label + '</label>' +
+    '<input id="' + id + '" type="' + type + '" placeholder="' + ph + '" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.65rem .8rem;color:#fff;font-size:.9rem;font-family:var(--font-body,sans-serif);outline:none">';
+}
+function closeAdvertiseForm() {
+  var ov = document.getElementById('adv-form-overlay');
+  if (ov) ov.remove();
+}
+function submitAdvertiseInquiry() {
+  var errEl = document.getElementById('adv-form-error');
+  var btn = document.getElementById('adv-form-submit');
+  function val(id){ var e=document.getElementById(id); return e?e.value.trim():''; }
+  var business = val('adv-business'), name = val('adv-name'), email = val('adv-email');
+  var website = val('adv-website'), budget = val('adv-budget'), message = val('adv-message');
+  if (!business || !name || !email) {
+    errEl.textContent = 'Please fill in business name, your name, and email.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block'; return;
+  }
+  errEl.style.display = 'none';
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  var row = {
+    business_name: business, contact_name: name, email: email,
+    website: website || null, budget: budget || null, message: message || null,
+    source_page: (typeof ST !== 'undefined' && ST.page) ? ST.page : null
+  };
+  if (!db) { errEl.textContent = 'Could not send right now — please email us instead.'; errEl.style.display='block'; btn.textContent='Send enquiry'; btn.disabled=false; return; }
+  db.from('advertiser_inquiries').insert(row).then(function(res){
+    if (res.error) {
+      errEl.textContent = 'Could not send — please email ' + ADVERTISE_EMAIL;
+      errEl.style.display = 'block';
+      btn.textContent = 'Send enquiry'; btn.disabled = false;
+      return;
+    }
+    var ov = document.getElementById('adv-form-overlay');
+    if (ov) ov.querySelector('div').innerHTML =
+      '<div style="text-align:center;padding:1rem 0">' +
+        '<div style="font-size:2.5rem;margin-bottom:.5rem">✅</div>' +
+        '<div style="font-family:var(--font-ui,sans-serif);font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:.4rem">Thank you!</div>' +
+        '<div style="font-size:.85rem;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:1.2rem">We\'ve received your enquiry and will be in touch soon.</div>' +
+        '<button onclick="closeAdvertiseForm()" style="background:#DBA94A;color:#0a0a15;border:none;border-radius:10px;font-family:var(--font-ui,sans-serif);font-weight:800;padding:.7rem 1.6rem;cursor:pointer">Done</button>' +
+      '</div>';
+  }).catch(function(){
+    errEl.textContent = 'Could not send — please email ' + ADVERTISE_EMAIL;
+    errEl.style.display = 'block';
+    btn.textContent = 'Send enquiry'; btn.disabled = false;
+  });
 }
 
 // Decide the fallback (no sponsor booked): alternate between the app\'s own
@@ -1602,14 +1689,15 @@ else setTimeout(loadHomeNews,500);
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
       <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-      <!-- House-ad fallback -->
-      <div id="news-house-ad" style="background:linear-gradient(135deg,rgba(34,137,90,.15),rgba(14,20,32,.9));border:1px solid rgba(34,137,90,.2);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem">
-        <div style="font-size:1.4rem;flex-shrink:0">📱</div>
-        <div style="flex:1">
-          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff">Add Fantasy PSL to your home screen</div>
-          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.45);margin-top:.15rem">Tap Share → Add to Home Screen for instant access</div>
+      <!-- House-ad fallback → advertiser CTA -->
+      <div id="news-house-ad" onclick="openAdvertiseForm()" style="background:linear-gradient(135deg,rgba(219,169,74,.12),rgba(14,20,32,.95));border:1px dashed rgba(219,169,74,.45);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer">
+        <div style="font-size:1.4rem;flex-shrink:0">📢</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DBA94A;margin-bottom:.15rem;opacity:.85">Your ad here</div>
+          <div style="font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:800;color:#fff">To advertise, contact us</div>
+          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.55);margin-top:.1rem">Reach Mzansi's football fans →</div>
         </div>
-        <span style="font-family:var(--font-ui,sans-serif);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);flex-shrink:0">Sponsored</span>
+        <span style="font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:800;background:#DBA94A;color:#0a0a15;padding:.4rem .7rem;border-radius:8px;flex-shrink:0">Click Here</span>
       </div>
     </div>
     <script>(function(){var newsOriginal=null;function c(){var h=document.getElementById('news-house-ad');if(h&&newsOriginal===null)newsOriginal=h.innerHTML;var ad=(typeof sponsorFor==='function')?sponsorFor('news'):null;if(ad&&typeof renderSponsorAd==='function'){if(renderSponsorAd('news-house-ad',ad))return;}var i=document.querySelector('#news-top-ad ins.adsbygoogle');if(i&&i.getAttribute('data-ad-status')==='filled'){if(h)h.style.display='none';return;}if(h&&typeof showHouseFallback==='function')showHouseFallback('news-house-ad',newsOriginal);else if(h)h.style.display='flex';}if(typeof loadSponsorAds==='function'){loadSponsorAds().then(function(){setTimeout(c,1500);setTimeout(c,3500);});}else{setTimeout(c,2500);setTimeout(c,5000);}})();</script>
