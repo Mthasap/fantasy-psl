@@ -1922,35 +1922,43 @@ var SEASON       = 2025;
 
 // -- Club logos ---------------------------------------
 var LOGOS = {
-  // Images via wsrv.nl CDN proxy — fast global caching
-  'Mamelodi Sundowns':   'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8b/Mamelodi_Sundowns_FC_logo.svg&w=80&output=webp&we',
-  'Orlando Pirates':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Orlando_Pirates_Logo.svg&w=80&output=webp&we',
-  'Kaizer Chiefs':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/a/a1/Kaizer_Chiefs_logo.svg&w=80&output=webp&we',
-  'Stellenbosch FC':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png&w=80&output=webp&we',
-  'Stellenbosch':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f8/Stellenbosch_FC_logo.png&w=80&output=webp&we',
-  'AmaZulu FC':          'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png&w=80&output=webp&we',
-  'AmaZulu':             'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/81/AmaZulu_FC_logo.png&w=80&output=webp&we',
-  'Chippa United':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/09/Chippa_United_logo.png&w=80&output=webp&we',
-  'Golden Arrows':       'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/5/5b/Golden_Arrows_FC_logo.png&w=80&output=webp&we',
-  'Sekhukhune United':   'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d0/Sekhukhune_United_FC.png&w=80&output=webp&we',
-  'TS Galaxy':           'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/87/TS_Galaxy_FC_logo.png&w=80&output=webp&we',
-  'Polokwane City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/e/e7/Polokwane_City_FC.png&w=80&output=webp&we',
-  'Richards Bay':        'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/f/f3/Richards_Bay_FC_logo.png&w=80&output=webp&we',
-  'Durban City':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/c/cf/Durban_City_FC.png&w=80&output=webp&we',
-  'Siwelele FC':         'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/3/3e/Siwelele_FC_logo.png&w=80&output=webp&we',
+  // API-Football crests, keyed by stable team ID (media.api-sports.io).
+  // Replaced the old wsrv.nl→Wikipedia URLs, which had gone stale and 404'd —
+  // that's why most clubs were falling back to initials badges. IDs sourced
+  // from psl_teams.apifootball_team_id.
+  'Mamelodi Sundowns':   'https://media.api-sports.io/football/teams/2699.png',
+  'Orlando Pirates':     'https://media.api-sports.io/football/teams/2700.png',
+  'Kaizer Chiefs':       'https://media.api-sports.io/football/teams/2691.png',
+  'Stellenbosch':        'https://media.api-sports.io/football/teams/4905.png',
+  'Stellenbosch FC':     'https://media.api-sports.io/football/teams/4905.png',
+  'AmaZulu':             'https://media.api-sports.io/football/teams/2669.png',
+  'AmaZulu FC':          'https://media.api-sports.io/football/teams/2669.png',
+  'Chippa United':       'https://media.api-sports.io/football/teams/2698.png',
+  'Golden Arrows':       'https://media.api-sports.io/football/teams/2690.png',
+  'Lamontville Golden Arrows': 'https://media.api-sports.io/football/teams/2690.png',
+  'Sekhukhune United':   'https://media.api-sports.io/football/teams/15537.png',
+  'TS Galaxy':           'https://media.api-sports.io/football/teams/8074.png',
+  'Polokwane City':      'https://media.api-sports.io/football/teams/2693.png',
+  'Richards Bay':        'https://media.api-sports.io/football/teams/10567.png',
+  'Richards Bay FC':     'https://media.api-sports.io/football/teams/10567.png',
+  'Durban City':         'https://media.api-sports.io/football/teams/24757.png',
+  'Siwelele':            'https://media.api-sports.io/football/teams/26299.png',
+  'Siwelele FC':         'https://media.api-sports.io/football/teams/26299.png',
   'Kruger United':       'https://media.api-sports.io/football/teams/23110.png',
   'Kruger United FC':    'https://media.api-sports.io/football/teams/23110.png',
   'Milford':             'https://media.api-sports.io/football/teams/23109.png',
   'Milford FC':          'https://media.api-sports.io/football/teams/23109.png',
-  'Marumo Gallants':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
-  'Marumo Gallants FC':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
-  'Marumo Gallants FC':  'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/7/73/Marumo_Gallants_F.C._Logo.png&w=80&output=webp&we',
-  'Orbit College FC':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/0/00/Orbit_College_FC_logo.png&w=80&output=webp&we',
-  'Magesi FC':           'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
-  'Magesi':              'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/2/2b/Magesi_FC_logo.png&w=80&output=webp&we',
-  'Cape Town Spurs':     'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d2/Cape_Town_Spurs_FC.png&w=80&output=webp&we',
-  'Cape Town City':      'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/8/8c/Cape_Town_City_FC_logo.png&w=80&output=webp&we',
-  'SuperSport United':    'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/d/d5/SuperSport_United_FC_logo.svg&w=80&output=webp&we'
+  'Marumo Gallants':     'https://media.api-sports.io/football/teams/2682.png',
+  'Marumo Gallants FC':  'https://media.api-sports.io/football/teams/2682.png',
+  'Orbit College':       'https://media.api-sports.io/football/teams/10582.png',
+  'Orbit College FC':    'https://media.api-sports.io/football/teams/10582.png',
+  'Magesi':              'https://media.api-sports.io/football/teams/19999.png',
+  'Magesi FC':           'https://media.api-sports.io/football/teams/19999.png',
+  'Cape Town City':      'https://media.api-sports.io/football/teams/2697.png',
+  'SuperSport United':   'https://media.api-sports.io/football/teams/2694.png',
+  'Supersport United':   'https://media.api-sports.io/football/teams/2694.png',
+  'Casric Stars':        'https://media.api-sports.io/football/teams/19997.png',
+  'Royal AM':            'https://media.api-sports.io/football/teams/10566.png'
 };
 
 // -- Logo path (served from same folder) -------------
@@ -7336,12 +7344,16 @@ function renderStats() {
   // Use live DB players if available, otherwise fall back to PSL_ROSTER
   var dbP = (window.LIVE_STATS && window.LIVE_STATS.dbPlayers) || null;
   var live = window.LIVE_STATS || null;
-  if (STAT_TAB === 'goals')   { renderStatGoals(c, dbP ? { dbPlayers: dbP } : live); return; }
-  if (STAT_TAB === 'assists') { renderStatAssists(c, dbP ? { dbPlayers: dbP } : live); return; }
+  // Merge dbPlayers INTO the live object so renderers still get table/topScorers
+  // etc. (previously passing {dbPlayers} alone dropped live.table, which made
+  // "Goals by Club" show "No data").
+  var merged = dbP ? Object.assign({}, live, { dbPlayers: dbP }) : live;
+  if (STAT_TAB === 'goals')   { renderStatGoals(c, merged); return; }
+  if (STAT_TAB === 'assists') { renderStatAssists(c, merged); return; }
   if (STAT_TAB === 'cs')      { renderStatCS(c, dbP || PSL_ROSTER.slice()); return; }
-  if (STAT_TAB === 'gi')      { renderStatGI(c, dbP ? { dbPlayers: dbP } : live); return; }
-  if (STAT_TAB === 'xg')      { renderStatXG(c, dbP ? { dbPlayers: dbP } : live); return; }
-  if (STAT_TAB === 'cards')   { renderStatCards(c, dbP ? { dbPlayers: dbP } : live); return; }
+  if (STAT_TAB === 'gi')      { renderStatGI(c, merged); return; }
+  if (STAT_TAB === 'xg')      { renderStatXG(c, merged); return; }
+  if (STAT_TAB === 'cards')   { renderStatCards(c, merged); return; }
   if (STAT_TAB === 'xg')      { renderStatXG(c, null); return; }
   if (STAT_TAB === 'cards')   { renderStatCards(c, null); return; }
 }
@@ -7469,11 +7481,19 @@ function renderStatCS(c, players) {
     .sort(function(a,b){ return (b.clean_sheets||0)-(a.clean_sheets||0); }).slice(0,10)
     .map(function(p,i){ return statRow(i+1, p.display_name||p.name, p.team||p.club, getTeamLogo(p.team||p.club), p.clean_sheets||0, 'Clean Sheets', 'DEF · '+(p.apps||0)+' apps'); }).join('');
 
-  // Club clean sheets from standings table
+  // Club clean sheets = each club's goalkeeper clean-sheet count, from LIVE data.
+  // (Previously read PSL_ROSTER with an apps>3 filter, so it was always 0 early
+  // in the season.)
   var tableData = (LIVE_STATS && LIVE_STATS.table && LIVE_STATS.table.length ? LIVE_STATS.table : REAL_TABLE).slice();
+  var csByClub = {};
+  src.forEach(function(p){
+    if (p.position === 'GK' && (p.clean_sheets||0) > 0) {
+      var club = p.team || p.club;
+      if (club) csByClub[club] = Math.max(csByClub[club]||0, p.clean_sheets||0);
+    }
+  });
   var clubCS = tableData.map(function(t) {
-    var gk = PSL_ROSTER.find(function(p){ return p.club===t.team && p.position==='GK' && p.apps>3; });
-    return { team:t.team, cs: gk ? gk.clean_sheets : 0 };
+    return { team:t.team, cs: csByClub[t.team] || 0 };
   }).sort(function(a,b){ return b.cs-a.cs; });
   var clubRows = clubCS.slice(0,8).map(function(t,i) {
     return statRow(i+1, t.team, t.team, getTeamLogo(t.team), t.cs, 'Clean Sheets', '');
