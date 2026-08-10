@@ -9030,6 +9030,14 @@ var AUTO_SQUAD_STYLE = 'balanced';
 
 function openAutoSquadModal() {
   if (!ST.user) { openAuth('login'); return; }
+  // Registered users cannot rebuild a whole new squad — they change their team
+  // through Transfers (which cost free transfers / point hits). Auto Squad is a
+  // first-time-setup convenience only.
+  if (ST.squadRegistered) {
+    showToast('You already have a squad. Use Transfers to make changes.', 'info');
+    if (typeof goPage === 'function') { try { goPage('squad'); } catch(e){} }
+    return;
+  }
   if (!ST.allPlayers || !ST.allPlayers.length) {
     showToast('Loading players... try again in a moment', 'info'); return;
   }
