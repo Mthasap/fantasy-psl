@@ -5306,7 +5306,9 @@ function loadTeamLeague() {
         }).catch(function() {});
 
       // Fetch all registered fans of this team ordered by points
-      db.from('profiles')
+      // Reads the public_profiles VIEW (safe columns only) — the profiles table
+      // itself no longer allows public reads of personal fields.
+      db.from('public_profiles')
         .select('id, team_name, username, total_points, squad_registered')
         .eq('supported_team', favTeam)
         .eq('squad_registered', true)
@@ -5421,17 +5423,17 @@ function loadGlobalLB() {
 
   // Fetch registered + non-registered profiles so everyone appears (registered on top by sort)
   Promise.all([
-    db.from('profiles')
+    db.from('public_profiles')
       .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
       .eq('squad_registered', true)
       .order('total_points', { ascending: false })
       .limit(200),
-    db.from('profiles')
+    db.from('public_profiles')
       .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
       .gte('squad_count', 15)
       .order('total_points', { ascending: false })
       .limit(200),
-    db.from('profiles')
+    db.from('public_profiles')
       .select('id, team_name, username, total_points, gw_points, squad_count, squad_registered, overall_rank')
       .eq('squad_registered', false)
       .order('created_at', { ascending: false })
@@ -5552,7 +5554,7 @@ function openPublicProfile(username) {
   document.body.appendChild(modal);
   document.getElementById('pub-close-btn').addEventListener('click', function() { modal.remove(); });
 
-  db.from('profiles')
+  db.from('public_profiles')
     .select('id, team_name, username, total_points, gw_points, overall_rank, avatar_url, squad_data, squad_count')
     .eq('username', username).single()
     .then(function(res) {
