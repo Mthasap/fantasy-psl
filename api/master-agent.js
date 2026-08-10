@@ -420,24 +420,33 @@ module.exports = async (req, res) => {
     // ── STEP 6: Points calculation ────────────────────────────────────────
     log.push('\n[Points Engine]');
     if (phase.phase === 'in-season') {
-      // Only run scoring if there were matches yesterday or today
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      const today     = new Date().toISOString().slice(0, 10);
+      // Score whenever the CURRENT gameweek has any finished fixtures — not
+      // only when a match finished in the last 24h. A gameweek can span many
+      // days, and new squads get created throughout it; the old 24h window
+      // skipped scoring for most of the gameweek, so late-joining squads never
+      // got their points. points-cron recomputes everyone from scratch, so
+      // re-running each night is safe and idempotent.
+      let hasCurrentGwFT = false;
+      const { data: curGw } = await db
+        .from('gameweeks').select('gw_number')
+        .eq('is_current', true).limit(1).maybeSingle();
 
-      const { data: recentFT } = await db
-        .from('fixtures').select('id')
-        .eq('season', phase.seasonYear)
-        .eq('status', 'FT')
-        .gte('kickoff_time', yesterday + 'T00:00:00Z')
-        .lte('kickoff_time', today + 'T23:59:59Z')
-        .limit(1);
+      if (curGw) {
+        const { data: ftFix } = await db
+          .from('fixtures').select('id')
+          .eq('season', phase.seasonYear)
+          .eq('gw_number', curGw.gw_number)
+          .eq('status', 'FT')
+          .limit(1);
+        hasCurrentGwFT = (ftFix || []).length > 0;
+      }
 
-      if ((recentFT || []).length > 0) {
+      if (hasCurrentGwFT) {
         const r5 = await call('/api/points-cron?cron=1');
         results.points = { ok: r5.ok, updated: r5.data?.profiles_updated };
-        log.push(`  ✅ Points scored: ${r5.data?.profiles_updated || 0} squads updated`);
+        log.push(`  ✅ Points scored (GW${curGw.gw_number}): ${r5.data?.profiles_updated || 0} squads updated`);
       } else {
-        log.push('  ℹ No recent FT fixtures — skipping points calculation');
+        log.push('  ℹ Current gameweek has no FT fixtures yet — skipping points calculation');
         results.points = { ok: true, skipped: true };
       }
     } else {
