@@ -1305,7 +1305,7 @@
           <div style="background:#080B10;border-radius:0 0 8px 8px;overflow:hidden;font-family:Arial,sans-serif;font-size:14px">
             <div style="background:linear-gradient(135deg,#E8192C 0%,#7B0D14 100%);padding:22px 20px;text-align:center">
               <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:3px">Fantasy PSL</div>
-              <div style="font-size:10px;color:rgba(255,255,255,.6);letter-spacing:3px;text-transform:uppercase">Betway Premiership 2025/26</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.6);letter-spacing:3px;text-transform:uppercase">Betway Premiership 2026/27</div>
             </div>
             <div style="padding:22px 20px;background:#0E1420">
               <p style="font-size:16px;font-weight:700;color:#fff;margin:0 0 10px">Hi Coach! 👋</p>
@@ -2066,9 +2066,12 @@
   async function loadOverviewStats() {
     try {
       const [users, squadsByFlag, squadsByCount, posts, leagues] = await Promise.all([
-        sbCount('profiles'),
-        sbCount('profiles', 'squad_registered=eq.true'),
-        sbCount('profiles', 'squad_count=gte.15'),
+        // Count via the public_profiles VIEW (anon-readable). The profiles table
+        // itself is now locked down by RLS (owner-only reads), so counting it
+        // with the anon key returns 0 — which is why these tiles broke.
+        sbCount('public_profiles'),
+        sbCount('public_profiles', 'squad_registered=eq.true'),
+        sbCount('public_profiles', 'squad_count=gte.15'),
         sbCount('diski_posts', 'is_removed=eq.false'),
         sbCount('leagues')
       ]);
@@ -2122,7 +2125,7 @@
       if (existing && existing.length) {
         await sbWrite('update', 'gameweeks', { is_current: true }, { gw_number: String(gw) });
       } else {
-        await sbWrite('insert', 'gameweeks', { gw_number: gw, number: gw, name: 'Gameweek ' + gw, season: 2025, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { gw_number: gw, number: gw, name: 'Gameweek ' + gw, season: 2026, is_current: true, is_finished: false });
       }
       STATE.gw = gw;
       showStatus('gw-status', 'ok', '✓ GW' + gw + ' is now active — app updates within 5 min');
@@ -2154,7 +2157,7 @@
   }
 
   async function forceOpenNextGW() {
-    const next = (STATE.gw || 23) + 1;
+    const next = (STATE.gw || 1) + 1;
     if (!confirm('Open GW' + next + '? Make sure GW' + STATE.gw + ' is closed first.')) return;
     try {
       await sbWrite('update_not', 'gameweeks', { is_current: false }, null, { notMatch: { gw_number: next } });
@@ -2162,7 +2165,7 @@
       if (existing && existing.length) {
         await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { gw_number: String(next) });
       } else {
-        await sbWrite('insert', 'gameweeks', { gw_number: next, number: next, name: 'Gameweek ' + next, season: 2025, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { gw_number: next, number: next, name: 'Gameweek ' + next, season: 2026, is_current: true, is_finished: false });
       }
       showStatus('gw-close-status', 'ok', '✓ GW' + next + ' is now active');
       STATE.gw = next;
@@ -2176,9 +2179,9 @@
   // ══════════════════════════════════════════════════════════════════
   async function loadCurrentFixtures() {
     if (!STATE.gw) await loadCurrentGW();
-    const gw = STATE.gw || 23;
+    const gw = STATE.gw || 1;
     try {
-      const data = await sb('GET', 'fixtures', null, 'gw_number=eq.' + gw + '&season=eq.2025&select=*&order=kickoff_time.asc');
+      const data = await sb('GET', 'fixtures', null, 'gw_number=eq.' + gw + '&season=eq.2026&select=*&order=kickoff_time.asc');
       STATE.fixtures = data || [];
 
       const total     = STATE.fixtures.length;
@@ -2249,7 +2252,7 @@
     const localDate  = new Date(kickoff);
     const kickoffUTC = new Date(localDate.getTime() - 2 * 60 * 60 * 1000).toISOString();
     try {
-      await sbWrite('insert', 'fixtures', { gw_number: gw, home_team_name: home, away_team_name: away, kickoff_time: kickoffUTC, status: 'NS', season: 2025 });
+      await sbWrite('insert', 'fixtures', { gw_number: gw, home_team_name: home, away_team_name: away, kickoff_time: kickoffUTC, status: 'NS', season: 2026 });
       showStatus('fixture-status', 'ok', '✓ Fixture added: ' + home + ' vs ' + away + ' — GW' + gw);
       document.getElementById('fix-gw').value = '';
       document.getElementById('fix-kickoff').value = '';
@@ -4035,7 +4038,7 @@ CREATE POLICY "Service full" ON news_posts USING (true) WITH CHECK (true);`;
       if (existing && existing.length) {
         await sbWrite('update', 'gameweeks', { is_current: true, is_finished: false }, { gw_number: String(nextGW) });
       } else {
-        await sbWrite('insert', 'gameweeks', { gw_number: nextGW, number: nextGW, name: 'Gameweek ' + nextGW, season: 2025, is_current: true, is_finished: false });
+        await sbWrite('insert', 'gameweeks', { gw_number: nextGW, number: nextGW, name: 'Gameweek ' + nextGW, season: 2026, is_current: true, is_finished: false });
       }
 
       showStepStatus('step3-status', 'ok',
