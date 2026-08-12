@@ -214,85 +214,53 @@ async function getResults() {
 // STANDINGS
 // ══════════════════════════════════════════════════════════════════════════
 async function getStandings(forceRefresh) {
-  // ?refresh=1 bypasses the server cache and re-queries API-Football directly —
-  // use it when a result is in your fixtures but the standings feed is lagging.
+  // ?refresh=1 bypasses the server cache and recomputes on the spot.
   var cached = forceRefresh ? null : fromCache('standings');
   if (cached) return cached;
 
   var sy = await seasonYear();
-  var d  = await apiFetch('/standings?league=' + PSL_LEAGUE + '&season=' + sy, TOKEN);
 
-  var groups = (d.response || [])[0];
-  var rows   = groups ? (groups.league && groups.league.standings ? groups.league.standings[0] : []) : [];
-
-  var standings = (rows || []).map(function(s) {
-    return {
-      pos:  s.rank,
-      team: normTeam(s.team && s.team.name || ''),
-      logo: s.team && s.team.logo || null,
-      p:    s.all && s.all.played || 0,
-      w:    s.all && s.all.win    || 0,
-      d:    s.all && s.all.draw   || 0,
-      l:    s.all && s.all.lose   || 0,
-      gf:   s.all && s.all.goals && s.all.goals.for     || 0,
-      ga:   s.all && s.all.goals && s.all.goals.against || 0,
-      gd:   s.goalsDiff || 0,
-      pts:  s.points    || 0,
-      form: s.form ? s.form.split('').slice(-5) : []
-    };
-  });
-
-  // ── PRE-SEASON GUARD ──────────────────────────────────────────────────
-  // API-Football sometimes returns a stale/partial table before the season
-  // has genuinely started (e.g. carrying old results, or a friendly). If the
-  // TOTAL games played across the whole league is very low, the season hasn't
-  // really kicked off yet — show a clean all-zero table so users don't see
-  // confusing fake results on launch day. Real numbers appear once actual
-  // matches finish and the played count climbs.
-  var totalPlayed = standings.reduce(function(sum, s){ return sum + (s.p || 0); }, 0);
-  var SEASON_STARTED = totalPlayed >= 8; // ~ a full opening round across 16 clubs
-  if (!SEASON_STARTED) {
-    standings = standings.map(function(s){
-      return { pos: s.pos, team: s.team, logo: s.logo,
-               p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form: [] };
-    });
-    // sort alphabetically when everyone's on zero (no fake ranking)
-    standings.sort(function(a,b){ return a.team < b.team ? -1 : 1; });
-    standings.forEach(function(s,i){ s.pos = i+1; });
+  // ── OPTION A: compute the table from OUR OWN finished fixtures ──────────
+  // The API-Football /standings feed lags and can be internally inconsistent
+  // (e.g. a team showing form ["W"] but played 0). We already store every
+  // result in our fixtures table, so we build the table ourselves — it always
+  // matches the results users can see, updates the instant a fixture goes FT,
+  // and correctly sums across overlapping gameweeks.
+  var standings = null;
+  try {
+    standings = await computeStandingsFromFixtures(sy);
+  } catch (e) {
+    standings = null; // fall through to API-Football fallback below
   }
 
-  // ── ENSURE ALL 16 CLUBS APPEAR ────────────────────────────────────────
-  // Early in the season, API-Football's standings only include teams that have
-  // already played. So on opening weekend only ~10 clubs show. Merge in the
-  // full 16-club list so every team appears — those who haven't played yet sit
-  // at the bottom on zero points until their first match.
-  var ALL_CLUBS_2026 = [
-    'Orlando Pirates','Mamelodi Sundowns','Kaizer Chiefs','Stellenbosch FC',
-    'AmaZulu FC','Chippa United','Golden Arrows','Sekhukhune United','TS Galaxy',
-    'Polokwane City','Marumo Gallants FC','Richards Bay','Milford FC','Durban City',
-    'Kruger United','Siwelele FC'
-  ];
-  var haveTeams = {};
-  standings.forEach(function(s){ haveTeams[(s.team||'').toLowerCase()] = true; });
-  ALL_CLUBS_2026.forEach(function(club){
-    // loose match on normalised name
-    var found = standings.some(function(s){
-      var a = (s.team||'').toLowerCase().replace(/\s*fc$/,'').trim();
-      var b = club.toLowerCase().replace(/\s*fc$/,'').trim();
-      return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
-    });
-    if (!found) {
-      standings.push({ pos: 0, team: normTeam(club), logo: null,
-        p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form: [] });
+  // ── FALLBACK: only if our fixtures read failed entirely ────────────────
+  if (!standings || !standings.length) {
+    try {
+      var d      = await apiFetch('/standings?league=' + PSL_LEAGUE + '&season=' + sy, TOKEN);
+      var groups = (d.response || [])[0];
+      var rows   = groups ? (groups.league && groups.league.standings ? groups.league.standings[0] : []) : [];
+      standings = (rows || []).map(function(s) {
+        return {
+          pos:  s.rank,
+          team: normTeam(s.team && s.team.name || ''),
+          logo: s.team && s.team.logo || null,
+          p:    s.all && s.all.played || 0,
+          w:    s.all && s.all.win    || 0,
+          d:    s.all && s.all.draw   || 0,
+          l:    s.all && s.all.lose   || 0,
+          gf:   s.all && s.all.goals && s.all.goals.for     || 0,
+          ga:   s.all && s.all.goals && s.all.goals.against || 0,
+          gd:   s.goalsDiff || 0,
+          pts:  s.points    || 0,
+          form: s.form ? s.form.split('').slice(-5) : []
+        };
+      });
+      standings.sort(sortStandings);
+      standings.forEach(function(s,i){ s.pos = i+1; });
+    } catch (e2) {
+      standings = [];
     }
-  });
-  // re-sort: by points desc, then GD, then alphabetical; re-number positions
-  standings.sort(function(a,b){
-    if ((b.pts||0) !== (a.pts||0)) return (b.pts||0) - (a.pts||0);
-    if ((b.gd||0)  !== (a.gd||0))  return (b.gd||0)  - (a.gd||0);
-    return (a.team||'') < (b.team||'') ? -1 : 1;
-  });
-  standings.forEach(function(s,i){ s.pos = i+1; });
+  }
 
   // Persist to Supabase for cron use
   if (SB_URL && SB_KEY && standings.length) {
@@ -311,7 +279,7 @@ async function getStandings(forceRefresh) {
           goals_against: s.ga,
           goal_diff:     s.gd,
           points:        s.pts,
-          form:          s.form.join(','),
+          form:          (s.form || []).join(','),
           updated_at:    new Date().toISOString()
         };
       });
@@ -323,6 +291,77 @@ async function getStandings(forceRefresh) {
     type: 'standings', standings,
     fetched_at: new Date().toISOString()
   });
+}
+
+// Shared sort: points desc → goal difference desc → goals-for desc → name asc
+function sortStandings(a, b) {
+  if ((b.pts||0) !== (a.pts||0)) return (b.pts||0) - (a.pts||0);
+  if ((b.gd||0)  !== (a.gd||0))  return (b.gd||0)  - (a.gd||0);
+  if ((b.gf||0)  !== (a.gf||0))  return (b.gf||0)  - (a.gf||0);
+  return (a.team||'') < (b.team||'') ? -1 : 1;
+}
+
+// Build the league table from our own fixtures for the given season.
+// Every team that appears in any fixture is included (so all 16 clubs show,
+// even before they've played). Stats come only from finished (FT/AET/PEN)
+// fixtures, so unplayed teams correctly sit on zero.
+async function computeStandingsFromFixtures(sy) {
+  var FT_STATUSES = ['FT', 'AET', 'PEN'];
+
+  var res = await db()
+    .from('fixtures')
+    .select('home_team_name,away_team_name,home_team_logo,away_team_logo,home_score,away_score,status,kickoff_at')
+    .eq('season', sy)
+    .order('kickoff_at', { ascending: true });
+
+  if (res.error) throw new Error(res.error.message);
+  var fixtures = res.data || [];
+  if (!fixtures.length) return [];
+
+  var teams = {}; // key: normalised team name → row
+  function keyOf(name) { return (name || '').trim().toLowerCase().replace(/\s*fc$/, ''); }
+  function ensure(name, logo) {
+    var k = keyOf(name);
+    if (!k) return null;
+    if (!teams[k]) {
+      teams[k] = { team: normTeam((name || '').trim()), logo: logo || null,
+                   p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, _form: [] };
+    }
+    if (!teams[k].logo && logo) teams[k].logo = logo;
+    return teams[k];
+  }
+
+  fixtures.forEach(function(f) {
+    var home = ensure(f.home_team_name, f.home_team_logo);
+    var away = ensure(f.away_team_name, f.away_team_logo);
+    if (!home || !away) return;
+
+    var isFT = FT_STATUSES.indexOf(f.status) > -1;
+    if (!isFT || f.home_score == null || f.away_score == null) return;
+
+    var hs = Number(f.home_score), as = Number(f.away_score);
+    if (isNaN(hs) || isNaN(as)) return;
+
+    home.p++; away.p++;
+    home.gf += hs; home.ga += as;
+    away.gf += as; away.ga += hs;
+
+    if (hs > as)      { home.w++; home.pts += 3; away.l++; home._form.push('W'); away._form.push('L'); }
+    else if (hs < as) { away.w++; away.pts += 3; home.l++; home._form.push('L'); away._form.push('W'); }
+    else              { home.d++; away.d++; home.pts += 1; away.pts += 1; home._form.push('D'); away._form.push('D'); }
+  });
+
+  var standings = Object.keys(teams).map(function(k) {
+    var t = teams[k];
+    t.gd = t.gf - t.ga;
+    t.form = t._form.slice(-5); // last 5 results, chronological
+    delete t._form;
+    return t;
+  });
+
+  standings.sort(sortStandings);
+  standings.forEach(function(s, i) { s.pos = i + 1; });
+  return standings;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
