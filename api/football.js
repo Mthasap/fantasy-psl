@@ -31,7 +31,7 @@ const TTL = {
   live:      60  * 1000,        //  1 min
   fixtures:  5   * 60 * 1000,  //  5 min
   results:   2   * 60 * 1000,  //  2 min
-  standings: 15  * 60 * 1000,  // 15 min
+  standings: 3   * 60 * 1000,  //  3 min (early season results move fast)
   topscorers:30  * 60 * 1000,  // 30 min
 };
 
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
       case 'live':           return res.json(await getLive());
       case 'fixtures':       return res.json(await getFixtures());
       case 'results':        return res.json(await getResults());
-      case 'standings':      return res.json(await getStandings());
+      case 'standings':      return res.json(await getStandings(req.query && (req.query.refresh === '1' || req.query.refresh === 'true')));
       case 'topscorers':     return res.json(await getTopScorers());
       case 'status':         return res.json(await getStatus());
       case 'fixture_detail': return res.json(await getFixtureDetail(req.query.fixture_id));
@@ -213,8 +213,10 @@ async function getResults() {
 // ══════════════════════════════════════════════════════════════════════════
 // STANDINGS
 // ══════════════════════════════════════════════════════════════════════════
-async function getStandings() {
-  var cached = fromCache('standings');
+async function getStandings(forceRefresh) {
+  // ?refresh=1 bypasses the server cache and re-queries API-Football directly —
+  // use it when a result is in your fixtures but the standings feed is lagging.
+  var cached = forceRefresh ? null : fromCache('standings');
   if (cached) return cached;
 
   var sy = await seasonYear();
