@@ -1223,10 +1223,13 @@ function showHouseFallback(containerId, originalHTML) {
     // 3. No sponsor, no Google → alternate news promo / advertise pitch
     if (house) showHouseFallback('home-house-ad', homeOriginal);
   }
-  loadSponsorAds().then(function(){
-    setTimeout(checkHomeAd, 1500);
-    setTimeout(checkHomeAd, 3500);
-  });
+  // Re-load sponsors INSIDE each delayed check — db may not be initialised at
+  // page-parse time, so a single upfront load can return empty and the banner
+  // wrongly falls back to the CTA. Reloading when the check runs fixes it.
+  function loadAndCheckHome(){ loadSponsorAds().then(checkHomeAd); }
+  setTimeout(loadAndCheckHome, 1500);
+  setTimeout(loadAndCheckHome, 3500);
+  setTimeout(loadAndCheckHome, 6000);
 })();
 </script>
 
@@ -1711,7 +1714,7 @@ else setTimeout(loadHomeNews,500);
         <span style="font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:800;background:#DBA94A;color:#0a0a15;padding:.4rem .7rem;border-radius:8px;flex-shrink:0">Click Here</span>
       </div>
     </div>
-    <script>(function(){var newsOriginal=null;function c(){var h=document.getElementById('news-house-ad');if(h&&newsOriginal===null)newsOriginal=h.innerHTML;var ad=(typeof sponsorFor==='function')?sponsorFor('news'):null;if(ad&&typeof renderSponsorAd==='function'){if(renderSponsorAd('news-house-ad',ad))return;}var i=document.querySelector('#news-top-ad ins.adsbygoogle');if(i&&i.getAttribute('data-ad-status')==='filled'){if(h)h.style.display='none';return;}if(h&&typeof showHouseFallback==='function')showHouseFallback('news-house-ad',newsOriginal);else if(h)h.style.display='flex';}if(typeof loadSponsorAds==='function'){loadSponsorAds().then(function(){setTimeout(c,1500);setTimeout(c,3500);});}else{setTimeout(c,2500);setTimeout(c,5000);}})();</script>
+    <script>(function(){var newsOriginal=null;function c(){var h=document.getElementById('news-house-ad');if(h&&newsOriginal===null)newsOriginal=h.innerHTML;var ad=(typeof sponsorFor==='function')?sponsorFor('news'):null;if(ad&&typeof renderSponsorAd==='function'){if(renderSponsorAd('news-house-ad',ad))return;}var i=document.querySelector('#news-top-ad ins.adsbygoogle');if(i&&i.getAttribute('data-ad-status')==='filled'){if(h)h.style.display='none';return;}if(h&&typeof showHouseFallback==='function')showHouseFallback('news-house-ad',newsOriginal);else if(h)h.style.display='flex';}if(typeof loadSponsorAds==='function'){function lc(){loadSponsorAds().then(c);}setTimeout(lc,1500);setTimeout(lc,3500);setTimeout(lc,6000);}else{setTimeout(c,2500);setTimeout(c,5000);}})();</script>
     <!-- ──────────────────────────────────────────────────────── -->
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
@@ -7894,16 +7897,15 @@ function closeClubProfile() {
 function fillGuestAdSlot() {
   var slot = document.getElementById('ad-slot-container');
   var label = document.getElementById('guest-ad-label');
+  if (label) label.style.display = 'none'; // the ad/CTA has its own label — avoid doubling
   if (!slot) return;
   var ad = (typeof sponsorFor === 'function') ? (sponsorFor('banner') || sponsorFor('all')) : null;
   if (ad && typeof renderSponsorAd === 'function' && renderSponsorAd('ad-slot-container', ad)) {
-    if (label) label.style.display = ''; // real sponsor → keep "Sponsored" label
     return;
   }
-  // No booked ad → show the advertise CTA and hide the "Sponsored" label
+  // No booked ad → show the advertise CTA
   if (typeof renderAdvertiseAd === 'function') {
     renderAdvertiseAd('ad-slot-container');
-    if (label) label.style.display = 'none';
   }
 }
 
@@ -8345,7 +8347,7 @@ setInterval(refreshLiveData, 60000);
     </button>
   </div>
   <!-- Effective Gate CPM Ad -->
-  <div id="ad-slot-container" style="min-height:60px;display:flex;align-items:center;justify-content:center">
+  <div id="ad-slot-container" style="min-height:60px;display:block;width:100%">
     <!-- AdSense Anchor / Banner — 320x50 responsive -->
     <ins class="adsbygoogle"
          style="display:inline-block;width:320px;height:50px"
