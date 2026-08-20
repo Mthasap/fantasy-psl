@@ -977,12 +977,13 @@ ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!importa
   <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
   -->
   <!-- House ad — shown when AdSense slot is unfilled -->
-  <div id="home-house-ad" style="background:linear-gradient(135deg,rgba(219,169,74,.08),rgba(14,20,32,.95));border:1px solid rgba(219,169,74,.25);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer" onclick="goPage('news')">
-    <div style="font-size:1.6rem;flex-shrink:0">📰</div>
+  <div id="home-house-ad" onclick="openAdvertiseForm()" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#B91C3A 0%,#7a1226 55%,#1a1020 100%);border:1px solid rgba(219,169,74,.55);border-radius:14px;padding:1rem 1.1rem;display:flex;align-items:center;gap:.9rem;cursor:pointer;box-shadow:0 4px 22px rgba(185,28,58,.35)">
+    <div style="font-size:1.9rem;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">📣</div>
     <div style="flex:1;min-width:0">
-      <div style="font-family:var(--font-ui);font-size:.72rem;font-weight:800;color:#DBA94A;letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem">Fantasy PSL News</div>
-      <div style="font-family:var(--font-ui);font-size:.8rem;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Latest PSL updates, injury news & GW tips →</div>
+      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#DBA94A;margin-bottom:.2rem">★ Advertise with us</div>
+      <div style="font-family:var(--font-ui);font-size:.98rem;font-weight:900;color:#fff;line-height:1.15">Put your brand in front of Mzansi's football fans</div>
     </div>
+    <div style="flex-shrink:0;background:#DBA94A;color:#1a1020;font-family:var(--font-ui);font-size:.78rem;font-weight:900;letter-spacing:.5px;padding:.55rem .95rem;border-radius:10px;white-space:nowrap">Advertise Here →</div>
   </div>
 </div>
 <script>
@@ -7254,7 +7255,7 @@ function fetchPSLData(cb) {
   }
   // Parallel fetch: standings + top scorers
   Promise.all([
-    fetch('/api/football?type=standings').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    fetch('/api/football?type=standings&_t=' + Date.now()).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     fetch('/api/football?type=topscorers').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     fetch('/api/psl-data?t=' + now).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
   ]).then(function(results) {
@@ -7626,7 +7627,7 @@ function loadTable() {
   c.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;padding:2rem;gap:.5rem">' +
     '<div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
   var _tableTimeout = setTimeout(function() { renderRealTable(c); }, 4000); // fallback after 4s
-  fetch('/api/football?type=standings')
+  fetch('/api/football?type=standings&_t=' + Date.now())
     .then(function(r){ return r.json(); })
     .then(function(data){
       var rows = data && data.standings ? data.standings : [];
