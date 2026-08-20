@@ -6510,6 +6510,9 @@ function buildLiveTicker() {
     .finally(function(){ buildTickerFromData(); });
 
   function buildTickerFromData() {
+  var items = [];   // FIX: this declaration was missing, so every items.push()
+                    // threw a ReferenceError and the ticker stayed stuck on
+                    // "Loading latest scores & fixtures..." forever.
   //   2. Most recent finished results
   //   3. Next upcoming fixtures
   Promise.allSettled([
