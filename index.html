@@ -7889,6 +7889,24 @@ function closeClubProfile() {
 // ===============================================================
 
 // -- Ad Banner ------------------------------------------------
+// Fills the guest banner's slot: a booked sponsor ad if one exists, otherwise
+// the "Advertise Here" CTA — so the banner is never a blank box.
+function fillGuestAdSlot() {
+  var slot = document.getElementById('ad-slot-container');
+  var label = document.getElementById('guest-ad-label');
+  if (!slot) return;
+  var ad = (typeof sponsorFor === 'function') ? (sponsorFor('banner') || sponsorFor('all')) : null;
+  if (ad && typeof renderSponsorAd === 'function' && renderSponsorAd('ad-slot-container', ad)) {
+    if (label) label.style.display = ''; // real sponsor → keep "Sponsored" label
+    return;
+  }
+  // No booked ad → show the advertise CTA and hide the "Sponsored" label
+  if (typeof renderAdvertiseAd === 'function') {
+    renderAdvertiseAd('ad-slot-container');
+    if (label) label.style.display = 'none';
+  }
+}
+
 function updateAdVisibility() {
   var banner = document.getElementById('ad-banner');
   if (!banner) return;
@@ -7898,14 +7916,18 @@ function updateAdVisibility() {
       banner.style.display = 'none';
       return;
     }
-    // Show banner for all users — 30s delay so it doesn't interrupt onboarding
+    // Show banner for all users — delay so it doesn't interrupt onboarding
     var delayMs = ST.user ? 30000 : 8000;
-    setTimeout(function() {
-      // Re-check in case user dismissed while waiting
-      try { if (sessionStorage.getItem('ad_dismissed')) return; } catch(e) {}
-      banner.style.display = 'flex';
-      setTimeout(function() { banner.style.opacity = '1'; }, 300);
-    }, delayMs);
+    // Make sure sponsor ads are loaded, then fill the slot before showing.
+    var ready = (typeof loadSponsorAds === 'function') ? loadSponsorAds() : Promise.resolve();
+    ready.then(function() {
+      setTimeout(function() {
+        try { if (sessionStorage.getItem('ad_dismissed')) return; } catch(e) {}
+        fillGuestAdSlot();
+        banner.style.display = 'flex';
+        setTimeout(function() { banner.style.opacity = '1'; }, 300);
+      }, delayMs);
+    });
   } catch(e) {}
 }
 
@@ -8317,7 +8339,7 @@ setInterval(refreshLiveData, 60000);
 <!-- -- Guest Ad Banner ----------------------------------------------- -->
 <div id="ad-banner" style="display:none;position:fixed;bottom:78px;left:50%;transform:translateX(-50%);width:calc(100% - 1.5rem);max-width:460px;z-index:8000;background:var(--bg-card,#16181f);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:.5rem .75rem .6rem;box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .4s">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
-    <span style="font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.22)">Sponsored</span>
+    <span id="guest-ad-label" style="font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.22)">Sponsored</span>
     <button onclick="dismissAd()" title="Close" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:.75rem;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;gap:3px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
