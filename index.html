@@ -1016,10 +1016,17 @@ function sponsorFor(placement) {
 function renderSponsorAd(containerId, ad) {
   var el = document.getElementById(containerId);
   if (!el || !ad) return false;
+  // Clear the host container's own styling (e.g. the "Advertise Here" dashed
+  // border / padding) so the sponsor ad FILLS the whole block instead of
+  // nesting inside it with the CTA showing behind.
+  el.style.border = 'none';
+  el.style.background = 'none';
+  el.style.padding = '0';
+  el.style.boxShadow = 'none';
   var bg = ad.bg_color || '#DBA94A';
   var img = ad.image_url
-    ? '<img src="' + ad.image_url + '" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
-    : '<div style="font-size:1.6rem;flex-shrink:0">📣</div>';
+    ? '<img src="' + ad.image_url + '" alt="" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#fff" onerror="this.style.display=\'none\'">'
+    : '<div style="font-size:1.8rem;flex-shrink:0">📣</div>';
   el.innerHTML =
     '<a href="' + ad.link_url + '" target="_blank" rel="noopener sponsored" ' +
       'onclick="trackSponsorClick(' + ad.id + ')" ' +
