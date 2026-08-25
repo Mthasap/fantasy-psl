@@ -5412,8 +5412,17 @@ function loadLeagueStandings(lid) {
     showTableEmptyState(); return;
   }
   var c = document.getElementById('ls-' + lid); if (!c) return;
-  db.from('league_members').select('profiles(team_name, username, total_points, gw_points, overall_rank)').eq('league_id', lid).then(function(res) {
-    var members = (res.data || []).map(function(r) { return r.profiles; }).filter(Boolean)
+  // Read member points via the public_profiles VIEW. The profiles table is now
+  // RLS-locked to owner-only reads, so the old embedded profiles(...) join
+  // returned nothing for other members — breaking private-league standings.
+  db.from('league_members').select('user_id').eq('league_id', lid).then(function(mres) {
+    var ids = (mres.data || []).map(function(m) { return m.user_id; }).filter(Boolean);
+    if (!ids.length) {
+      c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.82rem;padding:1rem 1.2rem">No members yet -- share your code!</div>';
+      return;
+    }
+    db.from('public_profiles').select('id, team_name, username, total_points, gw_points, overall_rank').in('id', ids).then(function(res) {
+    var members = (res.data || [])
       .sort(function(a, b) { return (b.total_points || 0) - (a.total_points || 0); });
     if (!members.length) { c.innerHTML = '<div style="color:rgba(255,255,255,.35);font-size:.82rem;padding:1rem 1.2rem">No members yet -- share your code!</div>'; return; }
     // header row
@@ -5437,6 +5446,7 @@ function loadLeagueStandings(lid) {
       '</div>';
     }).join('');
     c.innerHTML = lbHeader + lbRows;
+    });
   });
 }
 
