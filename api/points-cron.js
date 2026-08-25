@@ -270,6 +270,20 @@ module.exports = async (req, res) => {
 
     log.push('Profiles to process: ' + profiles.length);
 
+    // ── PERF: bulk-fetch all gw_scores ONCE ───────────────────────────────
+    // The old code ran a per-user SELECT to sum each user's season total,
+    // which meant ~1 extra DB round-trip per user and caused the 30s timeout.
+    // Fetch everything once and compute totals in memory instead.
+    const scoresByUser = {};
+    try {
+      const { data: allGwScoreRows } = await db
+        .from('gw_scores').select('user_id, gameweek, points');
+      (allGwScoreRows || []).forEach(function(r) {
+        if (!scoresByUser[r.user_id]) scoresByUser[r.user_id] = {};
+        scoresByUser[r.user_id][r.gameweek] = r.points || 0;
+      });
+    } catch (_) {}
+
     let profilesUpdated = 0;
     let profileErrors   = 0;
 
@@ -453,13 +467,15 @@ module.exports = async (req, res) => {
           calculated_at:      new Date().toISOString()
         }, { onConflict: 'user_id,gameweek' });
 
-        // Season total = sum of all gw_scores from entry_gw onwards
-        const { data: allScores } = await db
-          .from('gw_scores').select('points')
-          .eq('user_id', prof.id)
-          .gte('gameweek', prof.entry_gw || 1);
-
-        const seasonTotal = (allScores || []).reduce((s, r) => s + (r.points || 0), 0);
+        // Season total from the in-memory map (updated with this GW's score) —
+        // no per-user DB round-trip. This is the key timeout fix.
+        if (!scoresByUser[prof.id]) scoresByUser[prof.id] = {};
+        scoresByUser[prof.id][currentGW] = gwTotal;
+        const entryGw = prof.entry_gw || 1;
+        let seasonTotal = 0;
+        for (const gwKey in scoresByUser[prof.id]) {
+          if (Number(gwKey) >= entryGw) seasonTotal += (scoresByUser[prof.id][gwKey] || 0);
+        }
 
         // Chip bookkeeping
         const chipUpdate = {};
