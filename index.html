@@ -977,13 +977,13 @@ ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!importa
   <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
   -->
   <!-- House ad — shown when AdSense slot is unfilled -->
-  <div id="home-house-ad" onclick="openAdvertiseForm()" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#B91C3A 0%,#7a1226 55%,#1a1020 100%);border:1px solid rgba(219,169,74,.55);border-radius:14px;padding:1rem 1.1rem;display:flex;align-items:center;gap:.9rem;cursor:pointer;box-shadow:0 4px 22px rgba(185,28,58,.35)">
-    <div style="font-size:1.9rem;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">📣</div>
+  <div id="home-house-ad" onclick="openAdvertiseForm()" style="background:var(--bg-card,#16181f);border:1px dashed rgba(219,169,74,.5);border-radius:12px;padding:.7rem .85rem;display:flex;align-items:center;gap:.7rem;cursor:pointer">
+    <div style="font-size:1.25rem;flex-shrink:0;opacity:.9">📣</div>
     <div style="flex:1;min-width:0">
-      <div style="font-family:var(--font-ui);font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#DBA94A;margin-bottom:.2rem">★ Advertise with us</div>
-      <div style="font-family:var(--font-ui);font-size:.98rem;font-weight:900;color:#fff;line-height:1.15">Put your brand in front of Mzansi's football fans</div>
+      <div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DBA94A;margin-bottom:.1rem">Advertise with us</div>
+      <div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Reach Mzansi&rsquo;s football fans</div>
     </div>
-    <div style="flex-shrink:0;background:#DBA94A;color:#1a1020;font-family:var(--font-ui);font-size:.78rem;font-weight:900;letter-spacing:.5px;padding:.55rem .95rem;border-radius:10px;white-space:nowrap">Advertise Here →</div>
+    <div style="flex-shrink:0;background:#DBA94A;color:#1a1020;font-family:var(--font-ui);font-size:.72rem;font-weight:800;letter-spacing:.3px;padding:.45rem .8rem;border-radius:8px;white-space:nowrap">Advertise Here</div>
   </div>
 </div>
 <script>
@@ -1077,36 +1077,29 @@ var ADVERTISE_EMAIL = 'admin@fantasypsl.co.za';
 function renderAdvertiseAd(containerId) {
   var el = document.getElementById(containerId);
   if (!el) return false;
-  // Bolder, more eye-catching design so the "advertise here" slot actually
-  // draws attention. Opens the in-app advertiser contact form.
-  // Inject the pulse keyframes once.
+  // Compact, clean CTA — subtle, professional, no flashy gradient/shine.
   if (!document.getElementById('adv-cta-style')) {
     var st = document.createElement('style');
     st.id = 'adv-cta-style';
     st.textContent =
-      '@keyframes advPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(219,169,74,.45)}' +
-      '50%{transform:scale(1.04);box-shadow:0 0 0 6px rgba(219,169,74,0)}}' +
-      '@keyframes advShine{0%{background-position:-200% 0}100%{background-position:200% 0}}' +
-      '.adv-cta{position:relative;overflow:hidden;background:linear-gradient(135deg,#B91C3A 0%,#7a1226 55%,#1a1020 100%);' +
-      'border:1px solid rgba(219,169,74,.55);border-radius:14px;padding:1rem 1.1rem;display:flex;align-items:center;' +
-      'gap:.9rem;cursor:pointer;box-shadow:0 4px 22px rgba(185,28,58,.35);transition:transform .15s}' +
-      '.adv-cta:hover{transform:translateY(-1px)}' +
-      '.adv-cta::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,' +
-      'rgba(255,255,255,.14) 50%,transparent 70%);background-size:200% 100%;animation:advShine 3.5s linear infinite;pointer-events:none}' +
-      '.adv-cta-btn{flex-shrink:0;background:#DBA94A;color:#1a1020;font-family:var(--font-ui);font-size:.78rem;' +
-      'font-weight:900;letter-spacing:.5px;padding:.55rem .95rem;border-radius:10px;white-space:nowrap;animation:advPulse 2.2s ease-in-out infinite}';
+      '.adv-cta{background:var(--bg-card,#16181f);border:1px dashed rgba(219,169,74,.5);' +
+      'border-radius:12px;padding:.7rem .85rem;display:flex;align-items:center;gap:.7rem;cursor:pointer;' +
+      'transition:border-color .15s,background .15s}' +
+      '.adv-cta:hover{border-color:rgba(219,169,74,.9);background:rgba(219,169,74,.06)}' +
+      '.adv-cta-btn{flex-shrink:0;background:#DBA94A;color:#1a1020;font-family:var(--font-ui);font-size:.72rem;' +
+      'font-weight:800;letter-spacing:.3px;padding:.45rem .8rem;border-radius:8px;white-space:nowrap}';
     document.head.appendChild(st);
   }
   el.innerHTML =
     '<div onclick="openAdvertiseForm()" class="adv-cta">' +
-      '<div style="font-size:1.9rem;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">📣</div>' +
-      '<div style="flex:1;min-width:0;position:relative;z-index:1">' +
-        '<div style="font-family:var(--font-ui);font-size:.6rem;font-weight:800;letter-spacing:1.5px;' +
-          'text-transform:uppercase;color:#DBA94A;margin-bottom:.2rem">★ Advertise with us</div>' +
-        '<div style="font-family:var(--font-ui);font-size:.98rem;font-weight:900;color:#fff;line-height:1.15">' +
-          'Put your brand in front of<br>Mzansi\'s football fans</div>' +
+      '<div style="font-size:1.25rem;flex-shrink:0;opacity:.9">📣</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1px;' +
+          'text-transform:uppercase;color:#DBA94A;margin-bottom:.1rem">Advertise with us</div>' +
+        '<div style="font-family:var(--font-ui);font-size:.82rem;font-weight:700;color:#fff;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Reach Mzansi\u2019s football fans</div>' +
       '</div>' +
-      '<div class="adv-cta-btn">Advertise&nbsp;Here →</div>' +
+      '<div class="adv-cta-btn">Advertise Here</div>' +
     '</div>';
   el.style.display = 'block';
   return true;
