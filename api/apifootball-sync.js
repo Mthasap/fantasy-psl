@@ -257,24 +257,21 @@ async function syncFixtures(log) {
   }
 
   // ── Auto-set is_current ───────────────────────────────────────────────
+  // Advance by COMPLETION, not by date: the current gameweek is the lowest
+  // gw_number that is not yet fully finished. Once every fixture in a GW is FT
+  // (is_finished = true, set above), we move to the next GW automatically —
+  // even if that GW's date window hasn't opened yet (users pick for it).
+  // Previously this was date-window based, which held a GW "current" until its
+  // calendar window passed even though all its matches were already played.
   try {
-    const now = new Date().toISOString();
-
-    const { data: inWindow } = await supabase
+    const { data: firstUnfinished } = await supabase
       .from('gameweeks').select('gw_number')
-      .eq('season', PSL_SEASON).lte('start_date', now).gte('end_date', now)
-      .order('gw_number', { ascending: false }).limit(1).maybeSingle();
+      .eq('season', PSL_SEASON).eq('is_finished', false)
+      .order('gw_number', { ascending: true }).limit(1).maybeSingle();
 
-    let currentGwNum = inWindow?.gw_number ?? null;
+    let currentGwNum = firstUnfinished?.gw_number ?? null;
 
-    if (!currentGwNum) {
-      const { data: started } = await supabase
-        .from('gameweeks').select('gw_number')
-        .eq('season', PSL_SEASON).lte('start_date', now)
-        .order('gw_number', { ascending: false }).limit(1).maybeSingle();
-      currentGwNum = started?.gw_number ?? null;
-    }
-
+    // If every gameweek is finished (season over), stay on the last one.
     if (!currentGwNum && gwRows.length > 0) {
       currentGwNum = Math.max(...gwRows.map(r => r.gw_number));
     }
@@ -289,7 +286,7 @@ async function syncFixtures(log) {
         .eq('season', PSL_SEASON).eq('gw_number', currentGwNum);
 
       if (setErr) log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
-      else        log.push(`  ✅ is_current set to GW${currentGwNum}`);
+      else        log.push(`  ✅ is_current set to GW${currentGwNum} (first unfinished gameweek)`);
     }
   } catch (e) {
     log.push(`  ⚠️  is_current auto-set failed: ${e.message}`);
@@ -508,6 +505,7 @@ async function recalculateTotals(log) {
       const { error } = await supabase.from('players')
         .update({
           appearances:    agg.appearances,
+          apps:           agg.appearances,   // the stats page reads `apps`; keep it in sync
           minutes_played: agg.minutes_played,
           goals:          agg.goals,
           assists:        agg.assists,
@@ -597,6 +595,73 @@ async function syncInjuries(log) {
 }
 
 // ─── Main Handler ──────────────────────────────────────────────────────────
+// ─── Phase 5: Sync Players (import newly-added API-Football players) ──────
+// Pulls each active club's squad from API-Football and inserts any player not
+// already in our players table. Existing players are left untouched (their
+// price/points are preserved) apart from a photo refresh. New players get a
+// default price by position — adjust these to your economy if needed.
+const POS_MAP = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Attacker: 'FWD' };
+const DEFAULT_PRICE = { GK: 5.0, DEF: 5.5, MID: 6.0, FWD: 6.5 };
+
+async function syncPlayers(log) {
+  log.push('Phase 5: Syncing players (import new)');
+
+  const { data: existing } = await supabase.from('players').select('apifootball_id');
+  const known = new Set((existing || []).map(p => p.apifootball_id).filter(Boolean));
+
+  const { data: teams } = await supabase.from('psl_teams')
+    .select('name, apifootball_team_id').eq('is_active', true);
+  const teamList = (teams || []).filter(t => t.apifootball_team_id);
+
+  let inserted = 0, photos = 0, errors = 0;
+
+  for (const team of teamList) {
+    try {
+      const data  = await apiFetch(`/players/squads?team=${team.apifootball_team_id}`);
+      const squad = (data.response && data.response[0] && data.response[0].players) || [];
+      for (const pl of squad) {
+        const pos = POS_MAP[pl.position] || 'MID';
+        if (known.has(pl.id)) {
+          if (pl.photo) {
+            await supabase.from('players')
+              .update({ photo_url: pl.photo, photo: pl.photo })
+              .eq('apifootball_id', pl.id);
+            photos++;
+          }
+          continue;
+        }
+        const { error } = await supabase.from('players').insert({
+          apifootball_id:      pl.id,
+          apifootball_team_id: team.apifootball_team_id,
+          api_id:              pl.id,
+          api_player_id:       String(pl.id),
+          display_name:        pl.name,
+          position:            pos,
+          price:               DEFAULT_PRICE[pos] || 6.0,
+          team:                team.name,
+          club:                team.name,
+          photo_url:           pl.photo || null,
+          photo:               pl.photo || null,
+          is_available:        true,
+          is_active:           true,
+          total_points:        0,
+          gw_points:           0,
+          appearances:         0,
+          apps:                0
+        });
+        if (error) { errors++; log.push(`    ⚠️ ${pl.name}: ${error.message}`); }
+        else       { inserted++; known.add(pl.id); }
+      }
+    } catch (e) {
+      errors++;
+      log.push(`    ⚠️ ${team.name}: ${e.message}`);
+    }
+  }
+
+  log.push(`  ✅ Phase 5 complete: ${inserted} new players, ${photos} photos refreshed, ${errors} errors`);
+  return inserted;
+}
+
 module.exports = async (req, res) => {
   const VALID_SECRET = process.env.SYNC_SECRET || process.env.ADMIN_SECRET || '';
   const cronHeader   = req.headers['x-vercel-cron'];
@@ -619,7 +684,7 @@ module.exports = async (req, res) => {
 
   const startTime     = Date.now();
   const log           = [];
-  const phase         = req.query.phase   ? parseInt(req.query.phase)   : 'all';
+  const phase         = req.query.phase   ? (req.query.phase === 'all' ? 'all' : parseInt(req.query.phase)) : 'all';
   const gwFilter      = req.query.gw      ? parseInt(req.query.gw)      : null;
   const fixtureFilter = req.query.fixture ? parseInt(req.query.fixture) : null;
 
@@ -674,12 +739,20 @@ module.exports = async (req, res) => {
   try {
     if (phase === 'all' || phase === 0) await syncPlayerPhotos(log);
     if (phase === 'all' || phase === 1) fixturesProcessed = await syncFixtures(log);
+    if (phase === 'all' || phase === 5) await syncPlayers(log);   // import new players BEFORE recalc
     if (phase === 'all' || phase === 2) {
       const result = await syncMatchStats(log, { gw: gwFilter, fixture: fixtureFilter });
       playersUpdated    = result.totalPlayers;
       errorsEncountered = result.totalErrors;
     }
-    if (phase === 'all' || phase === 3) playersUpdated += await recalculateTotals(log);
+    // Recalc runs for phase 3 AND automatically right after phase 2. Ingesting
+    // match stats without re-summing them leaves the players table (and the
+    // stats page) frozen on old numbers — so phase 2 always triggers the recalc
+    // itself. This makes running phase 2 alone safe; you can't ingest stats
+    // without the season totals updating.
+    if (phase === 'all' || phase === 2 || phase === 3) {
+      playersUpdated += await recalculateTotals(log);
+    }
     if (phase === 'all' || phase === 4) await syncInjuries(log);
   } catch (err) {
     log.push('❌ Fatal error: ' + err.message);
