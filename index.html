@@ -3346,7 +3346,7 @@ function getUserDashboard(forceRefresh) {
               display_name: s.name || 'Unknown Player',
               position:     s.position,
               club:         s.club  || '',
-              price:        s.price || 5.0,
+              price:        (s.price != null ? s.price : 5.0),  // respect stored 0 (free player)
               total_points: 0,
               goals: 0, assists: 0, apps: 0,
               clean_sheets: 0, yellow_cards: 0, red_cards: 0,
@@ -3429,7 +3429,7 @@ function getUserDashboard(forceRefresh) {
           }
           if (!full && s.position) {
             full = { id: s.id, display_name: s.name || 'Unknown Player', position: s.position,
-                     club: s.club||'', price: s.price||5.0, total_points:0, goals:0, assists:0,
+                     club: s.club||'', price: (s.price != null ? s.price : 5.0), total_points:0, goals:0, assists:0,
                      apps:0, clean_sheets:0, yellow_cards:0, red_cards:0,
                      clubs:{ name: s.club||'', short_name: s.club||'' } };
           }
@@ -9559,7 +9559,7 @@ onReady(function() {
             // Tier 5: minimal fallback object
             if (!full && s.position) {
               full = { id:s.id, display_name:s.name||'Unknown Player', position:s.position,
-                       club:s.club||'', team:s.club||'', price:s.price||5.0, total_points:0,
+                       club:s.club||'', team:s.club||'', price:(s.price != null ? s.price : 5.0), total_points:0,
                        goals:0, assists:0, apps:0, clean_sheets:0, yellow_cards:0, red_cards:0,
                        clubs:{name:s.club||'', short_name:s.club||''} };
             }
