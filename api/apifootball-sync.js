@@ -244,7 +244,11 @@ async function syncFixtures(log) {
       api_round:   round,
       start_date:  dates[0] ?? null,
       end_date:    dates[dates.length - 1] ?? null,
-      is_finished: finishedCount === roundFixtures.length,
+      // A gameweek is only "finished" if it HAS fixtures and ALL of them are FT.
+      // Without the length>0 guard, an empty gameweek (0 fixtures) evaluated as
+      // 0===0 = true, so future empty gameweeks were flagged finished and the
+      // "first unfinished gameweek" advance skipped ahead (showing GW10 at GW5).
+      is_finished: roundFixtures.length > 0 && finishedCount === roundFixtures.length,
     };
   }).filter(Boolean);
 
@@ -264,16 +268,26 @@ async function syncFixtures(log) {
   // Previously this was date-window based, which held a GW "current" until its
   // calendar window passed even though all its matches were already played.
   try {
-    const { data: firstUnfinished } = await supabase
+    // Only consider gameweeks that actually HAVE fixtures — never advance to a
+    // future gameweek whose fixtures don't exist yet (extra guard against the
+    // empty-gameweek skip-ahead bug).
+    const gwsWithFixtures = [...new Set(
+      gwRows.filter(r => r.start_date != null).map(r => r.gw_number)
+    )];
+
+    const { data: unfinishedRows } = await supabase
       .from('gameweeks').select('gw_number')
       .eq('season', PSL_SEASON).eq('is_finished', false)
-      .order('gw_number', { ascending: true }).limit(1).maybeSingle();
+      .order('gw_number', { ascending: true });
 
-    let currentGwNum = firstUnfinished?.gw_number ?? null;
+    // first unfinished gameweek that also has fixtures
+    let currentGwNum = (unfinishedRows || [])
+      .map(r => r.gw_number)
+      .find(n => gwsWithFixtures.includes(n)) ?? null;
 
-    // If every gameweek is finished (season over), stay on the last one.
-    if (!currentGwNum && gwRows.length > 0) {
-      currentGwNum = Math.max(...gwRows.map(r => r.gw_number));
+    // If every gameweek with fixtures is finished (season over), stay on the last one.
+    if (!currentGwNum && gwsWithFixtures.length > 0) {
+      currentGwNum = Math.max(...gwsWithFixtures);
     }
 
     if (currentGwNum) {
