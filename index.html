@@ -2747,12 +2747,15 @@ function loadGW(cb) {
   }
 
   function trySource3() {
-    // Highest gw_number in fixtures table that has a finished (FT) game
-    db.from('fixtures')
+    // Current GW = the LOWEST gameweek that isn't fully finished (matches the
+    // sync's logic). This replaces the old "highest gw with ANY FT fixture",
+    // which jumped to a future GW when a single rescheduled match had been
+    // played early (that's what showed GW10 while it was really GW5).
+    db.from('gameweeks')
       .select('gw_number')
-      .eq('status', 'FT')
+      .eq('is_finished', false)
       .not('gw_number', 'is', null)
-      .order('gw_number', { ascending: false })
+      .order('gw_number', { ascending: true })
       .limit(1)
       .maybeSingle()
       .then(function(r) {
