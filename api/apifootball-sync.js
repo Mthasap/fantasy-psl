@@ -473,6 +473,52 @@ async function syncMatchStats(log, options = {}) {
 async function recalculateTotals(log) {
   log.push('Phase 3: Recalculating player season totals');
 
+  // FAST PATH: call the database function (one SQL statement) instead of
+  // fetching all stats and doing ~450 sequential per-player UPDATEs, which was
+  // the main cause of the 30s cron timeout.
+  let updated = 0;
+  try {
+    const { error: rpcErr } = await supabase.rpc('recalculate_player_season_totals', { p_season: PSL_SEASON });
+    if (rpcErr) throw rpcErr;
+    // keep the frontend `apps` column in sync (the DB function only writes
+    // `appearances`) — one bulk statement.
+    await supabase.rpc('sync_apps_column').catch(() => {});
+    log.push('  ✅ Player totals recalculated via DB function');
+    updated = 1;
+  } catch (e) {
+    log.push('  ⚠️  DB recalc function failed (' + e.message + ') — falling back to slow path');
+    return await recalculateTotalsSlow(log);
+  }
+
+  // Profile totals: fetch all gw_scores ONCE and sum in memory (was a per-user
+  // query — another timeout source).
+  try {
+    const { data: profiles } = await supabase.from('profiles').select('id, entry_gw');
+    const { data: allScores } = await supabase.from('gw_scores').select('user_id, gameweek, points');
+    const byUser = {};
+    (allScores || []).forEach(r => {
+      (byUser[r.user_id] = byUser[r.user_id] || []).push(r);
+    });
+    // batch profile updates in parallel chunks
+    const updates = (profiles || []).map(pr => {
+      const rows = (byUser[pr.id] || []).filter(r => r.gameweek >= (pr.entry_gw || 1));
+      if (!rows.length) return null;
+      const total = rows.reduce((s, r) => s + (r.points || 0), 0);
+      return supabase.from('profiles').update({ total_points: total }).eq('id', pr.id);
+    }).filter(Boolean);
+    for (let i = 0; i < updates.length; i += 25) {
+      await Promise.all(updates.slice(i, i + 25));
+    }
+    log.push(`  ✅ Updated ${updates.length} profile point totals`);
+  } catch (e) {
+    log.push('  ⚠️  Profile totals update failed: ' + e.message);
+  }
+
+  return updated;
+}
+
+// Original slow path kept as a fallback if the DB function is unavailable.
+async function recalculateTotalsSlow(log) {
   const { data: aggregates, error: aggError } = await supabase
     .from('match_player_stats')
     .select('apifootball_player_id, fantasy_points, minutes_played, goals, assists, clean_sheet, saves, yellow_cards, red_cards, goals_conceded, rating')
@@ -507,70 +553,24 @@ async function recalculateTotals(log) {
 
   let updated = 0;
   const playerIds = Object.keys(playerMap);
-
-  for (let i = 0; i < playerIds.length; i += 50) {
-    const batch = playerIds.slice(i, i + 50);
-    for (const pid of batch) {
-      const agg       = playerMap[pid];
-      const avgRating = agg.ratings.length > 0
-        ? Math.round((agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length) * 100) / 100
-        : null;
-
-      const { error } = await supabase.from('players')
-        .update({
-          appearances:    agg.appearances,
-          apps:           agg.appearances,   // the stats page reads `apps`; keep it in sync
-          minutes_played: agg.minutes_played,
-          goals:          agg.goals,
-          assists:        agg.assists,
-          clean_sheets:   agg.clean_sheets,
-          saves:          agg.saves,
-          yellow_cards:   agg.yellow_cards,
-          red_cards:      agg.red_cards,
-          goals_conceded: agg.goals_conceded,
-          total_points:   agg.total_points,
-          avg_rating:     avgRating,
-          updated_at:     new Date().toISOString(),
-        })
-        .eq('apifootball_id', parseInt(pid));
-
-      if (!error) updated++;
-    }
+  for (const pid of playerIds) {
+    const agg       = playerMap[pid];
+    const avgRating = agg.ratings.length > 0
+      ? Math.round((agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length) * 100) / 100
+      : null;
+    const { error } = await supabase.from('players')
+      .update({
+        appearances: agg.appearances, apps: agg.appearances,
+        minutes_played: agg.minutes_played, goals: agg.goals, assists: agg.assists,
+        clean_sheets: agg.clean_sheets, saves: agg.saves, yellow_cards: agg.yellow_cards,
+        red_cards: agg.red_cards, goals_conceded: agg.goals_conceded,
+        total_points: agg.total_points, avg_rating: avgRating,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('apifootball_id', parseInt(pid));
+    if (!error) updated++;
   }
-
-  log.push(`  ✅ Updated ${updated} player season totals`);
-
-  // Recalculate profile points from gw_scores (already has captain/chip)
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles').select('id, entry_gw');
-
-  if (profilesError) {
-    log.push('  ⚠️  Could not fetch profiles: ' + profilesError.message);
-    return updated;
-  }
-
-  let profilesUpdated = 0;
-  for (const profile of (profiles ?? [])) {
-    try {
-      const { data: gwScoreRows } = await supabase
-        .from('gw_scores').select('points')
-        .eq('user_id', profile.id)
-        .gte('gameweek', profile.entry_gw || 1);
-
-      const totalPoints = (gwScoreRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
-
-      if ((gwScoreRows ?? []).length > 0) {
-        await supabase.from('profiles')
-          .update({ total_points: totalPoints })
-          .eq('id', profile.id);
-      }
-      profilesUpdated++;
-    } catch (e) {
-      log.push(`  ⚠️  Profile ${profile.id} error: ${e.message}`);
-    }
-  }
-
-  log.push(`  ✅ Updated ${profilesUpdated} profile point totals`);
+  log.push(`  ✅ Updated ${updated} player season totals (slow path)`);
   return updated;
 }
 
@@ -627,24 +627,19 @@ async function syncPlayers(log) {
     .select('name, apifootball_team_id').eq('is_active', true);
   const teamList = (teams || []).filter(t => t.apifootball_team_id);
 
-  let inserted = 0, photos = 0, errors = 0;
-
+  // Collect all NEW players across teams first, then bulk-insert once. The old
+  // per-player insert loop (150+ sequential round-trips) was the timeout cause.
+  const toInsert = [];
+  const seen = new Set();
   for (const team of teamList) {
     try {
       const data  = await apiFetch(`/players/squads?team=${team.apifootball_team_id}`);
       const squad = (data.response && data.response[0] && data.response[0].players) || [];
       for (const pl of squad) {
+        if (known.has(pl.id) || seen.has(pl.id)) continue;
+        seen.add(pl.id);
         const pos = POS_MAP[pl.position] || 'MID';
-        if (known.has(pl.id)) {
-          if (pl.photo) {
-            await supabase.from('players')
-              .update({ photo_url: pl.photo, photo: pl.photo })
-              .eq('apifootball_id', pl.id);
-            photos++;
-          }
-          continue;
-        }
-        const { error } = await supabase.from('players').insert({
+        toInsert.push({
           apifootball_id:      pl.id,
           apifootball_team_id: team.apifootball_team_id,
           api_id:              pl.id,
@@ -663,16 +658,22 @@ async function syncPlayers(log) {
           appearances:         0,
           apps:                0
         });
-        if (error) { errors++; log.push(`    ⚠️ ${pl.name}: ${error.message}`); }
-        else       { inserted++; known.add(pl.id); }
       }
     } catch (e) {
-      errors++;
       log.push(`    ⚠️ ${team.name}: ${e.message}`);
     }
   }
 
-  log.push(`  ✅ Phase 5 complete: ${inserted} new players, ${photos} photos refreshed, ${errors} errors`);
+  let inserted = 0, errors = 0;
+  // Bulk insert in chunks of 100 (a handful of round-trips instead of 150+).
+  for (let i = 0; i < toInsert.length; i += 100) {
+    const chunk = toInsert.slice(i, i + 100);
+    const { error } = await supabase.from('players').insert(chunk);
+    if (error) { errors += chunk.length; log.push(`    ⚠️ bulk insert: ${error.message}`); }
+    else       { inserted += chunk.length; }
+  }
+
+  log.push(`  ✅ Phase 5 complete: ${inserted} new players imported, ${errors} errors`);
   return inserted;
 }
 
