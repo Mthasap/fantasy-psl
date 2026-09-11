@@ -356,6 +356,17 @@
     pointer-events: none;
     transform: translateX(-50%) translateY(20px);
   }
+  /* Bare mode: when only the white "Advertise with us" house ad is shown,
+     strip the outer card so no grey block sits behind the pill.
+     !important is required because #ad-banner carries inline styles. */
+  #ad-banner.ad-banner--bare {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+  }
+  #ad-banner.ad-banner--bare > div:first-child { display: none !important; } /* hide "Sponsored" + top ✕ row */
   #ad-banner ins.adsbygoogle {
     display: block;
     flex: 1;
@@ -7924,16 +7935,21 @@ function closeClubProfile() {
 // the "Advertise Here" CTA — so the banner is never a blank box.
 function fillGuestAdSlot() {
   var slot = document.getElementById('ad-slot-container');
+  var banner = document.getElementById('ad-banner');
   var label = document.getElementById('guest-ad-label');
   if (label) label.style.display = 'none'; // the ad/CTA has its own label — avoid doubling
   if (!slot) return;
   var ad = (typeof sponsorFor === 'function') ? (sponsorFor('banner') || sponsorFor('all')) : null;
   if (ad && typeof renderSponsorAd === 'function' && renderSponsorAd('ad-slot-container', ad)) {
+    // Real sponsor ad → keep the card chrome around it
+    if (banner) banner.classList.remove('ad-banner--bare');
     return;
   }
-  // No booked ad → show the advertise CTA
+  // No booked ad → show the advertise CTA, and strip the outer grey card so
+  // ONLY the white "Advertise with us" pill is visible (its own ✕ dismisses it).
   if (typeof renderAdvertiseAd === 'function') {
     renderAdvertiseAd('ad-slot-container');
+    if (banner) banner.classList.add('ad-banner--bare');
   }
 }
 
