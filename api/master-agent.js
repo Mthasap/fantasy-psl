@@ -183,9 +183,9 @@ async function detectSeasonPhase(db) {
 
   // 3. Check if season has any active fixtures
   const { data: fixtures } = await db
-    .from('fixtures').select('id, kickoff_time, status, gw_number')
+    .from('fixtures').select('id, kickoff_at, status, gw_number')
     .eq('season', seasonYear)
-    .order('kickoff_time', { ascending: true })
+    .order('kickoff_at', { ascending: true })
     .limit(5);
 
   const { data: liveFixtures } = await db
@@ -200,14 +200,14 @@ async function detectSeasonPhase(db) {
     .maybeSingle();
 
   const { data: firstFixture } = await db
-    .from('fixtures').select('kickoff_time')
+    .from('fixtures').select('kickoff_at')
     .eq('season', seasonYear)
-    .order('kickoff_time', { ascending: true })
+    .order('kickoff_at', { ascending: true })
     .limit(1).maybeSingle();
 
   // 4. Determine phase
-  const firstKickoff = firstFixture?.kickoff_time
-    ? new Date(firstFixture.kickoff_time)
+  const firstKickoff = firstFixture?.kickoff_at
+    ? new Date(firstFixture.kickoff_at)
     : null;
 
   const daysToSeason = firstKickoff

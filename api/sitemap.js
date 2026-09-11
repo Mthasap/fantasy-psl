@@ -1,15 +1,21 @@
-// api/sitemap.js — Fantasy PSL — Google News + Standard Sitemap
-// ══════════════════════════════════════════════════════════════════
-// Two sitemaps served from one endpoint:
-//   /sitemap.xml        → index listing both sitemaps
-//   /sitemap.xml?type=news  → Google News sitemap (last 2 days)
-//   /sitemap.xml?type=pages → Static pages + all news articles
+// api/sitemap.js — Fantasy PSL — Google News + Standard Sitemap (redeploy build)
+// ══════════════════════════════════════════════════════════════════════════
+// Endpoints (one function, switched by ?type=):
+//   /sitemap.xml               → sitemap index (lists the two child sitemaps)
+//   /sitemap.xml?type=news     → Google News sitemap (articles from last 2 days)
+//   /sitemap.xml?type=pages    → static pages + all published news articles
+//   /sitemap.xml?type=robots   → robots.txt (also served at /robots.txt via rewrite)
 //
 // Google Search Console: submit https://www.fantasypsl.co.za/sitemap.xml
-// ══════════════════════════════════════════════════════════════════
+//
+// IMPORTANT (deployment): to serve /robots.txt from this function, add a rewrite
+// in vercel.json, otherwise /robots.txt 404s and only ?type=robots works:
+//   { "source": "/robots.txt", "destination": "/api/sitemap?type=robots" }
+//   { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+// ══════════════════════════════════════════════════════════════════════════
 
 const BASE_URL = 'https://www.fantasypsl.co.za';
-const SB_URL   = process.env.SUPABASE_URL        || '';
+const SB_URL   = process.env.SUPABASE_URL         || '';
 const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 async function fetchPosts(select, filter) {
@@ -33,22 +39,26 @@ function makeSlug(post) {
 }
 
 function xmlEscape(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 }
 
 module.exports = async (req, res) => {
-  var type = (req.query && req.query.type) || 'index';
+  // Harden query access — some runtimes can leave req.query undefined.
+  var query = (req && req.query) || {};
+  var url   = (req && req.url) || '';
+  var hdrs  = (req && req.headers) || {};
+  var type  = query.type || 'index';
 
-  // ── robots.txt — served via this same function ────────────────────────
-  if (type === 'robots' || req.url === '/robots.txt' ||
-      (req.headers && req.headers['x-original-url'] === '/robots.txt')) {
+  // ── robots.txt ────────────────────────────────────────────────────────
+  if (type === 'robots' || url === '/robots.txt' || hdrs['x-original-url'] === '/robots.txt') {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 's-maxage=86400');
     return res.status(200).send([
       'User-agent: *',
       'Allow: /',
       '',
-      '# Block admin panel from indexing',
+      '# Block admin panel and API from indexing',
       'Disallow: /admin',
       'Disallow: /api/',
       '',
@@ -56,13 +66,14 @@ module.exports = async (req, res) => {
       'Sitemap: ' + BASE_URL + '/sitemap.xml',
     ].join('\n'));
   }
-  var now  = new Date().toISOString().split('T')[0];
 
-  // ── Sitemap Index (default) ──────────────────────────────────────────────
-  if (type === 'index' || !req.query.type) {
+  var now = new Date().toISOString().split('T')[0];
+
+  // ── Sitemap index (default) ─────────────────────────────────────────────
+  if (type === 'index') {
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
-    var xml = [
+    var idx = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
       '  <sitemap>',
@@ -75,11 +86,10 @@ module.exports = async (req, res) => {
       '  </sitemap>',
       '</sitemapindex>'
     ].join('\n');
-    return res.status(200).send(xml);
+    return res.status(200).send(idx);
   }
 
-  // ── Google News Sitemap (type=news) ─────────────────────────────────────
-  // Only articles from the last 2 days (Google News requirement)
+  // ── Google News sitemap (last 2 days only) ──────────────────────────────
   if (type === 'news') {
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120');
@@ -93,7 +103,7 @@ module.exports = async (req, res) => {
     var entries = posts.map(function(post) {
       var slug    = makeSlug(post);
       var pubDate = (post.published_at || '').replace(' ', 'T');
-      if (!pubDate.endsWith('Z') && !pubDate.includes('+')) pubDate += 'Z';
+      if (pubDate && !pubDate.endsWith('Z') && !pubDate.includes('+')) pubDate += 'Z';
       return [
         '  <url>',
         '    <loc>' + BASE_URL + '/news/' + xmlEscape(slug) + '</loc>',
@@ -112,33 +122,30 @@ module.exports = async (req, res) => {
       ].join('\n');
     }).join('\n');
 
-    var xml = [
+    var newsXml = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
       '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
       entries || '  <!-- No articles in last 2 days -->',
       '</urlset>'
     ].join('\n');
-    return res.status(200).send(xml);
+    return res.status(200).send(newsXml);
   }
 
-  // ── Pages Sitemap (type=pages) ──────────────────────────────────────────
+  // ── Pages sitemap (static pages + all published articles) ───────────────
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
 
   var staticPages = [
-    { url: '/',        priority: '1.0', changefreq: 'daily',  lastmod: now },
-    { url: '/news',    priority: '0.9', changefreq: 'hourly', lastmod: now },
+    { url: '/',        priority: '1.0', changefreq: 'daily',   lastmod: now },
+    { url: '/news',    priority: '0.9', changefreq: 'hourly',  lastmod: now },
     { url: '/about',   priority: '0.8', changefreq: 'monthly', lastmod: now },
-    { url: '/privacy', priority: '0.4', changefreq: 'yearly', lastmod: now },
-    { url: '/terms',   priority: '0.4', changefreq: 'yearly', lastmod: now },
-    { url: '/confirm', priority: '0.3', changefreq: 'yearly', lastmod: now },
+    { url: '/privacy', priority: '0.4', changefreq: 'yearly',  lastmod: now },
+    { url: '/terms',   priority: '0.4', changefreq: 'yearly',  lastmod: now },
+    { url: '/confirm', priority: '0.3', changefreq: 'yearly',  lastmod: now },
   ];
 
-  var posts = await fetchPosts(
-    'slug,title,published_at,updated_at',
-    'published=eq.true'
-  );
+  var posts = await fetchPosts('slug,title,published_at,updated_at', 'published=eq.true');
 
   var articles = posts.map(function(post) {
     var slug    = makeSlug(post);
@@ -154,7 +161,7 @@ module.exports = async (req, res) => {
   var urlEntries = staticPages.concat(articles).map(function(page) {
     return [
       '  <url>',
-      '    <loc>' + BASE_URL + page.url + '</loc>',
+      '    <loc>' + BASE_URL + xmlEscape(page.url) + '</loc>',
       '    <lastmod>' + page.lastmod + '</lastmod>',
       '    <changefreq>' + page.changefreq + '</changefreq>',
       '    <priority>' + page.priority + '</priority>',
@@ -162,12 +169,12 @@ module.exports = async (req, res) => {
     ].join('\n');
   }).join('\n');
 
-  var xml = [
+  var pagesXml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     urlEntries,
     '</urlset>'
   ].join('\n');
 
-  return res.status(200).send(xml);
+  return res.status(200).send(pagesXml);
 };
