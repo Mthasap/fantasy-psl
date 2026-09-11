@@ -2823,40 +2823,68 @@ function loadGW(cb) {
       });
   }
 
-  // Source 1: is_current = true (the correct, normal path)
-  db.from('gameweeks')
-    .select('gw_number, deadline, deadline_at, start_date, season')
-    .eq('is_current', true)
-    .order('gw_number', { ascending: false })
-    .limit(1)
-    .then(function(res) {
-      // Handle both array and single-object responses
-      var rows = res.data;
-      var gwRow = Array.isArray(rows) ? rows[0] : rows;
+  // Source 1: is_current = true (fallback — only trusted when Source 0 is empty)
+  function trySource1() {
+    db.from('gameweeks')
+      .select('gw_number, deadline, deadline_at, start_date, season')
+      .eq('is_current', true)
+      .order('gw_number', { ascending: false })
+      .limit(1)
+      .then(function(res) {
+        // Handle both array and single-object responses
+        var rows = res.data;
+        var gwRow = Array.isArray(rows) ? rows[0] : rows;
 
-      if (gwRow) {
-        var n = gwRow.gw_number || gwRow.number;
-        var dl = gwRow.deadline_at || gwRow.deadline || null;
-        gwRow.deadline_at = dl; // normalise for ST.gw usage
-
-        // is_current is the single source of truth (set by the sync's
-        // completion-based advance). Trust it for ANY valid gameweek — no more
-        // "GW1 is probably stale" fallthrough, which could make the display
-        // lurch to a wrong gameweek.
-        if (n && n >= 1) {
-          applyGW(n, dl);
-          return;
+        if (gwRow) {
+          var n = gwRow.gw_number || gwRow.number;
+          var dl = gwRow.deadline_at || gwRow.deadline || null;
+          gwRow.deadline_at = dl; // normalise for ST.gw usage
+          if (n && n >= 1) { applyGW(n, dl); return; }
+          trySource2();
+        } else {
+          trySource2();
         }
+      })
+      .catch(function(err) {
+        console.warn('[loadGW] Source 1 error:', err && err.message);
         trySource2();
-      } else {
-        // No row with is_current=true — use date-based fallback
-        trySource2();
-      }
-    })
-    .catch(function(err) {
-      console.warn('[loadGW] Source 1 error:', err && err.message);
-      trySource2();
-    });
+      });
+  }
+
+  // Source 0 (PRIMARY): derive the current GW straight from the fixtures table
+  // — the earliest match that has NOT finished. This is immune to a stale
+  // `is_current` flag (the cause of the "GW 1" freeze) and is season-agnostic,
+  // because it reads real fixture data rather than the season label. It also
+  // advances by itself: once every GW1 match is FT, the earliest unfinished
+  // fixture is in GW2, and so on.
+  function trySourceFixtures() {
+    db.from('fixtures')
+      .select('gw_number')
+      .not('status', 'in', '(FT,AET,PEN)')   // exclude finished matches
+      .not('gw_number', 'is', null)
+      .order('kickoff_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+      .then(function(r) {
+        var n = (r && r.data) ? r.data.gw_number : null;
+        if (!n || n < 1) { trySource1(); return; }   // season over / no fixtures → fall back
+        // Got the true current GW from fixtures — fetch its deadline from gameweeks.
+        db.from('gameweeks')
+          .select('deadline, deadline_at')
+          .eq('gw_number', n)
+          .order('season', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then(function(g) {
+            var dl = (g && g.data) ? (g.data.deadline_at || g.data.deadline || null) : null;
+            applyGW(n, dl);
+          })
+          .catch(function() { applyGW(n, null); });
+      })
+      .catch(function() { trySource1(); });
+  }
+
+  trySourceFixtures();
 }
 
 // Poll for GW changes every 5 minutes (catches admin updates without page refresh)
