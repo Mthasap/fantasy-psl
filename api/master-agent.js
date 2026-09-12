@@ -169,17 +169,25 @@ async function detectSeasonPhase(db) {
     .from('app_settings').select('value').eq('key', 'season_open').maybeSingle();
   const manualOpen = setting?.value === 'true';
 
-  // 2. Get current season year from API-Football
+  // 2. Determine the season year. The APIFOOTBALL_SEASON env var is AUTHORITATIVE
+  //    and matches what apifootball-sync writes (PSL_SEASON). We must NOT let
+  //    API-Football's "current" label override it: API-Football often labels the
+  //    2025/26 PSL season as "2025", which made this agent treat the live 2026
+  //    season as off-season, skip the fixture sync, and never advance is_current
+  //    (root cause of the frozen "GW 1" badge). Only ask the API when the env
+  //    var is missing.
   let seasonYear = process.env.APIFOOTBALL_SEASON
     ? parseInt(process.env.APIFOOTBALL_SEASON)
     : now.getFullYear();
 
-  try {
-    const leagues = await apiFetch(`/leagues?id=${PSL_LEAGUE}&current=true`);
-    const league  = (leagues.response || [])[0];
-    const current = (league?.seasons || []).find(s => s.current);
-    if (current?.year) seasonYear = current.year;
-  } catch (_) {}
+  if (!process.env.APIFOOTBALL_SEASON) {
+    try {
+      const leagues = await apiFetch(`/leagues?id=${PSL_LEAGUE}&current=true`);
+      const league  = (leagues.response || [])[0];
+      const current = (league?.seasons || []).find(s => s.current);
+      if (current?.year) seasonYear = current.year;
+    } catch (_) {}
+  }
 
   // 3. Check if season has any active fixtures
   const { data: fixtures } = await db

@@ -291,16 +291,20 @@ async function syncFixtures(log) {
     }
 
     if (currentGwNum) {
+      // Clear is_current on EVERY row first (all seasons) — this kills the
+      // cross-season pollution bug where an old 2025 row kept is_current=true
+      // and the frontend latched onto it. Scoping only to PSL_SEASON (as before)
+      // left orphan flags on prior seasons forever.
       await supabase.from('gameweeks')
         .update({ is_current: false })
-        .eq('season', PSL_SEASON).neq('gw_number', currentGwNum);
+        .eq('is_current', true);
 
       const { error: setErr } = await supabase.from('gameweeks')
         .update({ is_current: true })
         .eq('season', PSL_SEASON).eq('gw_number', currentGwNum);
 
       if (setErr) log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
-      else        log.push(`  ✅ is_current set to GW${currentGwNum} (first unfinished gameweek)`);
+      else        log.push(`  ✅ is_current set to GW${currentGwNum} season ${PSL_SEASON} (first unfinished gameweek)`);
     }
   } catch (e) {
     log.push(`  ⚠️  is_current auto-set failed: ${e.message}`);
@@ -684,14 +688,17 @@ module.exports = async (req, res) => {
   const syncSecretHdr= req.headers['x-sync-secret']  || '';
   const authHeader   = req.headers['authorization']  || '';
   const secretParam  = req.query.secret              || '';
+  const adminKeyParam= req.query.admin_key           || '';
 
   const isAuthorized = cronHeader === '1'
     || (VALID_SECRET && adminKeyHdr   === VALID_SECRET)
     || (VALID_SECRET && syncSecretHdr === VALID_SECRET)
     || (VALID_SECRET && secretParam   === VALID_SECRET)
+    || (VALID_SECRET && adminKeyParam === VALID_SECRET)
     || (VALID_SECRET && authHeader    === `Bearer ${VALID_SECRET}`)
-    || (process.env.ADMIN_SECRET && adminKeyHdr === process.env.ADMIN_SECRET)
-    || (process.env.ADMIN_SECRET && secretParam  === process.env.ADMIN_SECRET);
+    || (process.env.ADMIN_SECRET && adminKeyHdr   === process.env.ADMIN_SECRET)
+    || (process.env.ADMIN_SECRET && secretParam   === process.env.ADMIN_SECRET)
+    || (process.env.ADMIN_SECRET && adminKeyParam === process.env.ADMIN_SECRET);
 
   if (!isAuthorized) {
     return res.status(401).json({ error: 'Unauthorized' });
