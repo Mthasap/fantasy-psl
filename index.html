@@ -2754,7 +2754,7 @@ function loadGW(cb) {
     // Highest GW whose start_date is on or before now
     var now = new Date().toISOString();
     db.from('gameweeks')
-      .select('gw_number, deadline, deadline_at, start_date')
+      .select('gw_number, deadline, start_date')
       .lte('start_date', now)
       .order('gw_number', { ascending: false })
       .limit(1)
@@ -2762,7 +2762,7 @@ function loadGW(cb) {
       .then(function(r) {
         var row = r.data;
         var n = row ? (row.gw_number || row.number) : null;
-        var dl = row ? (row.deadline_at || row.deadline || null) : null;
+        var dl = row ? (row.deadline || null) : null;
         if (n && n > 0) {
           applyGW(n, dl);
         } else {
@@ -2826,7 +2826,7 @@ function loadGW(cb) {
   // Source 1: is_current = true (fallback — only trusted when Source 0 is empty)
   function trySource1() {
     db.from('gameweeks')
-      .select('gw_number, deadline, deadline_at, start_date, season')
+      .select('gw_number, deadline, start_date, season')
       .eq('is_current', true)
       .order('gw_number', { ascending: false })
       .limit(1)
@@ -2837,8 +2837,7 @@ function loadGW(cb) {
 
         if (gwRow) {
           var n = gwRow.gw_number || gwRow.number;
-          var dl = gwRow.deadline_at || gwRow.deadline || null;
-          gwRow.deadline_at = dl; // normalise for ST.gw usage
+          var dl = gwRow.deadline || null;
           if (n && n >= 1) { applyGW(n, dl); return; }
           trySource2();
         } else {
@@ -2870,13 +2869,13 @@ function loadGW(cb) {
         if (!n || n < 1) { trySource1(); return; }   // season over / no fixtures → fall back
         // Got the true current GW from fixtures — fetch its deadline from gameweeks.
         db.from('gameweeks')
-          .select('deadline, deadline_at')
+          .select('deadline')
           .eq('gw_number', n)
           .order('season', { ascending: false })
           .limit(1)
           .maybeSingle()
           .then(function(g) {
-            var dl = (g && g.data) ? (g.data.deadline_at || g.data.deadline || null) : null;
+            var dl = (g && g.data) ? (g.data.deadline || null) : null;
             applyGW(n, dl);
           })
           .catch(function() { applyGW(n, null); });
