@@ -238,12 +238,20 @@ async function syncFixtures(log) {
     const roundFixtures  = fixtures.filter(f => f.league?.round === round);
     const dates          = roundFixtures.map(f => f.fixture?.date).filter(Boolean).sort();
     const finishedCount  = roundFixtures.filter(f => f.fixture?.status?.short === 'FT').length;
+    // Deadline = 90 minutes before the FIRST kickoff of the gameweek. This is
+    // what the frontend lock UI and save-squad expect; without it the squad
+    // never locks. ISO strings sort chronologically, so dates[0] is earliest.
+    const firstKickoff   = dates[0] ?? null;
+    const deadline       = firstKickoff
+      ? new Date(new Date(firstKickoff).getTime() - 90 * 60 * 1000).toISOString()
+      : null;
     return {
       season:      PSL_SEASON,
       gw_number:   gwNumber,
       api_round:   round,
       start_date:  dates[0] ?? null,
       end_date:    dates[dates.length - 1] ?? null,
+      deadline:    deadline,
       // A gameweek is only "finished" if it HAS fixtures and ALL of them are FT.
       // Without the length>0 guard, an empty gameweek (0 fixtures) evaluated as
       // 0===0 = true, so future empty gameweeks were flagged finished and the
@@ -291,6 +299,15 @@ async function syncFixtures(log) {
     }
 
     if (currentGwNum) {
+      // Detect a GW rollover: read the previously-current GW before we change it.
+      let prevCurrent = null;
+      try {
+        const { data: prevRow } = await supabase.from('gameweeks')
+          .select('gw_number').eq('is_current', true).eq('season', PSL_SEASON)
+          .order('gw_number', { ascending: false }).limit(1).maybeSingle();
+        prevCurrent = prevRow ? prevRow.gw_number : null;
+      } catch (_) {}
+
       // Clear is_current on EVERY row first (all seasons) — this kills the
       // cross-season pollution bug where an old 2025 row kept is_current=true
       // and the frontend latched onto it. Scoping only to PSL_SEASON (as before)
@@ -305,6 +322,27 @@ async function syncFixtures(log) {
 
       if (setErr) log.push(`  ⚠️  Could not set is_current on GW${currentGwNum}: ${setErr.message}`);
       else        log.push(`  ✅ is_current set to GW${currentGwNum} season ${PSL_SEASON} (first unfinished gameweek)`);
+
+      // GW ROLLOVER → reset everyone's live gw_points to 0 so the new gameweek
+      // shows 0 until matches are played. The user's own card already reads 0
+      // from gw_scores, but the LEADERBOARDS read profiles.gw_points directly,
+      // so without this they'd show last week's total on the new GW. Only fire
+      // when (a) the current GW actually changed and (b) the new GW has not been
+      // scored yet — so we never wipe legitimate live points mid-gameweek.
+      if (!setErr && prevCurrent !== currentGwNum) {
+        try {
+          const { count: scoredCount } = await supabase
+            .from('gw_scores').select('user_id', { count: 'exact', head: true })
+            .eq('gameweek', currentGwNum);
+          if (!scoredCount) {
+            const { error: rErr } = await supabase.from('profiles')
+              .update({ gw_points: 0 })
+              .or('squad_registered.eq.true,squad_count.gte.15');
+            if (rErr) log.push(`  ⚠️  gw_points rollover reset failed: ${rErr.message}`);
+            else      log.push(`  ✅ GW rollover ${prevCurrent ?? '—'} → ${currentGwNum}: reset gw_points to 0`);
+          }
+        } catch (e) { log.push(`  ⚠️  gw_points rollover reset error: ${e.message}`); }
+      }
     }
   } catch (e) {
     log.push(`  ⚠️  is_current auto-set failed: ${e.message}`);

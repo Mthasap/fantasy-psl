@@ -77,13 +77,15 @@ module.exports = async (req, res) => {
     try {
       const { data: gw } = await db
         .from('gameweeks')
-        .select('deadline, deadline_at, gw_number')
+        .select('deadline, gw_number')
         .eq('is_current', true)
         .limit(1)
         .single();
       if (gw) {
-        // Normalise: actual column is 'deadline', handle both variants
-        const deadlineVal = gw.deadline_at || gw.deadline || null;
+        // The gameweeks table has a `deadline` column (no `deadline_at`).
+        // Selecting a non-existent column errors the whole query, which used to
+        // silently disable the lock — hence squads were editable after kickoff.
+        const deadlineVal = gw.deadline || null;
         if (deadlineVal && new Date() >= new Date(deadlineVal)) {
           console.warn('[save-squad] 403: Deadline passed for GW', gw.gw_number, 'user:', user.id);
           return res.status(403).json({ error: 'Gameweek deadline has passed. Squad is locked.' });
