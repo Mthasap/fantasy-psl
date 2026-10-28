@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6398135174637589" crossorigin="anonymous"></script>
   <!-- Google Analytics 4 — free, GDPR-friendly, no cookie banner needed for basic analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-2YMMS70H24"></script>
   <script>
@@ -317,10 +315,6 @@
   }
   
   
-  /* -- Guest Ad Banner --------------------------------------------------- */
-  #guest-ad-banner { transition: opacity .3s, transform .3s; }
-  #guest-ad-banner.hide { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-
   /* -- Footer disclaimer ------------------------------------------------- */
   .foot-disclaimer {
     font-size:.65rem; color:rgba(255,255,255,.25); line-height:1.5;
@@ -329,76 +323,6 @@
   }
   .foot-disclaimer strong { color:rgba(255,255,255,.4); }
   .foot-copy { font-size:.72rem; color:rgba(255,255,255,.3); text-align:center; margin-top:.5rem; }
-  
-  
-  /* -- Ad Banner ------------------------------------------------------ */
-  #ad-banner {
-    position: fixed;
-    bottom: 64px;           /* above bottom nav */
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 24px);
-    max-width: 420px;
-    background: rgba(10,10,18,.96);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 12px;
-    padding: 10px 12px 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 8000;
-    box-shadow: 0 8px 32px rgba(0,0,0,.5);
-    backdrop-filter: blur(10px);
-    transition: opacity .3s, transform .3s;
-  }
-  #ad-banner.hide {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(-50%) translateY(20px);
-  }
-  /* Bare mode: when only the white "Advertise with us" house ad is shown,
-     strip the outer card so no grey block sits behind the pill.
-     !important is required because #ad-banner carries inline styles. */
-  #ad-banner.ad-banner--bare {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    backdrop-filter: none !important;
-  }
-  #ad-banner.ad-banner--bare > div:first-child { display: none !important; } /* hide "Sponsored" + top ✕ row */
-  #ad-banner ins.adsbygoogle {
-    display: block;
-    flex: 1;
-    min-height: 50px;
-    background: transparent;
-  }
-  .ad-label {
-    font-family: var(--font-ui);
-    font-size: .52rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    color: rgba(255,255,255,.3);
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .ad-close {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    color: rgba(255,255,255,.5);
-    font-size: .8rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    padding: 0;
-    line-height: 1;
-  }
-  .ad-close:hover { background: rgba(255,255,255,.1); color: #fff; }
   
   
   /* ==================================================
@@ -492,12 +416,6 @@
   .hero-stat-label { font-size: clamp(.42rem, 1.5vw, .68rem) !important; }
 
   /* GW badge in nav */
-  .adv-cta-wrap{position:relative;border-radius:16px;padding:2px;background:linear-gradient(90deg,#1DB954,#C9A227,#E8D44D);}
-  .adv-cta{background:#EDEDED;border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer}
-  .adv-cta-x{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;color:#E23B3B;font-size:1rem;font-weight:700;border:none;cursor:pointer;line-height:1}
-  .adv-cta-title{flex:1;text-align:center;font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:1.5rem;color:#111;letter-spacing:.2px;line-height:1}
-  .adv-cta-btn{flex-shrink:0;background:#1a1a1a;color:#fff;font-family:var(--font-ui);font-size:.68rem;font-weight:700;line-height:1.05;text-align:center;padding:.55rem .9rem;border-radius:22px;white-space:nowrap}
-  @media(max-width:420px){.adv-cta-title{font-size:1.15rem}}
   #gw-nav-badge {
     font-family: var(--font-ui);
     font-size: .58rem;
@@ -516,9 +434,6 @@
     max-width: 480px;
   }
 
-  /* Ad banner spacing from bottom nav */
-  #ad-banner { bottom: 70px; }
-  
   
 @keyframes livePulse {
   0%,100% { opacity:1; transform:scale(1); }
@@ -692,17 +607,7 @@
 .pw-toggle:hover{opacity:1}
 .pw-toggle svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* Hard guard: placeholder ad slots can never reserve blank space anywhere.
-   Rule stops matching automatically once real slot IDs are pasted in. */
-ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!important;min-height:0!important}
 </style>
-
-  <!-- ==============================================================
-    GOOGLE ADSENSE -- Replace ca-pub-XXXXXXXXXXXXXXXX with your
-    Publisher ID from adsense.google.com once your site is approved.
-    Remove the HTML comment markers to activate.
-  =============================================================== -->
-  <!-- AdSense loaded at top of head — no duplicate needed -->
 </head>
 <body style="background:#0C0F14;color:#ffffff;">
 <!-- SPLASH SCREEN -->
@@ -978,285 +883,6 @@ ins.adsbygoogle[data-ad-slot^="REPLACE"]{display:none!important;height:0!importa
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
-<!-- ═══ HOME: AdSense Banner + House Ad Fallback ══════════════════════════ -->
-<div id="home-ad-wrap" style="margin:.6rem auto 0;max-width:520px;width:calc(100% - 1.5rem);position:relative">
-  <!-- AdSense slot DISABLED until account is approved and a real slot ID exists.
-       This slot with data-full-width-responsive was reserving a huge empty height
-       (the blank-space bug). To re-enable after AdSense approval:
-       1. Replace REPLACE_HOME_SLOT_ID with your real slot ID from AdSense
-       2. Uncomment the <ins> block and the push() script below
-  <ins class="adsbygoogle"
-       style="display:block;min-height:50px"
-       data-ad-client="ca-pub-6398135174637589"
-       data-ad-slot="REPLACE_HOME_SLOT_ID"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-  <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-  -->
-  <!-- House ad — shown when AdSense slot is unfilled -->
-  <div id="home-house-ad" class="adv-cta-wrap" style="cursor:pointer">
-    <div class="adv-cta" onclick="openAdvertiseForm()">
-      <button class="adv-cta-x" aria-label="Dismiss" onclick="event.stopPropagation(); document.getElementById('home-house-ad').style.display='none';">&#10005;</button>
-      <div class="adv-cta-title">Advertise with us</div>
-      <div class="adv-cta-btn">click<br>here</div>
-    </div>
-  </div>
-</div>
-<script>
-// ══════════════════════════════════════════════════════════════════════════
-//  SPONSOR ADS — our own banner ads, shown BEFORE falling back to house ads.
-//  Priority order per slot: (1) active sponsor ad → (2) house ad → (3) Google.
-//  Managed from the admin "Sponsor Ads" tab; stored in Supabase sponsor_ads.
-// ══════════════════════════════════════════════════════════════════════════
-var SPONSOR_ADS_CACHE = null;
-
-function loadSponsorAds() {
-  if (!db) return Promise.resolve([]);
-  // RLS already filters to active + in-schedule rows, so we just fetch.
-  return db.from('sponsor_ads')
-    .select('id,headline,subtext,image_url,link_url,cta_label,bg_color,placement,priority')
-    .order('priority', { ascending: false })
-    .then(function(res){ SPONSOR_ADS_CACHE = res.data || []; return SPONSOR_ADS_CACHE; })
-    .catch(function(){ SPONSOR_ADS_CACHE = []; return []; });
-}
-
-function sponsorFor(placement) {
-  if (!SPONSOR_ADS_CACHE) return null;
-  // match this placement or 'all'; highest priority already first
-  var match = SPONSOR_ADS_CACHE.filter(function(a){
-    return a.placement === placement || a.placement === 'all';
-  });
-  return match.length ? match[0] : null;
-}
-
-function renderSponsorAd(containerId, ad) {
-  var el = document.getElementById(containerId);
-  if (!el || !ad) return false;
-  // Clear the host container's own styling (e.g. the "Advertise Here" dashed
-  // border / padding) so the sponsor ad FILLS the whole block instead of
-  // nesting inside it with the CTA showing behind.
-  el.style.border = 'none';
-  el.style.background = 'none';
-  el.style.padding = '0';
-  el.style.boxShadow = 'none';
-  var bg = ad.bg_color || '#DBA94A';
-  var img = ad.image_url
-    ? '<img src="' + ad.image_url + '" alt="" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#fff" onerror="this.style.display=\'none\'">'
-    : '<div style="font-size:1.8rem;flex-shrink:0">📣</div>';
-  el.innerHTML =
-    '<a href="' + ad.link_url + '" target="_blank" rel="noopener sponsored" ' +
-      'onclick="trackSponsorClick(' + ad.id + ')" ' +
-      'style="text-decoration:none;background:linear-gradient(135deg,' + hexA(bg,0.14) + ',rgba(14,20,32,.95));' +
-      'border:1px solid ' + hexA(bg,0.35) + ';border-radius:12px;padding:.85rem 1rem;display:flex;' +
-      'align-items:center;gap:.8rem;cursor:pointer">' +
-      img +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-family:var(--font-ui);font-size:.62rem;font-weight:700;letter-spacing:1px;' +
-          'text-transform:uppercase;color:' + bg + ';margin-bottom:.15rem;opacity:.85">Sponsored</div>' +
-        '<div style="font-family:var(--font-ui);font-size:.85rem;font-weight:800;color:#fff;' +
-          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (ad.headline||'') + '</div>' +
-        (ad.subtext ? '<div style="font-size:.72rem;color:rgba(255,255,255,.6);white-space:nowrap;' +
-          'overflow:hidden;text-overflow:ellipsis">' + ad.subtext + '</div>' : '') +
-      '</div>' +
-      '<div style="flex-shrink:0;background:' + bg + ';color:#0a0a15;font-size:.72rem;font-weight:800;' +
-        'padding:.4rem .7rem;border-radius:8px;white-space:nowrap">' + (ad.cta_label||'Learn More') + '</div>' +
-    '</a>';
-  el.style.display = 'block';
-  trackSponsorImpression(ad.id);
-  return true;
-}
-
-// hex + alpha helper (accepts #RGB or #RRGGBB)
-function hexA(hex, a) {
-  try {
-    hex = (hex||'#DBA94A').replace('#','');
-    if (hex.length === 3) hex = hex.split('').map(function(x){return x+x;}).join('');
-    var r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-  } catch(e) { return 'rgba(219,169,74,' + a + ')'; }
-}
-
-// Fire-and-forget counters (best-effort; never block UI)
-function trackSponsorImpression(id) {
-  if (!db || !id) return;
-  try { db.rpc('increment_sponsor', { ad_id: id, field: 'impressions' }); } catch(e){}
-}
-function trackSponsorClick(id) {
-  if (!db || !id) return;
-  try { db.rpc('increment_sponsor', { ad_id: id, field: 'clicks' }); } catch(e){}
-}
-
-// "Advertise with us" house ad — recruits sponsors when a slot is empty.
-// Rendered into the same container as the normal house ad. Set your contact
-// email once here and it's used everywhere.
-var ADVERTISE_EMAIL = 'admin@fantasypsl.co.za';
-function renderAdvertiseAd(containerId) {
-  var el = document.getElementById(containerId);
-  if (!el) return false;
-  // Matches the Figma design: light card, green→gold gradient border, large
-  // serif "Advertise with us", circular red ✕ on the left, dark "click here"
-  // pill on the right.
-  if (!document.getElementById('adv-cta-style')) {
-    var st = document.createElement('style');
-    st.id = 'adv-cta-style';
-    st.textContent =
-      '.adv-cta-wrap{position:relative;border-radius:16px;padding:2px;' +
-      'background:linear-gradient(90deg,#1DB954,#C9A227,#E8D44D);}' +
-      '.adv-cta{background:#EDEDED;border-radius:14px;padding:.85rem 1rem;display:flex;' +
-      'align-items:center;gap:.75rem;cursor:pointer}' +
-      '.adv-cta-x{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:#1a1a1a;' +
-      'display:flex;align-items:center;justify-content:center;color:#E23B3B;font-size:1rem;font-weight:700;' +
-      'border:none;cursor:pointer;line-height:1}' +
-      '.adv-cta-title{flex:1;text-align:center;font-family:Georgia,"Times New Roman",serif;' +
-      'font-weight:700;font-size:1.5rem;color:#111;letter-spacing:.2px;line-height:1}' +
-      '.adv-cta-btn{flex-shrink:0;background:#1a1a1a;color:#fff;font-family:var(--font-ui);font-size:.68rem;' +
-      'font-weight:700;line-height:1.05;text-align:center;padding:.55rem .9rem;border-radius:22px;white-space:nowrap}' +
-      '@media(max-width:420px){.adv-cta-title{font-size:1.15rem}}';
-    document.head.appendChild(st);
-  }
-  el.innerHTML =
-    '<div class="adv-cta-wrap">' +
-      '<div class="adv-cta" onclick="openAdvertiseForm()">' +
-        '<button class="adv-cta-x" aria-label="Dismiss" ' +
-          'onclick="event.stopPropagation(); this.closest(\'.adv-cta-wrap\').parentNode.style.display=\'none\';">\u2715</button>' +
-        '<div class="adv-cta-title">Advertise with us</div>' +
-        '<div class="adv-cta-btn">click<br>here</div>' +
-      '</div>' +
-    '</div>';
-  el.style.display = 'block';
-  el.style.background = 'none';
-  el.style.border = 'none';
-  el.style.padding = '0';
-  return true;
-}
-
-// ── Advertiser contact form ────────────────────────────────────────────────
-// Opened from the "To advertise, contact us → Click Here" house ad.
-// Submissions are saved to the Supabase `advertiser_inquiries` table so they
-// are captured reliably (viewable in Supabase / admin). Run the accompanying
-// SQL to create the table + allow anonymous inserts.
-function openAdvertiseForm() {
-  var existing = document.getElementById('adv-form-overlay');
-  if (existing) { existing.style.display = 'flex'; return; }
-  var ov = document.createElement('div');
-  ov.id = 'adv-form-overlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1.2rem';
-  ov.innerHTML =
-    '<div style="background:#191C25;border:1px solid rgba(219,169,74,.25);border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:1.5rem">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.3rem">' +
-        '<div style="font-family:var(--font-ui,sans-serif);font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DBA94A">Advertise with Fantasy PSL</div>' +
-        '<div onclick="closeAdvertiseForm()" style="cursor:pointer;color:rgba(255,255,255,.5);font-size:1.3rem;line-height:1;margin-top:-.2rem">&times;</div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-ui,sans-serif);font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:.3rem">Reach Mzansi\'s football fans</div>' +
-      '<div style="font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:1.1rem;line-height:1.5">Tell us about your business and we\'ll get back to you with rates and options.</div>' +
-      '<div id="adv-form-fields">' +
-        _advInput('adv-business', 'Business name *', 'text', 'e.g. Acme Media') +
-        _advInput('adv-name', 'Your name *', 'text', 'Full name') +
-        _advInput('adv-email', 'Email *', 'email', 'you@company.com') +
-        _advInput('adv-website', 'Website', 'text', 'https://') +
-        _advInput('adv-budget', 'Monthly budget (optional)', 'text', 'e.g. R2 000') +
-        '<label style="display:block;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin:.7rem 0 .3rem">Message</label>' +
-        '<textarea id="adv-message" rows="3" placeholder="What would you like to promote?" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.65rem .8rem;color:#fff;font-size:.9rem;font-family:var(--font-body,sans-serif);outline:none;resize:vertical"></textarea>' +
-      '</div>' +
-      '<div id="adv-form-error" style="display:none;color:#ff6b6b;font-size:.8rem;margin-top:.6rem"></div>' +
-      '<button id="adv-form-submit" onclick="submitAdvertiseInquiry()" style="width:100%;margin-top:1rem;background:#DBA94A;color:#0a0a15;border:none;border-radius:10px;font-family:var(--font-ui,sans-serif);font-size:.95rem;font-weight:800;padding:.85rem;cursor:pointer;letter-spacing:.5px">Send enquiry</button>' +
-      '<div style="text-align:center;font-size:.7rem;color:rgba(255,255,255,.3);margin-top:.7rem">Or email <a href="mailto:' + ADVERTISE_EMAIL + '" style="color:#DBA94A">' + ADVERTISE_EMAIL + '</a></div>' +
-    '</div>';
-  ov.addEventListener('click', function(e){ if (e.target === ov) closeAdvertiseForm(); });
-  document.body.appendChild(ov);
-}
-function _advInput(id, label, type, ph) {
-  return '<label style="display:block;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin:.7rem 0 .3rem">' + label + '</label>' +
-    '<input id="' + id + '" type="' + type + '" placeholder="' + ph + '" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.65rem .8rem;color:#fff;font-size:.9rem;font-family:var(--font-body,sans-serif);outline:none">';
-}
-function closeAdvertiseForm() {
-  var ov = document.getElementById('adv-form-overlay');
-  if (ov) ov.remove();
-}
-function submitAdvertiseInquiry() {
-  var errEl = document.getElementById('adv-form-error');
-  var btn = document.getElementById('adv-form-submit');
-  function val(id){ var e=document.getElementById(id); return e?e.value.trim():''; }
-  var business = val('adv-business'), name = val('adv-name'), email = val('adv-email');
-  var website = val('adv-website'), budget = val('adv-budget'), message = val('adv-message');
-  if (!business || !name || !email) {
-    errEl.textContent = 'Please fill in business name, your name, and email.';
-    errEl.style.display = 'block'; return;
-  }
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    errEl.textContent = 'Please enter a valid email address.';
-    errEl.style.display = 'block'; return;
-  }
-  errEl.style.display = 'none';
-  btn.textContent = 'Sending…'; btn.disabled = true;
-  var row = {
-    business_name: business, contact_name: name, email: email,
-    website: website || null, budget: budget || null, message: message || null,
-    source_page: (typeof ST !== 'undefined' && ST.page) ? ST.page : null
-  };
-  if (!db) { errEl.textContent = 'Could not send right now — please email us instead.'; errEl.style.display='block'; btn.textContent='Send enquiry'; btn.disabled=false; return; }
-  db.from('advertiser_inquiries').insert(row).then(function(res){
-    if (res.error) {
-      errEl.textContent = 'Could not send — please email ' + ADVERTISE_EMAIL;
-      errEl.style.display = 'block';
-      btn.textContent = 'Send enquiry'; btn.disabled = false;
-      return;
-    }
-    var ov = document.getElementById('adv-form-overlay');
-    if (ov) ov.querySelector('div').innerHTML =
-      '<div style="text-align:center;padding:1rem 0">' +
-        '<div style="font-size:2.5rem;margin-bottom:.5rem">✅</div>' +
-        '<div style="font-family:var(--font-ui,sans-serif);font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:.4rem">Thank you!</div>' +
-        '<div style="font-size:.85rem;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:1.2rem">We\'ve received your enquiry and will be in touch soon.</div>' +
-        '<button onclick="closeAdvertiseForm()" style="background:#DBA94A;color:#0a0a15;border:none;border-radius:10px;font-family:var(--font-ui,sans-serif);font-weight:800;padding:.7rem 1.6rem;cursor:pointer">Done</button>' +
-      '</div>';
-  }).catch(function(){
-    errEl.textContent = 'Could not send — please email ' + ADVERTISE_EMAIL;
-    errEl.style.display = 'block';
-    btn.textContent = 'Send enquiry'; btn.disabled = false;
-  });
-}
-
-// Decide the fallback (no sponsor booked): alternate between the app\'s own
-// promo and the "advertise with us" pitch, so empty slots recruit sponsors.
-// Uses the day so it\'s stable within a session but rotates over time.
-function showHouseFallback(containerId, originalHTML) {
-  // Always show the advertise CTA in unsold ad slots — filling empty inventory
-  // with an advertiser call-to-action is the most valuable use of the space and
-  // makes "advertise here" visible on homepage load. Sponsor ads and Google ads
-  // still take priority when they're booked/filled (handled before this runs).
-  renderAdvertiseAd(containerId);
-}
-
-// Home ad slot: sponsor ad first, then house/advertise, then Google.
-(function(){
-  var homeOriginal = null;
-  function checkHomeAd(){
-    var house = document.getElementById('home-house-ad');
-    var ins = document.querySelector('#home-ad-wrap ins.adsbygoogle');
-    if (house && homeOriginal === null) homeOriginal = house.innerHTML; // capture news promo once
-    // 1. Sponsor ad wins if one exists
-    var ad = sponsorFor('home');
-    if (ad && house) {
-      if (renderSponsorAd('home-house-ad', ad)) return;
-    }
-    // 2. Google filled? hide house entirely
-    if (ins && ins.getAttribute('data-ad-status') === 'filled') {
-      if (house) house.style.display = 'none';
-      return;
-    }
-    // 3. No sponsor, no Google → alternate news promo / advertise pitch
-    if (house) showHouseFallback('home-house-ad', homeOriginal);
-  }
-  // Re-load sponsors INSIDE each delayed check — db may not be initialised at
-  // page-parse time, so a single upfront load can return empty and the banner
-  // wrongly falls back to the CTA. Reloading when the check runs fixes it.
-  function loadAndCheckHome(){ loadSponsorAds().then(checkHomeAd); }
-  setTimeout(loadAndCheckHome, 1500);
-  setTimeout(loadAndCheckHome, 3500);
-  setTimeout(loadAndCheckHome, 6000);
-})();
-</script>
 
 <!-- ═══ HOME: Latest News Strip (EPL-style horizontal scroll) ════════════ -->
 
@@ -1300,16 +926,27 @@ function showHouseFallback(containerId, originalHTML) {
     </div>
     <button onclick="goPage('news')" style="background:none;border:none;font-family:var(--font-ui,sans-serif);font-size:.65rem;font-weight:700;letter-spacing:.5px;color:#B91C3A;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">See All →</button>
   </div>
-  <div id="home-news-scroll" style="display:flex;gap:.65rem;overflow-x:auto;padding:.05rem 1rem .6rem;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">
-    <div class="hn-sk" style="flex:0 0 200px;height:185px;border-radius:10px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
-    <div class="hn-sk" style="flex:0 0 200px;height:185px;border-radius:10px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
-    <div class="hn-sk" style="flex:0 0 200px;height:185px;border-radius:10px;background:rgba(255,255,255,.05);scroll-snap-align:start"></div>
+  <div id="home-news-scroll" style="display:flex;gap:.9rem;overflow-x:auto;padding:.35rem 1rem .75rem;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;align-items:flex-start">
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
   </div>
 </div>
 <style>
 #home-news-scroll::-webkit-scrollbar{display:none}
 @keyframes hn-pulse{0%,100%{opacity:.4}50%{opacity:.85}}
 .hn-sk{animation:hn-pulse 1.5s ease-in-out infinite}
+.hn-sk-story{flex:0 0 76px;width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.06)}
+/* ── Home news: circular story bubbles ───────────────────────── */
+.hn-story{flex:0 0 84px;width:84px;display:flex;flex-direction:column;align-items:center;gap:.42rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hn-ring{width:76px;height:76px;border-radius:50%;background:var(--hn-ring,linear-gradient(135deg,#B91C3A,#DBA94A));display:flex;align-items:center;justify-content:center;transition:transform .12s;flex-shrink:0}
+.hn-story:active .hn-ring{transform:scale(.93)}
+.hn-ava,.hn-ava-ph{width:70px;height:70px;border-radius:50%;background:#191C25;box-shadow:0 0 0 2px #0C0F14}
+.hn-ava{object-fit:cover;display:block}
+.hn-ava-ph{display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+.hn-cap{font-family:var(--font-ui,sans-serif);font-size:.64rem;font-weight:700;line-height:1.2;color:rgba(255,255,255,.9);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;word-break:break-word}
 </style>
 <script>
 (function(){
@@ -1318,21 +955,24 @@ var _HN_CAT={'Gameweek':'#B91C3A','Tips':'#DBA94A','Table':'#22895A','Transfer':
 function _hnFmt(d){try{return new Date(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});}catch(e){return '';}}
 function _hnCat(cat){var c=_HN_CAT[cat]||'#6B7280';return'<span style="font-size:.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+c+';padding:1px 5px;border-radius:3px">'+((cat||'News').slice(0,10))+'</span>';}
 
+window._hnImgErr=function(el){
+  // Image failed → swap it for the emoji placeholder (keeps the ring intact).
+  try{var d=document.createElement('div');d.className='hn-ava-ph';d.textContent='📰';el.parentNode.replaceChild(d,el);}catch(e){}
+};
 function renderHomeNews(posts){
   var el=document.getElementById('home-news-scroll');if(!el)return;
-  if(!posts||!posts.length){el.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.78rem;padding:.5rem 0">No news yet.</div>';return;}
+  if(!posts||!posts.length){el.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.78rem;padding:.6rem 0 .9rem">No news yet.</div>';return;}
   window._hnPosts=posts;
-  el.innerHTML=posts.slice(0,9).map(function(p,i){
-    var hasImg=!!(p.image_url||p.img);
+  el.innerHTML=posts.slice(0,12).map(function(p,i){
     var imgSrc=p.image_url||p.img||'';
-    var isExt=!!(p.source_url);
-    return '<div onclick="window._hnTap('+i+')" style="flex:0 0 200px;border-radius:10px;overflow:hidden;background:#191C25;border:1px solid rgba(255,255,255,.07);cursor:pointer;display:flex;flex-direction:column;scroll-snap-align:start;-webkit-tap-highlight-color:transparent;transition:transform .12s" onpointerdown="this.style.transform=\'scale(.97)\'" onpointerup="this.style.transform=\'\'" onpointerleave="this.style.transform=\'\'">'
-      +(hasImg?'<img src="'+imgSrc+'" alt="" style="width:100%;height:108px;object-fit:cover;display:block;flex-shrink:0" loading="lazy" onerror="this.parentNode.querySelector(\'.hn-ph\').style.display=\'flex\';this.style.display=\'none\'"><div class="hn-ph" style="display:none;width:100%;height:108px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(14,20,32,.9));align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">📰</div>'
-           :'<div class="hn-ph" style="display:flex;width:100%;height:108px;background:linear-gradient(135deg,rgba(185,28,58,.22),rgba(14,20,32,.9));align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">📰</div>')
-      +'<div style="padding:.5rem .65rem .6rem;flex:1;display:flex;flex-direction:column;gap:.25rem">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:.3rem">'+_hnCat(p.category)+(isExt?'<span style="font-size:.48rem;color:rgba(255,255,255,.25)">'+((p.source_name||'').slice(0,12))+'</span>':'<span style="font-size:.5rem;color:rgba(255,255,255,.25)">'+_hnFmt(p.published_at)+'</span>')+'</div>'
-        +'<div style="font-family:var(--font-display,sans-serif);font-size:.76rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+p.title+'</div>'
-      +'</div>'
+    var ringBase=_HN_CAT[p.category]||'#6B7280';
+    var ring='linear-gradient(135deg,'+ringBase+',#DBA94A)';
+    var inner=imgSrc
+      ? '<img class="hn-ava" src="'+imgSrc+'" alt="" loading="lazy" onerror="window._hnImgErr(this)">'
+      : '<div class="hn-ava-ph">📰</div>';
+    return '<div class="hn-story" onclick="window._hnTap('+i+')" style="--hn-ring:'+ring+'">'
+      +'<div class="hn-ring">'+inner+'</div>'
+      +'<div class="hn-cap">'+(p.title||'')+'</div>'
     +'</div>';
   }).join('');
 }
@@ -1719,28 +1359,6 @@ else setTimeout(loadHomeNews,500);
   <div class="page-section" style="max-width:1000px">
     <span class="eyebrow">2026/27 Season</span>
     <h1 class="section-title">PSL News</h1>
-    <!-- NEWS PAGE AD — above the grid ─────────────────────────── -->
-    <div id="news-top-ad" style="width:100%;margin-bottom:1rem;border-radius:10px;overflow:hidden;position:relative">
-      <ins class="adsbygoogle"
-           style="display:block;min-height:90px"
-           data-ad-client="ca-pub-6398135174637589"
-           data-ad-slot="REPLACE_NEWS_SLOT_ID"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
-      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-      <!-- House-ad fallback → advertiser CTA -->
-      <div id="news-house-ad" onclick="openAdvertiseForm()" style="background:linear-gradient(135deg,rgba(219,169,74,.12),rgba(14,20,32,.95));border:1px dashed rgba(219,169,74,.45);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer">
-        <div style="font-size:1.4rem;flex-shrink:0">📢</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-family:var(--font-ui,sans-serif);font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DBA94A;margin-bottom:.15rem;opacity:.85">Your ad here</div>
-          <div style="font-family:var(--font-ui,sans-serif);font-size:.8rem;font-weight:800;color:#fff">To advertise, contact us</div>
-          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.55);margin-top:.1rem">Reach Mzansi's football fans →</div>
-        </div>
-        <span style="font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:800;background:#DBA94A;color:#0a0a15;padding:.4rem .7rem;border-radius:8px;flex-shrink:0">Click Here</span>
-      </div>
-    </div>
-    <script>(function(){var newsOriginal=null;function c(){var h=document.getElementById('news-house-ad');if(h&&newsOriginal===null)newsOriginal=h.innerHTML;var ad=(typeof sponsorFor==='function')?sponsorFor('news'):null;if(ad&&typeof renderSponsorAd==='function'){if(renderSponsorAd('news-house-ad',ad))return;}var i=document.querySelector('#news-top-ad ins.adsbygoogle');if(i&&i.getAttribute('data-ad-status')==='filled'){if(h)h.style.display='none';return;}if(h&&typeof showHouseFallback==='function')showHouseFallback('news-house-ad',newsOriginal);else if(h)h.style.display='flex';}if(typeof loadSponsorAds==='function'){function lc(){loadSponsorAds().then(c);}setTimeout(lc,1500);setTimeout(lc,3500);setTimeout(lc,6000);}else{setTimeout(c,2500);setTimeout(c,5000);}})();</script>
-    <!-- ──────────────────────────────────────────────────────── -->
     <span class="eyebrow">Latest Headlines</span>
     <div id="news-grid" style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.9rem">
       <div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>
@@ -1767,26 +1385,6 @@ else setTimeout(loadHomeNews,500);
 
     <div id="stats-body"><div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div></div>
 
-    <!-- STATS PAGE AD — below the table ───────────────────────── -->
-    <div id="stats-bottom-ad" style="width:100%;margin-top:1.2rem;border-radius:10px;overflow:hidden;position:relative">
-      <ins class="adsbygoogle"
-           style="display:block;min-height:90px"
-           data-ad-client="ca-pub-6398135174637589"
-           data-ad-slot="REPLACE_STATS_SLOT_ID"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
-      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-      <div id="stats-house-ad" style="background:linear-gradient(135deg,rgba(185,28,58,.12),rgba(14,20,32,.95));border:1px solid rgba(185,28,58,.18);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem">
-        <div style="font-size:1.4rem;flex-shrink:0">🏅</div>
-        <div style="flex:1">
-          <div style="font-family:var(--font-ui,sans-serif);font-size:.72rem;font-weight:700;color:#fff">Fantasy PSL</div>
-          <div style="font-family:var(--font-body,sans-serif);font-size:.68rem;color:rgba(255,255,255,.45);margin-top:.15rem">Pick 15 PSL stars, score points every gameweek</div>
-        </div>
-        <button onclick="goPage('squad')" style="flex-shrink:0;background:rgba(185,28,58,.9);border:none;border-radius:8px;color:#fff;font-family:var(--font-ui,sans-serif);font-size:.7rem;font-weight:700;padding:.5rem .85rem;cursor:pointer;letter-spacing:.5px;text-transform:uppercase">Play →</button>
-      </div>
-    </div>
-    <script>(function(){function c(){var i=document.querySelector('#stats-bottom-ad ins.adsbygoogle');var h=document.getElementById('stats-house-ad');if(!i||!h)return;if(i.getAttribute('data-ad-status')==='filled')h.style.display='none';}setTimeout(c,2500);setTimeout(c,5000);})();</script>
-    <!-- ──────────────────────────────────────────────────────── -->
   </div>
 </div>
 
@@ -1795,23 +1393,6 @@ else setTimeout(loadHomeNews,500);
   <div class="page-section" style="max-width:860px">
     <span class="eyebrow">Mini Leagues &amp; Rankings</span>
     <h1 class="section-title">Compete with SA</h1>
-
-    <!-- ══ LEAGUES AD BANNER — connect AdSense here ══
-         To activate: replace the ins tag with your actual AdSense slot.
-         Your publisher ID is already loaded in the <head> (ca-pub-6398135174637589).
-         Step 1: go to AdSense → Ad units → Display → copy your data-ad-slot number
-         Step 2: replace data-ad-slot="0000000000" below with your real slot number
-         Step 3: change data-ad-client to match your publisher ID if different
-    -->
-    <div style="width:100%;margin-bottom:1.5rem;border-radius:12px;overflow:hidden;min-height:60px">
-      <ins class="adsbygoogle"
-           style="display:block;width:100%;min-height:60px"
-           data-ad-client="ca-pub-6398135174637589"
-           data-ad-slot="REPLACE_LEADERBOARD_SLOT_ID"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-    </div>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
       <div style="flex:1;min-width:240px;background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1.2rem">
@@ -2823,67 +2404,39 @@ function loadGW(cb) {
       });
   }
 
-  // Source 1: is_current = true (fallback — only trusted when Source 0 is empty)
-  function trySource1() {
-    db.from('gameweeks')
-      .select('gw_number, deadline, start_date, season')
-      .eq('is_current', true)
-      .order('gw_number', { ascending: false })
-      .limit(1)
-      .then(function(res) {
-        // Handle both array and single-object responses
-        var rows = res.data;
-        var gwRow = Array.isArray(rows) ? rows[0] : rows;
+  // Source 1: is_current = true (the correct, normal path)
+  db.from('gameweeks')
+    .select('gw_number, deadline, start_date, season')
+    .eq('is_current', true)
+    .order('gw_number', { ascending: false })
+    .limit(1)
+    .then(function(res) {
+      // Handle both array and single-object responses
+      var rows = res.data;
+      var gwRow = Array.isArray(rows) ? rows[0] : rows;
 
-        if (gwRow) {
-          var n = gwRow.gw_number || gwRow.number;
-          var dl = gwRow.deadline || null;
-          if (n && n >= 1) { applyGW(n, dl); return; }
-          trySource2();
-        } else {
-          trySource2();
+      if (gwRow) {
+        var n = gwRow.gw_number || gwRow.number;
+        var dl = gwRow.deadline || null;
+
+        // is_current is the single source of truth (set by the sync's
+        // completion-based advance). Trust it for ANY valid gameweek — no more
+        // "GW1 is probably stale" fallthrough, which could make the display
+        // lurch to a wrong gameweek.
+        if (n && n >= 1) {
+          applyGW(n, dl);
+          return;
         }
-      })
-      .catch(function(err) {
-        console.warn('[loadGW] Source 1 error:', err && err.message);
         trySource2();
-      });
-  }
-
-  // Source 0 (PRIMARY): derive the current GW straight from the fixtures table
-  // — the earliest match that has NOT finished. This is immune to a stale
-  // `is_current` flag (the cause of the "GW 1" freeze) and is season-agnostic,
-  // because it reads real fixture data rather than the season label. It also
-  // advances by itself: once every GW1 match is FT, the earliest unfinished
-  // fixture is in GW2, and so on.
-  function trySourceFixtures() {
-    db.from('fixtures')
-      .select('gw_number')
-      .not('status', 'in', '(FT,AET,PEN)')   // exclude finished matches
-      .not('gw_number', 'is', null)
-      .order('kickoff_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(function(r) {
-        var n = (r && r.data) ? r.data.gw_number : null;
-        if (!n || n < 1) { trySource1(); return; }   // season over / no fixtures → fall back
-        // Got the true current GW from fixtures — fetch its deadline from gameweeks.
-        db.from('gameweeks')
-          .select('deadline')
-          .eq('gw_number', n)
-          .order('season', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(function(g) {
-            var dl = (g && g.data) ? (g.data.deadline || null) : null;
-            applyGW(n, dl);
-          })
-          .catch(function() { applyGW(n, null); });
-      })
-      .catch(function() { trySource1(); });
-  }
-
-  trySourceFixtures();
+      } else {
+        // No row with is_current=true — use date-based fallback
+        trySource2();
+      }
+    })
+    .catch(function(err) {
+      console.warn('[loadGW] Source 1 error:', err && err.message);
+      trySource2();
+    });
 }
 
 // Poll for GW changes every 5 minutes (catches admin updates without page refresh)
@@ -7957,61 +7510,13 @@ function closeClubProfile() {
 //  MISSING FUNCTIONS -- all injected safely here
 // ===============================================================
 
-// -- Ad Banner ------------------------------------------------
-// Fills the guest banner's slot: a booked sponsor ad if one exists, otherwise
-// the "Advertise Here" CTA — so the banner is never a blank box.
-function fillGuestAdSlot() {
-  var slot = document.getElementById('ad-slot-container');
-  var banner = document.getElementById('ad-banner');
-  var label = document.getElementById('guest-ad-label');
-  if (label) label.style.display = 'none'; // the ad/CTA has its own label — avoid doubling
-  if (!slot) return;
-  var ad = (typeof sponsorFor === 'function') ? (sponsorFor('banner') || sponsorFor('all')) : null;
-  if (ad && typeof renderSponsorAd === 'function' && renderSponsorAd('ad-slot-container', ad)) {
-    // Real sponsor ad → keep the card chrome around it
-    if (banner) banner.classList.remove('ad-banner--bare');
-    return;
-  }
-  // No booked ad → show the advertise CTA, and strip the outer grey card so
-  // ONLY the white "Advertise with us" pill is visible (its own ✕ dismisses it).
-  if (typeof renderAdvertiseAd === 'function') {
-    renderAdvertiseAd('ad-slot-container');
-    if (banner) banner.classList.add('ad-banner--bare');
-  }
-}
-
-function updateAdVisibility() {
-  var banner = document.getElementById('ad-banner');
-  if (!banner) return;
-  try {
-    var dismissed = sessionStorage.getItem('ad_dismissed');
-    if (dismissed) {
-      banner.style.display = 'none';
-      return;
-    }
-    // Show banner for all users — delay so it doesn't interrupt onboarding
-    var delayMs = ST.user ? 30000 : 8000;
-    // Make sure sponsor ads are loaded, then fill the slot before showing.
-    var ready = (typeof loadSponsorAds === 'function') ? loadSponsorAds() : Promise.resolve();
-    ready.then(function() {
-      setTimeout(function() {
-        try { if (sessionStorage.getItem('ad_dismissed')) return; } catch(e) {}
-        fillGuestAdSlot();
-        banner.style.display = 'flex';
-        setTimeout(function() { banner.style.opacity = '1'; }, 300);
-      }, delayMs);
-    });
-  } catch(e) {}
-}
-
-function dismissAd() {
-  var banner = document.getElementById('ad-banner');
-  if (banner) {
-    banner.style.opacity = '0';
-    setTimeout(function() { banner.style.display = 'none'; }, 300);
-  }
-  try { sessionStorage.setItem('ad_dismissed', '1'); } catch(e) {}
-}
+// -- Ads removed ----------------------------------------------
+// All advertising (AdSense + sponsor/house banners + the pop-up ad banner) was
+// removed for the Play Store release. These stubs stay so the handful of
+// navigation handlers that still call updateAdVisibility() never throw.
+function fillGuestAdSlot() {}
+function updateAdVisibility() {}
+function dismissAd() {}
 
 // -- Game Week display ----------------------------------------
 // GW display is set exclusively by loadGW() from Supabase.
@@ -8409,24 +7914,6 @@ setInterval(refreshLiveData, 60000);
   </div>
 </div>
 
-<!-- -- Guest Ad Banner ----------------------------------------------- -->
-<div id="ad-banner" style="display:none;position:fixed;bottom:78px;left:50%;transform:translateX(-50%);width:calc(100% - 1.5rem);max-width:460px;z-index:8000;background:var(--bg-card,#16181f);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:.5rem .75rem .6rem;box-shadow:0 6px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .4s">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
-    <span id="guest-ad-label" style="font-size:.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.22)">Sponsored</span>
-    <button onclick="dismissAd()" title="Close" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:.75rem;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;gap:3px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <!-- Effective Gate CPM Ad -->
-  <div id="ad-slot-container" style="min-height:60px;display:block;width:100%">
-    <!-- AdSense Anchor / Banner — 320x50 responsive -->
-    <ins class="adsbygoogle"
-         style="display:inline-block;width:320px;height:50px"
-         data-ad-client="ca-pub-6398135174637589"
-         data-ad-slot="REPLACE_BANNER_SLOT_ID"></ins>
-    <script>(function(){var s=document.currentScript,i=s&&s.previousElementSibling;if(i&&(i.getAttribute('data-ad-slot')||'').indexOf('REPLACE')===0)return;(adsbygoogle=window.adsbygoogle||[]).push({});})();</script>
-  </div>
-</div>
 
   <!-- -- Action sheet: captain/VC/transfer/bench options -- -->
   <div id="action-sheet" onclick="if(event.target===this)closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center">
