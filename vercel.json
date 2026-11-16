@@ -26,6 +26,10 @@
       "dest": "/api/save-squad.js"
     },
     {
+      "src": "/api/delete-account",
+      "dest": "/api/delete-account.js"
+    },
+    {
       "src": "/api/news-crawler",
       "dest": "/api/news-crawler.js"
     },
@@ -88,6 +92,14 @@
     {
       "src": "/terms.html",
       "dest": "/terms.html"
+    },
+    {
+      "src": "/delete-account",
+      "dest": "/delete-account.html"
+    },
+    {
+      "src": "/delete-account.html",
+      "dest": "/delete-account.html"
     },
     {
       "src": "/about",
@@ -246,6 +258,9 @@
     },
     "api/points-cron.js": {
       "maxDuration": 60
+    },
+    "api/delete-account.js": {
+      "maxDuration": 30
     },
     "api/admin-api.js": {
       "maxDuration": 30
