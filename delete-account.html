@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Delete your account — Fantasy PSL</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <style>
+    :root{--red:#B91C3A;--gold:#DBA94A;--bg:#0C0F14;--card:#191C25;--text:rgba(255,255,255,.88);--muted:rgba(255,255,255,.5);--line:rgba(255,255,255,.1)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;padding:1.5rem}
+    .wrap{max-width:560px;margin:0 auto}
+    .logo{display:flex;align-items:center;gap:.6rem;margin:.5rem 0 1.5rem;justify-content:center}
+    .logo img{width:56px;height:56px;border-radius:12px}
+    .logo span{font-weight:800;font-size:1.15rem;letter-spacing:.5px}
+    .logo span b{color:var(--red)}
+    h1{font-size:1.5rem;font-weight:800;margin-bottom:.6rem;text-align:center}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.3rem;margin:1rem 0}
+    h2{font-size:.8rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+    ul{margin:.3rem 0 .3rem 1.1rem}li{margin:.2rem 0}
+    label{display:block;font-size:.8rem;color:var(--muted);margin:.7rem 0 .25rem}
+    input{width:100%;background:#0f131a;border:1px solid var(--line);border-radius:9px;padding:.7rem .8rem;color:#fff;font-size:1rem}
+    .chk{display:flex;align-items:flex-start;gap:.5rem;margin:1rem 0;font-size:.9rem}
+    .chk input{width:auto;margin-top:.25rem}
+    button{width:100%;border:none;border-radius:10px;padding:.9rem;font-size:1rem;font-weight:700;cursor:pointer;margin-top:.4rem}
+    .danger{background:var(--red);color:#fff}
+    .danger:disabled{opacity:.45;cursor:not-allowed}
+    .muted{color:var(--muted);font-size:.85rem}
+    .msg{padding:.8rem 1rem;border-radius:9px;margin:.8rem 0;font-size:.9rem;display:none}
+    .msg.err{background:rgba(185,28,58,.15);border:1px solid rgba(185,28,58,.4);color:#ffb3c0;display:block}
+    .msg.ok{background:rgba(34,137,90,.15);border:1px solid rgba(34,137,90,.4);color:#8fe3b8;display:block}
+    a{color:var(--gold)}
+    .foot{text-align:center;margin-top:1.5rem}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><img src="/icon-192.png" alt=""><span>FANTASY <b>PSL</b></span></div>
+  <h1>Delete your account</h1>
+  <p class="muted" style="text-align:center">Permanently delete your Fantasy PSL account and all associated data. This cannot be undone.</p>
+
+  <div class="card">
+    <h2>What gets deleted</h2>
+    <ul>
+      <li>Your account and sign-in email</li>
+      <li>Your profile, team name and fantasy squad</li>
+      <li>Your gameweek points and rankings history</li>
+      <li>Any private leagues you created, and your league memberships</li>
+      <li>Your Diski posts, reactions and reports</li>
+    </ul>
+    <p class="muted" style="margin-top:.6rem">Deletion is immediate and permanent. Backups are purged within 30 days. We may retain anonymised, non-identifying records (e.g. aggregate totals) and anything we're legally required to keep.</p>
+  </div>
+
+  <div class="card">
+    <h2>Delete it now</h2>
+    <p class="muted">Sign in to confirm it's you, then delete your account.</p>
+    <div id="msg" class="msg"></div>
+    <div id="form">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Your password">
+      <label class="chk"><input id="confirm" type="checkbox"> I understand this permanently deletes my account and all my data.</label>
+      <button id="go" class="danger" disabled>Delete my account</button>
+    </div>
+  </div>
+
+  <p class="muted">Prefer not to sign in? Email <a href="mailto:sibandam245@gmail.com?subject=Delete%20my%20Fantasy%20PSL%20account">sibandam245@gmail.com</a> from your account's email address and we'll delete your account and data within 7 days.</p>
+
+  <div class="foot"><a href="/">← Back to Fantasy PSL</a></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  var SB_URL='https://vkjzwpbkqcckrjwsqxgk.supabase.co';
+  var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZranp3cGJrcWNja3Jqd3NxeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDczMTgsImV4cCI6MjA4ODcyMzMxOH0.9KflAQVrz5JgrghVFQ4j3e1x9GKHA5AsGygeaRi7qqU';
+  var sb = window.supabase.createClient(SB_URL, SB_ANON);
+  var go=document.getElementById('go'), chk=document.getElementById('confirm'), msg=document.getElementById('msg');
+  function show(t,ok){ msg.className='msg '+(ok?'ok':'err'); msg.textContent=t; }
+  chk.addEventListener('change', function(){ go.disabled=!chk.checked; });
+  go.addEventListener('click', async function(){
+    var email=document.getElementById('email').value.trim();
+    var pw=document.getElementById('pw').value;
+    if(!email||!pw){ show('Enter your email and password.'); return; }
+    go.disabled=true; go.textContent='Deleting…';
+    try{
+      var si=await sb.auth.signInWithPassword({ email:email, password:pw });
+      if(si.error){ show('Sign-in failed: '+si.error.message); go.disabled=false; go.textContent='Delete my account'; return; }
+      var token=si.data.session.access_token;
+      var r=await fetch('/api/delete-account',{ method:'POST', headers:{ 'Authorization':'Bearer '+token } });
+      var j=await r.json().catch(function(){return{};});
+      if(!r.ok||!j.success){ show('Could not delete: '+(j.error||('HTTP '+r.status))); go.disabled=false; go.textContent='Delete my account'; return; }
+      try{ await sb.auth.signOut(); }catch(e){}
+      document.getElementById('form').style.display='none';
+      show('Your account and all associated data have been permanently deleted. Thank you for playing Fantasy PSL.', true);
+    }catch(e){ show('Something went wrong: '+e.message); go.disabled=false; go.textContent='Delete my account'; }
+  });
+</script>
+</body>
+</html>
