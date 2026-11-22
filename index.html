@@ -4249,6 +4249,8 @@ function renderChipBar() {
   bar.style.gridTemplateColumns = 'repeat(auto-fit,minmax(80px,1fr))';
   bar.style.gap = '.45rem';
   bar.style.width = '100%';
+  bar.style.marginTop = '.9rem';
+  bar.style.marginBottom = '.7rem';
   bar.innerHTML = Object.keys(CHIP_INFO).map(function(key) {
     var chip = CHIP_INFO[key];
     var isActive = ST.activeChip === key;
