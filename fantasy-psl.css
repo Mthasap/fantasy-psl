@@ -346,16 +346,22 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
 .squad-pitch-wrap {
   width:100%;
   background:
-    /* Subtle stripe pattern */
+    /* Mowing stripes */
     repeating-linear-gradient(
       180deg,
-      rgba(255,255,255,.018) 0px,
-      rgba(255,255,255,.018) 1px,
-      transparent 1px,
-      transparent 44px
+      rgba(255,255,255,.07) 0px,
+      rgba(255,255,255,.07) 2px,
+      transparent 2px,
+      transparent 46px
     ),
-    /* Base green gradient */
-    linear-gradient(180deg, #0d4a22 0%, #0f5226 30%, #0e4f24 50%, #0f5226 70%, #0d4a22 100%);
+    /* Vibrant pitch green */
+    repeating-linear-gradient(
+      180deg,
+      #2f9e57 0px,
+      #2f9e57 46px,
+      #2a9350 46px,
+      #2a9350 92px
+    );
   border-radius:12px;
   overflow:hidden;
   /* NO padding-top — rows provide their own spacing */
@@ -376,8 +382,8 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
   position:absolute;
   top:50%;
   left:6%; right:6%;
-  height:1px;
-  background:rgba(255,255,255,.12);
+  height:2px;
+  background:rgba(255,255,255,.5);
   pointer-events:none;
   z-index:0;
 }
@@ -388,7 +394,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
   left:50%;
   transform:translateX(-50%);
   width:64px; height:64px;
-  border:1px solid rgba(255,255,255,.1);
+  border:2px solid rgba(255,255,255,.45);
   border-radius:50%;
   pointer-events:none;
   z-index:0;
@@ -428,7 +434,7 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
   width:50px; height:50px;
   border-radius:10px;
   display:flex; align-items:center; justify-content:center;
-  border:2px solid rgba(255,255,255,.18);
+  border:2px solid rgba(255,255,255,.35);
   position:relative;
   transition:border-color .2s, box-shadow .2s;
   box-shadow:0 3px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
@@ -453,17 +459,24 @@ table.pts-table .pv { font-family:var(--font-ui); font-weight:700; font-size:.92
 .vc-badge  { background:#e0e0e0; color:#000; }
 
 .pc-name {
-  font-family:var(--font-ui); font-size:.62rem; font-weight:700;
-  background:rgba(0,0,0,.8); padding:2px 6px; border-radius:4px;
-  white-space:nowrap; color:#fff;
+  font-family:var(--font-ui); font-size:.62rem; font-weight:800;
+  background:#ffffff; padding:3px 7px; border-radius:7px;
+  white-space:nowrap; color:#16181d;
   max-width:72px; overflow:hidden; text-overflow:ellipsis; text-align:center;
-  line-height:1.2;
+  line-height:1.2; box-shadow:0 2px 6px rgba(0,0,0,.28);
 }
 .pc-pts {
   font-family:var(--font-display); font-size:.66rem; font-weight:900;
   color:var(--gold-soft); text-align:center;
   background:rgba(0,0,0,.55); padding:1px 5px; border-radius:3px;
 }
+
+/* ── Squad screen: solid white, high-contrast text so everything pops ── */
+#page-squad .eyebrow,
+#page-squad .eyebrow span { color:#ffffff !important; }
+#page-squad .bench-tag { color:#ffffff; }
+#page-squad #squad-summary { color:rgba(255,255,255,.9) !important; }
+#page-squad .meta-pill-label { color:rgba(255,255,255,.85); }
 
 /* ── BENCH STRIP ── */
 .bench-strip {
