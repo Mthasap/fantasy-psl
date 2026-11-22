@@ -2326,7 +2326,11 @@ function loadGW(cb) {
       }
     }
     ST.deadlinePassed = false;
-    checkDeadline();
+    // The stored `deadline` column can be stale/in the past, which would wrongly
+    // lock the squad between gameweeks. Derive the real deadline from the actual
+    // first fixture of this GW (90 min before kickoff) so it only ever goes
+    // active on the true upcoming date, and self-corrects every GW going forward.
+    resolveDeadlineFromFixtures(n, deadline);
     if (cb) { cb(); cb = null; }
     return true;
   }
@@ -4314,6 +4318,71 @@ function renderTransferBadge() {
     badge.style.background = 'rgba(34,137,90,.06)';
     badge.style.border     = '1px solid rgba(34,137,90,.25)';
   }
+}
+
+// -- Deadline resolution --------------------------------------------
+// The gameweek's deadline is 90 minutes before its FIRST match (the app's
+// stated rule). We compute it live from the fixtures table rather than trusting
+// the stored `deadline` column, which can be stale and wrongly lock the squad
+// between gameweeks. This keeps the deadline active ONLY from its real date
+// until the GW's matches are done, every gameweek, automatically.
+var DEADLINE_LEAD_MS = 90 * 60000;      // 90 min before first kickoff
+function resolveDeadlineFromFixtures(n, fallbackDl) {
+  if (!n || !ST.gw || ST.gw.number !== n) {
+    // No GW context — fall back to a future stored deadline, else leave open.
+    applyResolvedDeadline((fallbackDl && new Date(fallbackDl) > new Date()) ? fallbackDl : null);
+    return;
+  }
+  // Window excludes last season's duplicate gw_number rows (they're ~1yr old)
+  // while still catching a GW whose first match was a few days ago (mid-GW stays
+  // locked) and one still days away (stays open until its real deadline).
+  var cutoff = new Date(Date.now() - 28 * 86400000).toISOString();
+  db.from('fixtures')
+    .select('kickoff_time')
+    .eq('gw_number', n)
+    .gte('kickoff_time', cutoff)
+    .not('kickoff_time', 'is', null)
+    .order('kickoff_time', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+    .then(function(r) {
+      var first = (r && r.data) ? r.data.kickoff_time : null;
+      var resolved;
+      if (first) {
+        resolved = new Date(new Date(first).getTime() - DEADLINE_LEAD_MS).toISOString();
+      } else if (fallbackDl && new Date(fallbackDl) > new Date()) {
+        resolved = fallbackDl;                 // no fixtures yet, trust a FUTURE stored deadline
+      } else {
+        resolved = null;                        // nothing upcoming → squad stays open
+      }
+      applyResolvedDeadline(resolved);
+    })
+    .catch(function() {
+      // On error fail OPEN (the API still enforces the deadline server-side),
+      // but honour a stored deadline that is genuinely still in the future.
+      applyResolvedDeadline((fallbackDl && new Date(fallbackDl) > new Date()) ? fallbackDl : null);
+    });
+}
+
+function applyResolvedDeadline(dl) {
+  if (!ST.gw) return;
+  ST.gw.deadline_at = dl || null;
+  var dlEl = document.getElementById('gw-deadline');
+  if (dlEl) {
+    if (dl) {
+      var d = new Date(dl);
+      dlEl.textContent = d.toLocaleDateString('en-ZA', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit'
+      });
+      dlEl.style.color = '';
+    } else {
+      dlEl.textContent = 'Deadline TBC';
+      dlEl.style.color = '';
+    }
+  }
+  ST.deadlinePassed = false;
+  checkDeadline();   // authoritative lock state + schedules the 60s re-check
 }
 
 // -- Deadline lock --------------------------------------------------
