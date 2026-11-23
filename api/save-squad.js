@@ -82,10 +82,35 @@ module.exports = async (req, res) => {
         .limit(1)
         .single();
       if (gw) {
-        // The gameweeks table has a `deadline` column (no `deadline_at`).
-        // Selecting a non-existent column errors the whole query, which used to
-        // silently disable the lock — hence squads were editable after kickoff.
-        const deadlineVal = gw.deadline || null;
+        // Derive the deadline from the current GW's FIRST fixture (90 min before
+        // kickoff) rather than trusting the stored `deadline` column, which can
+        // be stale/in the past and would then wrongly reject saves between
+        // gameweeks. This mirrors the frontend exactly, so the UI lock and the
+        // server lock always agree and self-correct every gameweek going forward.
+        let deadlineVal = gw.deadline || null;
+        try {
+          // 28-day lookback excludes last season's duplicate gw_number rows while
+          // still catching a GW whose first match is a few days ago (mid-GW stays
+          // locked) or still ahead (stays open until its real deadline).
+          const cutoff = new Date(Date.now() - 28 * 86400000).toISOString();
+          const { data: firstFix } = await db
+            .from('fixtures')
+            .select('kickoff_time')
+            .eq('gw_number', gw.gw_number)
+            .gte('kickoff_time', cutoff)
+            .not('kickoff_time', 'is', null)
+            .order('kickoff_time', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          if (firstFix && firstFix.kickoff_time) {
+            deadlineVal = new Date(new Date(firstFix.kickoff_time).getTime() - 90 * 60 * 1000).toISOString();
+          } else if (deadlineVal && new Date(deadlineVal) <= new Date()) {
+            // No upcoming fixture for this GW and the stored deadline is already
+            // in the past → don't block (nothing to lock for).
+            deadlineVal = null;
+          }
+        } catch (_) { /* fall back to the stored deadline value */ }
+
         if (deadlineVal && new Date() >= new Date(deadlineVal)) {
           console.warn('[save-squad] 403: Deadline passed for GW', gw.gw_number, 'user:', user.id);
           return res.status(403).json({ error: 'Gameweek deadline has passed. Squad is locked.' });
