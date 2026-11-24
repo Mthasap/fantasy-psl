@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "za.co.fantasypsl.www.twa",
+      "sha256_cert_fingerprints": [
+        "5C:C1:21:9E:31:A2:18:99:FE:76:06:20:7B:95:99:E8:66:D9:5A:6B:EF:C2:45:E8:44:9F:12:93:31:50:83:79",
+        "5E:9E:7B:6D:0B:9E:13:A7:11:C3:62:B5:99:80:55:E3:21:07:F4:E0:98:BF:7C:11:82:A5:86:26:54:2D:C9:C2"
+      ]
+    }
+  }
+]
