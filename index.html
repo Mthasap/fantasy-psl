@@ -23,7 +23,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0C0F14">
+  <meta name="theme-color" content="#141924">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -46,7 +46,7 @@
   <meta property="og:locale" content="en_ZA">
   <meta property="og:type" content="website">
   <!-- PWA theme -->
-  <meta name="theme-color" content="#0C0F14">
+  <meta name="theme-color" content="#141924">
 
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
   <meta property="og:type"        content="website">
@@ -145,7 +145,7 @@
 
   <!-- Windows tile -->
   <meta name="msapplication-TileImage" content="/icon-192.png">
-  <meta name="msapplication-TileColor" content="#0C0F14">
+  <meta name="msapplication-TileColor" content="#141924">
 
   <!-- Prevent Google from using an old cached favicon — use canonical -->
   <link rel="canonical" href="https://www.fantasypsl.co.za/">
@@ -194,7 +194,7 @@
     ═══════════════════════════════════════════════════════════════ */
     :root {
       --bg-base:      #080B10;
-      --bg-surface:   #0E1420;
+      --bg-surface:   #18212e;
       --bg-card:      #141B28;
       --bg-input:     #0C1220;
       --bg-page:      #080B10;
@@ -609,9 +609,9 @@
 
 </style>
 </head>
-<body style="background:#0C0F14;color:#ffffff;">
+<body style="background:#141924;color:#ffffff;">
 <!-- SPLASH SCREEN -->
-<div id="splash-screen" style="position:fixed;inset:0;background:#0C0F14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashFade 2.6s ease forwards">
+<div id="splash-screen" style="position:fixed;inset:0;background:#141924;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashFade 2.6s ease forwards">
   <img src="/logo.png" alt="Fantasy PSL" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(185,28,58,.5))" onerror="this.style.display:'none'">
   <div style="font-family:'Montserrat Alternates',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;margin-top:1.1rem;letter-spacing:-0.5px">Fantasy PSL</div>
   <div style="font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.35rem">Betway Premiership 2026/27</div>
@@ -888,7 +888,7 @@
 
 <!-- == BREAKING NEWS MODAL (popup on app open) — kept outside #home-public so it still shows for logged-in users == -->
 <div id="breaking-news-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99990;align-items:flex-end;justify-content:center;padding:0">
-  <div style="width:100%;max-width:520px;background:#0E1420;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1);max-height:88vh;display:flex;flex-direction:column">
+  <div style="width:100%;max-width:520px;background:#18212e;border-radius:20px 20px 0 0;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1);max-height:88vh;display:flex;flex-direction:column">
     <div style="background:linear-gradient(90deg,#E8192C,#B91228);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem;flex-shrink:0">
       <div style="background:rgba(255,255,255,.22);border-radius:4px;padding:.18rem .55rem;display:flex;align-items:center;gap:.4rem;flex-shrink:0">
         <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;animation:livePulse 1s infinite"></span>
@@ -976,7 +976,7 @@
 .hn-story{flex:0 0 84px;width:84px;display:flex;flex-direction:column;align-items:center;gap:.42rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hn-ring{width:76px;height:76px;border-radius:50%;background:var(--hn-ring,linear-gradient(135deg,#B91C3A,#DBA94A));display:flex;align-items:center;justify-content:center;transition:transform .12s;flex-shrink:0}
 .hn-story:active .hn-ring{transform:scale(.93)}
-.hn-ava,.hn-ava-ph{width:70px;height:70px;border-radius:50%;background:#191C25;box-shadow:0 0 0 2px #0C0F14}
+.hn-ava,.hn-ava-ph{width:70px;height:70px;border-radius:50%;background:#212a37;box-shadow:0 0 0 2px #141924}
 .hn-ava{object-fit:cover;display:block}
 .hn-ava-ph{display:flex;align-items:center;justify-content:center;font-size:1.6rem}
 .hn-cap{font-family:var(--font-ui,sans-serif);font-size:.64rem;font-weight:700;line-height:1.2;color:rgba(255,255,255,.9);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;word-break:break-word}
@@ -2020,11 +2020,11 @@ function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
   var I_xfer = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>';
   var I_news = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2z"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>';
   function act(bg, col, svg, label, pg, primary) {
-    return '<div onclick="goPage(\''+pg+'\')" style="display:flex;align-items:center;gap:11px;background:'+(primary?'#B91C3A':'#191C25')+';border:1px solid '+(primary?'#B91C3A':'rgba(255,255,255,.10)')+';border-radius:12px;padding:13px 15px;font-family:var(--font-display);font-weight:800;font-size:.9rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+    return '<div onclick="goPage(\''+pg+'\')" style="display:flex;align-items:center;gap:11px;background:'+(primary?'#B91C3A':'#212a37')+';border:1px solid '+(primary?'#B91C3A':'rgba(255,255,255,.10)')+';border-radius:12px;padding:13px 15px;font-family:var(--font-display);font-weight:800;font-size:.9rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
       '<span style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+bg+';color:'+col+'">'+svg+'</span>'+label+'<span style="margin-left:auto;color:rgba(255,255,255,.4)">›</span></div>';
   }
   function qlink(label, pg) {
-    return '<div onclick="goPage(\''+pg+'\')" style="background:#191C25;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:.8rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent"><span>'+label+'</span><span style="color:rgba(255,255,255,.4)">›</span></div>';
+    return '<div onclick="goPage(\''+pg+'\')" style="background:#212a37;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:.8rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent"><span>'+label+'</span><span style="color:rgba(255,255,255,.4)">›</span></div>';
   }
   return '<div style="padding:6px 16px 18px;max-width:560px;margin:0 auto">'+
     '<div style="display:flex;align-items:center;gap:12px;padding:14px 2px 16px">'+
@@ -2032,7 +2032,7 @@ function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
       '<div style="min-width:0"><div style="font-family:var(--font-display);font-weight:900;font-size:1.15rem;color:#fff;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(team)+'</div>'+
       '<div style="color:rgba(255,255,255,.6);font-size:.78rem;margin-top:2px">'+esc(mgr)+'</div></div>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;align-items:center;background:#191C25;border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:16px 10px;text-align:center">'+
+    '<div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;align-items:center;background:#212a37;border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:16px 10px;text-align:center">'+
       '<div><div style="font-family:var(--font-display);font-weight:900;font-size:1.3rem;color:#fff">'+s.total+'</div><div style="font-size:.6rem;color:rgba(255,255,255,.55);letter-spacing:.5px;margin-top:2px">TOTAL PTS</div></div>'+
       '<div style="border-left:1px solid rgba(255,255,255,.10);border-right:1px solid rgba(255,255,255,.10)"><div style="font-family:var(--font-display);font-weight:900;font-size:2.3rem;color:var(--gold,#DBA94A);line-height:1">'+s.gw+'</div><div style="font-size:.6rem;color:rgba(255,255,255,.55);letter-spacing:.5px;margin-top:2px">GW '+gwNum+' PTS</div></div>'+
       '<div><div style="font-family:var(--font-display);font-weight:900;font-size:1.3rem;color:#fff">'+rank+'</div><div style="font-size:.6rem;color:rgba(255,255,255,.55);letter-spacing:.5px;margin-top:2px">RANK</div></div>'+
@@ -4773,11 +4773,11 @@ function renderNews(grid, posts) {
   function catPill(cat){var color=NEWS_CAT_COLORS[cat]||NEWS_CAT_COLORS['default'];return '<span style="font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:'+color+';padding:2px 8px;border-radius:3px">'+(cat||'News')+'</span>';}
   var featured=posts[0];
   var featImg=featured.image_url?'<img src="'+featured.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;border-radius:10px 10px 0 0" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:160px;background:linear-gradient(135deg,rgba(185,28,58,.3),rgba(219,169,74,.12));border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem">&#128240;</div>';
-  var featHtml='<div onclick="openNewsPost(0)" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+featImg+'<div style="padding:.9rem 1rem 1.1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div><div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div></div></div>';
+  var featHtml='<div onclick="openNewsPost(0)" style="background:var(--bg-card,#212a37);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:.9rem">'+featImg+'<div style="padding:.9rem 1rem 1.1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">'+catPill(featured.category)+'<span style="font-size:.68rem;color:rgba(255,255,255,.35)">'+fmtDate(featured.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:1.1rem;font-weight:900;line-height:1.25;color:#fff;margin-bottom:.45rem">'+featured.title+'</div><div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(featured.summary||'')+'</div></div></div>';
   var gridCards=posts.slice(1).map(function(post,i){
     var idx=i+1;
     var cardImg=post.image_url?'<img src="'+post.image_url+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:linear-gradient(135deg,rgba(185,28,58,.25),rgba(219,169,74,.1));display:flex;align-items:center;justify-content:center;font-size:1.8rem">&#128240;</div>';
-    return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#191C25);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+cardImg+'<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem"><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div><div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div></div></div>';
+    return '<div onclick="openNewsPost('+idx+')" style="background:var(--bg-card,#212a37);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column">'+cardImg+'<div style="padding:.6rem .7rem .75rem;flex:1;display:flex;flex-direction:column;gap:.28rem"><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">'+catPill(post.category)+'<span style="font-size:.6rem;color:rgba(255,255,255,.32)">'+fmtDate(post.published_at)+'</span></div><div style="font-family:var(--font-display,sans-serif);font-size:.85rem;font-weight:900;line-height:1.25;color:#fff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">'+post.title+'</div><div style="font-size:.71rem;color:rgba(255,255,255,.42);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+(post.summary||'')+'</div></div></div>';
   }).join('');
   grid.style.display='block';grid.style.gridTemplateColumns='';grid.style.gap='';
   grid.innerHTML=featHtml+(posts.length>1?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">'+gridCards+'</div>':'');
@@ -6505,7 +6505,7 @@ function renderFixtureList(c, matches, keepIdx) {
     if (dayKey !== 'TBD') dayLabel = new Date(dayKey + 'T12:00:00')
       .toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short' });
     html += '<div style="font-family:var(--font-ui);font-size:.6rem;letter-spacing:2px;font-weight:800;color:var(--gold,#DBA94A);text-transform:uppercase;padding:14px 4px 6px">'+dayLabel+'</div>';
-    html += '<div style="background:#191C25;border:1px solid rgba(255,255,255,.10);border-radius:14px">';
+    html += '<div style="background:#212a37;border:1px solid rgba(255,255,255,.10);border-radius:14px">';
     html += byDay[dayKey].map(function(f, idx) {
       var fid    = String(f.fixture_id || f.sportmonks_id || ('f'+idx));
       var isLive = f.is_live || ['LIVE','1H','2H','HT'].indexOf(f.status) > -1;
@@ -9112,7 +9112,7 @@ function closeBanner() {
 
 <!-- ── Auto Squad Modal ──────────────────────────────────────── -->
 <div id="auto-squad-modal" style="display:none;position:fixed;inset:0;z-index:9400;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAutoSquadModal()">
-  <div style="background:#191C25;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem;animation:slideUp .25s ease">
+  <div style="background:#212a37;border:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.5rem 1.4rem 2.5rem;animation:slideUp .25s ease">
     <div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto .8rem"></div>
     <div style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:.3rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Auto Squad</div>
     <div style="font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:1.4rem;line-height:1.5">Let us build a balanced squad for you. Pick a style and we'll fill all 15 spots within budget.</div>
@@ -10063,7 +10063,7 @@ function showSquadNudge(have) {
   el.id = 'squad-nudge-modal';
   el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9900;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:fadeInBg .3s ease';
   el.innerHTML =
-    '<div style="width:100%;max-width:480px;background:linear-gradient(180deg,#141B28,#0E1420);border-radius:20px 20px 0 0;padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.6);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1)">' +
+    '<div style="width:100%;max-width:480px;background:linear-gradient(180deg,#141B28,#18212e);border-radius:20px 20px 0 0;padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.6);animation:slideUpSheet .35s cubic-bezier(.34,1.2,.64,1)">' +
 
       // Handle bar
       '<div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 1.2rem"></div>' +

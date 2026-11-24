@@ -5,11 +5,11 @@
    ===================================================== */
 
 :root {
-  --bg-base:      #0C0F14;
-  --bg-surface:   #121720;
-  --bg-card:      #18202C;
-  --bg-card-hover:#1D2638;
-  --bg-input:     #0F1520;
+  --bg-base:      #141924;
+  --bg-surface:   #1b2330;
+  --bg-card:      #232d3c;
+  --bg-card-hover:#2b3546;
+  --bg-input:     #18202b;
 
   --red:          #B91C3A;
   --red-soft:     #D4274F;
