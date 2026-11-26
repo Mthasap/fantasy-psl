@@ -4,6 +4,7 @@
   "description": "Fantasy PSL - Fantasy Football for the Betway Premiership",
   "engines": { "node": ">=18.x" },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "web-push": "^3.6.7"
   }
 }

@@ -134,6 +134,10 @@
       "dest": "/api/broadcast-email.js"
     },
     {
+      "src": "/api/send-push",
+      "dest": "/api/send-push.js"
+    },
+    {
       "handle": "filesystem"
     },
     {
@@ -264,6 +268,9 @@
     },
     "api/admin-api.js": {
       "maxDuration": 30
+    },
+    "api/send-push.js": {
+      "maxDuration": 60
     }
   }
 }
