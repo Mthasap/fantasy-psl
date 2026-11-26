@@ -5636,6 +5636,18 @@ function loadProfile() {
           '<div style="font-size:.7rem;color:rgba(255,255,255,.42);margin-top:.15rem">News, the daily quiz, deadlines and more</div></div>' +
           '<div id="push-toggle-ui"></div>' +
         '</div>' +
+        '<div style="height:1px;background:rgba(255,255,255,.06);margin:.9rem 0"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">' +
+          '<div><div style="font-family:var(--font-ui);font-size:.84rem;font-weight:700;color:#fff">Show me in public rankings</div>' +
+          '<div style="font-size:.7rem;color:rgba(255,255,255,.42);margin-top:.15rem">Your team name on the global leaderboard & Diski</div></div>' +
+          '<div id="priv-public-ui"></div>' +
+        '</div>' +
+        '<div style="height:1px;background:rgba(255,255,255,.06);margin:.9rem 0"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">' +
+          '<div><div style="font-family:var(--font-ui);font-size:.84rem;font-weight:700;color:#fff">Show my profile photo</div>' +
+          '<div style="font-size:.7rem;color:rgba(255,255,255,.42);margin-top:.15rem">Let other players see your picture on Diski</div></div>' +
+          '<div id="priv-avatar-ui"></div>' +
+        '</div>' +
       '</div>' +
       '<div style="padding:1.2rem;background:rgba(185,28,58,.05);border:1px solid rgba(185,28,58,.2);border-radius:10px">' +
         '<div style="font-family:var(--font-ui);font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D4274F;margin-bottom:.4rem">Danger Zone</div>' +
@@ -5643,6 +5655,7 @@ function loadProfile() {
         '<button onclick="deleteAccount()" style="background:transparent;border:1px solid rgba(185,28,58,.4);border-radius:6px;color:#D4274F;font-family:var(--font-ui);font-size:.78rem;font-weight:700;letter-spacing:1.5px;padding:.5rem 1.2rem;cursor:pointer">Delete My Account</button>' +
       '</div>';
     if (typeof refreshPushToggle === 'function') refreshPushToggle();
+    if (typeof renderPrivacyToggles === 'function') renderPrivacyToggles();
   });
 }
 
@@ -8522,7 +8535,7 @@ function submitPost(){
   var btn=document.getElementById('chat-submit-btn');
   if(btn){btn.disabled=true;btn.textContent='Posting...';}
   var m=ST.user.user_metadata||{};
-  db.from('diski_posts').insert({user_id:ST.user.id,username:m.username||ST.user.email.split('@')[0],team_name:m.team_name||null,content:text.trim(),likes:0,avatar_url:CACHE._profile&&CACHE._profile.avatar_url||null}).select().single()
+  db.from('diski_posts').insert({user_id:ST.user.id,username:(CACHE._profile&&CACHE._profile.public_profile===false)?'Private Manager':(m.username||ST.user.email.split('@')[0]),team_name:(CACHE._profile&&CACHE._profile.public_profile===false)?null:(m.team_name||null),content:text.trim(),likes:0,avatar_url:(CACHE._profile&&CACHE._profile.show_avatar===false)?null:(CACHE._profile&&CACHE._profile.avatar_url||null)}).select().single()
     .then(function(res){
       if(btn){btn.disabled=false;btn.textContent='Post';}
       if(res.error){showToast('Could not post. Please try again.','error');return;}
@@ -10307,6 +10320,34 @@ function disablePush() {
         showToast('Notifications off', 'info'); refreshPushToggle();
       });
     });
+  });
+}
+
+// ── Privacy toggles (rankings + Diski visibility) ───────────────────────
+function privacySwitch(on, onclick) {
+  return '<div onclick="' + onclick + '" style="width:46px;height:26px;border-radius:14px;background:' + (on ? '#1E9E57' : 'rgba(255,255,255,.16)') + ';position:relative;cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent;flex-shrink:0">' +
+    '<div style="position:absolute;top:3px;left:' + (on ? '23px' : '3px') + ';width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div>';
+}
+
+function renderPrivacyToggles() {
+  var p = CACHE._profile || {};
+  var pub = p.public_profile !== false;   // default visible
+  var av  = p.show_avatar   !== false;
+  var e1 = document.getElementById('priv-public-ui');
+  if (e1) e1.innerHTML = privacySwitch(pub, "setPrivacy('public_profile'," + (!pub) + ")");
+  var e2 = document.getElementById('priv-avatar-ui');
+  if (e2) e2.innerHTML = privacySwitch(av, "setPrivacy('show_avatar'," + (!av) + ")");
+}
+
+function setPrivacy(field, on) {
+  if (!ST.user) return;
+  var patch = {}; patch[field] = on;
+  db.from('profiles').update(patch).eq('id', ST.user.id).then(function(res) {
+    if (res.error) { showToast('Could not save: ' + res.error.message, 'error'); return; }
+    if (CACHE._profile) CACHE._profile[field] = on;
+    showToast('Saved', 'success');
+    renderPrivacyToggles();
+    CACHE.leaderboard = null; // so the ranking reflects the change
   });
 }
 
