@@ -5523,6 +5523,21 @@ function uploadAvatar(input) {
   reader.readAsDataURL(file);
 }
 
+// Remove the profile photo and fall back to the blank grey silhouette default.
+function removeAvatar() {
+  if (!ST.user) return;
+  if (!confirm('Remove your profile photo and go back to the default?')) return;
+  showToast('Removing photo...', 'info');
+  db.from('profiles').update({ avatar_url: null }).eq('id', ST.user.id)
+    .then(function(res) {
+      if (res.error) { showToast('Could not remove photo: ' + res.error.message, 'error'); return; }
+      if (CACHE._profile) CACHE._profile.avatar_url = null;
+      showToast('Profile photo removed', 'success');
+      if (typeof loadProfile === 'function') loadProfile();
+      if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
+    });
+}
+
 // Classic default avatar: grey circle with a white head-and-shoulders silhouette.
 function defaultAvatarSvg(size) {
   size = size || 32;
@@ -5582,9 +5597,8 @@ function loadProfile() {
       '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
         '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload\').click()" title="Tap to change photo">' +
         (p.avatar_url
-          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
-            '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
-          : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.outerHTML=\'' + defaultAvatarSvg(64).replace(/'/g, "\\'") + '\'">'
+          : defaultAvatarSvg(64)
         ) +
         '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
@@ -5594,6 +5608,7 @@ function loadProfile() {
         '<div>' +
           '<div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">' + p.team_name + '</div>' +
           '<div style="font-size:.82rem;color:rgba(255,255,255,.4);margin-top:.2rem">@' + p.username + '</div>' +
+          (p.avatar_url ? '<div onclick="removeAvatar()" style="display:inline-flex;align-items:center;gap:5px;margin-top:.5rem;font-family:var(--font-ui);font-size:.66rem;font-weight:700;letter-spacing:.3px;color:#E06A80;cursor:pointer;-webkit-tap-highlight-color:transparent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:12px;height:12px"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Remove photo</div>' : '') +
           '<div style="display:flex;gap:.6rem;margin-top:.8rem;flex-wrap:wrap">' +
             '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.total_points || 0) + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Total Pts</div></div>' +
             '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:.4rem .9rem;text-align:center"><div style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:#DBA94A">' + (p.overall_rank || '--') + '</div><div style="font-family:var(--font-ui);font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">SA Rank</div></div>' +
@@ -7783,9 +7798,8 @@ function renderProfileData(c, p) {
     '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1.5rem;display:flex;gap:1.2rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">' +
       '<div style="position:relative;flex-shrink:0" onclick="document.getElementById(\'avatar-upload-2\').click()" title="Tap to change photo">' +
         (p.avatar_url
-          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
-            '<div style="display:none;width:64px;height:64px;border-radius:50%;background:#B91C3A;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
-          : '<div style="width:64px;height:64px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff">' + initials + '</div>'
+          ? '<img src="' + p.avatar_url + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(185,28,58,.5)" onerror="this.outerHTML=\'' + defaultAvatarSvg(64).replace(/'/g, "\\'") + '\'">'
+          : defaultAvatarSvg(64)
         ) +
         '<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:#DBA94A;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
