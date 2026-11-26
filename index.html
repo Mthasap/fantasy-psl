@@ -883,6 +883,24 @@
 <!-- == HOME == -->
 <div id="page-home" class="page active">
 
+<!-- Latest News story bubbles — top of home, visible to everyone -->
+<div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem .45rem">
+    <div style="display:flex;align-items:center;gap:.5rem">
+      <div style="width:3px;height:16px;background:#B91C3A;border-radius:2px;flex-shrink:0"></div>
+      <span style="font-family:var(--font-ui,sans-serif);font-size:.68rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff">Latest News</span>
+    </div>
+    <button onclick="goPage('news')" style="background:none;border:none;font-family:var(--font-ui,sans-serif);font-size:.65rem;font-weight:700;letter-spacing:.5px;color:#B91C3A;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">See All →</button>
+  </div>
+  <div id="home-news-scroll" style="display:flex;gap:.9rem;overflow-x:auto;padding:.35rem 1rem .75rem;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;align-items:flex-start">
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+    <div class="hn-sk hn-sk-story"></div>
+  </div>
+</div>
+
 <!-- Logged-in Fantasy Home dashboard (filled by renderHomeDashboard) -->
 <div id="home-dashboard" style="display:none"></div>
 
@@ -951,22 +969,7 @@
       </div>
     </div>
 
-<div id="home-news-section" style="margin:.2rem 0 .4rem;border-bottom:1px solid rgba(255,255,255,.06)">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem .45rem">
-    <div style="display:flex;align-items:center;gap:.5rem">
-      <div style="width:3px;height:16px;background:#B91C3A;border-radius:2px;flex-shrink:0"></div>
-      <span style="font-family:var(--font-ui,sans-serif);font-size:.68rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff">Latest News</span>
-    </div>
-    <button onclick="goPage('news')" style="background:none;border:none;font-family:var(--font-ui,sans-serif);font-size:.65rem;font-weight:700;letter-spacing:.5px;color:#B91C3A;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">See All →</button>
-  </div>
-  <div id="home-news-scroll" style="display:flex;gap:.9rem;overflow-x:auto;padding:.35rem 1rem .75rem;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;align-items:flex-start">
-    <div class="hn-sk hn-sk-story"></div>
-    <div class="hn-sk hn-sk-story"></div>
-    <div class="hn-sk hn-sk-story"></div>
-    <div class="hn-sk hn-sk-story"></div>
-    <div class="hn-sk hn-sk-story"></div>
-  </div>
-</div>
+<!-- Latest News story bubbles moved to the top of #page-home (shows for everyone) -->
 <style>
 #home-news-scroll::-webkit-scrollbar{display:none}
 @keyframes hn-pulse{0%,100%{opacity:.4}50%{opacity:.85}}
@@ -2014,7 +2017,9 @@ function goPage(id) {
 
 // ── Fantasy Home dashboard (logged-in landing) ──────────────────────────
 function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
-  var badge = teamInitials(team);
+  var badge = s.avatar
+    ? '<img src="' + s.avatar + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--gold,#DBA94A)" onerror="this.outerHTML=\'' + defaultAvatarSvg(56).replace(/'/g, "\\'") + '\'">'
+    : defaultAvatarSvg(56);
   var rank  = (s.rank != null) ? ('#' + s.rank) : '--';
   var I_team = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
   var I_xfer = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>';
@@ -2023,12 +2028,18 @@ function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
     return '<div onclick="goPage(\''+pg+'\')" style="display:flex;align-items:center;gap:11px;background:'+(primary?'#B91C3A':'#212a37')+';border:1px solid '+(primary?'#B91C3A':'rgba(255,255,255,.10)')+';border-radius:12px;padding:13px 15px;font-family:var(--font-display);font-weight:800;font-size:.9rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
       '<span style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+bg+';color:'+col+'">'+svg+'</span>'+label+'<span style="margin-left:auto;color:rgba(255,255,255,.4)">›</span></div>';
   }
-  function qlink(label, pg) {
-    return '<div onclick="goPage(\''+pg+'\')" style="background:#212a37;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:.8rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent"><span>'+label+'</span><span style="color:rgba(255,255,255,.4)">›</span></div>';
+  function qlink(label, pg, svg, tbg, tcol) {
+    return '<div onclick="goPage(\''+pg+'\')" style="background:#212a37;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:.82rem;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+      '<span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+tbg+';color:'+tcol+'">'+svg+'</span>'+
+      '<span style="flex:1">'+label+'</span><span style="color:rgba(255,255,255,.4)">›</span></div>';
   }
+  var Q_fix = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  var Q_top = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/></svg>';
+  var Q_lg  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4a5 5 0 01-10 0z"/><path d="M5 4H3v1a3 3 0 003 3M19 4h2v1a3 3 0 01-3 3"/><path d="M9 21h6M12 13v4"/></svg>';
+  var Q_prof= '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
   return '<div style="padding:6px 16px 18px;max-width:560px;margin:0 auto">'+
     '<div style="display:flex;align-items:center;gap:12px;padding:14px 2px 16px">'+
-      '<div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(145deg,#2a1116,#140a0d);border:1.5px solid var(--gold,#DBA94A);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;color:var(--gold,#DBA94A);font-size:1.05rem;flex-shrink:0">'+badge+'</div>'+
+      badge +
       '<div style="min-width:0"><div style="font-family:var(--font-display);font-weight:900;font-size:1.15rem;color:#fff;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(team)+'</div>'+
       '<div style="color:rgba(255,255,255,.6);font-size:.78rem;margin-top:2px">'+esc(mgr)+'</div></div>'+
     '</div>'+
@@ -2042,12 +2053,15 @@ function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
       '<div style="font-size:.74rem;color:'+(ST.deadlinePassed?'#D4274F':'var(--gold,#DBA94A)')+';margin-top:3px;font-weight:600">'+dlTxt+'</div>'+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">'+
-      act('rgba(255,255,255,.2)','#fff',I_team,'Pick Team','squad',true)+
-      act('rgba(219,169,74,.15)','var(--gold,#DBA94A)',I_xfer,'Transfers','squad',false)+
-      act('rgba(34,137,90,.15)','#22895A',I_news,'GW '+gwNum+' Team News','news',false)+
+      act('#ffffff','#B91C3A',I_team,'Pick Team','squad',true)+
+      act('#E8A32C','#1a1200',I_xfer,'Transfers','squad',false)+
+      act('#1E9E57','#ffffff',I_news,'GW '+gwNum+' Team News','news',false)+
     '</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">'+
-      qlink('Fixtures','fixtures')+qlink('Top Scorers','stats')+qlink('My Leagues','leagues')+qlink('Profile','profile')+
+      qlink('Fixtures','fixtures',Q_fix,'rgba(185,28,58,.16)','#E5718A')+
+      qlink('Top Scorers','stats',Q_top,'rgba(232,163,44,.16)','#E8A32C')+
+      qlink('My Leagues','leagues',Q_lg,'rgba(30,158,87,.16)','#37C07E')+
+      qlink('Profile','profile',Q_prof,'rgba(255,255,255,.10)','#c3cbd8')+
     '</div>'+
   '</div>';
 }
@@ -2071,17 +2085,18 @@ function renderHomeDashboard() {
   else if (ST.gw && ST.gw.deadline_at) dlTxt = 'Deadline: ' +
     new Date(ST.gw.deadline_at).toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
 
-  dash.innerHTML = buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, { gw:0, total:0, rank:null });
+  var cachedAvatar = (CACHE && CACHE._profile && CACHE._profile.avatar_url) || null;
+  dash.innerHTML = buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, { gw:0, total:0, rank:null, avatar:cachedAvatar });
 
-  // Fill real stats from the profile.
+  // Fill real stats (and avatar) from the profile.
   try {
-    db.from('profiles').select('team_name, gw_points, total_points, overall_rank')
+    db.from('profiles').select('team_name, gw_points, total_points, overall_rank, avatar_url')
       .eq('id', ST.user.id).maybeSingle()
       .then(function(r) {
         if (!r || !r.data) return;
         var p = r.data;
         dash.innerHTML = buildHomeDashboardHTML(p.team_name || team, mgr, gwNum, dlTxt,
-          { gw: p.gw_points || 0, total: p.total_points || 0, rank: p.overall_rank });
+          { gw: p.gw_points || 0, total: p.total_points || 0, rank: p.overall_rank, avatar: p.avatar_url || null });
       }).catch(function(){});
   } catch (e) {}
 }
@@ -5472,22 +5487,23 @@ function loadGWHistory() {
 function uploadAvatar(input) {
   if (!ST.user || !input.files || !input.files[0]) return;
   var file = input.files[0];
-  if (file.size > 1.5 * 1024 * 1024) { showToast('Image must be under 1.5MB', 'warning'); return; }
+  if (file.size > 6 * 1024 * 1024) { showToast('Image must be under 6MB', 'warning'); return; }
   showToast('Uploading photo...', 'info');
   var reader = new FileReader();
   reader.onload = function(e) {
     var dataUrl = e.target.result;
-    // Resize image to max 200x200 to keep DB size small
+    // Resize to a crisp square (max 400x400) — bigger allowance, sharper result,
+    // still small enough to store comfortably.
     var img = new Image();
     img.onload = function() {
       var canvas = document.createElement('canvas');
-      var size = Math.min(img.width, img.height, 200);
+      var size = Math.min(img.width, img.height, 400);
       canvas.width = size; canvas.height = size;
       var ctx = canvas.getContext('2d');
       var sx = (img.width - size) / 2;
       var sy = (img.height - size) / 2;
       ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
-      var resized = canvas.toDataURL('image/jpeg', 0.75);
+      var resized = canvas.toDataURL('image/jpeg', 0.82);
       // Use UPDATE (not upsert) — RLS allows users to update their own row
       db.from('profiles').update({ avatar_url: resized }).eq('id', ST.user.id)
         .then(function(res) {
@@ -5507,14 +5523,22 @@ function uploadAvatar(input) {
   reader.readAsDataURL(file);
 }
 
+// Classic default avatar: grey circle with a white head-and-shoulders silhouette.
+function defaultAvatarSvg(size) {
+  size = size || 32;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" style="border-radius:50%;display:block;flex-shrink:0">' +
+    '<rect width="48" height="48" rx="24" fill="#8b94a4"/>' +
+    '<circle cx="24" cy="19" r="8" fill="#eef1f5"/>' +
+    '<path d="M9 42c0-7.6 6.7-11.5 15-11.5S39 34.4 39 42z" fill="#eef1f5"/>' +
+  '</svg>';
+}
+
 function getAvatarHtml(username, avatarUrl, size) {
   size = size || 32;
-  var initials = (username||'?').charAt(0).toUpperCase();
-  var halfSize = Math.round(size * 0.4);
   if (avatarUrl) {
-    return '<img src="' + avatarUrl + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)" onerror="this.outerHTML=\'<div style=\\"width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:' + halfSize + 'px;font-weight:700;color:#fff\\">' + initials + '</div>\'">';
+    return '<img src="' + avatarUrl + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.15)" onerror="this.outerHTML=\'' + defaultAvatarSvg(size).replace(/'/g, "\\'") + '\'">';
   }
-  return '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#B91C3A;display:flex;align-items:center;justify-content:center;font-family:var(--font-ui);font-size:' + halfSize + 'px;font-weight:700;color:#fff">' + initials + '</div>';
+  return defaultAvatarSvg(size);
 }
 
 function saveNewsletterPref(val) {
