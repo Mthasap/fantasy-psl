@@ -92,9 +92,8 @@
     "url": "https://www.fantasypsl.co.za",
     "logo": "https://www.fantasypsl.co.za/logo.png",
     "sameAs": [
-      "https://www.facebook.com/fantasypsl",
-      "https://twitter.com/fantasypsl",
-      "https://www.instagram.com/fantasypsl"
+      "https://www.instagram.com/pslfantasyapp/",
+      "https://www.tiktok.com/@fantasy.psl.app"
     ],
     "sport": "Soccer",
     "description": "South Africa's No.1 Fantasy Football game for the Betway Premiership"
@@ -1378,6 +1377,9 @@ else setTimeout(loadHomeNews,500);
     <span class="eyebrow">Betway Premiership 2026/27</span>
     <h1 class="section-title">Player &amp; League Stats</h1>
 
+    <!-- Team of the Week (auto-built from gameweek points) -->
+    <div id="totw-wrap" style="margin-bottom:1.6rem"></div>
+
     <!-- Stat category tabs -->
     <div style="display:flex;gap:.4rem;margin-bottom:1.4rem;flex-wrap:wrap">
       <button class="ftab active" id="stab-goals"    onclick="setStatTab('goals',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>Goals</button>
@@ -1504,10 +1506,8 @@ else setTimeout(loadHomeNews,500);
     <img id="footer-logo" src="/logo.png" alt="Fantasy PSL" style="height:36px;opacity:.55;margin-bottom:.9rem" onerror="this.style.display='none'">
 
     <div style="display:flex;justify-content:center;gap:.65rem;margin-bottom:1.05rem">
-      <a href="https://www.facebook.com/fantasypsl" target="_blank" rel="noopener" aria-label="Facebook" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);text-decoration:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M22 12a10 10 0 10-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.5 2.9h-2.3v7A10 10 0 0022 12z"/></svg></a>
-      <a href="https://www.instagram.com/fantasypsl" target="_blank" rel="noopener" aria-label="Instagram" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);text-decoration:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg></a>
-      <a href="https://twitter.com/fantasypsl" target="_blank" rel="noopener" aria-label="X" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);text-decoration:none"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.9 2H22l-7.1 8.1L23.2 22h-6.4l-5-6.9L6 22H2.9l7.6-8.7L1.5 2h6.6l4.5 6.3L18.9 2zm-1.1 18h1.7L7.3 3.8H5.5L17.8 20z"/></svg></a>
-      <a href="https://www.tiktok.com/@fantasypsl" target="_blank" rel="noopener" aria-label="TikTok" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);text-decoration:none"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16.3 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3 0-2.6-.4-3.7-1.1v5.7A5.7 5.7 0 1110.5 8.4c.3 0 .6 0 .9.1v2.7a3 3 0 102 2.8V3h2.9z"/></svg></a>
+      <a href="https://www.instagram.com/pslfantasyapp/" target="_blank" rel="noopener" aria-label="Instagram" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);text-decoration:none"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://www.tiktok.com/@fantasy.psl.app" target="_blank" rel="noopener" aria-label="TikTok" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);text-decoration:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M16.3 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.3 0-2.6-.4-3.7-1.1v5.7A5.7 5.7 0 1110.5 8.4c.3 0 .6 0 .9.1v2.7a3 3 0 102 2.8V3h2.9z"/></svg></a>
     </div>
 
     <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:.35rem 1.1rem;font-family:var(--font-ui);font-size:.72rem;font-weight:700;letter-spacing:.3px;margin-bottom:.85rem">
@@ -2051,6 +2051,12 @@ function buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, s) {
       act('#E8A32C','#1a1200',I_xfer,'Transfers','squad',false)+
       act('#1E9E57','#ffffff',I_news,'GW '+gwNum+' Team News','news',false)+
     '</div>'+
+    '<div onclick="openDailyQuiz()" style="margin-top:12px;background:linear-gradient(135deg,#B91C3A,#7d1327);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+      '<div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0">🧠</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:var(--font-display);font-weight:900;font-size:.92rem;color:#fff">Daily SA Football Quiz</div>'+
+      '<div style="font-size:.7rem;color:rgba(255,255,255,.78);margin-top:1px">Test your knowledge, build your streak</div></div>'+
+      ((s.streak) ? '<div style="font-family:var(--font-display);font-weight:900;font-size:.82rem;color:#fff;background:rgba(0,0,0,.25);padding:.3rem .55rem;border-radius:8px;flex-shrink:0">🔥 '+s.streak+'</div>' : '<span style="color:rgba(255,255,255,.7);font-size:1.1rem">›</span>')+
+    '</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">'+
       qlink('Fixtures','fixtures',Q_fix,'rgba(185,28,58,.16)','#E5718A')+
       qlink('Top Scorers','stats',Q_top,'rgba(232,163,44,.16)','#E8A32C')+
@@ -2079,18 +2085,19 @@ function renderHomeDashboard() {
   else if (ST.gw && ST.gw.deadline_at) dlTxt = 'Deadline: ' +
     new Date(ST.gw.deadline_at).toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
 
-  var cachedAvatar = (CACHE && CACHE._profile && CACHE._profile.avatar_url) || null;
-  dash.innerHTML = buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, { gw:0, total:0, rank:null, avatar:cachedAvatar });
+  var cp = (CACHE && CACHE._profile) || {};
+  dash.innerHTML = buildHomeDashboardHTML(team, mgr, gwNum, dlTxt, { gw:0, total:0, rank:null, avatar:cp.avatar_url||null, streak:cp.quiz_streak||0 });
 
   // Fill real stats (and avatar) from the profile.
   try {
-    db.from('profiles').select('team_name, gw_points, total_points, overall_rank, avatar_url')
+    db.from('profiles').select('team_name, gw_points, total_points, overall_rank, avatar_url, quiz_streak, quiz_last_date')
       .eq('id', ST.user.id).maybeSingle()
       .then(function(r) {
         if (!r || !r.data) return;
         var p = r.data;
+        if (CACHE._profile) { CACHE._profile.quiz_streak = p.quiz_streak; CACHE._profile.quiz_last_date = p.quiz_last_date; }
         dash.innerHTML = buildHomeDashboardHTML(p.team_name || team, mgr, gwNum, dlTxt,
-          { gw: p.gw_points || 0, total: p.total_points || 0, rank: p.overall_rank, avatar: p.avatar_url || null });
+          { gw: p.gw_points || 0, total: p.total_points || 0, rank: p.overall_rank, avatar: p.avatar_url || null, streak: p.quiz_streak || 0 });
       }).catch(function(){});
   } catch (e) {}
 }
@@ -7202,7 +7209,102 @@ function fetchPlayerStats(cb) {
     .catch(function() { if (cb) cb(LIVE_STATS); });
 }
 
+// ── Team of the Week ─────────────────────────────────────────────────────
+// Best XI (4-4-2) of real PSL players by fantasy points for the latest
+// scored gameweek. Built entirely from match_player_stats + players.
+function totwLastName(name) {
+  if (!name) return '';
+  var parts = name.trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
+function totwPlayerCard(p, meta, isPotw) {
+  var m = (p.id && meta[p.id]) || {};
+  var photo = m.photo || '';
+  var club = m.team ? (typeof teamInitials === 'function' ? teamInitials(m.team) : m.team.slice(0,3).toUpperCase()) : '';
+  var name = totwLastName(m.display_name || p.name);
+  var pic = photo
+    ? '<img src="' + photo + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#0f131a;border:2px solid ' + (isPotw ? '#DBA94A' : 'rgba(255,255,255,.25)') + '" onerror="this.outerHTML=\'' + defaultAvatarSvg(44).replace(/'/g, "\\'") + '\'">'
+    : defaultAvatarSvg(44);
+  return '<div style="display:flex;flex-direction:column;align-items:center;width:66px;flex-shrink:0">' +
+    '<div style="position:relative">' + pic +
+      '<div style="position:absolute;-webkit-tap-highlight-color:transparent;bottom:-4px;left:50%;transform:translateX(-50%);background:' + (isPotw ? '#DBA94A' : '#1E9E57') + ';color:' + (isPotw ? '#1a1200' : '#fff') + ';font-family:var(--font-display);font-weight:900;font-size:.6rem;padding:1px 6px;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.4)">' + Math.round(p.pts) + '</div>' +
+      (isPotw ? '<div style="position:absolute;top:-6px;right:-6px;font-size:.7rem">⭐</div>' : '') +
+    '</div>' +
+    '<div style="font-family:var(--font-display);font-weight:700;font-size:.64rem;color:#fff;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66px">' + name + '</div>' +
+    '<div style="font-size:.54rem;color:rgba(255,255,255,.55);letter-spacing:.3px">' + club + '</div>' +
+  '</div>';
+}
+
+function totwRow(players, meta, potwKey) {
+  return '<div style="display:flex;justify-content:center;gap:.35rem;flex-wrap:wrap;margin:9px 0">' +
+    players.map(function(p) { return totwPlayerCard(p, meta, (p.id || p.name) === potwKey); }).join('') +
+  '</div>';
+}
+
+function renderTeamOfWeek(w, gw, all, meta) {
+  function top(ch, n) { return all.filter(function(p){ return p.pos === ch; }).sort(function(a,b){ return b.pts - a.pts; }).slice(0, n); }
+  var gk = top('G', 1), df = top('D', 4), mf = top('M', 4), fw = top('F', 2);
+  var xi = gk.concat(df, mf, fw);
+  if (!xi.length) { w.innerHTML = ''; return; }
+  var potw = all.slice().sort(function(a,b){ return b.pts - a.pts; })[0] || {};
+  var potwKey = potw.id || potw.name;
+  var potwName = (potw.id && meta[potw.id] && meta[potw.id].display_name) || potw.name || '';
+
+  var pitch = 'repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 44px,transparent 44px,transparent 88px),linear-gradient(180deg,#1f8a4d,#176b3c)';
+  w.innerHTML =
+    '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px 11px">' +
+        '<div><div style="font-family:var(--font-display);font-weight:900;font-size:1.02rem;color:#fff">Team of the Week</div>' +
+        '<div style="font-size:.64rem;color:rgba(255,255,255,.45);letter-spacing:.3px;margin-top:1px">Best XI · Gameweek ' + gw + '</div></div>' +
+        '<div style="font-family:var(--font-display);font-weight:900;font-size:.62rem;letter-spacing:.5px;background:rgba(219,169,74,.14);color:#DBA94A;border:1px solid rgba(219,169,74,.3);padding:.3rem .55rem;border-radius:8px">GW ' + gw + '</div>' +
+      '</div>' +
+      '<div style="background:' + pitch + ';padding:14px 6px 18px">' +
+        totwRow(gk, meta, potwKey) + totwRow(df, meta, potwKey) + totwRow(mf, meta, potwKey) + totwRow(fw, meta, potwKey) +
+      '</div>' +
+      (potwName ? '<div style="display:flex;align-items:center;gap:8px;padding:11px 15px;border-top:1px solid rgba(255,255,255,.07)">' +
+        '<span style="font-size:.9rem">⭐</span>' +
+        '<div><span style="font-family:var(--font-display);font-weight:900;font-size:.8rem;color:#DBA94A">Player of the Week</span>' +
+        '<span style="font-size:.74rem;color:rgba(255,255,255,.75);margin-left:6px">' + esc(totwLastName(potwName)) + ' · ' + Math.round(potw.pts) + ' pts</span></div>' +
+      '</div>' : '') +
+    '</div>';
+}
+
+function loadTeamOfWeek() {
+  var w = document.getElementById('totw-wrap'); if (!w || !db) return;
+  w.innerHTML = '<div style="background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.4rem;text-align:center;color:rgba(255,255,255,.4);font-size:.8rem">Building Team of the Week…</div>';
+  db.from('match_player_stats').select('gw_number').not('fantasy_points', 'is', null)
+    .order('gw_number', { ascending: false }).limit(1).maybeSingle()
+    .then(function(r) {
+      var gw = (r && r.data) ? r.data.gw_number : null;
+      if (!gw) { w.innerHTML = ''; return; }
+      db.from('match_player_stats')
+        .select('apifootball_player_id,player_name,position,fantasy_points,minutes_played')
+        .eq('gw_number', gw)
+        .then(function(res) {
+          var rows = res.data || [];
+          if (!rows.length) { w.innerHTML = ''; return; }
+          var byId = {};
+          rows.forEach(function(x) {
+            var key = x.apifootball_player_id || x.player_name;
+            if (!key) return;
+            if (!byId[key]) byId[key] = { id: x.apifootball_player_id, name: x.player_name, pos: (x.position || 'M').charAt(0).toUpperCase(), pts: 0, mins: 0 };
+            byId[key].pts += (x.fantasy_points || 0);
+            byId[key].mins += (x.minutes_played || 0);
+          });
+          var all = Object.keys(byId).map(function(k){ return byId[k]; }).filter(function(p){ return p.mins > 0; });
+          db.from('players').select('apifootball_id,display_name,team,photo')
+            .then(function(pm) {
+              var meta = {};
+              (pm.data || []).forEach(function(p) { if (p.apifootball_id) meta[p.apifootball_id] = p; });
+              renderTeamOfWeek(w, gw, all, meta);
+            }).catch(function(){ renderTeamOfWeek(w, gw, all, {}); });
+        }).catch(function(){ w.innerHTML = ''; });
+    }).catch(function(){ w.innerHTML = ''; });
+}
+
 function loadStats() {
+  if (typeof loadTeamOfWeek === 'function') loadTeamOfWeek();
   var c = document.getElementById('stats-body'); if (!c) return;
   c.innerHTML = '<div class="fpsl-loader"><div class="fpsl-loader-dots"><span></span><span></span><span></span></div></div>';
 
@@ -10349,6 +10451,141 @@ function setPrivacy(field, on) {
     renderPrivacyToggles();
     CACHE.leaderboard = null; // so the ranking reflects the change
   });
+}
+
+// ── Daily SA Football Quiz ──────────────────────────────────────────────
+var QUIZ = { qs: [], idx: 0, score: 0, answered: false };
+function quizToday() { return new Date().toISOString().slice(0, 10); }
+function quizYesterday() { return new Date(Date.now() - 86400000).toISOString().slice(0, 10); }
+
+// Deterministic daily pick so every player gets the same quiz each day.
+function quizDailyPick(all, dateStr, n) {
+  var seed = 0; for (var i = 0; i < dateStr.length; i++) seed = (seed * 31 + dateStr.charCodeAt(i)) >>> 0;
+  var sorted = all.slice().sort(function(a, b) { return a.id - b.id; });
+  var picked = [], used = {}, step = 0;
+  while (picked.length < Math.min(n, sorted.length) && step < 2000) {
+    var j = ((seed + picked.length * 2654435761 + step * 40503) >>> 0) % sorted.length;
+    if (!used[j]) { used[j] = 1; picked.push(sorted[j]); }
+    step++;
+  }
+  return picked;
+}
+
+function quizOverlay(inner) {
+  var el = document.getElementById('quiz-modal');
+  if (!el) { el = document.createElement('div'); el.id = 'quiz-modal'; document.body.appendChild(el); }
+  el.style.cssText = 'position:fixed;inset:0;z-index:99995;background:rgba(0,0,0,.9);display:flex;align-items:flex-end;justify-content:center;padding:0';
+  el.innerHTML = '<div style="width:100%;max-width:520px;background:var(--bg-card,#1b2330);border-radius:20px 20px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.7);animation:slideUpSheet .3s ease">' + inner + '</div>';
+  el.style.display = 'flex';
+}
+function closeQuiz() { var el = document.getElementById('quiz-modal'); if (el) el.style.display = 'none'; }
+
+function openDailyQuiz() {
+  if (!ST.user) { showToast('Log in to play the daily quiz', 'warning'); return; }
+  var prof = CACHE._profile || {};
+  if (prof.quiz_last_date === quizToday()) { quizDoneScreen(prof); return; }
+  showToast('Loading today’s quiz…', 'info');
+  db.from('quiz_questions').select('id,question,options,correct_index,category').eq('is_active', true)
+    .then(function(res) {
+      var all = res.data || [];
+      if (!all.length) { showToast('No quiz available yet — check back soon', 'warning'); return; }
+      QUIZ.qs = quizDailyPick(all, quizToday(), 5);
+      QUIZ.idx = 0; QUIZ.score = 0; QUIZ.answered = false;
+      renderQuiz();
+    }).catch(function() { showToast('Could not load the quiz', 'error'); });
+}
+
+function quizHeader() {
+  var n = QUIZ.qs.length, pct = Math.round(((QUIZ.idx) / n) * 100);
+  return '<div style="padding:16px 18px 10px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+      '<div style="font-family:var(--font-display);font-weight:900;font-size:1rem;color:#fff">Daily Quiz</div>' +
+      '<div onclick="closeQuiz()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;font-size:.85rem;-webkit-tap-highlight-color:transparent">✕</div>' +
+    '</div>' +
+    '<div style="height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#1E9E57;transition:width .3s"></div></div>' +
+    '<div style="font-size:.66rem;color:rgba(255,255,255,.45);margin-top:6px;font-family:var(--font-ui)">Question ' + (QUIZ.idx + 1) + ' of ' + n + '</div>' +
+  '</div>';
+}
+
+function renderQuiz() {
+  var q = QUIZ.qs[QUIZ.idx];
+  var opts = (typeof q.options === 'string') ? JSON.parse(q.options) : q.options;
+  var optHtml = opts.map(function(o, i) {
+    return '<button id="qopt-' + i + '" onclick="quizAnswer(' + i + ')" style="width:100%;text-align:left;background:#232d3c;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;margin-bottom:10px;color:#fff;font-family:var(--font-ui);font-size:.92rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">' + o + '</button>';
+  }).join('');
+  quizOverlay(quizHeader() +
+    '<div style="padding:4px 18px 20px">' +
+      '<div style="font-family:var(--font-display);font-weight:800;font-size:1.12rem;color:#fff;line-height:1.35;margin-bottom:16px">' + q.question + '</div>' +
+      optHtml +
+      '<div id="quiz-next-wrap" style="height:0"></div>' +
+    '</div>');
+}
+
+function quizAnswer(i) {
+  if (QUIZ.answered) return;
+  QUIZ.answered = true;
+  var q = QUIZ.qs[QUIZ.idx];
+  var correct = q.correct_index;
+  if (i === correct) QUIZ.score++;
+  for (var k = 0; k < 4; k++) {
+    var b = document.getElementById('qopt-' + k);
+    if (!b) continue;
+    b.disabled = true; b.style.cursor = 'default';
+    if (k === correct) { b.style.background = '#1E9E57'; b.style.borderColor = '#1E9E57'; }
+    else if (k === i)  { b.style.background = '#B91C3A'; b.style.borderColor = '#B91C3A'; }
+    else b.style.opacity = '.5';
+  }
+  var last = QUIZ.idx >= QUIZ.qs.length - 1;
+  var wrap = document.getElementById('quiz-next-wrap');
+  if (wrap) {
+    wrap.style.height = 'auto';
+    wrap.innerHTML = '<button onclick="quizNext()" style="width:100%;background:#B91C3A;border:none;border-radius:12px;padding:14px;margin-top:6px;color:#fff;font-family:var(--font-display);font-weight:900;font-size:.95rem;cursor:pointer;-webkit-tap-highlight-color:transparent">' + (last ? 'See my result' : 'Next question →') + '</button>';
+  }
+}
+
+function quizNext() {
+  QUIZ.idx++;
+  if (QUIZ.idx >= QUIZ.qs.length) { quizFinish(); return; }
+  QUIZ.answered = false;
+  renderQuiz();
+}
+
+function quizFinish() {
+  var prof = CACHE._profile || {};
+  var today = quizToday();
+  var newStreak = (prof.quiz_last_date === quizYesterday()) ? ((prof.quiz_streak || 0) + 1) : 1;
+  var best = Math.max(prof.quiz_best_streak || 0, newStreak);
+  var pts = (prof.quiz_points || 0) + QUIZ.score;
+  var patch = { quiz_last_date: today, quiz_streak: newStreak, quiz_best_streak: best, quiz_points: pts };
+  if (ST.user) db.from('profiles').update(patch).eq('id', ST.user.id).then(function() {
+    if (CACHE._profile) { for (var k in patch) CACHE._profile[k] = patch[k]; }
+  }).catch(function(){});
+
+  var n = QUIZ.qs.length, perfect = QUIZ.score === n;
+  var msg = perfect ? 'Perfect score! You know your football. ⚽' : QUIZ.score >= Math.ceil(n * 0.6) ? 'Solid stuff, sharp as ever.' : 'Back tomorrow to climb that streak.';
+  quizOverlay(
+    '<div style="padding:26px 20px 24px;text-align:center">' +
+      '<div style="font-size:2.4rem;margin-bottom:6px">' + (perfect ? '🏆' : '🧠') + '</div>' +
+      '<div style="font-family:var(--font-display);font-weight:900;font-size:1.3rem;color:#fff">' + QUIZ.score + ' / ' + n + '</div>' +
+      '<div style="font-size:.82rem;color:rgba(255,255,255,.55);margin:4px 0 18px">' + msg + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px">' +
+        '<div style="background:rgba(219,169,74,.12);border:1px solid rgba(219,169,74,.3);border-radius:12px;padding:12px 18px"><div style="font-family:var(--font-display);font-weight:900;font-size:1.4rem;color:#DBA94A">🔥 ' + newStreak + '</div><div style="font-size:.6rem;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase">Day streak</div></div>' +
+        '<div style="background:rgba(30,158,87,.12);border:1px solid rgba(30,158,87,.3);border-radius:12px;padding:12px 18px"><div style="font-family:var(--font-display);font-weight:900;font-size:1.4rem;color:#37C07E">' + pts + '</div><div style="font-size:.6rem;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase">Quiz points</div></div>' +
+      '</div>' +
+      '<div style="font-size:.74rem;color:rgba(255,255,255,.4);margin-bottom:16px">Come back tomorrow for a new set of questions.</div>' +
+      '<button onclick="closeQuiz()" style="width:100%;background:#1E9E57;border:none;border-radius:12px;padding:14px;color:#fff;font-family:var(--font-display);font-weight:900;font-size:.95rem;cursor:pointer;-webkit-tap-highlight-color:transparent">Done</button>' +
+    '</div>');
+}
+
+function quizDoneScreen(prof) {
+  quizOverlay(
+    '<div style="padding:26px 20px 24px;text-align:center">' +
+      '<div style="font-size:2.2rem;margin-bottom:8px">✅</div>' +
+      '<div style="font-family:var(--font-display);font-weight:900;font-size:1.15rem;color:#fff">You’ve played today</div>' +
+      '<div style="font-size:.8rem;color:rgba(255,255,255,.55);margin:6px 0 18px">A fresh set of questions drops tomorrow.</div>' +
+      '<div style="background:rgba(219,169,74,.12);border:1px solid rgba(219,169,74,.3);border-radius:12px;padding:12px 18px;display:inline-block;margin-bottom:20px"><div style="font-family:var(--font-display);font-weight:900;font-size:1.4rem;color:#DBA94A">🔥 ' + (prof.quiz_streak || 0) + '</div><div style="font-size:.6rem;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase">Day streak</div></div><br>' +
+      '<button onclick="closeQuiz()" style="width:100%;background:#1E9E57;border:none;border-radius:12px;padding:14px;color:#fff;font-family:var(--font-display);font-weight:900;font-size:.95rem;cursor:pointer;-webkit-tap-highlight-color:transparent">Done</button>' +
+    '</div>');
 }
 
 // Call initPush when user logs in — wired into onAuthStateChange below
